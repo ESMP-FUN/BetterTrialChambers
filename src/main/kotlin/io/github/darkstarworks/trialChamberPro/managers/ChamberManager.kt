@@ -569,6 +569,10 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             rs.getBoolean("is_paused")
         } catch (_: Exception) { false }
 
+        val broadcastResetComplete = try {
+            rs.getBoolean("broadcast_reset_complete")
+        } catch (_: Exception) { true }
+
         return Chamber(
             id = rs.getInt("id"),
             name = rs.getString("name"),
@@ -594,7 +598,8 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             customMobProvider = customProvider,
             customMobIdsNormal = customNormal,
             customMobIdsOminous = customOminous,
-            isPaused = isPaused
+            isPaused = isPaused,
+            broadcastResetComplete = broadcastResetComplete
         )
     }
 
@@ -717,6 +722,39 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             }
         } catch (e: Exception) {
             plugin.logger.severe("Failed to set chamber paused state: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Toggles whether the server-wide reset-complete broadcast is sent for this chamber.
+     *
+     * @param chamberId The chamber ID
+     * @param broadcast True to enable the broadcast, false to suppress it
+     * @return True if the update was applied
+     */
+    suspend fun setBroadcastResetComplete(chamberId: Int, broadcast: Boolean): Boolean = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement("UPDATE chambers SET broadcast_reset_complete = ? WHERE id = ?").use { stmt ->
+                    stmt.setBoolean(1, broadcast)
+                    stmt.setInt(2, chamberId)
+                    val updated = stmt.executeUpdate() > 0
+                    if (updated) {
+                        val chamber = chamberCache.values.find { it.id == chamberId }
+                        if (chamber != null) {
+                            val refreshed = loadChamberFromDb(chamber.name)
+                            if (refreshed != null) {
+                                chamberCache[chamber.name] = refreshed
+                                updateCacheExpiry(chamber.name)
+                            }
+                        }
+                    }
+                    updated
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.severe("Failed to set broadcast_reset_complete: ${e.message}")
             false
         }
     }
