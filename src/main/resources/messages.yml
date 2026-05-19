@@ -360,6 +360,10 @@ gui-spawner-cooldown-set: "&aSpawner cooldown set to {value}"
 gui-spawner-cooldown-failed: "&cFailed to update spawner cooldown"
 gui-spawner-cooldown-reset: "&aSpawner cooldown reset to global config"
 gui-spawner-cooldown-reset-failed: "&cFailed to reset spawner cooldown"
+gui-broadcast-reset-enabled: "&aReset broadcast enabled for this chamber"
+gui-broadcast-reset-disabled: "&cReset broadcast disabled for this chamber"
+gui-broadcast-reset-failed: "&cFailed to update broadcast setting"
+gui-broadcast-reset-global-override: "&cReset broadcasts are disabled globally in config.yml (global.reset-complete-alert)"
 
 # GUI Action Messages - Settings Toggle
 gui-setting-toggled: "&a{setting}: {value}"
@@ -954,6 +958,19 @@ gui:
     spawner-cd-15m: "15 minutes"
     spawner-cd-30m: "30 minutes"
     spawner-cd-1h: "1 hour"
+    broadcast-reset-name: "&e&lReset Broadcast"
+    broadcast-reset-lore:
+      - "&7Send a server-wide message when"
+      - "&7this chamber finishes resetting"
+      - ""
+      - "&eClick to toggle"
+    broadcast-reset-overridden-lore:
+      - "&7Send a server-wide message when"
+      - "&7this chamber finishes resetting"
+      - ""
+      - "&c&lDisabled by global config"
+      - "&7Set &eglobal.reset-complete-alert: true"
+      - "&7in config.yml to enable per-chamber control"
 
   vault-management:
     title: "Vaults: {chamber}"
