@@ -222,11 +222,14 @@ class ResetManager(private val plugin: TrialChamberPro) {
                 }
             }
 
-            // Send completion message
-            plugin.scheduler.runTask(Runnable {
-                val message = plugin.getMessageComponent("chamber-reset-complete")
-                Bukkit.getOnlinePlayers().forEach { it.sendMessage(message) }
-            })
+            // Send completion message if broadcasts are enabled globally and for this chamber
+            val globalAlerts = plugin.config.getBoolean("global.reset-complete-alert", true)
+            if (globalAlerts && chamber.broadcastResetComplete) {
+                plugin.scheduler.runTask(Runnable {
+                    val message = plugin.getMessageComponent("chamber-reset-complete")
+                    Bukkit.getOnlinePlayers().forEach { it.sendMessage(message) }
+                })
+            }
 
             plugin.logger.info("Chamber ${chamber.name} reset successfully")
 
