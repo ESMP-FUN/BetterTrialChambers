@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.4.7] - 2026-05-19
+### Added
+- **Per-chamber reset broadcast toggle.** Each chamber now has a `Reset Broadcast` toggle in the Chamber Settings GUI (slot 6, row 3). When disabled, the server-wide "chamber X has reset" message is suppressed for that chamber only. A new `global.reset-complete-alert` config option (default `true`) acts as a master override — setting it to `false` silences broadcasts for every chamber regardless of their individual setting, and the GUI toggle displays a gray "Disabled by global config" indicator instead of an on/off switch so admins immediately know why per-chamber control is unavailable.
+
+### Config additions
+- **`global.reset-complete-alert`** (default `true`) — master switch for the post-reset server broadcast. Set to `false` to suppress the message globally for all chambers.
+
+### Localization
+- New GUI keys under `gui.chamber-settings`: `broadcast-reset-name`, `broadcast-reset-lore`, `broadcast-reset-overridden-lore`.
+- New flat keys: `gui-broadcast-reset-enabled`, `gui-broadcast-reset-disabled`, `gui-broadcast-reset-failed`, `gui-broadcast-reset-global-override`.
+
 ## [1.4.6] - 2026-05-14
 ### Fixed
 - **Folia/Luminol: chamber reset no longer crashes when teleporting players out.** Calling `player.teleport()` on a Folia region thread throws `UnsupportedOperationException: Must use teleportAsync while in region threading`. `ResetManager.teleportPlayersOut` now uses `teleportAsync()` and chains the confirmation message + completion signal onto the returned `CompletableFuture`, so the reset sequence resumes only after every player has actually been moved.
@@ -1236,6 +1247,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.4.7]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.6...v1.4.7
 [1.4.6]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.5...v1.4.6
 [1.4.5]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.4...v1.4.5
 [1.4.4]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.3...v1.4.4

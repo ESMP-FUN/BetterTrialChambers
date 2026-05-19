@@ -101,6 +101,11 @@ class ChamberSettingsView(
             }
         }, 4, 3)
 
+        pane.addItem(GuiItem(createBroadcastResetItem()) { event ->
+            event.isCancelled = true
+            if (event.isLeftClick) toggleBroadcastReset(player)
+        }, 6, 3)
+
         pane.addItem(GuiComponents.backButton(plugin, "gui.common.dest-chamber") {
             val refreshedChamber = plugin.chamberManager.getCachedChamberById(chamber.id)
             if (refreshedChamber != null) menu.openChamberDetail(player, refreshedChamber)
@@ -277,6 +282,36 @@ class ChamberSettingsView(
                     player.sendMessage(plugin.getMessageComponent("gui-spawner-cooldown-reset"))
                     plugin.chamberManager.getCachedChamberById(chamber.id)?.let { menu.openChamberSettings(player, it) }
                 } else player.sendMessage(plugin.getMessageComponent("gui-spawner-cooldown-reset-failed"))
+            })
+        }
+    }
+
+    private fun createBroadcastResetItem(): ItemStack {
+        val globalEnabled = plugin.config.getBoolean("global.reset-complete-alert", true)
+        return if (!globalEnabled) {
+            GuiComponents.infoItem(plugin, Material.GRAY_DYE,
+                "gui.chamber-settings.broadcast-reset-name", "gui.chamber-settings.broadcast-reset-overridden-lore")
+        } else {
+            GuiComponents.toggleItem(plugin, chamber.broadcastResetComplete,
+                "gui.chamber-settings.broadcast-reset-name", "gui.chamber-settings.broadcast-reset-lore")
+        }
+    }
+
+    private fun toggleBroadcastReset(player: Player) {
+        if (!plugin.config.getBoolean("global.reset-complete-alert", true)) {
+            player.sendMessage(plugin.getMessageComponent("gui-broadcast-reset-global-override"))
+            return
+        }
+        val newValue = !chamber.broadcastResetComplete
+        plugin.launchAsync {
+            val success = plugin.chamberManager.setBroadcastResetComplete(chamber.id, newValue)
+            plugin.scheduler.runAtEntity(player, Runnable {
+                if (success) {
+                    player.sendMessage(plugin.getMessageComponent(
+                        if (newValue) "gui-broadcast-reset-enabled" else "gui-broadcast-reset-disabled"
+                    ))
+                    plugin.chamberManager.getCachedChamberById(chamber.id)?.let { menu.openChamberSettings(player, it) }
+                } else player.sendMessage(plugin.getMessageComponent("gui-broadcast-reset-failed"))
             })
         }
     }

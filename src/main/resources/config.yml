@@ -18,6 +18,7 @@ global:
   # Common values: 86400 (daily), 172800 (48h), 604800 (weekly)
   default-reset-interval: 172800
   reset-warning-times: [300, 60, 30] # Warnings in seconds before reset
+  reset-complete-alert: true # Set to false to suppress the server-wide broadcast when any chamber finishes resetting
   teleport-players-on-reset: true
   teleport-location: EXIT_POINT # EXIT_POINT, OUTSIDE_BOUNDS, or WORLD_SPAWN
   async-block-placement: true
