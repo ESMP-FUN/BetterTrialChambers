@@ -291,6 +291,14 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
                 } catch (_: SQLException) {
                     // Column already exists
                 }
+
+                // v1.4.4: Per-chamber reset-complete broadcast toggle
+                try {
+                    stmt.execute("ALTER TABLE chambers ADD COLUMN broadcast_reset_complete BOOLEAN NOT NULL DEFAULT 1")
+                    plugin.logger.info("Migration executed: Added broadcast_reset_complete column")
+                } catch (_: SQLException) {
+                    // Column already exists
+                }
             }
         }
     }
