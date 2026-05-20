@@ -2,21 +2,13 @@
 
 # TrialChamberPro
 
-### What's new in 1.4.4
+### What's new in 1.5.0
 
-- **Vanilla loot is now one copy-paste away.** Two ready-to-use loot tables — `vanilla-normal` and `vanilla-ominous` — ship inside `loot.yml` as a commented section. They're faithful three-pool recreations transcribed directly from Mojang's own datapack JSONs, so if you (or your players) just want unmodified Minecraft 1.21 Trial Chamber drops, you don't have to build them yourself. Uncomment the block, run `/tcp reload`, done.
+- **New `ChamberClearedEvent` for plugin developers.** A public Bukkit event that fires exactly once when every trial spawner inside a registered chamber completes a wave within the same reset cycle — i.e. the chamber was cleared in one continuous run, before the next auto- or manual reset. The event carries the chamber, the cumulative set of participating players across every wave in the run, and the wall-clock duration of the clear. Designed for progression plugins, run-based achievements, leaderboards, and reward pipelines that need a single clean signal per "run finished" instead of stitching together individual wave events.
 
-Plus everything from the 1.4.x line: **MiniMessage everywhere**, **smarter auto-discovery** that merges chambers spanning multiple chunks, a **flatter admin GUI**, a **startup schema check** for `messages.yml`, **trial spawner wave tracking fixes**, and the **chamber pause state** added in 1.4.3. And from 1.3.x: **custom mobs** (MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens), **fully translatable GUI** (~330 `gui.*` keys), **Bukkit events API**, **spawner presets**, **`/tcp give`**, and **Minecraft 26.x support** via the `-mc26` build.
+Plus everything from the 1.4.x line: **per-chamber reset broadcast toggle** (1.4.7), **Folia/Luminol teleport crash fixes** (1.4.6), **Silk Touch recovery for preset spawners** (1.4.5), **vanilla-accurate bundled loot tables** (1.4.4), **chamber pause state** (1.4.3), **MiniMessage everywhere**, **smarter auto-discovery**, a **flatter admin GUI**, and **trial spawner wave tracking fixes**. And from 1.3.x: **custom mobs** (MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens), **fully translatable GUI** (~330 `gui.*` keys), **Bukkit events API**, **spawner presets**, **`/tcp give`**, and **Minecraft 26.x support** via the `-mc26` build.
 
 📘 **Full documentation:** https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation — most questions are answered there, and every section below links to its own detailed page.
-
----
-
-## 🎁 Win a Premium Module Licence
-
-Capture your best TrialChamberPro setup — a screenshot or short clip — and post it in **#showcase** on our Discord. The community votes via reactions, and the **3 most-loved entries each win a permanent premium licence** (TCP-WildSpawners or TCP-VaultCrates, your pick). Surprise bonuses for runners-up.
-
-👉 **[Join the Discord →](https://discord.gg/qwYcTpHsNC)**
 
 ---
 
