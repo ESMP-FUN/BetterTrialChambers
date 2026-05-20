@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.5.0] - 2026-05-21
+### Added
+- **`ChamberClearedEvent` — public Bukkit event for "chamber cleared in one run."** Fires exactly once when every trial spawner inside a registered chamber has completed a wave within the same reset cycle. Carries the cleared `Chamber`, the cumulative `Set<UUID>` of participants across every wave in the cycle, and the wall-clock `durationMs` from first-wave-start to last-wave-complete. Not cancellable. Tracking is per-chamber, reset on every `ChamberResetEvent`, so a chamber that's cleared, reset, and cleared again fires the event twice. Wild spawners (those outside any registered chamber) do not contribute — the event is chamber-scoped only. Third-party plugins consume via standard Bukkit listener registration on the `io.github.darkstarworks.trialChamberPro.api.events.ChamberClearedEvent` class.
+
+### Changed
+- **`SpawnerWaveManager` gained per-chamber wave-completion bookkeeping** to support `ChamberClearedEvent`. Three new in-memory maps (`ConcurrentHashMap<Int, MutableSet<String>>` for completed spawners per chamber, `ConcurrentHashMap<Int, MutableSet<UUID>>` for cumulative participants, `ConcurrentHashMap<Int, Long>` for cycle start time) plus a lazy spawner-count cache. All maps are cleared per chamber on every reset via the existing `clearWavesInChamber` call. The spawner count is computed once per chamber via a block-scan of the chamber bounds and cached — first wave completion in a fresh chamber pays the scan cost (a few ms for typical chambers, under 100ms for the maximum 750k-block size), subsequent completions are O(1).
+
 ## [1.4.7] - 2026-05-19
 ### Added
 - **Per-chamber reset broadcast toggle.** Each chamber now has a `Reset Broadcast` toggle in the Chamber Settings GUI (slot 6, row 3). When disabled, the server-wide "chamber X has reset" message is suppressed for that chamber only. A new `global.reset-complete-alert` config option (default `true`) acts as a master override — setting it to `false` silences broadcasts for every chamber regardless of their individual setting, and the GUI toggle displays a gray "Disabled by global config" indicator instead of an on/off switch so admins immediately know why per-chamber control is unavailable.

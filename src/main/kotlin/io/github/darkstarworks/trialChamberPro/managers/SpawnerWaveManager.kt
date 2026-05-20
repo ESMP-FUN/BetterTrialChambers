@@ -63,6 +63,18 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
     // Player to spawner mapping for boss bar cleanup
     private val playerBossBars = ConcurrentHashMap<UUID, MutableSet<String>>()
 
+    // v1.5.0: per-chamber tracking for ChamberClearedEvent. A chamber is
+    // "cleared" when every trial spawner inside it has completed a wave
+    // within the same reset cycle (i.e. without a ChamberResetEvent in
+    // between). Cleared on every chamber reset via clearWavesInChamber.
+    private val chamberSpawnersCompletedThisCycle = ConcurrentHashMap<Int, MutableSet<String>>()
+    private val chamberParticipantsThisCycle = ConcurrentHashMap<Int, MutableSet<UUID>>()
+    private val chamberCycleStartMs = ConcurrentHashMap<Int, Long>()
+    // Lazy cache of spawner counts per chamber (block scan is O(volume); cache so
+    // subsequent wave completions are O(1)). Reset cycles preserve the count —
+    // a chamber's snapshot restoration keeps spawner geometry stable.
+    private val chamberSpawnerCountCache = ConcurrentHashMap<Int, Int>()
+
     init {
         // Periodic sweep: drop UUIDs whose entity is gone (despawned, /kill, removed by another
         // plugin, void death without an EntityDeathEvent); close out waves whose spawner block
@@ -378,6 +390,12 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
             mobToSpawner.entries.removeIf { it.value == key }
             activeWaves.remove(key)
         }
+        // v1.5.0: reset per-cycle ChamberClearedEvent tracking on chamber reset.
+        // The spawner-count cache is preserved — the chamber's spawner geometry
+        // doesn't change across a reset cycle (snapshot restoration is faithful).
+        chamberSpawnersCompletedThisCycle.remove(chamber.id)
+        chamberParticipantsThisCycle.remove(chamber.id)
+        chamberCycleStartMs.remove(chamber.id)
     }
 
     /**
@@ -474,15 +492,103 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
 
         // Fire post-event for downstream consumers (stat plugins, custom rewards, etc).
         // Resolved chamber may be null for wild spawners — listeners must tolerate that.
+        val resolvedChamber = plugin.chamberManager.getCachedChamberAt(wave.location)
         plugin.server.pluginManager.callEvent(
             io.github.darkstarworks.trialChamberPro.api.events.SpawnerWaveCompleteEvent(
                 spawnerLocation = wave.location,
-                chamber = plugin.chamberManager.getCachedChamberAt(wave.location),
+                chamber = resolvedChamber,
                 ominous = wave.isOminous,
                 participants = wave.participatingPlayers.toSet(),
                 durationMs = durationMs
             )
         )
+
+        // v1.5.0: aggregate per-chamber wave completions. When every spawner in
+        // the chamber has finished a wave in this reset cycle, fire a single
+        // ChamberClearedEvent so progression / reward modules (Mythic Trials et
+        // al.) get one clean signal per "run cleared" without scraping wave
+        // state themselves. Wild spawners (chamber == null) don't contribute.
+        if (resolvedChamber != null && !resolvedChamber.isPaused) {
+            maybeFireChamberCleared(resolvedChamber, wave)
+        }
+    }
+
+    /**
+     * Records this wave's spawner against the chamber's per-cycle completion
+     * set and, if every spawner in the chamber has now completed a wave, fires
+     * [io.github.darkstarworks.trialChamberPro.api.events.ChamberClearedEvent]
+     * exactly once before the chamber's next reset.
+     */
+    private fun maybeFireChamberCleared(
+        chamber: io.github.darkstarworks.trialChamberPro.models.Chamber,
+        wave: WaveState
+    ) {
+        val cid = chamber.id
+        val completedSet = chamberSpawnersCompletedThisCycle
+            .computeIfAbsent(cid) { ConcurrentHashMap.newKeySet() }
+        val participantSet = chamberParticipantsThisCycle
+            .computeIfAbsent(cid) { ConcurrentHashMap.newKeySet() }
+        chamberCycleStartMs.putIfAbsent(cid, wave.startTime)
+        participantSet.addAll(wave.participatingPlayers)
+        val wasNewSpawner = completedSet.add(wave.spawnerId)
+        if (!wasNewSpawner) return
+
+        val expected = countSpawnersInChamber(chamber)
+        if (expected <= 0 || completedSet.size < expected) return
+
+        // Snapshot + clear tracking state BEFORE firing so a listener that
+        // triggers further wave activity in the same chamber (e.g. opens a new
+        // trial via a reward effect) starts a fresh cycle counter.
+        val cycleStart = chamberCycleStartMs.remove(cid) ?: wave.startTime
+        val cumulativeParticipants = participantSet.toSet()
+        chamberSpawnersCompletedThisCycle.remove(cid)
+        chamberParticipantsThisCycle.remove(cid)
+
+        plugin.server.pluginManager.callEvent(
+            io.github.darkstarworks.trialChamberPro.api.events.ChamberClearedEvent(
+                chamber = chamber,
+                participants = cumulativeParticipants,
+                durationMs = System.currentTimeMillis() - cycleStart
+            )
+        )
+
+        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+            plugin.logger.info(
+                "[ChamberCleared] ${chamber.name}: $expected spawners cleared, " +
+                "${cumulativeParticipants.size} participant(s)"
+            )
+        }
+    }
+
+    /**
+     * Counts trial-spawner blocks inside [chamber], caching the result. The
+     * scan is O(chamber volume) on first call and O(1) thereafter. Chamber
+     * resets preserve the count (snapshot restoration keeps the same spawner
+     * geometry); only a `/tcp scan` after manual edits should warrant cache
+     * invalidation, which is rare enough that a server restart is acceptable.
+     */
+    private fun countSpawnersInChamber(
+        chamber: io.github.darkstarworks.trialChamberPro.models.Chamber
+    ): Int {
+        chamberSpawnerCountCache[chamber.id]?.let { return it }
+        val world = chamber.getWorld() ?: return 0
+        var count = 0
+        try {
+            for (x in chamber.minX..chamber.maxX) {
+                for (y in chamber.minY..chamber.maxY) {
+                    for (z in chamber.minZ..chamber.maxZ) {
+                        if (world.getBlockAt(x, y, z).type == Material.TRIAL_SPAWNER) count++
+                    }
+                }
+            }
+        } catch (e: Throwable) {
+            plugin.logger.warning(
+                "[ChamberCleared] Failed to count spawners in ${chamber.name}: ${e.message}"
+            )
+            return 0
+        }
+        chamberSpawnerCountCache[chamber.id] = count
+        return count
     }
 
     /**
@@ -876,6 +982,10 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         activeWaves.clear()
         mobToSpawner.clear()
         playerBossBars.clear()
+        chamberSpawnersCompletedThisCycle.clear()
+        chamberParticipantsThisCycle.clear()
+        chamberCycleStartMs.clear()
+        chamberSpawnerCountCache.clear()
     }
 
     /**
