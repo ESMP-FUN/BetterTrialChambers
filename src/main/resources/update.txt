@@ -1,5 +1,5 @@
 <black>.
-<aqua>[1.5.0] <gray>- <white>2026-05-21
+<aqua>[1.5.0] <gray>- <white>(COMING SOON)
 <lime>+ <white>NEW: <green>Public <yellow>ChamberClearedEvent<green> for plugin developers. Fires once when every trial spawner inside a registered chamber has completed a wave in the same reset cycle — i.e. the chamber was cleared in one continuous run. Carries the chamber, the cumulative set of participating players, and the run duration. Designed to power progression plugins (per-player chamber tiers, run-based achievements, leaderboards).
 <aqua>[1.4.7] <gray>- <white>2026-05-19
 <lime>+ <white>NEW: <green>Per-chamber reset broadcast toggle. Each chamber now has a <yellow>Reset Broadcast<green> toggle in Chamber Settings. Disable it to suppress the server-wide "chamber X has reset" message for that chamber only. A new <yellow>global.reset-complete-alert<green> config option (default <yellow>true<green>) acts as a master switch — set it to <yellow>false<green> to silence all chambers at once. The GUI toggle shows a "Disabled by global config" indicator when the master switch overrides it.
