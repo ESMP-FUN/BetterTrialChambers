@@ -103,6 +103,12 @@ reset:
   clear-ground-items: true
   remove-spawner-mobs: true
   remove-non-chamber-mobs: false
+  # Snapshots skip air to save space, so on their own they can't undo blocks a
+  # player ADDED into empty cells (lava, cobble, etc.). When true, reset also
+  # clears any block inside the chamber that isn't part of the snapshot back to
+  # air, so player additions don't persist. Set false if you intentionally let
+  # players build inside chambers.
+  clear-added-blocks: true
   # CRITICAL: Reset trial spawner state (clears tracked players).
   # When enabled, trial spawners will drop keys again after chamber reset.
   # Without this, spawners "remember" players who already completed them and won't give keys.

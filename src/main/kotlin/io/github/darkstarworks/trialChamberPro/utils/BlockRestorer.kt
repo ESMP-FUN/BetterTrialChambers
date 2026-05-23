@@ -7,6 +7,8 @@ import kotlinx.coroutines.delay
 import org.bukkit.Bukkit
 import org.bukkit.Chunk
 import org.bukkit.Location
+import org.bukkit.Material
+import org.bukkit.World
 import org.bukkit.entity.Player
 
 /**
@@ -145,6 +147,91 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
             onComplete?.invoke()
         })
     }
+
+    /**
+     * Clears blocks a player ADDED into cells that were air at capture time.
+     *
+     * Snapshots skip air to save space (see [io.github.darkstarworks.trialChamberPro.managers.SnapshotManager]),
+     * so [restoreBlocks] alone never reverts blocks placed into formerly-empty
+     * cells — lava, cobble, anything. This pass walks the chamber volume and
+     * sets every cell that is (a) not present in the snapshot and (b) currently
+     * non-air back to AIR, so player additions don't survive a reset.
+     *
+     * Region-thread + chunk-batched for Folia, mirroring [restoreBlocks]. Block
+     * *reads* must happen on the owning region thread, so each chunk's slice is
+     * scanned inside its own region task rather than pre-filtered off-thread.
+     *
+     * Run this BEFORE [restoreBlocks]; the two touch disjoint cells (foreign
+     * cells vs. captured cells).
+     */
+    suspend fun clearAddedBlocks(
+        world: World,
+        minX: Int, minY: Int, minZ: Int,
+        maxX: Int, maxY: Int, maxZ: Int,
+        snapshot: Map<Location, BlockSnapshot>,
+    ) {
+        val occupied = HashSet<Long>(snapshot.size * 2)
+        snapshot.keys.forEach { occupied.add(pack(it.blockX, it.blockY, it.blockZ)) }
+
+        val cleared = java.util.concurrent.atomic.AtomicInteger(0)
+        val pending = java.util.concurrent.atomic.AtomicInteger(0)
+        val signal = CompletableDeferred<Unit>()
+        fun batchFinished() {
+            if (pending.decrementAndGet() == 0) signal.complete(Unit)
+        }
+
+        val minChunkX = minX shr 4
+        val maxChunkX = maxX shr 4
+        val minChunkZ = minZ shr 4
+        val maxChunkZ = maxZ shr 4
+
+        for (cx in minChunkX..maxChunkX) {
+            for (cz in minChunkZ..maxChunkZ) {
+                val x0 = maxOf(minX, cx shl 4)
+                val x1 = minOf(maxX, (cx shl 4) + 15)
+                val z0 = maxOf(minZ, cz shl 4)
+                val z1 = minOf(maxZ, (cz shl 4) + 15)
+                val representative = Location(world, x0.toDouble(), minY.toDouble(), z0.toDouble())
+
+                pending.incrementAndGet()
+                plugin.scheduler.runAtLocation(representative, Runnable {
+                    try {
+                        if (!world.isChunkLoaded(cx, cz)) world.getChunkAt(cx, cz)
+                        for (x in x0..x1) {
+                            for (z in z0..z1) {
+                                for (y in minY..maxY) {
+                                    if (occupied.contains(pack(x, y, z))) continue
+                                    val block = world.getBlockAt(x, y, z)
+                                    if (block.type != Material.AIR) {
+                                        block.setType(Material.AIR, false)
+                                        cleared.incrementAndGet()
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        plugin.logger.warning("Failed to clear added blocks in chunk $cx,$cz: ${e.message}")
+                    } finally {
+                        batchFinished()
+                    }
+                })
+
+                // One chunk-column slice per tick to spread the load (matches restoreBlocks).
+                delay(50)
+            }
+        }
+
+        if (pending.get() == 0) signal.complete(Unit)
+        signal.await()
+
+        if (cleared.get() > 0) {
+            plugin.logger.info("Cleared ${cleared.get()} player-added block(s) not in the snapshot")
+        }
+    }
+
+    /** Pack block coords into a single long (vanilla BlockPos layout: 26/12/26 bits x/y/z). */
+    private fun pack(x: Int, y: Int, z: Int): Long =
+        ((x.toLong() and 0x3FFFFFF) shl 38) or ((z.toLong() and 0x3FFFFFF) shl 12) or (y.toLong() and 0xFFF)
 
     /**
      * Holder for WorldEdit session data during restoration.

@@ -6,10 +6,17 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [1.5.0] - 2026-05-21
 ### Added
+- **`/tcp snapshot update [chamber]`** — re-captures a registered chamber's snapshot, overwriting the old one, so edits made *after* the chamber was first registered/snapshotted become the new reset baseline. With no name it targets the chamber you're standing in (resolved via `getCachedChamberAt`); with a name it behaves like `create`. Shares the capture path with `create`; added to tab-completion + help.
 - **`ChamberClearedEvent` — public Bukkit event for "chamber cleared in one run."** Fires exactly once when every trial spawner inside a registered chamber has completed a wave within the same reset cycle. Carries the cleared `Chamber`, the cumulative `Set<UUID>` of participants across every wave in the cycle, and the wall-clock `durationMs` from first-wave-start to last-wave-complete. Not cancellable. Tracking is per-chamber, reset on every `ChamberResetEvent`, so a chamber that's cleared, reset, and cleared again fires the event twice. Wild spawners (those outside any registered chamber) do not contribute — the event is chamber-scoped only. Third-party plugins consume via standard Bukkit listener registration on the `io.github.darkstarworks.trialChamberPro.api.events.ChamberClearedEvent` class.
 
 ### Changed
 - **`SpawnerWaveManager` gained per-chamber wave-completion bookkeeping** to support `ChamberClearedEvent`. Three new in-memory maps (`ConcurrentHashMap<Int, MutableSet<String>>` for completed spawners per chamber, `ConcurrentHashMap<Int, MutableSet<UUID>>` for cumulative participants, `ConcurrentHashMap<Int, Long>` for cycle start time) plus a lazy spawner-count cache. All maps are cleared per chamber on every reset via the existing `clearWavesInChamber` call. The spawner count is computed once per chamber via a block-scan of the chamber bounds and cached — first wave completion in a fresh chamber pays the scan cost (a few ms for typical chambers, under 100ms for the maximum 750k-block size), subsequent completions are O(1).
+
+### Fixed
+- **Chamber reset now removes blocks players ADDED into formerly-empty cells (lava, cobble, etc.).** Snapshots skip air on capture to save space, so restoration — which only re-applies captured (non-air) blocks — never reverted anything placed into a cell that was air at capture time. `BlockRestorer.clearAddedBlocks` now walks the chamber volume (region-thread + chunk-batched, Folia-safe) before restore and sets any cell that isn't in the snapshot and is currently non-air back to air. Gated by `reset.clear-added-blocks` (default `true`); disable it to intentionally let players build inside chambers.
+
+### Config additions
+- **`reset.clear-added-blocks`** (default `true`) — whether chamber reset also clears player-added blocks that fall outside the snapshot (see Fixed above).
 
 ## [1.4.7] - 2026-05-19
 ### Added
