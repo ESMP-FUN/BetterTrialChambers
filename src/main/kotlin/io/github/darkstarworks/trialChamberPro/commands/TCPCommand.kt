@@ -178,35 +178,47 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             return
         }
 
-        if (args.size < 3) {
+        if (args.size < 2) {
             sender.sendMessage(plugin.getMessageComponent("usage-snapshot"))
             return
         }
 
         val action = args[1].lowercase()
-        val chamberName = args[2]
 
         when (action) {
+            // `create` and `update` both (re)capture, overwriting any existing
+            // snapshot — `update` is the discoverable name for "save my edits"
+            // and lets you omit the chamber name when standing inside one.
             "create" -> {
-                plugin.launchAsync {
-                    val chamber = plugin.chamberManager.getChamber(chamberName)
-                    if (chamber == null) {
-                        sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
-                        return@launchAsync
-                    }
-
-                    sender.sendMessage(plugin.getMessageComponent("snapshot-creating", "chamber" to chamberName))
-                    val file = plugin.snapshotManager.createSnapshot(chamber)
-                    plugin.chamberManager.setSnapshotFile(chamberName, file.absolutePath)
-
-                    sender.sendMessage(plugin.getMessageComponent("snapshot-created",
-                        "chamber" to chamberName,
-                        "blocks" to chamber.getVolume(),
-                        "size" to io.github.darkstarworks.trialChamberPro.utils.CompressionUtil.formatSize(file.length())
-                    ))
+                if (args.size < 3) {
+                    sender.sendMessage(plugin.getMessageComponent("usage-snapshot"))
+                    return
                 }
+                captureSnapshot(sender, args[2])
+            }
+            "update" -> {
+                if (args.size >= 3) {
+                    captureSnapshot(sender, args[2])
+                    return
+                }
+                val player = sender as? Player
+                if (player == null) {
+                    sender.sendMessage(plugin.getMessageComponent("player-only"))
+                    return
+                }
+                val chamber = plugin.chamberManager.getCachedChamberAt(player.location)
+                if (chamber == null) {
+                    sender.sendMessage(plugin.getMessageComponent("snapshot-not-in-chamber"))
+                    return
+                }
+                captureSnapshot(sender, chamber.name)
             }
             "restore" -> {
+                if (args.size < 3) {
+                    sender.sendMessage(plugin.getMessageComponent("usage-snapshot"))
+                    return
+                }
+                val chamberName = args[2]
                 plugin.launchAsync {
                     val chamber = plugin.chamberManager.getChamber(chamberName)
                     if (chamber == null) {
@@ -229,6 +241,27 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             else -> {
                 sender.sendMessage(plugin.getMessageComponent("usage-snapshot"))
             }
+        }
+    }
+
+    /** Capture (or re-capture) a chamber's snapshot, overwriting any existing one. Shared by create/update. */
+    private fun captureSnapshot(sender: CommandSender, chamberName: String) {
+        plugin.launchAsync {
+            val chamber = plugin.chamberManager.getChamber(chamberName)
+            if (chamber == null) {
+                sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
+                return@launchAsync
+            }
+
+            sender.sendMessage(plugin.getMessageComponent("snapshot-creating", "chamber" to chamberName))
+            val file = plugin.snapshotManager.createSnapshot(chamber)
+            plugin.chamberManager.setSnapshotFile(chamberName, file.absolutePath)
+
+            sender.sendMessage(plugin.getMessageComponent("snapshot-created",
+                "chamber" to chamberName,
+                "blocks" to chamber.getVolume(),
+                "size" to io.github.darkstarworks.trialChamberPro.utils.CompressionUtil.formatSize(file.length())
+            ))
         }
     }
 
