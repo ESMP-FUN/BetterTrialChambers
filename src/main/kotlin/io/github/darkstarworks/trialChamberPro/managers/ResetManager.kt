@@ -550,6 +550,23 @@ class ResetManager(private val plugin: TrialChamberPro) {
         initiatingPlayer: Player? = null
     ) {
         val blockRestorer = BlockRestorer(plugin)
+
+        // Snapshots skip air on capture, so restoreBlocks alone can't revert
+        // blocks a player ADDED into formerly-empty cells (lava, cobble, etc.).
+        // Clear those first; disable via reset.clear-added-blocks if a server
+        // intentionally lets players build inside chambers.
+        if (plugin.config.getBoolean("reset.clear-added-blocks", true)) {
+            val world = chamber.getWorld()
+            if (world != null) {
+                blockRestorer.clearAddedBlocks(
+                    world,
+                    chamber.minX, chamber.minY, chamber.minZ,
+                    chamber.maxX, chamber.maxY, chamber.maxZ,
+                    snapshot,
+                )
+            }
+        }
+
         blockRestorer.restoreBlocks(
             snapshot,
             onProgress = { processed, total ->
