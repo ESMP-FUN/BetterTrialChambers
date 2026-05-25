@@ -493,6 +493,19 @@ class MenuService(private val plugin: TrialChamberPro) {
         getOrCreateSession(player.uniqueId).drafts[key] = draft
     }
 
+    /** Current in-memory draft for a chamber loot screen, or null if none is open. */
+    fun getDraft(player: Player, chamber: Chamber, kind: LootKind, poolName: String?): LootEditorDraft? =
+        sessions[player.uniqueId]?.drafts?.get(draftKey(chamber.id, kind, poolName))
+
+    /** Current in-memory draft for a global loot table, or null if none is open. */
+    fun getGlobalDraft(player: Player, tableName: String, poolName: String?): LootEditorDraft? =
+        sessions[player.uniqueId]?.drafts?.get(globalDraftKey(tableName, poolName))
+
+    /** Opens the bulk loot-deposit chest (drag items in to add them faithfully). */
+    fun openLootDeposit(player: Player, chamber: Chamber?, kind: LootKind, poolName: String?, globalTableName: String?) {
+        LootDepositView.open(player, chamber, kind, poolName, globalTableName)
+    }
+
     private fun draftKey(chamberId: Int, kind: LootKind, poolName: String? = null): String {
         return if (poolName != null) {
             "${chamberId}:${kind.name}:${poolName}"

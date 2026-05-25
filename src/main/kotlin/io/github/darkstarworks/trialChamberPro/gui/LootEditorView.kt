@@ -13,6 +13,8 @@ import io.github.darkstarworks.trialChamberPro.models.LootItem
 import io.github.darkstarworks.trialChamberPro.models.LootTable
 import io.github.darkstarworks.trialChamberPro.models.VaultType
 import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.NamedTextColor
+import net.kyori.adventure.text.format.TextDecoration
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.event.inventory.ClickType
@@ -201,11 +203,17 @@ class LootEditorView(
         }
         lore += plugin.getGuiText("gui.loot-editor.item-controls-right")
         lore += plugin.getGuiText("gui.loot-editor.item-controls-middle")
+        lore += Component.text("Q / drop key: remove", net.kyori.adventure.text.format.NamedTextColor.RED)
+            .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false)
 
-        val item = ItemStack(li.type)
+        // Faithful items keep their real appearance (enchant glint, name, potion
+        // colour); we append the editor info to whatever lore they already have.
+        val faithful = li.serializedItem?.let { plugin.lootManager.deserializeItem(it) }
+        val item = faithful?.clone() ?: ItemStack(li.type)
         item.itemMeta = item.itemMeta?.apply {
-            displayName(plugin.getGuiText(nameKey, "item" to li.type.name))
-            lore(lore)
+            if (faithful == null) displayName(plugin.getGuiText(nameKey, "item" to li.type.name))
+            val existing = lore() ?: emptyList()
+            lore(if (existing.isEmpty()) lore else existing + Component.empty() + lore)
         }
         return item
     }
@@ -217,6 +225,10 @@ class LootEditorView(
         var modified = false
 
         when (clickType) {
+            ClickType.DROP, ClickType.CONTROL_DROP -> {
+                list.removeAt(index); modified = true
+                player.sendMessage(plugin.getMessageComponent("gui-item-removed-from-loot", "item" to item.type.name))
+            }
             ClickType.MIDDLE -> {
                 list[index] = item.copy(enabled = !item.enabled); modified = true
             }
@@ -292,7 +304,9 @@ class LootEditorView(
                 amountMin = 1,
                 amountMax = hand.amount.coerceAtLeast(1),
                 weight = 1.0,
-                name = null, lore = null, enchantments = null, enabled = true
+                // Capture the WHOLE item (enchants/potions/name/lore/NBT), not just its material.
+                serializedItem = plugin.lootManager.serializeItem(hand),
+                enabled = true
             )
             draft.weighted.add(newItem)
             draft.dirty = true
@@ -300,6 +314,32 @@ class LootEditorView(
             refreshContent(player)
             buildControls(player)
         }, 4, 1)
+
+        // Bulk add: open a free-edit chest, drag items in, capture them faithfully.
+        val bulkAdd = ItemStack(Material.CHEST)
+        bulkAdd.itemMeta = bulkAdd.itemMeta?.apply {
+            displayName(
+                Component.text("Bulk add (drag items in)", NamedTextColor.AQUA)
+                    .decoration(TextDecoration.ITALIC, false)
+            )
+            lore(
+                listOf(
+                    Component.text("Opens a chest — drag or shift-click", NamedTextColor.GRAY)
+                        .decoration(TextDecoration.ITALIC, false),
+                    Component.text("items in, then close to add them all", NamedTextColor.GRAY)
+                        .decoration(TextDecoration.ITALIC, false),
+                    Component.text("(enchants/potions/NBT preserved).", NamedTextColor.GRAY)
+                        .decoration(TextDecoration.ITALIC, false),
+                )
+            )
+        }
+        controlsPane.addItem(GuiItem(bulkAdd) {
+            it.isCancelled = true
+            // Persist the current draft so the deposit appends to it, then open the chest.
+            if (chamber != null) menu.saveDraft(player, chamber, kind, poolName, draft)
+            else menu.saveGlobalDraft(player, globalTableName!!, poolName, draft)
+            menu.openLootDeposit(player, chamber, kind, poolName, globalTableName)
+        }, 6, 1)
 
         val rolls = GuiComponents.infoItem(plugin, Material.PAPER,
             "gui.loot-editor.rolls-name", "gui.loot-editor.rolls-lore",

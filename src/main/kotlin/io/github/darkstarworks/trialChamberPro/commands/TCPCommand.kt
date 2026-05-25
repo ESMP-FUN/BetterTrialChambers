@@ -47,7 +47,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             "setexit" -> handleSetExit(sender, args)
             "snapshot" -> handleSnapshot(sender, args)
             "reset" -> handleReset(sender, args)
-            "list" -> handleList(sender)
+            "list" -> handleList(sender, args)
             "info" -> handleInfo(sender, args)
             "delete" -> handleDelete(sender, args)
             "vault" -> handleVault(sender, args)
@@ -268,29 +268,90 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         }
     }
 
-    private fun handleList(sender: CommandSender) {
+    private fun handleList(sender: CommandSender, args: Array<out String>) {
         if (!sender.hasPermission("tcp.admin")) {
             sender.sendMessage(plugin.getMessageComponent("no-permission"))
             return
         }
 
-        plugin.launchAsync {
-            val chambers = plugin.chamberManager.getAllChambers()
+        val sub = args.getOrNull(1)?.lowercase()
 
+        // /tcp list current|here|near[est] — find the chamber you're in, else the nearest.
+        if (sub != null && sub in setOf("current", "here", "near", "nearest")) {
+            val player = sender as? Player
+            if (player == null) {
+                sender.sendMessage(plugin.getMessageComponent("player-only"))
+                return
+            }
+            val loc = player.location // snapshot on the command thread for async use
+            plugin.launchAsync {
+                val worldName = loc.world?.name
+                val chambers = plugin.chamberManager.getAllChambers().filter { it.world == worldName }
+                val inside = chambers.firstOrNull { it.contains(loc) }
+                if (inside != null) {
+                    sender.sendRichMessage(
+                        "<green>You are inside <yellow>${inside.name}</yellow> <gray>(volume ${inside.getVolume()})"
+                    )
+                    return@launchAsync
+                }
+                val nearest = chambers.minByOrNull { centerDistanceSq(it, loc) }
+                if (nearest == null) {
+                    sender.sendRichMessage("<gray>No chambers found in this world.")
+                } else {
+                    val cx = (nearest.minX + nearest.maxX) / 2
+                    val cy = (nearest.minY + nearest.maxY) / 2
+                    val cz = (nearest.minZ + nearest.maxZ) / 2
+                    val dist = kotlin.math.sqrt(centerDistanceSq(nearest, loc)).toInt()
+                    sender.sendRichMessage(
+                        "<gold>Nearest chamber: <yellow>${nearest.name}</yellow> <gray>~${dist}m at " +
+                            "<white>$cx $cy $cz</white> <click:suggest_command:'/tp $cx $cy $cz'><aqua>[/tp]</aqua></click>"
+                    )
+                }
+            }
+            return
+        }
+
+        val requestedPage = sub?.toIntOrNull() ?: 1
+        plugin.launchAsync {
+            val chambers = plugin.chamberManager.getAllChambers().sortedBy { it.name }
             if (chambers.isEmpty()) {
                 sender.sendMessage(plugin.getMessageComponent("chamber-list-empty"))
                 return@launchAsync
             }
 
-            sender.sendMessage(plugin.getMessageComponent("chamber-list-header"))
-            chambers.forEach { chamber ->
+            val pageSize = 10
+            val maxPage = (chambers.size + pageSize - 1) / pageSize
+            val page = requestedPage.coerceIn(1, maxPage)
+            val start = (page - 1) * pageSize
+            val pageItems = chambers.subList(start, minOf(start + pageSize, chambers.size))
+
+            sender.sendRichMessage(
+                "<gold>Chambers <gray>(page <yellow>$page</yellow>/<yellow>$maxPage</yellow>, " +
+                    "<yellow>${chambers.size}</yellow> total) — <i>/tcp list current</i> to locate"
+            )
+            pageItems.forEach { chamber ->
                 sender.sendMessage(plugin.getMessageComponent("chamber-list-item",
                     "chamber" to chamber.name,
                     "world" to chamber.world,
                     "volume" to chamber.getVolume()
                 ))
             }
+            if (maxPage > 1) {
+                val prev = if (page > 1) "<click:run_command:'/tcp list ${page - 1}'><green>« Prev</green></click>"
+                else "<dark_gray>« Prev</dark_gray>"
+                val next = if (page < maxPage) "<click:run_command:'/tcp list ${page + 1}'><green>Next »</green></click>"
+                else "<dark_gray>Next »</dark_gray>"
+                sender.sendRichMessage("$prev <gray>|</gray> $next")
+            }
         }
+    }
+
+    /** Squared distance from [loc] to the centre of chamber [c] (for nearest-chamber lookup). */
+    private fun centerDistanceSq(c: io.github.darkstarworks.trialChamberPro.models.Chamber, loc: Location): Double {
+        val dx = (c.minX + c.maxX) / 2.0 - loc.x
+        val dy = (c.minY + c.maxY) / 2.0 - loc.y
+        val dz = (c.minZ + c.maxZ) / 2.0 - loc.z
+        return dx * dx + dy * dy + dz * dz
     }
 
     private fun handleInfo(sender: CommandSender, args: Array<out String>) {
