@@ -21,6 +21,55 @@ fun handleReset(plugin: TrialChamberPro, sender: CommandSender, args: Array<out 
         return
     }
 
+    // Operator-confirmation queue (when global.reset-require-confirmation is on).
+    when (args[1].lowercase()) {
+        "pending" -> {
+            val names = plugin.resetManager.pendingResetNames()
+            if (names.isEmpty()) {
+                sender.sendRichMessage("<gray>No chambers are awaiting reset confirmation.")
+            } else {
+                sender.sendRichMessage(
+                    "<gold>Awaiting reset confirmation (${names.size}): " +
+                        "<click:run_command:'/tcp reset confirm all'><green>[confirm all]</green></click>"
+                )
+                names.forEach {
+                    sender.sendRichMessage(
+                        "<gray>• <yellow>$it</yellow> <click:run_command:'/tcp reset confirm $it'><green>[confirm]</green></click>"
+                    )
+                }
+            }
+            return
+        }
+        "confirm" -> {
+            val target = args.getOrNull(2)
+            if (target == null) {
+                sender.sendRichMessage("<red>Usage: /tcp reset confirm <chamber|all>")
+                return
+            }
+            if (target.equals("all", ignoreCase = true)) {
+                val n = plugin.resetManager.confirmAllResets()
+                sender.sendRichMessage(
+                    if (n > 0) "<green>Confirmed <yellow>$n</yellow> reset(s) — they'll run staggered."
+                    else "<gray>No chambers were awaiting confirmation."
+                )
+                return
+            }
+            resetCommandScope.launch {
+                val chamber = plugin.chamberManager.getChamber(target)
+                if (chamber == null) {
+                    sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to target))
+                    return@launch
+                }
+                if (plugin.resetManager.confirmReset(chamber)) {
+                    sender.sendRichMessage("<green>Confirmed reset for <yellow>$target</yellow>.")
+                } else {
+                    sender.sendRichMessage("<gray><yellow>$target</yellow> wasn't awaiting confirmation.")
+                }
+            }
+            return
+        }
+    }
+
     val chamberName = args[1]
 
     resetCommandScope.launch {

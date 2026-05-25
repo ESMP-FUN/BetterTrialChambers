@@ -7,6 +7,8 @@ import io.github.darkstarworks.trialChamberPro.models.Chamber
 import io.github.darkstarworks.trialChamberPro.utils.BlockRestorer
 import io.github.darkstarworks.trialChamberPro.utils.MessageUtil
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
@@ -24,6 +26,31 @@ class ResetManager(private val plugin: TrialChamberPro) {
     private val resetScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private val scheduledResets = ConcurrentHashMap<Int, Job>()
     private val warningJobs = ConcurrentHashMap<Int, MutableList<Job>>()
+
+    // Chambers with a reset currently running/queued — guards against the same
+    // chamber being reset twice concurrently (e.g. the 60s scheduler re-firing).
+    private val inProgress = ConcurrentHashMap.newKeySet<Int>()
+
+    // Chambers that are due for reset but awaiting operator confirmation
+    // (when global.reset-require-confirmation is on). Confirmed via /tcp reset confirm.
+    private val pendingResets = ConcurrentHashMap.newKeySet<Int>()
+
+    // Throttles concurrent resets so a wave of due chambers can't all restore at
+    // once and crater TPS. Permit count is read once (config reload needs a restart).
+    private val resetGate by lazy {
+        Semaphore(plugin.config.getInt("global.max-concurrent-resets", 1).coerceAtLeast(1))
+    }
+    private val resetStaggerMs: Long
+        get() = plugin.config.getLong("global.reset-stagger-seconds", 5L).coerceAtLeast(0L) * 1000L
+
+    private companion object {
+        // Solid blocks you still shouldn't be dropped onto.
+        val HAZARD_BLOCKS = setOf(
+            Material.LAVA, Material.MAGMA_BLOCK, Material.POINTED_DRIPSTONE, Material.CACTUS,
+            Material.FIRE, Material.SOUL_FIRE, Material.CAMPFIRE, Material.SOUL_CAMPFIRE,
+            Material.SWEET_BERRY_BUSH, Material.WITHER_ROSE, Material.POWDER_SNOW,
+        )
+    }
 
     /**
      * Starts monitoring and scheduling resets for all chambers.
@@ -53,8 +80,13 @@ class ResetManager(private val plugin: TrialChamberPro) {
      * If resetInterval is <= 0, automatic resets are disabled for this chamber.
      */
     private suspend fun scheduleResetIfNeeded(chamber: Chamber) {
-        // Skip if already scheduled
+        // Skip if already scheduled, currently resetting, or awaiting confirmation
         if (scheduledResets.containsKey(chamber.id)) return
+        if (chamber.id in inProgress) return
+        if (chamber.id in pendingResets) return
+
+        // Skip paused chambers — they have no active behavior including auto-resets
+        if (chamber.isPaused) return
 
         // Skip paused chambers — they have no active behavior including auto-resets
         if (chamber.isPaused) return
@@ -71,8 +103,8 @@ class ResetManager(private val plugin: TrialChamberPro) {
         val now = System.currentTimeMillis()
 
         if (now >= nextResetTime) {
-            // Reset immediately
-            resetChamber(chamber, reason = ChamberResetEvent.Reason.SCHEDULED)
+            // Due now — enqueue for confirmation or launch through the throttle.
+            triggerScheduledReset(chamber)
         } else {
             // Schedule future reset
             val delayMs = nextResetTime - now
@@ -81,11 +113,70 @@ class ResetManager(private val plugin: TrialChamberPro) {
                 scheduleWarnings(chamber, delayMs)
 
                 delay(delayMs)
-                resetChamber(chamber, reason = ChamberResetEvent.Reason.SCHEDULED)
+                // Remove ourselves BEFORE resetting so resetChamber's "cancel any
+                // pending reset" can never cancel the coroutine we're running in.
+                scheduledResets.remove(chamber.id)
+                triggerScheduledReset(chamber)
             }
 
             scheduledResets[chamber.id] = resetJob
         }
+    }
+
+    /**
+     * Fire (or queue) a scheduled reset. When operator confirmation is required
+     * the chamber is parked in [pendingResets] and admins are notified; otherwise
+     * it's launched immediately through the concurrency/stagger throttle.
+     */
+    private fun triggerScheduledReset(chamber: Chamber) {
+        if (plugin.config.getBoolean("global.reset-require-confirmation", false)) {
+            if (pendingResets.add(chamber.id)) {
+                plugin.logger.info(
+                    "Chamber '${chamber.name}' is due for reset — awaiting confirmation (/tcp reset confirm ${chamber.name})."
+                )
+                notifyAdminsPending(chamber)
+            }
+        } else {
+            resetScope.launch { resetChamber(chamber, reason = ChamberResetEvent.Reason.SCHEDULED) }
+        }
+    }
+
+    private fun notifyAdminsPending(chamber: Chamber) {
+        plugin.scheduler.runTask(Runnable {
+            Bukkit.getOnlinePlayers()
+                .filter { it.hasPermission("tcp.admin.reset") }
+                .forEach { p ->
+                    p.sendRichMessage(
+                        "<gold>[TCP] <yellow>${chamber.name}</yellow> is ready to reset — " +
+                            "<click:run_command:'/tcp reset confirm ${chamber.name}'><green>[confirm]</green></click> " +
+                            "<click:run_command:'/tcp reset pending'><aqua>[list all]</aqua></click>"
+                    )
+                }
+        })
+    }
+
+    /** Names of chambers currently awaiting reset confirmation. */
+    fun pendingResetNames(): List<String> =
+        pendingResets.mapNotNull { id -> plugin.chamberManager.getCachedChamberById(id)?.name }.sorted()
+
+    /** Confirm a single pending reset; returns false if the chamber wasn't pending. */
+    fun confirmReset(chamber: Chamber): Boolean {
+        if (!pendingResets.remove(chamber.id)) return false
+        resetScope.launch { resetChamber(chamber, reason = ChamberResetEvent.Reason.SCHEDULED) }
+        return true
+    }
+
+    /** Confirm every pending reset; they queue through the throttle (staggered). Returns the count. */
+    fun confirmAllResets(): Int {
+        var n = 0
+        pendingResets.toList().forEach { id ->
+            if (pendingResets.remove(id)) {
+                val chamber = plugin.chamberManager.getCachedChamberById(id) ?: return@forEach
+                resetScope.launch { resetChamber(chamber, reason = ChamberResetEvent.Reason.SCHEDULED) }
+                n++
+            }
+        }
+        return n
     }
 
     /**
@@ -136,6 +227,27 @@ class ResetManager(private val plugin: TrialChamberPro) {
         chamber: Chamber,
         initiatingPlayer: Player? = null,
         reason: ChamberResetEvent.Reason = ChamberResetEvent.Reason.MANUAL
+    ): Boolean {
+        if (!inProgress.add(chamber.id)) {
+            plugin.logger.fine("Reset already running for ${chamber.name}; skipping duplicate")
+            return false
+        }
+        return try {
+            resetGate.withPermit {
+                doReset(chamber, initiatingPlayer, reason).also {
+                    // Space resets out so a backlog drains gradually instead of all at once.
+                    if (resetStaggerMs > 0L) delay(resetStaggerMs)
+                }
+            }
+        } finally {
+            inProgress.remove(chamber.id)
+        }
+    }
+
+    private suspend fun doReset(
+        chamber: Chamber,
+        initiatingPlayer: Player?,
+        reason: ChamberResetEvent.Reason
     ): Boolean = withContext(Dispatchers.IO) {
         plugin.logger.info("Resetting chamber: ${chamber.name}")
 
@@ -151,7 +263,9 @@ class ResetManager(private val plugin: TrialChamberPro) {
         var blocksRestored = 0
 
         try {
-            // Cancel any scheduled resets/warnings
+            // Cancel any OTHER pending reset/warnings for this chamber. A scheduled
+            // job removes itself from the map before calling us (see scheduleResetIfNeeded),
+            // so this can never cancel the coroutine we're currently running in.
             scheduledResets.remove(chamber.id)?.cancel()
             warningJobs.remove(chamber.id)?.forEach { it.cancel() }
 
@@ -240,8 +354,12 @@ class ResetManager(private val plugin: TrialChamberPro) {
             )
             true
 
+        } catch (e: CancellationException) {
+            // Don't swallow coroutine cancellation (e.g. plugin disable) as a "failure".
+            plugin.logger.warning("Chamber reset for ${chamber.name} was cancelled before completing (likely shutdown or a pre-empting reset).")
+            throw e
         } catch (e: Exception) {
-            plugin.logger.severe("Failed to reset chamber ${chamber.name}: ${e.message}")
+            plugin.logger.severe("Failed to reset chamber ${chamber.name}: ${e.javaClass.simpleName}: ${e.message}")
             e.printStackTrace()
             false
         }
@@ -307,45 +425,51 @@ class ResetManager(private val plugin: TrialChamberPro) {
     }
 
     /**
-     * Gets a safe location outside the chamber bounds.
-     * Scans for a solid block and places player 2 blocks above it.
+     * Finds a safe standing location just OUTSIDE the chamber's horizontal bounds.
+     *
+     * The old version scanned the chamber's CENTRE column (inside the structure)
+     * and returned `y+2` above the first solid block without checking the
+     * destination was actually open — so players were teleported into the
+     * ceiling/walls and suffocated. This scans columns a couple of blocks beyond
+     * each edge and requires solid ground with two passable, non-liquid cells
+     * above it before accepting a spot.
      */
     private fun getOutsideLocation(chamber: Chamber, currentLocation: Location): Location {
         val world = chamber.getWorld() ?: return currentLocation
+        val midX = (chamber.minX + chamber.maxX) / 2
+        val midZ = (chamber.minZ + chamber.maxZ) / 2
+        val startY = (chamber.maxY + 6).coerceAtMost(world.maxHeight - 2)
 
-        val centerX = (chamber.minX + chamber.maxX) / 2.0
-        val centerZ = (chamber.minZ + chamber.maxZ) / 2.0
-
-        // Start scanning from 5 blocks above chamber max
-        val startY = chamber.maxY + 5
-
-        // Scan downward from start position to find safe ground
-        for (y in startY downTo world.minHeight) {
-            val checkLoc = Location(world, centerX, y.toDouble(), centerZ)
-            val block = checkLoc.block
-            val blockType = block.type
-
-            // Skip unsafe blocks
-            val isUnsafe = blockType == Material.AIR ||
-                    blockType == Material.WATER ||
-                    blockType == Material.LAVA ||
-                    blockType == Material.POINTED_DRIPSTONE ||
-                    blockType == Material.MAGMA_BLOCK ||
-                    blockType == Material.SAND ||
-                    blockType == Material.GRAVEL ||
-                    blockType == Material.CAVE_AIR ||
-                    blockType == Material.VOID_AIR
-
-            // Check if this is a safe block to stand on
-            if (!isUnsafe && blockType.isSolid) {
-                // Found safe ground! Return position 2 blocks above it
-                return Location(world, centerX, y + 2.0, centerZ)
-            }
+        val columns = listOf(
+            chamber.maxX + 2 to midZ,
+            chamber.minX - 2 to midZ,
+            midX to chamber.maxZ + 2,
+            midX to chamber.minZ - 2,
+        )
+        for ((x, z) in columns) {
+            val feetY = findSafeStandY(world, x, z, startY)
+            if (feetY != null) return Location(world, x + 0.5, feetY.toDouble(), z + 0.5)
         }
 
-        // Fallback: if no safe block found, use world spawn
         plugin.logger.warning("No safe ground found outside chamber ${chamber.name}, using world spawn")
         return world.spawnLocation
+    }
+
+    /** Scan column (x,z) downward for solid ground with two passable cells above; returns the feet Y, or null. */
+    private fun findSafeStandY(world: org.bukkit.World, x: Int, z: Int, startY: Int): Int? {
+        var y = startY
+        while (y > world.minHeight + 1) {
+            val below = world.getBlockAt(x, y - 1, z)
+            val feet = world.getBlockAt(x, y, z)
+            val head = world.getBlockAt(x, y + 1, z)
+            if (below.type.isSolid && below.type !in HAZARD_BLOCKS &&
+                feet.isPassable && !feet.isLiquid && head.isPassable && !head.isLiquid
+            ) {
+                return y
+            }
+            y--
+        }
+        return null
     }
 
     /**
@@ -550,6 +674,39 @@ class ResetManager(private val plugin: TrialChamberPro) {
         initiatingPlayer: Player? = null
     ) {
         val blockRestorer = BlockRestorer(plugin)
+
+        // Snapshots skip air on capture, so restoreBlocks alone can't revert
+        // blocks a player ADDED into formerly-empty cells (lava, cobble, etc.).
+        // Clear those first; disable via reset.clear-added-blocks if a server
+        // intentionally lets players build inside chambers.
+        if (plugin.config.getBoolean("reset.clear-added-blocks", true)) {
+            val world = chamber.getWorld()
+            if (world != null) {
+                blockRestorer.clearAddedBlocks(
+                    world,
+                    chamber.minX, chamber.minY, chamber.minZ,
+                    chamber.maxX, chamber.maxY, chamber.maxZ,
+                    snapshot,
+                )
+            }
+        }
+
+        // Fast path: FastAsyncWorldEdit for scheduled (no-player) resets, to smooth out
+        // the lag of large restores. Paper-only; manual resets keep the BlockRestorer
+        // path so //undo still works. Falls back to BlockRestorer on any failure.
+        if (initiatingPlayer == null &&
+            plugin.config.getBoolean("global.use-fawe", false) &&
+            io.github.darkstarworks.trialChamberPro.utils.FaweResetPlacer.isAvailable(plugin)
+        ) {
+            try {
+                io.github.darkstarworks.trialChamberPro.utils.FaweResetPlacer(plugin).place(snapshot)
+                plugin.logger.info("Restored ${snapshot.size} blocks for chamber ${chamber.name} (FAWE)")
+                return
+            } catch (e: Exception) {
+                plugin.logger.warning("FAWE reset failed for ${chamber.name}, falling back to batched restore: ${e.message}")
+            }
+        }
+
         blockRestorer.restoreBlocks(
             snapshot,
             onProgress = { processed, total ->

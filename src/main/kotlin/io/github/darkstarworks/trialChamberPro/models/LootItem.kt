@@ -55,6 +55,12 @@ data class LootItem(
     // Custom model data for vanilla items
     val customModelData: Int? = null,
 
+    // Faithful full-item storage: base64 of ItemStack.serializeAsBytes(). When set,
+    // the item is rebuilt from this verbatim (preserving enchantments, potion data,
+    // custom names/lore, custom-model-data and any NBT incl. third-party enchant
+    // tags) and the structured fields above are ignored except the amount range.
+    val serializedItem: String? = null,
+
     val enabled: Boolean = true
 )
 

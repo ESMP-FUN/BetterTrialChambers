@@ -1,0 +1,39 @@
+# =============================================================================
+#  TrialChamberPro — procedural dungeon generation
+# =============================================================================
+#  Build rooms in WorldEdit with COMPLETE walls. At each spot a door could be,
+#  place a minecraft:jigsaw block flush in the wall with its FRONT facing
+#  outward (orientations north_up / east_up / south_up / west_up). Don't pre-cut
+#  the opening — the generator carves a standard doorway where two rooms join,
+#  and leaves unused connectors as walls.
+#
+#  Capture a room:   stand at one corner → /tcp dungeon pos1
+#                    stand at the opposite corner → /tcp dungeon pos2
+#                    /tcp dungeon capture <id> [roles…]   (e.g. entrance, vault)
+#  Generate:         /tcp dungeon generate <name> [seed]
+#  YAML needs SPACES, never TABs.
+# =============================================================================
+
+# Maximum rooms in a generated dungeon (including the start room).
+max-rooms: 20
+
+# Room tags eligible to be the start/entrance room.
+start-tags:
+  - entrance
+
+# Tags a finished layout MUST contain, with minimum counts. The stitcher
+# retries with bumped seeds until these are met (or it gives up).
+required-tags:
+  entrance: 1
+  vault: 1
+
+# The opening carved at each joined doorway. Place your jigsaw markers at the
+# BOTTOM-CENTRE of the intended doorway; the carve goes up by `height` and
+# spans `width` along the wall. Keep these consistent across all your rooms.
+door:
+  width: 3
+  height: 3
+
+# Block used to fill a jigsaw cell when the surrounding wall can't be sampled
+# (so unconnected doors still look like wall). Match your rooms' wall material.
+wall-fallback-material: TUFF_BRICKS

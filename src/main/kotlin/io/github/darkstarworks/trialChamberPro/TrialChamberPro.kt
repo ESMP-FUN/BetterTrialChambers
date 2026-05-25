@@ -40,6 +40,12 @@ class TrialChamberPro : JavaPlugin() {
     lateinit var chamberManager: ChamberManager
         private set
 
+    // Procedural dungeon generation
+    lateinit var roomTemplateManager: io.github.darkstarworks.trialChamberPro.dungeon.RoomTemplateManager
+        private set
+    lateinit var dungeonGenerator: io.github.darkstarworks.trialChamberPro.dungeon.DungeonGenerator
+        private set
+
     // Vault manager
     lateinit var vaultManager: VaultManager
         private set
@@ -208,6 +214,8 @@ class TrialChamberPro : JavaPlugin() {
                 // Initialize managers
                 snapshotManager = SnapshotManager(this@TrialChamberPro)
                 chamberManager = ChamberManager(this@TrialChamberPro)
+                roomTemplateManager = io.github.darkstarworks.trialChamberPro.dungeon.RoomTemplateManager(this@TrialChamberPro)
+                dungeonGenerator = io.github.darkstarworks.trialChamberPro.dungeon.DungeonGenerator(this@TrialChamberPro, roomTemplateManager)
                 vaultManager = VaultManager(this@TrialChamberPro)
                 lootManager = LootManager(this@TrialChamberPro)
                 resetManager = ResetManager(this@TrialChamberPro)
@@ -340,6 +348,11 @@ class TrialChamberPro : JavaPlugin() {
                         io.github.darkstarworks.trialChamberPro.listeners.MenuSessionCleanupListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
+                    // Bulk loot-deposit chest: capture dragged-in items into the draft on close.
+                    server.pluginManager.registerEvents(
+                        io.github.darkstarworks.trialChamberPro.listeners.LootDepositListener(this@TrialChamberPro),
+                        this@TrialChamberPro
+                    )
                     // v1.4.0: copy `tcp:preset_id` PDC tag from preset items
                     // onto placed TrialSpawner TileStates so the wild-spawner
                     // resolver seam can identify the source preset.
@@ -353,6 +366,11 @@ class TrialChamberPro : JavaPlugin() {
                         io.github.darkstarworks.trialChamberPro.listeners.OrphanSpawnerMineListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
+
+                    // Mute the vanilla "Trial Spawner ... has no detected players"
+                    // console spam from any chambers still broken from before the
+                    // reset fixes (they clear on their next reset).
+                    io.github.darkstarworks.trialChamberPro.utils.TrialSpawnerLogFilter.install(this@TrialChamberPro)
 
                     logger.info("✓ Phase 1 Foundation: Initialized successfully")
                     logger.info("  - Database: Connected")
@@ -460,6 +478,9 @@ class TrialChamberPro : JavaPlugin() {
 
     override fun onDisable() {
         logger.info("Shutting down TrialChamberPro...")
+
+        // Remove our console log filter so a reload doesn't stack duplicates.
+        io.github.darkstarworks.trialChamberPro.utils.TrialSpawnerLogFilter.uninstall()
 
         // v1.3.3: unload modules FIRST so they can still touch TCP
         // managers / database during their onUnload before everything

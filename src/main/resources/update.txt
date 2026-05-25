@@ -1,8 +1,24 @@
 <black>.
+<aqua>[1.5.0] <gray>- <white>(COMING SOON)
+<lime>+ <white>FIX: <green>Vaults in older chambers no longer hand out vanilla trial loot (crossbows, poison arrows, etc.) instead of your configured loot tables. On servers with 100+ chambers the cache was evicting older ones, which made their vaults fall back to vanilla and ignore loot-table edits.
+<lime>+ <white>FIX: <green>Automatic resets that failed with "StandaloneCoroutine was cancelled" and flooded the console with <yellow>Trial Spawner ... has no detected players<green>. Resets now complete cleanly, so spawners reset properly and the spam stops.
+<lime>+ <white>FIX: <green>When many chambers were due at once they all reset together and tanked TPS. Resets are now throttled and spaced out (<yellow>global.max-concurrent-resets<green>, <yellow>global.reset-stagger-seconds<green>).
+<lime>+ <white>FIX: <green>Players are no longer teleported into walls (and suffocated) when a chamber resets while they're inside — the exit scan now finds a verified-safe spot outside the chamber.
+<lime>+ <white>FIX: <green>Loot items added through the editor keep their enchantments, potion effects, custom names and NBT (no more "enchanted book with no enchantment" or water bottles).
+<lime>+ <white>NEW: <green>Loot editor <yellow>Bulk add<green> — open a chest and drag/shift-click any number of items in to add them all at once; remove an entry with <yellow>Q<green>/drop.
+<lime>+ <white>NEW: <green>Procedural dungeon generation — build modular rooms with jigsaw-block doorways, then <yellow>/tcp dungeon generate<green> stitches them (with rotation) into a chamber. See docs.
+<lime>+ <white>NEW: <green><yellow>/tcp list<green> is now paginated (no more 100-line chat spam), and <yellow>/tcp list current<green> tells you which chamber you're standing in (or the nearest).
+<lime>+ <white>NEW: <green>Optional <yellow>global.use-fawe<green> to place blocks via FastAsyncWorldEdit during automatic resets (Paper-only) to reduce lag on large chambers.
+<lime>+ <white>NEW: <green>Optional <yellow>global.reset-require-confirmation<green> — due chambers wait for an operator to confirm via <yellow>/tcp reset pending<green> / <yellow>/tcp reset confirm<green>, then run staggered.
+<lime>+ <white>NEW: <green>Public <yellow>ChamberClearedEvent<green> for plugin developers. Fires once when every trial spawner inside a registered chamber has completed a wave in the same reset cycle — i.e. the chamber was cleared in one continuous run. Carries the chamber, the cumulative set of participating players, and the run duration. Designed to power progression plugins (per-player chamber tiers, run-based achievements, leaderboards).
+<aqua>[1.4.7] <gray>- <white>2026-05-19
+<lime>+ <white>NEW: <green>Per-chamber reset broadcast toggle. Each chamber now has a <yellow>Reset Broadcast<green> toggle in Chamber Settings. Disable it to suppress the server-wide "chamber X has reset" message for that chamber only. A new <yellow>global.reset-complete-alert<green> config option (default <yellow>true<green>) acts as a master switch — set it to <yellow>false<green> to silence all chambers at once. The GUI toggle shows a "Disabled by global config" indicator when the master switch overrides it.
 <aqua>[1.4.6] <gray>- <white>2026-05-14
 <lime>+ <white>FIX: <green>Folia/Luminol: chamber reset no longer crashes when teleporting players out (<yellow>Must use teleportAsync<green> error).
 <lime>+ <white>FIX: <green>Folia/Luminol: GUI teleport buttons (<yellow>Teleport to Exit<green>, <yellow>Teleport to Center<green>) no longer crash.
 <lime>+ <white>FIX: <green>Folia/Luminol: spectator mode enter/exit teleports no longer crash. Paper users: no change in behavior.
+<aqua>[1.4.5] <gray>- <white>2026-05-13
+<lime>+ <white>FIX: <green>TCP-preset spawners placed outside chambers can now be recovered with Silk Touch. Previously a spawner issued via <yellow>/tcp give<green> and placed anywhere on the map was permanently stuck with no way to retrieve it. Now: Silk Touch recovers the full preset item (PDC tag intact); without Silk Touch the break is cancelled and the player gets a hint. If the preset has since been removed from <yellow>spawner_presets.yml<green>, a plain trial spawner item drops as a fallback.
 <aqua>[1.4.4] <gray>- <white>2026-05-12
 <lime>+ <white>NEW: <green>Bundled vanilla-accurate loot tables — <yellow>vanilla-normal<green> and <yellow>vanilla-ominous<green> shipped as a commented section inside <yellow>loot.yml<green>. Faithful three-pool recreations transcribed from Mojang's own datapack JSONs. Uncomment to activate.
 <lime>+ <white>DOCS: <green><yellow>loot.yml<green> reference now opens with a "Want vanilla loot? It's already in the file." section explaining how to drop the bundled tables in.
@@ -57,3 +73,4 @@
 <aqua>[1.2.27] <gray>- <white>2026-04-20
 <lime>+ <white>NEW: <green>Opt-in glow outline on active trial spawners, visible through walls.
 <gray>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+<black>.
