@@ -229,6 +229,24 @@ class TrialChamberPro : JavaPlugin() {
                 spectatorManager = SpectatorManager(this@TrialChamberPro)
                 chamberDiscoveryManager = ChamberDiscoveryManager(this@TrialChamberPro)
 
+                // Expose the managers a network/extension module needs to resolve
+                // (alongside DatabaseManager registered above). The planned premium
+                // "Network Sync" module loads these via ServicesManager to read
+                // leaderboards and drive cross-server cache invalidation
+                // (StatisticsManager.invalidatePlayer / ChamberManager.reloadFromStore).
+                server.servicesManager.register(
+                    ChamberManager::class.java, chamberManager,
+                    this@TrialChamberPro, org.bukkit.plugin.ServicePriority.Normal
+                )
+                server.servicesManager.register(
+                    StatisticsManager::class.java, statisticsManager,
+                    this@TrialChamberPro, org.bukkit.plugin.ServicePriority.Normal
+                )
+                server.servicesManager.register(
+                    VaultManager::class.java, vaultManager,
+                    this@TrialChamberPro, org.bukkit.plugin.ServicePriority.Normal
+                )
+
                 // v1.3.0: Trial mob provider registry. Vanilla is registered by the registry's
                 // init block; soft-depended providers are registered below once we know their
                 // backing plugins are enabled (which is guaranteed by the time this runs because
