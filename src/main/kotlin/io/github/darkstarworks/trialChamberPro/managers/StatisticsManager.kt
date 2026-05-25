@@ -1,6 +1,7 @@
 package io.github.darkstarworks.trialChamberPro.managers
 
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
+import io.github.darkstarworks.trialChamberPro.api.events.StatisticsUpdatedEvent
 import io.github.darkstarworks.trialChamberPro.models.VaultType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -80,6 +81,7 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
         stats.lastUpdated = System.currentTimeMillis()
         saveStats(stats)
         invalidateCache(playerUuid)
+        fireStatsUpdated(playerUuid, StatisticsUpdatedEvent.Reason.CHAMBER_COMPLETE)
     }
 
     /**
@@ -94,6 +96,7 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
         stats.lastUpdated = System.currentTimeMillis()
         saveStats(stats)
         invalidateCache(playerUuid)
+        fireStatsUpdated(playerUuid, StatisticsUpdatedEvent.Reason.VAULT)
     }
 
     /**
@@ -105,6 +108,7 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
         stats.lastUpdated = System.currentTimeMillis()
         saveStats(stats)
         invalidateCache(playerUuid)
+        fireStatsUpdated(playerUuid, StatisticsUpdatedEvent.Reason.MOB_KILL)
     }
 
     /**
@@ -116,6 +120,7 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
         stats.lastUpdated = System.currentTimeMillis()
         saveStats(stats)
         invalidateCache(playerUuid)
+        fireStatsUpdated(playerUuid, StatisticsUpdatedEvent.Reason.DEATH)
     }
 
     /**
@@ -127,6 +132,7 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
         stats.lastUpdated = System.currentTimeMillis()
         saveStats(stats)
         invalidateCache(playerUuid)
+        fireStatsUpdated(playerUuid, StatisticsUpdatedEvent.Reason.TIME)
     }
 
     /**
@@ -174,7 +180,10 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
                 conn.commit()
 
                 // Invalidate cache for all updated players
-                updates.keys.forEach { invalidateCache(it) }
+                updates.keys.forEach {
+                    invalidateCache(it)
+                    fireStatsUpdated(it, StatisticsUpdatedEvent.Reason.TIME)
+                }
             } catch (e: Exception) {
                 conn.rollback()
                 throw e
@@ -322,6 +331,27 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
         statsCache.remove(playerUuid)
         cacheExpiry.remove(playerUuid)
         loadingLocks.remove(playerUuid)
+    }
+
+    /**
+     * Drops the cached stats for a player so the next read pulls fresh from the
+     * shared database. Public cross-server cache-invalidation hook: the premium
+     * Network Sync module calls this when a peer server reports it changed this
+     * player's stats. Safe to call from any thread.
+     */
+    fun invalidatePlayer(playerUuid: UUID) = invalidateCache(playerUuid)
+
+    /**
+     * Fires [StatisticsUpdatedEvent] off the primary thread. No-op for
+     * single-server installs (no listeners). The premium Network Sync module
+     * listens here to broadcast cross-server invalidations.
+     */
+    private fun fireStatsUpdated(playerUuid: UUID, reason: StatisticsUpdatedEvent.Reason) {
+        try {
+            plugin.server.pluginManager.callEvent(StatisticsUpdatedEvent(playerUuid, reason))
+        } catch (e: Exception) {
+            plugin.logger.warning("Failed to fire StatisticsUpdatedEvent: ${e.message}")
+        }
     }
 
     /**
