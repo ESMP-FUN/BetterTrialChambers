@@ -13,6 +13,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - **Operator-confirmation reset queue** (`global.reset-require-confirmation`, default off). Due chambers are parked and online admins notified; `/tcp reset pending` lists them and `/tcp reset confirm <chamber|all>` fires them through the stagger.
 - **Reset throttle** (`global.max-concurrent-resets`, `global.reset-stagger-seconds`) so a wave of due chambers can't all restore at once and crater TPS.
 - **`global.suppress-trial-spawner-spam`** (default true) mutes the vanilla `Trial Spawner ... has no detected players` console line.
+- **Network-sync foundation (developer API).** Groundwork for a future cross-server module: `ChamberManager`, `StatisticsManager` and `VaultManager` are now registered with Bukkit's `ServicesManager` (alongside `DatabaseManager`), and two cross-server cache-invalidation hooks were added — `StatisticsManager.invalidatePlayer(uuid)` and `ChamberManager.reloadFromStore(name)` / `invalidateChamber(name)`. A new `api/events/StatisticsUpdatedEvent` fires after every stat persist (with a `Reason`) as the outbound signal a network module broadcasts from. All additive — no behaviour change for single-server installs.
 
 ### Fixed
 - **Vaults dispensing vanilla loot instead of the configured table.** The chamber cache was an LRU capped at 100; on servers with ≥100 chambers, vault interactions in evicted ("old") chambers resolved to no chamber and silently fell through to vanilla trial loot — and ignored updated loot tables. The cache now keeps all registered chambers (no size eviction, `ConcurrentHashMap`), which also repairs spawner-wave tracking and tier scaling that relied on the same lookup.
@@ -21,7 +22,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - **Players teleported into walls (suffocating) on reset.** The "safe location" scan ran down the chamber's own centre column and didn't verify the destination was open; it now scans columns outside the chamber and requires solid ground with two passable, non-hazard cells above.
 - **Loot items losing their enchantments/potions** when added through the editor (see Added → faithful loot items).
 
-## [1.5.0] - 2026-05-21
+## [1.5.0] - PRE-RELEASE 2026-05-26
 ### Added
 - **`/tcp snapshot update [chamber]`** — re-captures a registered chamber's snapshot, overwriting the old one, so edits made *after* the chamber was first registered/snapshotted become the new reset baseline. With no name it targets the chamber you're standing in (resolved via `getCachedChamberAt`); with a name it behaves like `create`. Shares the capture path with `create`; added to tab-completion + help.
 - **`ChamberClearedEvent` — public Bukkit event for "chamber cleared in one run."** Fires exactly once when every trial spawner inside a registered chamber has completed a wave within the same reset cycle. Carries the cleared `Chamber`, the cumulative `Set<UUID>` of participants across every wave in the cycle, and the wall-clock `durationMs` from first-wave-start to last-wave-complete. Not cancellable. Tracking is per-chamber, reset on every `ChamberResetEvent`, so a chamber that's cleared, reset, and cleared again fires the event twice. Wild spawners (those outside any registered chamber) do not contribute — the event is chamber-scoped only. Third-party plugins consume via standard Bukkit listener registration on the `io.github.darkstarworks.trialChamberPro.api.events.ChamberClearedEvent` class.
@@ -1278,6 +1279,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.5.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.7...v1.5.0
 [1.4.7]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.6...v1.4.7
 [1.4.6]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.5...v1.4.6
 [1.4.5]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.4...v1.4.5

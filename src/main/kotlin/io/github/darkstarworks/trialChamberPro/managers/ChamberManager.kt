@@ -668,6 +668,37 @@ class ChamberManager(private val plugin: TrialChamberPro) {
     }
 
     /**
+     * Re-reads a single chamber from the database into the cache, replacing any
+     * stale cached copy. Public cross-server cache-invalidation hook: the premium
+     * Network Sync module calls this when a peer server reports it edited this
+     * chamber (e.g. paused it, changed its reset interval) so this instance picks
+     * up the change without waiting for the cache TTL. Returns the refreshed
+     * chamber, or null if it no longer exists in the store (in which case it is
+     * also dropped from the cache).
+     */
+    suspend fun reloadFromStore(name: String): Chamber? {
+        val fresh = loadChamberFromDb(name)
+        if (fresh != null) {
+            chamberCache[name] = fresh
+            updateCacheExpiry(name)
+        } else {
+            chamberCache.remove(name)
+            cacheExpiry.remove(name)
+        }
+        return fresh
+    }
+
+    /**
+     * Drops a single chamber from the cache without touching the database, so the
+     * next lookup re-reads it. Lighter-weight companion to [reloadFromStore] for
+     * cross-server invalidation when an immediate re-read isn't needed.
+     */
+    fun invalidateChamber(name: String) {
+        chamberCache.remove(name)
+        cacheExpiry.remove(name)
+    }
+
+    /**
      * Gets the list of cached chamber names without database access.
      */
     fun getCachedChamberNames(): List<String> = chamberCache.keys.toList()
