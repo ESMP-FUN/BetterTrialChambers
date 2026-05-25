@@ -20,9 +20,12 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | `/tcp generate <value|coords|wand|blocks>` | Register chamber from saved var, coords, WE wand, or by block amount | `tcp.admin.generate` |
 | `/tcp scan <chamber>` | Scan for vaults/spawners | `tcp.admin.scan` |
 | `/tcp setexit <chamber>` | Set exit location | `tcp.admin.generate` |
-| `/tcp snapshot <action> <chamber>` | Manage snapshots | `tcp.admin.snapshot` |
+| `/tcp snapshot <create\|update\|restore> [chamber]` | Manage snapshots (`update` with no name uses the chamber you're standing in) | `tcp.admin.snapshot` |
 | `/tcp reset <chamber>` | Force chamber reset | `tcp.admin.reset` |
-| `/tcp list` | List all chambers | `tcp.admin` |
+| `/tcp reset pending` | List chambers awaiting reset confirmation | `tcp.admin.reset` |
+| `/tcp reset confirm <chamber\|all>` | Confirm queued reset(s) (when confirmation mode is on) | `tcp.admin.reset` |
+| `/tcp list [page\|current]` | List chambers (paginated); `current` finds the chamber you're in / nearest | `tcp.admin` |
+| `/tcp dungeon <pos1\|pos2\|capture\|generate\|list\|delete>` | Procedural dungeon generation from room templates | `tcp.admin.generate` |
 | `/tcp info [chamber]` | Show plugin info, or chamber details if specified | `tcp.admin` |
 | `/tcp delete <chamber>` | Delete a chamber | `tcp.admin.generate` |
 | `/tcp loot set <chamber> <normal\|ominous> <table>` | Override a chamber's loot table | `tcp.admin.loot` |
@@ -277,6 +280,23 @@ Immediately resets the chamber from its snapshot (same as `/tcp reset`).
 Useful for testing or forcing manual resets.
 
 ---
+
+### `/tcp dungeon <pos1|pos2|capture|generate|list|delete>`
+
+Assembles chambers on demand from modular room pieces you build yourself. Configure in [dungeon.yml](../configuration/dungeon.yml.md).
+
+**Authoring a room:** build it in WorldEdit with **complete, solid walls**. At each spot a doorway could be, place a `minecraft:jigsaw` block flush in the wall with its **front facing outward** (orientations `north_up` / `east_up` / `south_up` / `west_up`). Don't pre-cut the opening — the generator carves a standard doorway only where two rooms actually join, and leaves unused connectors as walls. Standardise your door size across rooms.
+
+```
+/tcp dungeon pos1                     # stand at one corner
+/tcp dungeon pos2                     # stand at the opposite corner
+/tcp dungeon capture <id> [roles…]    # save the selection (roles → tags, e.g. entrance / vault / boss)
+/tcp dungeon generate <name> [seed]   # stitch a dungeon at your feet, registered as a chamber
+/tcp dungeon list                     # list saved room templates
+/tcp dungeon delete <id>              # delete a room template
+```
+
+Rooms are matched on opposite-facing connectors across all four rotations, placed without overlap, and the result is snapshotted + registered like any other chamber (so resets, loot and protection all apply). `required-tags` in `dungeon.yml` guarantee e.g. one entrance and at least one vault.
 
 ### `/tcp reset <chamber>`
 
