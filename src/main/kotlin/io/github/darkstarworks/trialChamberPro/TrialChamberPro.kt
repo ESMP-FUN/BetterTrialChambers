@@ -40,6 +40,12 @@ class TrialChamberPro : JavaPlugin() {
     lateinit var chamberManager: ChamberManager
         private set
 
+    // Procedural dungeon generation
+    lateinit var roomTemplateManager: io.github.darkstarworks.trialChamberPro.dungeon.RoomTemplateManager
+        private set
+    lateinit var dungeonGenerator: io.github.darkstarworks.trialChamberPro.dungeon.DungeonGenerator
+        private set
+
     // Vault manager
     lateinit var vaultManager: VaultManager
         private set
@@ -208,6 +214,8 @@ class TrialChamberPro : JavaPlugin() {
                 // Initialize managers
                 snapshotManager = SnapshotManager(this@TrialChamberPro)
                 chamberManager = ChamberManager(this@TrialChamberPro)
+                roomTemplateManager = io.github.darkstarworks.trialChamberPro.dungeon.RoomTemplateManager(this@TrialChamberPro)
+                dungeonGenerator = io.github.darkstarworks.trialChamberPro.dungeon.DungeonGenerator(this@TrialChamberPro, roomTemplateManager)
                 vaultManager = VaultManager(this@TrialChamberPro)
                 lootManager = LootManager(this@TrialChamberPro)
                 resetManager = ResetManager(this@TrialChamberPro)

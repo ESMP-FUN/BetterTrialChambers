@@ -12,7 +12,11 @@ data class Connector(
     val y: Int,
     val z: Int,
     val facing: BlockFace,
-)
+) : java.io.Serializable {
+    companion object {
+        private const val serialVersionUID = 1L
+    }
+}
 
 /**
  * The geometry the stitcher needs about a room — no block data. [tags] carry
