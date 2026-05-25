@@ -1,4 +1,4 @@
-# ⚙️ config.yml Reference
+# config.yml Reference
 
 Your `config.yml` is the control panel for TrialChamberPro. It's where you decide how chambers behave, when they reset, and how much protection you want. Let's break it down section by section.
 
@@ -12,7 +12,7 @@ After making changes, reload with `/tcp reload`
 
 ---
 
-## 💾 Database Settings
+## Database Settings
 
 ```yaml
 database:
@@ -50,7 +50,7 @@ SQLite is perfect for single servers—no setup required, everything in one file
 
 ---
 
-## 🌍 Global Chamber Settings
+## Global Chamber Settings
 
 ```yaml
 global:
@@ -178,7 +178,27 @@ Control cooldown for trial spawners **outside** of registered chambers (wild/unr
 
 ---
 
-## 🔒 Vault Settings
+### Reset throttle, confirmation & FAWE
+
+These `global:` keys control how automatic resets are scheduled and placed — important on servers with many (e.g. auto-discovered) chambers that come due at the same time.
+
+```yaml
+global:
+  max-concurrent-resets: 1        # how many chambers may reset simultaneously
+  reset-stagger-seconds: 5        # minimum gap between one reset finishing and the next starting
+  reset-require-confirmation: false  # park due chambers; an operator confirms them
+  use-fawe: false                 # place blocks via FastAsyncWorldEdit on scheduled resets
+  suppress-trial-spawner-spam: true  # mute vanilla "Trial Spawner ... has no detected players"
+```
+
+- **`max-concurrent-resets`** / **`reset-stagger-seconds`** — stop a wave of due chambers from all restoring at once and cratering TPS. Confirmed/queued resets respect these too.
+- **`reset-require-confirmation`** — when `true`, a chamber that becomes due is **not** reset automatically; it's queued and online admins are notified. List with `/tcp reset pending`, fire with `/tcp reset confirm <chamber|all>` (they then run staggered).
+- **`use-fawe`** — when `true` and FastAsyncWorldEdit is installed, **scheduled** resets place blocks through one FAWE EditSession to smooth out lag on large chambers. **Paper-only** (ignored on Folia); manual `/tcp reset` keeps the batched path so WorldEdit `//undo` still works; falls back automatically if FAWE is missing.
+- **`suppress-trial-spawner-spam`** — mutes the vanilla console line `Trial Spawner at BlockPos{...} has no detected players`. New occurrences are prevented by the reset fixes; this hides the line for chambers still broken until their next reset.
+
+---
+
+## Vault Settings
 
 ```yaml
 vaults:
@@ -275,7 +295,7 @@ How many seconds the owner-only restriction applies after a drop. After this win
 
 ---
 
-## 🛡️ Protection Settings
+## Protection Settings
 
 ```yaml
 protection:
@@ -342,7 +362,7 @@ The counter resets to zero on every pause/resume cycle and on chamber reset, so 
 
 ---
 
-## 🔑 Trial Key Settings
+## Trial Key Settings
 
 ```yaml
 trial-keys:
@@ -374,7 +394,7 @@ Enforce that normal keys only open normal vaults, ominous keys only open ominous
 
 ---
 
-## 🔄 Reset Settings
+## Reset Settings
 
 ```yaml
 reset:
@@ -391,6 +411,11 @@ reset:
 **Default:** `true`
 
 Delete dropped items on reset? Prevents loot/trash buildup. Usually `true` for cleanliness.
+
+### `clear-added-blocks`
+**Default:** `true`
+
+Snapshots skip air to save space, so on their own they can't undo blocks a player **added** into empty cells (lava, cobble, etc.). When `true`, reset also clears any block inside the chamber that isn't part of the snapshot back to air, so player additions never persist. Set `false` only if you intentionally let players build inside chambers.
 
 ### `remove-spawner-mobs`
 **Default:** `true`
@@ -439,7 +464,7 @@ Set to `false` if you want personal cooldowns independent of chamber state (play
 
 ---
 
-## ⚡ Performance Settings
+## Performance Settings
 
 ```yaml
 performance:
@@ -477,7 +502,7 @@ Enable Folia compatibility. If you're on Folia, this MUST be `true`. On Paper/Pu
 
 ---
 
-## 📊 Statistics Settings
+## Statistics Settings
 
 ```yaml
 statistics:
@@ -509,7 +534,7 @@ How many players to show on leaderboards. Increase to 25 or 50 if you want bigge
 
 ---
 
-## 🎁 Loot Settings
+## Loot Settings
 
 ```yaml
 loot:
@@ -561,7 +586,7 @@ If a loot table has `min-rolls: 3` and `max-rolls: 5`:
 
 ---
 
-## 🎯 Spawner Wave System
+## Spawner Wave System
 
 ```yaml
 spawner-waves:
@@ -611,7 +636,7 @@ Send a chat message when a wave is complete showing kill count and duration.
 
 ---
 
-## 👀 Spectator Mode
+## Spectator Mode
 
 ```yaml
 spectator-mode:
@@ -659,7 +684,7 @@ Allow spectating empty chambers (when no other players are inside). Usually `fal
 
 ---
 
-## 🔎 Auto-Discovery of Natural Trial Chambers
+## Auto-Discovery of Natural Trial Chambers
 
 *Added in 1.2.25 — opt-in.*
 
@@ -729,7 +754,7 @@ That's it. Walk/fly around the world and chambers will register themselves as yo
 
 ---
 
-## 🐛 Debug Mode
+## Debug Mode
 
 ```yaml
 debug:
@@ -776,7 +801,7 @@ Debug mode generates TONS of console output. Don't leave it on in production!
 
 ---
 
-## 🎯 Quick Configs for Common Setups
+## Quick Configs for Common Setups
 
 ### Casual Survival Server
 ```yaml
@@ -825,7 +850,7 @@ vaults:
 
 ---
 
-## 🔄 Applying Changes
+## Applying Changes
 
 After editing `config.yml`:
 
@@ -843,7 +868,7 @@ Most settings apply immediately. Chamber-specific settings (like `default-reset-
 
 ---
 
-## 💡 Pro Tips
+## Pro Tips
 
 <div data-gb-custom-block data-tag="hint" data-style="success">
 
@@ -863,7 +888,7 @@ Most settings apply immediately. Chamber-specific settings (like `default-reset-
 
 ---
 
-## ❓ Common Questions
+## Common Questions
 
 **"Can different chambers have different reset intervals?"**
 Yes! The `default-reset-interval` is just the default. You can override per-chamber using database edits or (in future versions) per-chamber configs.
@@ -895,7 +920,7 @@ Need help with something specific? Check out the other configuration pages!
 
 ---
 
-## 🧱 Generation Settings
+## Generation Settings
 
 These settings control constraints when registering or generating chamber regions.
 

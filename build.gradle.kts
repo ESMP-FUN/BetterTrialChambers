@@ -13,7 +13,7 @@ plugins {
 }
 
 group = "io.github.darkstarworks"
-version = "1.4.7"
+version = "1.5.0"
 
 repositories {
     mavenCentral()
@@ -34,6 +34,10 @@ repositories {
 dependencies {
     // Paper API
     compileOnly("io.papermc.paper:paper-api:26.1.2.build.+")
+
+    // Log4j core (bundled by the server at runtime) — for the console log filter
+    // that mutes vanilla trial-spawner spam.
+    compileOnly("org.apache.logging.log4j:log4j-core:2.19.0")
 
     // Kotlin
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")

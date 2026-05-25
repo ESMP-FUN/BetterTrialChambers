@@ -72,6 +72,26 @@ Fired when a trial spawner finishes a wave (all spawned mobs killed). Fires for 
 | `participants` | `Set<UUID>` | UUIDs credited as participants. |
 | `durationMs` | `Long` | Wall-clock duration of the wave. |
 
+### `ChamberClearedEvent` (not cancellable)
+
+Fired once per reset cycle when **every** trial spawner inside a registered chamber has completed a wave — i.e. the chamber was "cleared" in one continuous run, before the next auto- or manual reset. Tracking resets on every `ChamberResetEvent`, so a chamber cleared, reset, and cleared again fires twice. Wild spawners (outside any registered chamber) do not contribute, and paused chambers do not fire.
+
+| Field | Type | Notes |
+|---|---|---|
+| `chamber` | `Chamber` | The chamber that was cleared. |
+| `participants` | `Set<UUID>` | Cumulative participants unioned across every wave in the run. |
+| `durationMs` | `Long` | Wall-clock duration from first wave-start to last wave-complete. |
+
+```kotlin
+@EventHandler
+fun onChamberCleared(event: ChamberClearedEvent) {
+    // e.g. award a per-run bonus to everyone who took part
+    event.participants.mapNotNull(Bukkit::getPlayer).forEach { it.giveExp(100) }
+}
+```
+
+This is the signal the premium **Mythic Trials** module uses to bump each participant's per-chamber tier and pay out chamber-clear rewards. Added in **v1.5.0**.
+
 ### `ChamberDiscoveredEvent` (cancellable)
 
 Fired by the auto-discovery system after a candidate chamber passes validation but **before** it is registered. Cancel to abort auto-registration (e.g. world-restricted whitelist, custom registration logic).
@@ -128,4 +148,4 @@ If your project pulls in TrialChamberPro as a soft dependency, gate listener reg
 
 ## Versioning
 
-The event API is part of v1.3.0+. Event class names, field names, and `Reason`/`Method` enum constants are considered stable; new events and new enum constants may be added in minor releases. Removals or renames will be flagged in the changelog and given a deprecation cycle.
+The event API is part of v1.3.0+ (`ChamberClearedEvent` added in v1.5.0). Event class names, field names, and `Reason`/`Method` enum constants are considered stable; new events and new enum constants may be added in minor releases. Removals or renames will be flagged in the changelog and given a deprecation cycle.

@@ -2,13 +2,37 @@
 
 # TrialChamberPro
 
-### What's new in 1.4.4
+### What's new in 1.5.0
 
-- **Vanilla loot is now one copy-paste away.** Two ready-to-use loot tables — `vanilla-normal` and `vanilla-ominous` — ship inside `loot.yml` as a commented section. They're faithful three-pool recreations transcribed directly from Mojang's own datapack JSONs, so if you (or your players) just want unmodified Minecraft 1.21 Trial Chamber drops, you don't have to build them yourself. Uncomment the block, run `/tcp reload`, done.
+- **Fixed: vaults handing out vanilla loot instead of your tables.** On servers with 100+ chambers the chamber cache was evicting older ones, so their vaults quietly fell back to vanilla trial loot and ignored your loot-table edits. The cache now keeps every registered chamber — the fix also repairs spawner-wave tracking and tier scaling on large servers.
+- **Faithful loot + bulk drag-in editor.** Loot items now keep their enchantments, potion effects, custom names and NBT, and a new **Bulk add** button lets you drag/shift-click a whole chest of items in at once.
+- **Procedural dungeon generation.** Build modular rooms with `minecraft:jigsaw`-block doorways, then `/tcp dungeon generate` stitches them together (with rotation) into a brand-new chamber that resets, loots and scales like any other.
+- **Hardened resets.** No more `StandaloneCoroutine was cancelled` errors or `has no detected players` console spam; resets are throttled/staggered so a wave of due chambers can't tank TPS; evicted players are never teleported into a wall; optional operator-confirm queue and FastAsyncWorldEdit placement.
+- **New `ChamberClearedEvent` for plugin developers** — fires once when a registered chamber is cleared in one continuous run, carrying the chamber, the cumulative set of participating players, and the run duration. Built for progression plugins, achievements and leaderboards.
 
-Plus everything from the 1.4.x line: **MiniMessage everywhere**, **smarter auto-discovery** that merges chambers spanning multiple chunks, a **flatter admin GUI**, a **startup schema check** for `messages.yml`, **trial spawner wave tracking fixes**, and the **chamber pause state** added in 1.4.3. And from 1.3.x: **custom mobs** (MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens), **fully translatable GUI** (~330 `gui.*` keys), **Bukkit events API**, **spawner presets**, **`/tcp give`**, and **Minecraft 26.x support** via the `-mc26` build.
+Plus everything from the 1.4.x line: **per-chamber reset broadcast toggle** (1.4.7), **Folia/Luminol teleport crash fixes** (1.4.6), **Silk Touch recovery for preset spawners** (1.4.5), **vanilla-accurate bundled loot tables** (1.4.4), **chamber pause state** (1.4.3), **MiniMessage everywhere**, **smarter auto-discovery**, a **flatter admin GUI**, and **trial spawner wave tracking fixes**. And from 1.3.x: **custom mobs** (MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens), **fully translatable GUI** (~330 `gui.*` keys), **Bukkit events API**, **spawner presets**, **`/tcp give`**, and **Minecraft 26.x support** via the `-mc26` build.
 
 📘 **Full documentation:** https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation — most questions are answered there, and every section below links to its own detailed page.
+
+---
+
+## Premium Add-on Modules
+
+TrialChamberPro is, and always will be, **completely free**. But after a lot of requests from server owners wanting to push things further, we now offer optional premium modules for servers that need more.
+
+### 🔷 TCP-WildSpawners
+Place TCP preset spawners **anywhere on your survival map** — no Trial Chamber required. Hand them out via shops, crates, or staff commands. Wherever a player puts one down, it summons your custom mobs. Includes an in-game GUI editor, per-preset griefing protection, holograms, mob tether, creative pick-block, and state-preserving mining so players can relocate a live spawner without losing cooldown progress.
+
+Requires TrialChamberPro v1.4.0+ (free).
+
+👉 **[esmp.fun/plugins](https://esmp.fun/plugins)** — purchase & download
+
+### 🔶 TCP-VaultCrates
+The **first crate plugin that doesn't use chests.** Vanilla Trial Vaults are the only Minecraft block with built-in per-player loot state, two visual tiers (normal + ominous), a key mechanic, and a dramatic open animation that doesn't need a resource pack. TCP-VaultCrates lets you register vaults anywhere on your map as crates with configurable loot pools and per-tier keys. Hand keys out via shops, missions, or — when paired with TCP-WildSpawners — drop them from spawner mobs.
+
+Requires TrialChamberPro v1.4.0+ (free).
+
+👉 **[esmp.fun](https://esmp.fun/plugins)** — purchase & download
 
 ---
 
