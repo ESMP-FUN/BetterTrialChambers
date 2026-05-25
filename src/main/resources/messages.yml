@@ -374,6 +374,7 @@ gui-setting-disabled: "Disabled"
 # GUI Action Messages - Loot Editor
 gui-hold-item-to-add: "&cHold an item to add!"
 gui-item-added-to-loot: "&aAdded {item} to loot table"
+gui-item-removed-from-loot: "&cRemoved {item} from loot table"
 gui-loot-changes-saved: "&aLoot table changes saved!"
 gui-loot-pool-saved: "&aPool '{pool}' changes saved!"
 

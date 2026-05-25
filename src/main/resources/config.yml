@@ -24,6 +24,28 @@ global:
   async-block-placement: true
   blocks-per-tick: 500
   auto-snapshot-on-register: true
+  # Throttle for chamber resets. When many chambers come due at once (e.g. lots of
+  # auto-discovered chambers sharing one interval), these stop them all restoring
+  # simultaneously and tanking TPS.
+  max-concurrent-resets: 1      # how many chambers may reset at the same time
+  reset-stagger-seconds: 5      # minimum gap between one reset finishing and the next starting
+  # When true, chambers that come due for an automatic reset are NOT reset
+  # immediately — they're parked in a queue and online admins are notified.
+  # An operator confirms them with /tcp reset confirm <chamber> or
+  # /tcp reset confirm all (then they run staggered per the settings above).
+  # /tcp reset pending lists what's waiting.
+  reset-require-confirmation: false
+
+  # Mute the vanilla console line "Trial Spawner at BlockPos{...} has no detected
+  # players". TCP's reset fixes stop new occurrences, but spawners already broken
+  # before updating keep logging it every tick until their chamber next resets.
+  suppress-trial-spawner-spam: true
+
+  # Use FastAsyncWorldEdit to place blocks during SCHEDULED (automatic) resets, which
+  # smooths out the lag of large restores. Requires FastAsyncWorldEdit; ignored on
+  # Folia (FAWE has no Folia support) and for manual /tcp reset (those keep the
+  # batched restore so WorldEdit //undo still works). Falls back automatically.
+  use-fawe: false
 
 # Generation settings
 generation:
