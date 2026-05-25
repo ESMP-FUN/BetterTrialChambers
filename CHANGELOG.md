@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [Unreleased]
+### Added
+- **Procedural dungeon generation** (`/tcp dungeon`, `dungeon.yml`). Build modular rooms in WorldEdit with complete walls and a `minecraft:jigsaw` block flush in each wall where a door could be (front facing outward); capture them with `/tcp dungeon pos1|pos2` + `/tcp dungeon capture <id> [roles…]`, then `/tcp dungeon generate <name> [seed]` stitches a dungeon at your feet and registers it as a normal chamber. The assembler is a pure, deterministic, unit-tested core (`DungeonStitcher`): it matches connectors on opposite facing across all four **rotations**, aligns rooms face-adjacent with AABB overlap rejection, and carves a standard doorway only where two rooms join (unused connectors stay walls — no open holes). Placement reuses the Folia-safe `BlockRestorer`; a no-NMS `BlockDataRotator` rotates directional blockstates (stairs/doors/logs/walls/fences/signs…). The finished layout is snapshotted and registered via `ChamberManager`, so reset, scaling, and themes all apply to it unchanged. Connector facing is read from the jigsaw's orientation (Bukkit-readable, version-stable); room roles (`entrance`/`vault`/`boss`) are capture arguments, with `required-tags` enforced via seed-bump retries.
+
 ## [1.5.0] - 2026-05-21
 ### Added
 - **`/tcp snapshot update [chamber]`** — re-captures a registered chamber's snapshot, overwriting the old one, so edits made *after* the chamber was first registered/snapshotted become the new reset baseline. With no name it targets the chamber you're standing in (resolved via `getCachedChamberAt`); with a name it behaves like `create`. Shares the capture path with `create`; added to tab-completion + help.
