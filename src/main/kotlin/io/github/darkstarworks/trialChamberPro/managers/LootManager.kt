@@ -308,6 +308,7 @@ class LootManager(private val plugin: TrialChamberPro) {
             customItemPlugin = customItemPlugin,
             customItemId = customItemId,
             customModelData = customModelData,
+            serializedItem = data["serialized-item"] as? String,
             enabled = enabled
         )
     }
@@ -477,6 +478,17 @@ class LootManager(private val plugin: TrialChamberPro) {
      */
     private fun createItemStack(lootItem: LootItem, player: Player): ItemStack {
         val amount = Random.nextInt(lootItem.amountMin, lootItem.amountMax + 1)
+
+        // Faithful path: an item captured through the editor is rebuilt verbatim
+        // (Paper applies datafixers on read), preserving enchantments/potions/NBT.
+        lootItem.serializedItem?.let { encoded ->
+            val base = deserializeItem(encoded)
+                ?: run {
+                    plugin.logger.warning("Skipping a loot item with unreadable serialized data.")
+                    return ItemStack(Material.AIR, 0)
+                }
+            return base.clone().also { it.amount = amount.coerceIn(1, it.maxStackSize.coerceAtLeast(1)) }
+        }
 
         // Resolve custom plugin item (Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible)
         if (lootItem.customItemPlugin != null && lootItem.customItemId != null) {
@@ -977,6 +989,18 @@ class LootManager(private val plugin: TrialChamberPro) {
     /**
      * Serializes a LootItem to a map for saving.
      */
+    /** Encode an ItemStack to a base64 string for faithful loot storage. */
+    fun serializeItem(item: ItemStack): String =
+        java.util.Base64.getEncoder().encodeToString(item.serializeAsBytes())
+
+    /** Decode a base64 loot item back to an ItemStack (Paper datafixes on read), or null on failure. */
+    fun deserializeItem(encoded: String): ItemStack? = try {
+        ItemStack.deserializeBytes(java.util.Base64.getDecoder().decode(encoded))
+    } catch (e: Exception) {
+        plugin.logger.warning("Failed to deserialize a stored loot item: ${e.message}")
+        null
+    }
+
     private fun serializeLootItem(li: LootItem): Map<String, Any> {
         val map = mutableMapOf<String, Any>()
         if (li.customItemPlugin != null) {
@@ -995,6 +1019,7 @@ class LootManager(private val plugin: TrialChamberPro) {
         li.enchantments?.let { ench ->
             map["enchantments"] = ench.map { (k, v) -> "${k.key.key.uppercase()}:$v" }
         }
+        li.serializedItem?.let { map["serialized-item"] = it }
         map["enabled"] = li.enabled
         return map
     }

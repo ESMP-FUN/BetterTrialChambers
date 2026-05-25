@@ -19,11 +19,6 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class ChamberManager(private val plugin: TrialChamberPro) {
 
-    // Cache for chamber lookups with LRU eviction
-    private companion object {
-        const val MAX_CACHE_SIZE = 100
-    }
-
     // In-memory destruction counters for auto-pause threshold tracking.
     // Keyed by chamber ID; reset on any pause-state transition.
     private val destructionCounters = java.util.concurrent.ConcurrentHashMap<Int, java.util.concurrent.atomic.AtomicInteger>()
@@ -42,14 +37,14 @@ class ChamberManager(private val plugin: TrialChamberPro) {
         destructionCounters.remove(chamberId)
     }
 
-    @Suppress("UNCHECKED_CAST")
-    private val chamberCache = java.util.Collections.synchronizedMap(
-        object : LinkedHashMap<String, Chamber>(16, 0.75f, true) {
-            override fun removeEldestEntry(eldest: Map.Entry<String, Chamber>?): Boolean {
-                return size > MAX_CACHE_SIZE
-            }
-        }
-    )
+    // Registered chambers are a bounded registry of small objects, so ALL of them
+    // are kept cached — never size-evicted. The spatial/by-id lookups below
+    // (getCachedChamberAt / getCachedChamberById) back vault loot resolution,
+    // spawner-wave tracking and tier scaling; under the old LRU cap (100) any
+    // evicted chamber silently fell through to vanilla behaviour — vanilla vault
+    // loot leaking, no scaling. ConcurrentHashMap also makes value iteration
+    // safe without external locking.
+    private val chamberCache = ConcurrentHashMap<String, Chamber>()
     private val cacheExpiry = ConcurrentHashMap<String, Long>()
 
     fun getCachedChambers(): List<Chamber> = chamberCache.values.sortedByDescending { it.createdAt }
