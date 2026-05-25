@@ -25,6 +25,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
     private val lootHandler = LootCommand(plugin)
     private val mobsHandler = MobsCommand(plugin)
     private val giveHandler = GiveCommand(plugin)
+    private val dungeonHandler = io.github.darkstarworks.trialChamberPro.commands.handlers.DungeonCommand(plugin)
 
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
         if (args.isEmpty()) {
@@ -54,6 +55,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             "stats" -> handleStats(sender, args)
             "leaderboard", "lb", "top" -> handleLeaderboard(sender, args)
             "generate" -> generateHandler.execute(sender, args)
+            "dungeon" -> dungeonHandler.execute(sender, args)
             "paste" -> handlePaste(sender, args)
             "menu" -> handleMenu(sender)
             "loot" -> lootHandler.execute(sender, args)
@@ -77,6 +79,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         sender.sendMessage(plugin.getMessageComponent("help-info"))
         // Create
         sender.sendMessage(plugin.getMessageComponent("help-generate"))
+        sender.sendRichMessage("<yellow>/tcp dungeon <create rooms & generate> <gray>- Procedural dungeon assembly")
         sender.sendMessage(plugin.getMessageComponent("help-paste"))
         // Manage
         sender.sendMessage(plugin.getMessageComponent("help-scan"))
