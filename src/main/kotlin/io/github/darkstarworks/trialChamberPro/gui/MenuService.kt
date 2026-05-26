@@ -235,35 +235,33 @@ class MenuService(private val plugin: TrialChamberPro) {
     }
 
     fun openChamberDetail(player: Player, chamber: Chamber) {
+        // v1.5.0 — VcGui pattern.
         val view = ChamberDetailView(plugin, this, chamber)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.CHAMBER_DETAIL
             chamberId = chamber.id
             lootKind = null
             poolName = null
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openChamberSettings(player: Player, chamber: Chamber) {
         val view = ChamberSettingsView(plugin, this, chamber)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.CHAMBER_SETTINGS
             chamberId = chamber.id
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openVaultManagement(player: Player, chamber: Chamber) {
         val view = VaultManagementView(plugin, this, chamber)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.VAULT_MANAGEMENT
             chamberId = chamber.id
         }
-        gui.show(player)
+        view.open(player)
     }
 
     // ==================== Loot Screens ====================

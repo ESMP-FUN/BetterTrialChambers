@@ -1,91 +1,83 @@
 package io.github.darkstarworks.trialChamberPro.gui
 
-import com.github.stefvanschie.inventoryframework.gui.GuiItem
-import com.github.stefvanschie.inventoryframework.gui.type.ChestGui
-import com.github.stefvanschie.inventoryframework.pane.StaticPane
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.gui.components.GuiComponents
-import io.github.darkstarworks.trialChamberPro.gui.components.GuiText
+import io.github.darkstarworks.trialChamberPro.gui.framework.BaseHolder
+import io.github.darkstarworks.trialChamberPro.gui.framework.VcGui
+import io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem
 import io.github.darkstarworks.trialChamberPro.models.Chamber
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import java.util.concurrent.TimeUnit
 
+class ChamberDetailHolder : BaseHolder()
+
 /**
  * Chamber detail view — central management screen for a single chamber.
- * All strings from `messages.yml` under `gui.chamber-detail.*` (v1.3.0).
+ * All strings from `messages.yml` under `gui.chamber-detail.*` (v1.3.0;
+ * migrated to VcGui in v1.5.0). Layout slots match the original
+ * (StaticPane (col, row)) — converted to `row * 9 + col` indices.
  */
 class ChamberDetailView(
     private val plugin: TrialChamberPro,
     private val menu: MenuService,
-    private val chamber: Chamber
+    private val chamber: Chamber,
+) : VcGui(
+    rows = 6,
+    title = plugin.getGuiText("gui.chamber-detail.title", "chamber" to chamber.name),
+    holder = ChamberDetailHolder(),
 ) {
-    fun build(player: Player): ChestGui {
-        val gui = ChestGui(6, GuiText.plain(plugin, "gui.chamber-detail.title", "chamber" to chamber.name))
-        val pane = StaticPane(0, 0, 9, 6)
+    init { layout() }
 
-        pane.addItem(GuiItem(createChamberInfoItem()) { it.isCancelled = true }, 4, 0)
+    private fun layout() {
+        clear()
+        // Row 0: header
+        set(4, VcGuiItem.wrap(createChamberInfoItem()))
 
-        pane.addItem(GuiItem(createNormalLootItem()) { event ->
-            event.isCancelled = true
-            handleLootKindClick(player, MenuService.LootKind.NORMAL)
-        }, 2, 1)
+        // Row 1: loot + overrides
+        set(11, VcGuiItem.wrap(createNormalLootItem()) { ctx ->
+            handleLootKindClick(ctx.player, MenuService.LootKind.NORMAL)
+        })
+        set(13, VcGuiItem.wrap(createOminousLootItem()) { ctx ->
+            handleLootKindClick(ctx.player, MenuService.LootKind.OMINOUS)
+        })
+        set(15, VcGuiItem.wrap(createLootOverridesItem()) { ctx ->
+            menu.openChamberSettings(ctx.player, chamber)
+        })
 
-        pane.addItem(GuiItem(createOminousLootItem()) { event ->
-            event.isCancelled = true
-            handleLootKindClick(player, MenuService.LootKind.OMINOUS)
-        }, 4, 1)
+        // Row 2: settings / vaults / teleport
+        set(20, VcGuiItem.wrap(createSettingsItem()) { ctx ->
+            menu.openChamberSettings(ctx.player, chamber)
+        })
+        set(22, VcGuiItem.wrap(createVaultManagementItem()) { ctx ->
+            menu.openVaultManagement(ctx.player, chamber)
+        })
+        set(24, VcGuiItem.wrap(createTeleportItem()) { ctx ->
+            handleTeleport(ctx.player, ctx.event.isLeftClick, ctx.event.isRightClick)
+        })
 
-        pane.addItem(GuiItem(createLootOverridesItem()) { event ->
-            event.isCancelled = true
-            menu.openChamberSettings(player, chamber)
-        }, 6, 1)
+        // Row 3: reset / exit / snapshot
+        set(29, VcGuiItem.wrap(createResetChamberItem()) { ctx ->
+            handleResetChamberClick(ctx.player, ctx.event.isLeftClick, ctx.event.isRightClick, ctx.event.isShiftClick)
+        })
+        set(31, VcGuiItem.wrap(createExitPlayersItem()) { ctx ->
+            handleExitPlayersClick(ctx.player, ctx.event.isLeftClick, ctx.event.isRightClick, ctx.event.isShiftClick)
+        })
+        set(33, VcGuiItem.wrap(createSnapshotItem()) { ctx ->
+            handleSnapshotClick(ctx.player, ctx.event.isLeftClick, ctx.event.isShiftClick)
+        })
 
-        pane.addItem(GuiItem(createSettingsItem()) { event ->
-            event.isCancelled = true
-            menu.openChamberSettings(player, chamber)
-        }, 2, 2)
+        // Row 4: pause toggle
+        set(40, VcGuiItem.wrap(createPauseToggleItem()) { ctx ->
+            handlePauseToggleClick(ctx.player)
+        })
 
-        pane.addItem(GuiItem(createVaultManagementItem()) { event ->
-            event.isCancelled = true
-            menu.openVaultManagement(player, chamber)
-        }, 4, 2)
-
-        pane.addItem(GuiItem(createTeleportItem()) { event ->
-            event.isCancelled = true
-            handleTeleport(player, event.isLeftClick, event.isRightClick)
-        }, 6, 2)
-
-        pane.addItem(GuiItem(createResetChamberItem()) { event ->
-            event.isCancelled = true
-            handleResetChamberClick(player, event.isLeftClick, event.isRightClick, event.isShiftClick)
-        }, 2, 3)
-
-        pane.addItem(GuiItem(createExitPlayersItem()) { event ->
-            event.isCancelled = true
-            handleExitPlayersClick(player, event.isLeftClick, event.isRightClick, event.isShiftClick)
-        }, 4, 3)
-
-        pane.addItem(GuiItem(createSnapshotItem()) { event ->
-            event.isCancelled = true
-            handleSnapshotClick(player, event.isLeftClick, event.isShiftClick)
-        }, 6, 3)
-
-        pane.addItem(GuiItem(createPauseToggleItem()) { event ->
-            event.isCancelled = true
-            handlePauseToggleClick(player)
-        }, 4, 4)
-
-        pane.addItem(GuiComponents.backButton(plugin, "gui.common.dest-chambers") {
-            menu.openChamberList(player)
-        }, 0, 5)
-        pane.addItem(GuiComponents.closeButton(plugin, player), 8, 5)
-
-        gui.addPane(pane)
-        gui.setOnGlobalClick { it.isCancelled = true }
-        gui.setOnGlobalDrag { it.isCancelled = true }
-        return gui
+        // Row 5: nav
+        set(45, GuiComponents.backVcItem(plugin, "gui.common.dest-chambers") { ctx ->
+            menu.openChamberList(ctx.player)
+        })
+        set(53, GuiComponents.closeVcItem(plugin))
     }
 
     // ==================== Item Creators ====================
@@ -167,12 +159,9 @@ class ChamberDetailView(
         )
     }
 
-    private fun createTeleportItem(): ItemStack {
-        return GuiComponents.infoItem(
-            plugin, Material.ENDER_PEARL,
-            "gui.chamber-detail.teleport-name", "gui.chamber-detail.teleport-lore"
-        )
-    }
+    private fun createTeleportItem(): ItemStack =
+        GuiComponents.infoItem(plugin, Material.ENDER_PEARL,
+            "gui.chamber-detail.teleport-name", "gui.chamber-detail.teleport-lore")
 
     private fun createResetChamberItem(): ItemStack {
         val playersInside = chamber.getPlayersInside().size
@@ -201,10 +190,8 @@ class ChamberDetailView(
         val snapshotExists = chamber.getSnapshotFile()?.exists() == true
         val loreKey = if (snapshotExists)
             "gui.chamber-detail.snapshot-lore-exists" else "gui.chamber-detail.snapshot-lore-missing"
-        return GuiComponents.infoItem(
-            plugin, Material.SPYGLASS,
-            "gui.chamber-detail.snapshot-name", loreKey
-        )
+        return GuiComponents.infoItem(plugin, Material.SPYGLASS,
+            "gui.chamber-detail.snapshot-name", loreKey)
     }
 
     private fun createPauseToggleItem(): ItemStack =
@@ -218,7 +205,7 @@ class ChamberDetailView(
                 "gui.chamber-detail.pause-toggle-lore-active"
         )
 
-    // ==================== Click Handlers (unchanged behavior) ====================
+    // ==================== Click Handlers (verbatim from IF version) ====================
 
     private fun handleLootKindClick(player: Player, kind: MenuService.LootKind) {
         val tableName = when (kind) {
@@ -359,7 +346,6 @@ class ChamberDetailView(
                     val msgKey = if (nowPaused) "chamber-paused" else "chamber-resumed"
                     player.sendMessage(plugin.getMessageComponent(msgKey, "chamber" to chamber.name))
                 }
-                // Re-open the detail view so the toggle reflects the new state
                 plugin.launchAsync {
                     val refreshed = plugin.chamberManager.getChamber(chamber.name)
                     if (refreshed != null) {
