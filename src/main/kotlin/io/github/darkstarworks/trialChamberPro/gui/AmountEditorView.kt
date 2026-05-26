@@ -1,11 +1,10 @@
 package io.github.darkstarworks.trialChamberPro.gui
 
-import com.github.stefvanschie.inventoryframework.gui.GuiItem
-import com.github.stefvanschie.inventoryframework.gui.type.ChestGui
-import com.github.stefvanschie.inventoryframework.pane.StaticPane
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.gui.components.GuiComponents
-import io.github.darkstarworks.trialChamberPro.gui.components.GuiText
+import io.github.darkstarworks.trialChamberPro.gui.framework.BaseHolder
+import io.github.darkstarworks.trialChamberPro.gui.framework.VcGui
+import io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem
 import io.github.darkstarworks.trialChamberPro.models.Chamber
 import io.github.darkstarworks.trialChamberPro.models.LootEditorDraft
 import io.github.darkstarworks.trialChamberPro.models.LootItem
@@ -14,9 +13,11 @@ import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 
+class AmountEditorHolder : BaseHolder()
+
 /**
  * Amount editor — adjusts min/max stack range for a single LootItem in a draft.
- * All strings from `messages.yml` under `gui.amount-editor.*` (v1.3.0).
+ * v1.3.0; migrated to VcGui in v1.5.0.
  */
 class AmountEditorView(
     private val plugin: TrialChamberPro,
@@ -27,7 +28,12 @@ class AmountEditorView(
     private val itemIndex: Int,
     private val isWeighted: Boolean,
     private val draft: LootEditorDraft,
-    private val globalTableName: String? = null
+    private val globalTableName: String? = null,
+) : VcGui(
+    rows = 3,
+    title = plugin.getGuiText("gui.amount-editor.title",
+        "item" to (if (isWeighted) draft.weighted else draft.guaranteed)[itemIndex].type.name),
+    holder = AmountEditorHolder(),
 ) {
     init {
         require(chamber != null || globalTableName != null) {
@@ -35,54 +41,35 @@ class AmountEditorView(
         }
     }
 
-    private lateinit var gui: ChestGui
-    private lateinit var mainPane: StaticPane
     private var currentItem: LootItem = (if (isWeighted) draft.weighted else draft.guaranteed)[itemIndex].copy()
 
-    fun build(): ChestGui {
-        gui = ChestGui(3, GuiText.plain(plugin, "gui.amount-editor.title", "item" to currentItem.type.name))
-        gui.setOnGlobalClick { it.isCancelled = true }
-        gui.setOnGlobalDrag { it.isCancelled = true }
-        mainPane = StaticPane(0, 0, 9, 3)
-        gui.addPane(mainPane)
-        buildContent()
-        return gui
-    }
+    init { layout() }
 
-    private fun buildContent() {
-        mainPane.clear()
+    private fun layout() {
+        clear()
+        // Row 0: display (4,0)=4
+        set(4, VcGuiItem.wrap(createDisplayItem()))
 
-        mainPane.addItem(GuiItem(createDisplayItem()) { it.isCancelled = true }, 4, 0)
-
+        // Row 1: adjust buttons at (2,1)=11, (3,1)=12, (4,1)=13; reset at (6,1)=15
         listOf(1, 5, 10).forEachIndexed { i, amount ->
-            mainPane.addItem(GuiItem(createAdjustButton(amount)) { event ->
-                event.isCancelled = true
-                handleAdjustClick(amount, event.isLeftClick, event.isRightClick, event.isShiftClick)
-            }, 2 + i, 1)
+            set((1 * 9) + (2 + i), VcGuiItem.wrap(createAdjustButton(amount)) { ctx ->
+                handleAdjustClick(amount, ctx.event.isLeftClick, ctx.event.isRightClick, ctx.event.isShiftClick)
+            })
         }
+        set(15, VcGuiItem.wrap(createResetButton()) { ctx ->
+            handleResetClick(ctx.event.isLeftClick, ctx.event.isRightClick)
+        })
 
-        mainPane.addItem(GuiItem(createResetButton()) { event ->
-            event.isCancelled = true
-            handleResetClick(event.isLeftClick, event.isRightClick)
-        }, 6, 1)
-
-        mainPane.addItem(GuiItem(
+        // Row 2: save (0,2)=18, discard (8,2)=26
+        set(18, VcGuiItem.wrap(
             GuiComponents.infoItem(plugin, Material.GREEN_CONCRETE,
                 "gui.amount-editor.save-name", "gui.amount-editor.save-lore")
-        ) { event ->
-            event.isCancelled = true
-            saveAndReturn(event.whoClicked as Player)
-        }, 0, 2)
+        ) { ctx -> saveAndReturn(ctx.player) })
 
-        mainPane.addItem(GuiItem(
+        set(26, VcGuiItem.wrap(
             GuiComponents.infoItem(plugin, Material.RED_CONCRETE,
                 "gui.amount-editor.discard-name", "gui.amount-editor.discard-lore")
-        ) { event ->
-            event.isCancelled = true
-            discardAndReturn(event.whoClicked as Player)
-        }, 8, 2)
-
-        gui.update()
+        ) { ctx -> discardAndReturn(ctx.player) })
     }
 
     private fun createDisplayItem(): ItemStack {
@@ -108,16 +95,14 @@ class AmountEditorView(
         return item
     }
 
-    private fun createAdjustButton(amount: Int): ItemStack {
-        return GuiComponents.infoItem(plugin, Material.YELLOW_CONCRETE,
+    private fun createAdjustButton(amount: Int): ItemStack =
+        GuiComponents.infoItem(plugin, Material.YELLOW_CONCRETE,
             "gui.amount-editor.adjust-name", "gui.amount-editor.adjust-lore",
             "amount" to amount)
-    }
 
-    private fun createResetButton(): ItemStack {
-        return GuiComponents.infoItem(plugin, Material.CYAN_CONCRETE,
+    private fun createResetButton(): ItemStack =
+        GuiComponents.infoItem(plugin, Material.CYAN_CONCRETE,
             "gui.amount-editor.reset-name", "gui.amount-editor.reset-lore")
-    }
 
     private fun handleAdjustClick(amount: Int, left: Boolean, right: Boolean, shift: Boolean) {
         when {
@@ -130,7 +115,8 @@ class AmountEditorView(
             right -> currentItem = currentItem.copy(
                 amountMin = (currentItem.amountMin - amount).coerceIn(1, 64))
         }
-        buildContent()
+        layout()
+        update()
     }
 
     private fun handleResetClick(left: Boolean, right: Boolean) {
@@ -139,7 +125,8 @@ class AmountEditorView(
             right -> currentItem = currentItem.copy(
                 amountMax = 1, amountMin = currentItem.amountMin.coerceAtMost(1))
         }
-        buildContent()
+        layout()
+        update()
     }
 
     private fun saveAndReturn(player: Player) {

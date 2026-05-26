@@ -1,102 +1,98 @@
 package io.github.darkstarworks.trialChamberPro.gui
 
-import com.github.stefvanschie.inventoryframework.gui.GuiItem
-import com.github.stefvanschie.inventoryframework.gui.type.ChestGui
-import com.github.stefvanschie.inventoryframework.pane.StaticPane
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.gui.components.GuiComponents
-import io.github.darkstarworks.trialChamberPro.gui.components.GuiText
+import io.github.darkstarworks.trialChamberPro.gui.framework.BaseHolder
+import io.github.darkstarworks.trialChamberPro.gui.framework.VcGui
+import io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem
 import io.github.darkstarworks.trialChamberPro.listeners.MobIdInputListener
 import io.github.darkstarworks.trialChamberPro.models.Chamber
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 
+class CustomMobProviderHolder : BaseHolder()
+
 /**
- * Per-chamber Custom Mob Provider configuration (v1.3.0).
- * All strings from `messages.yml` under `gui.custom-mob.*`.
+ * Per-chamber Custom Mob Provider configuration (v1.3.0; v1.5.0 VcGui).
  */
 class CustomMobProviderView(
     private val plugin: TrialChamberPro,
     private val menu: MenuService,
-    private val chamber: Chamber
+    private val chamber: Chamber,
+) : VcGui(
+    rows = 6,
+    title = plugin.getGuiText("gui.custom-mob.title", "chamber" to chamber.name),
+    holder = CustomMobProviderHolder(),
 ) {
-    fun build(player: Player): ChestGui {
-        val gui = ChestGui(6, GuiText.plain(plugin, "gui.custom-mob.title", "chamber" to chamber.name))
-        val pane = StaticPane(0, 0, 9, 6)
+    init { layout() }
 
-        // Top-row navigation: back (slot 0) + close (slot 8); header centered on row 0.
-        pane.addItem(GuiComponents.backButton(plugin, "gui.common.dest-settings") {
+    private fun layout() {
+        clear()
+        // Row 0: back / header / close
+        set(0, GuiComponents.backVcItem(plugin, "gui.common.dest-settings") { ctx ->
             val refreshed = plugin.chamberManager.getCachedChamberById(chamber.id)
-            if (refreshed != null) menu.openChamberSettings(player, refreshed)
-            else menu.openChamberList(player)
-        }, 0, 0)
-        pane.addItem(GuiItem(
+            if (refreshed != null) menu.openChamberSettings(ctx.player, refreshed)
+            else menu.openChamberList(ctx.player)
+        })
+        set(4, VcGuiItem.wrap(
             GuiComponents.infoItem(plugin, Material.SPAWNER,
                 "gui.custom-mob.header-name", "gui.custom-mob.header-lore",
                 "chamber" to chamber.name)
-        ) { it.isCancelled = true }, 4, 0)
-        pane.addItem(GuiComponents.closeButton(plugin, player), 8, 0)
+        ))
+        set(8, GuiComponents.closeVcItem(plugin))
 
-        pane.addItem(GuiItem(createProviderItem()) { event ->
-            event.isCancelled = true
+        // Row 1: provider toggle at (4,1) = 13
+        set(13, VcGuiItem.wrap(createProviderItem()) { ctx ->
             when {
-                event.isShiftClick -> clearProvider(player)
-                event.isLeftClick -> cycleProvider(player, 1)
-                event.isRightClick -> cycleProvider(player, -1)
+                ctx.event.isShiftClick -> clearProvider(ctx.player)
+                ctx.event.isLeftClick -> cycleProvider(ctx.player, 1)
+                ctx.event.isRightClick -> cycleProvider(ctx.player, -1)
             }
-        }, 4, 1)
+        })
 
-        pane.addItem(GuiItem(sectionHeader(true, chamber.customMobIdsNormal.size)) { it.isCancelled = true }, 0, 2)
-        pane.addItem(GuiItem(addItem("normal")) { event ->
-            event.isCancelled = true
-            promptAdd(player, MobIdInputListener.Section.NORMAL)
-        }, 8, 2)
-        renderIdRow(pane, row = 3, ids = chamber.customMobIdsNormal, player = player,
+        // Row 2: normal section header (0,2)=18 + add (8,2)=26
+        set(18, VcGuiItem.wrap(sectionHeader(true, chamber.customMobIdsNormal.size)))
+        set(26, VcGuiItem.wrap(addItem("normal")) { ctx ->
+            promptAdd(ctx.player, MobIdInputListener.Section.NORMAL)
+        })
+        // Row 3: normal id row (slots 27..35)
+        renderIdRow(rowStart = 27, ids = chamber.customMobIdsNormal,
             section = MobIdInputListener.Section.NORMAL)
 
-        pane.addItem(GuiItem(sectionHeader(false, chamber.customMobIdsOminous.size)) { it.isCancelled = true }, 0, 4)
-        pane.addItem(GuiItem(addItem("ominous")) { event ->
-            event.isCancelled = true
-            promptAdd(player, MobIdInputListener.Section.OMINOUS)
-        }, 8, 4)
-        renderIdRow(pane, row = 5, ids = chamber.customMobIdsOminous, player = player,
+        // Row 4: ominous section header (0,4)=36 + add (8,4)=44
+        set(36, VcGuiItem.wrap(sectionHeader(false, chamber.customMobIdsOminous.size)))
+        set(44, VcGuiItem.wrap(addItem("ominous")) { ctx ->
+            promptAdd(ctx.player, MobIdInputListener.Section.OMINOUS)
+        })
+        // Row 5: ominous id row (slots 45..53)
+        renderIdRow(rowStart = 45, ids = chamber.customMobIdsOminous,
             section = MobIdInputListener.Section.OMINOUS)
-
-        gui.addPane(pane)
-        gui.setOnGlobalClick { it.isCancelled = true }
-        gui.setOnGlobalDrag { it.isCancelled = true }
-        return gui
     }
 
-    private fun renderIdRow(
-        pane: StaticPane,
-        row: Int,
-        ids: List<String>,
-        player: Player,
-        section: MobIdInputListener.Section
-    ) {
+    private fun renderIdRow(rowStart: Int, ids: List<String>, section: MobIdInputListener.Section) {
         if (ids.isEmpty()) {
-            val empty = GuiComponents.infoItem(plugin, Material.LIGHT_GRAY_STAINED_GLASS_PANE,
-                "gui.custom-mob.empty-name", "gui.custom-mob.empty-lore")
-            pane.addItem(GuiItem(empty) { it.isCancelled = true }, 4, row)
+            // Empty placeholder at center column of this row (rowStart + 4).
+            set(rowStart + 4, VcGuiItem.wrap(
+                GuiComponents.infoItem(plugin, Material.LIGHT_GRAY_STAINED_GLASS_PANE,
+                    "gui.custom-mob.empty-name", "gui.custom-mob.empty-lore")
+            ))
             return
         }
         val visible = ids.take(if (ids.size > 9) 8 else 9)
         visible.forEachIndexed { index, id ->
-            val item = GuiComponents.infoItem(plugin, Material.ZOMBIE_HEAD,
-                "gui.custom-mob.id-name", "gui.custom-mob.id-lore",
-                "id" to id)
-            pane.addItem(GuiItem(item) { event ->
-                event.isCancelled = true
-                removeId(player, section, id)
-            }, index, row)
+            set(rowStart + index, VcGuiItem.wrap(
+                GuiComponents.infoItem(plugin, Material.ZOMBIE_HEAD,
+                    "gui.custom-mob.id-name", "gui.custom-mob.id-lore",
+                    "id" to id)
+            ) { ctx -> removeId(ctx.player, section, id) })
         }
         if (ids.size > 9) {
-            val overflow = GuiComponents.infoItem(plugin, Material.PAPER,
-                "gui.custom-mob.overflow-name", "gui.custom-mob.overflow-lore",
-                "extra" to (ids.size - 9))
-            pane.addItem(GuiItem(overflow) { it.isCancelled = true }, 8, row)
+            set(rowStart + 8, VcGuiItem.wrap(
+                GuiComponents.infoItem(plugin, Material.PAPER,
+                    "gui.custom-mob.overflow-name", "gui.custom-mob.overflow-lore",
+                    "extra" to (ids.size - 9))
+            ))
         }
     }
 
@@ -119,13 +115,12 @@ class CustomMobProviderView(
             "count" to count)
     }
 
-    private fun addItem(section: String): ItemStack {
-        return GuiComponents.infoItem(plugin, Material.LIME_CONCRETE,
+    private fun addItem(section: String): ItemStack =
+        GuiComponents.infoItem(plugin, Material.LIME_CONCRETE,
             "gui.custom-mob.add-name", "gui.custom-mob.add-lore",
             "section" to section)
-    }
 
-    // ==================== Actions (unchanged behavior) ====================
+    // ==================== Actions (verbatim) ====================
 
     private fun providerCycleList(): List<String> {
         val base = mutableListOf("vanilla")
