@@ -1,106 +1,93 @@
 package io.github.darkstarworks.trialChamberPro.gui
 
-import com.github.stefvanschie.inventoryframework.gui.GuiItem
-import com.github.stefvanschie.inventoryframework.gui.type.ChestGui
-import com.github.stefvanschie.inventoryframework.pane.OutlinePane
-import com.github.stefvanschie.inventoryframework.pane.StaticPane
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.gui.components.GuiComponents
-import io.github.darkstarworks.trialChamberPro.gui.components.GuiText
+import io.github.darkstarworks.trialChamberPro.gui.framework.BaseHolder
+import io.github.darkstarworks.trialChamberPro.gui.framework.VcGui
+import io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem
 import io.github.darkstarworks.trialChamberPro.models.Chamber
 import kotlinx.coroutines.runBlocking
+import net.kyori.adventure.text.Component
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 
+/** Empty payload holder for the chamber-list GUI. */
+class ChamberListHolder : BaseHolder()
+
 /**
  * Paginated chamber list view — 36 chambers per page with prev/next and a create-help card.
- * All strings from `messages.yml` under `gui.chamber-list.*` (v1.3.0).
+ * All strings from `messages.yml` under `gui.chamber-list.*` (v1.3.0; migrated to VcGui in v1.5.0).
+ *
+ * NB: still uses `runBlocking { ... }` to fetch locked-vault counts during construction.
+ * Per the deferred-refactor entry, that should become an async-build/sync-show pattern
+ * eventually — out of scope for the framework migration itself.
  */
 class ChamberListView(
     private val plugin: TrialChamberPro,
-    private val menu: MenuService
+    private val menu: MenuService,
+    private val viewer: Player,
+    private val page: Int = 0,
+) : VcGui(
+    rows = 6,
+    title = buildChamberListTitle(plugin, page, totalPages(plugin)),
+    holder = ChamberListHolder(),
 ) {
-    companion object {
-        private const val ITEMS_PER_PAGE = 36
-    }
+    init { layout() }
 
-    fun build(player: Player, page: Int = 0): ChestGui {
+    private fun layout() {
+        clear()
         val allChambers = plugin.chamberManager.getCachedChambers().sortedBy { it.name }
         val totalPages = maxOf(1, (allChambers.size + ITEMS_PER_PAGE - 1) / ITEMS_PER_PAGE)
         val currentPage = page.coerceIn(0, totalPages - 1)
+        val startIdx = currentPage * ITEMS_PER_PAGE
+        val endIdx = minOf(startIdx + ITEMS_PER_PAGE, allChambers.size)
+        val onPage = if (allChambers.isNotEmpty()) allChambers.subList(startIdx, endIdx) else emptyList()
 
-        val startIndex = currentPage * ITEMS_PER_PAGE
-        val endIndex = minOf(startIndex + ITEMS_PER_PAGE, allChambers.size)
-        val chambersOnPage = if (allChambers.isNotEmpty()) allChambers.subList(startIndex, endIndex) else emptyList()
-
-        val gui = ChestGui(6, GuiText.plain(plugin, "gui.chamber-list.title",
-            "page" to (currentPage + 1), "total" to totalPages))
-
-        val chamberPane = OutlinePane(0, 0, 9, 4).apply { isVisible = true }
-        chambersOnPage.forEach { chamber ->
-            chamberPane.addItem(GuiItem(createChamberItem(chamber, player)) { event ->
-                event.isCancelled = true
-                menu.openChamberDetail(player, chamber)
+        // Rows 0-3: chamber cards
+        onPage.forEachIndexed { i, chamber ->
+            set(i, VcGuiItem.wrap(createChamberItem(chamber, viewer)) { ctx ->
+                menu.openChamberDetail(ctx.player, chamber)
             })
         }
-        gui.addPane(chamberPane)
-
         if (allChambers.isEmpty()) {
-            val emptyPane = StaticPane(0, 1, 9, 1)
-            emptyPane.addItem(GuiItem(
+            set(13, VcGuiItem.wrap(
                 GuiComponents.infoItem(plugin, Material.BARRIER,
                     "gui.chamber-list.empty-name", "gui.chamber-list.empty-lore")
-            ) { it.isCancelled = true }, 4, 0)
-            gui.addPane(emptyPane)
+            ))
         }
 
-        // Info row (page indicator + prev/next)
-        val infoPane = StaticPane(0, 4, 9, 1)
-        infoPane.addItem(GuiItem(
+        // Row 4: page indicator + prev/next
+        set(40, VcGuiItem.wrap(
             GuiComponents.infoItem(plugin, Material.PAPER,
                 "gui.chamber-list.page-info-name", "gui.chamber-list.page-info-lore",
                 "page" to (currentPage + 1), "total" to totalPages,
-                "total-chambers" to allChambers.size, "on-page" to chambersOnPage.size)
-        ) { it.isCancelled = true }, 4, 0)
-
+                "total-chambers" to allChambers.size, "on-page" to onPage.size)
+        ))
         if (currentPage > 0) {
-            infoPane.addItem(GuiItem(
+            set(39, VcGuiItem.wrap(
                 GuiComponents.infoItem(plugin, Material.SPECTRAL_ARROW,
                     "gui.chamber-list.prev-page-name", "gui.chamber-list.prev-page-lore",
                     "page" to currentPage)
-            ) { event ->
-                event.isCancelled = true
-                menu.openChamberList(player, currentPage - 1)
-            }, 3, 0)
+            ) { ctx -> menu.openChamberList(ctx.player, currentPage - 1) })
         }
         if (currentPage < totalPages - 1) {
-            infoPane.addItem(GuiItem(
+            set(41, VcGuiItem.wrap(
                 GuiComponents.infoItem(plugin, Material.TIPPED_ARROW,
                     "gui.chamber-list.next-page-name", "gui.chamber-list.next-page-lore",
                     "page" to (currentPage + 2))
-            ) { event ->
-                event.isCancelled = true
-                menu.openChamberList(player, currentPage + 1)
-            }, 5, 0)
+            ) { ctx -> menu.openChamberList(ctx.player, currentPage + 1) })
         }
-        gui.addPane(infoPane)
 
-        // Controls row
-        val controlsPane = StaticPane(0, 5, 9, 1)
-        controlsPane.addItem(GuiComponents.backButton(plugin, "gui.common.dest-main-menu") {
-            menu.openMainMenu(player)
-        }, 0, 0)
-        controlsPane.addItem(GuiItem(
+        // Row 5: back / create-help / close
+        set(45, GuiComponents.backVcItem(plugin, "gui.common.dest-main-menu") { ctx ->
+            menu.openMainMenu(ctx.player)
+        })
+        set(49, VcGuiItem.wrap(
             GuiComponents.infoItem(plugin, Material.LIME_CONCRETE,
                 "gui.chamber-list.create-name", "gui.chamber-list.create-lore")
-        ) { it.isCancelled = true }, 4, 0)
-        controlsPane.addItem(GuiComponents.closeButton(plugin, player), 8, 0)
-        gui.addPane(controlsPane)
-
-        gui.setOnGlobalClick { it.isCancelled = true }
-        gui.setOnGlobalDrag { it.isCancelled = true }
-        return gui
+        ))
+        set(53, GuiComponents.closeVcItem(plugin))
     }
 
     private fun createChamberItem(chamber: Chamber, player: Player): ItemStack {
@@ -126,12 +113,11 @@ class ChamberListView(
             "lastReset" to DurationFmt.humanize(plugin, sinceLastMs)
         )
 
-        // Optional custom-loot tag appended to lore
         if (chamber.normalLootTable != null || chamber.ominousLootTable != null) {
             base.itemMeta = base.itemMeta?.apply {
                 val existing = lore() ?: mutableListOf()
                 val withTag = existing.toMutableList().apply {
-                    add(net.kyori.adventure.text.Component.empty())
+                    add(Component.empty())
                     add(plugin.getGuiText("gui.chamber-list.chamber-custom-loot-tag"))
                 }
                 lore(withTag)
@@ -139,4 +125,18 @@ class ChamberListView(
         }
         return base
     }
+
+    companion object {
+        private const val ITEMS_PER_PAGE = 36
+
+        private fun totalPages(plugin: TrialChamberPro): Int {
+            val n = plugin.chamberManager.getCachedChambers().size
+            return maxOf(1, (n + ITEMS_PER_PAGE - 1) / ITEMS_PER_PAGE)
+        }
+    }
+}
+
+private fun buildChamberListTitle(plugin: TrialChamberPro, page: Int, totalPages: Int): Component {
+    val current = page.coerceIn(0, totalPages - 1)
+    return plugin.getGuiText("gui.chamber-list.title", "page" to (current + 1), "total" to totalPages)
 }
