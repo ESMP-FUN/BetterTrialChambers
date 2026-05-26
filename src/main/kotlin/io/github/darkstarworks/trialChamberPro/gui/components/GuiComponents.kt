@@ -234,6 +234,92 @@ object GuiComponents {
         loreKey: String? = null,
         vararg replacements: Pair<String, Any?>
     ): ItemStack = playerHead(plugin, org.bukkit.Bukkit.getOfflinePlayer(uuid), nameKey, loreKey, *replacements)
+
+    // ==================== VcGui parallel helpers (v1.5.0 GUI migration) ====================
+    //
+    // Parallel `VcGuiItem`-returning versions of the IF nav helpers above.
+    // Used by views being migrated to VcGui. The IF-returning versions stay
+    // until every view has migrated, then both halves collapse to just the
+    // VcGui side in a single cleanup commit. ItemStack-returning helpers
+    // (infoItem, toggleItem, playerHead) are framework-agnostic and don't
+    // need parallels — views wrap with `VcGuiItem.wrap(stack, onClick = ...)`.
+
+    /** VcGui counterpart to [backButton]. */
+    fun backVcItem(
+        plugin: TrialChamberPro,
+        destinationKey: String,
+        onClick: (io.github.darkstarworks.trialChamberPro.gui.framework.ClickContext) -> Unit
+    ): io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem {
+        val destination = plugin.getMessage(destinationKey)
+        val stack = ItemStack(Material.ARROW).apply {
+            itemMeta = itemMeta?.apply {
+                displayName(plugin.getGuiText("gui.common.back-button", "destination" to destination))
+            }
+        }
+        return io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem.wrap(stack, onClick = onClick)
+    }
+
+    /** VcGui counterpart to [closeButton]. */
+    fun closeVcItem(
+        plugin: TrialChamberPro
+    ): io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem {
+        val stack = ItemStack(Material.BARRIER).apply {
+            itemMeta = itemMeta?.apply {
+                displayName(plugin.getGuiText("gui.common.close-button"))
+            }
+        }
+        return io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem.wrap(stack) { ctx ->
+            ctx.player.closeInventory()
+        }
+    }
+
+    /** VcGui counterpart to [prevPageButton]. Disabled-state lore + onClick gating identical to IF version. */
+    fun prevPageVcItem(
+        plugin: TrialChamberPro,
+        currentPage: Int,
+        totalPages: Int,
+        onClick: (io.github.darkstarworks.trialChamberPro.gui.framework.ClickContext) -> Unit
+    ): io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem {
+        val enabled = currentPage > 0
+        val material = if (enabled) Material.SPECTRAL_ARROW else Material.GRAY_STAINED_GLASS_PANE
+        val stack = ItemStack(material).apply {
+            itemMeta = itemMeta?.apply {
+                displayName(plugin.getGuiText("gui.common.prev-page"))
+                lore(plugin.getGuiLore(
+                    "gui.common.page-indicator-lore",
+                    "current" to (currentPage + 1),
+                    "total" to totalPages
+                ))
+            }
+        }
+        return io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem.wrap(stack) { ctx ->
+            if (enabled) onClick(ctx)
+        }
+    }
+
+    /** VcGui counterpart to [nextPageButton]. */
+    fun nextPageVcItem(
+        plugin: TrialChamberPro,
+        currentPage: Int,
+        totalPages: Int,
+        onClick: (io.github.darkstarworks.trialChamberPro.gui.framework.ClickContext) -> Unit
+    ): io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem {
+        val enabled = currentPage < totalPages - 1
+        val material = if (enabled) Material.TIPPED_ARROW else Material.GRAY_STAINED_GLASS_PANE
+        val stack = ItemStack(material).apply {
+            itemMeta = itemMeta?.apply {
+                displayName(plugin.getGuiText("gui.common.next-page"))
+                lore(plugin.getGuiLore(
+                    "gui.common.page-indicator-lore",
+                    "current" to (currentPage + 1),
+                    "total" to totalPages
+                ))
+            }
+        }
+        return io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem.wrap(stack) { ctx ->
+            if (enabled) onClick(ctx)
+        }
+    }
 }
 
 /**

@@ -65,6 +65,19 @@ class VcGuiListener : Listener {
         val gui = holder.gui
         val player = event.whoClicked as? Player ?: return
 
+        // Bulk-deposit / paint-bucket GUIs hand event handling back to vanilla
+        // Bukkit — all clicks land, no cancellation, no dispatch. The subclass
+        // reads the final inventory in handleClose. Permission is still checked
+        // so a freely-editable GUI can't be left open by a de-permed player.
+        if (gui.freelyEditable) {
+            if (gui.requiredPermission != null && !player.hasPermission(gui.requiredPermission)) {
+                event.isCancelled = true
+                player.closeInventory()
+                player.sendMessage(mm.deserialize("<red>You no longer have permission to use this GUI."))
+            }
+            return
+        }
+
         if (gui.requiredPermission != null && !player.hasPermission(gui.requiredPermission)) {
             event.isCancelled = true
             player.closeInventory()
@@ -173,6 +186,7 @@ class VcGuiListener : Listener {
     fun onDrag(event: InventoryDragEvent) {
         val holder = event.inventory.holder as? BaseHolder ?: return
         val gui = holder.gui
+        if (gui.freelyEditable) return  // pass through, see onClick comment
         val topSize = event.inventory.size
         val topSlotsTouched = event.rawSlots.filter { it < topSize }
 
