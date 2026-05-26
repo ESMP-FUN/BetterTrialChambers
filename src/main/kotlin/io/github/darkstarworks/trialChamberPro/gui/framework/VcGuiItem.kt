@@ -88,12 +88,15 @@ data class VcGuiItem(
         /** Convenience: wrap a pre-built [ItemStack] (the common case in TCP, where
          *  [io.github.darkstarworks.trialChamberPro.gui.components.GuiComponents]
          *  already produces fully-rendered `ItemStack`s from `gui.<view>.*`
-         *  messages.yml keys). */
+         *  messages.yml keys).
+         *
+         *  `onClick` is the LAST parameter so trailing-lambda syntax binds to it:
+         *  `VcGuiItem.wrap(stack) { ctx -> ... }` works without naming. */
         fun wrap(
             stack: ItemStack,
-            onClick: ((ClickContext) -> Unit)? = null,
             acceptsBottomShiftClick: Boolean = false,
             acceptsDrag: Boolean = false,
+            onClick: ((ClickContext) -> Unit)? = null,
         ): VcGuiItem = VcGuiItem(stack, onClick, acceptsBottomShiftClick, acceptsDrag)
     }
 }

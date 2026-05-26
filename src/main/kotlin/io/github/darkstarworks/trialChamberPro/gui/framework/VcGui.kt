@@ -100,6 +100,22 @@ abstract class VcGui(
         player.openInventory(inv)
     }
 
+    /**
+     * If true, [VcGuiListener] skips ALL click and drag dispatch — players
+     * can place, take, swap, hotbar, and drag freely. [handleClose] still
+     * fires (and is typically where freely-editable GUIs read the final
+     * inventory contents).
+     *
+     * Default: false (standard controlled GUI). Override to `true` for
+     * bulk-deposit / paint-bucket / item-staging style inventories where
+     * the player is the source of truth, not the slot wiring.
+     *
+     * Subclasses generally shouldn't put `VcGuiItem`s into the inventory
+     * when this is true — anything they set would still be visible but
+     * non-clickable, which is confusing.
+     */
+    open val freelyEditable: Boolean = false
+
     /** Hook for cleanup on inventory close. Default: no-op. */
     open fun handleClose(player: Player) {}
 
