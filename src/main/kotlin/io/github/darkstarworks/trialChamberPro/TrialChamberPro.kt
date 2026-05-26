@@ -371,6 +371,14 @@ class TrialChamberPro : JavaPlugin() {
                         io.github.darkstarworks.trialChamberPro.listeners.LootDepositListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
+                    // v1.5.0 GUI migration: central VcGui click/drag/close dispatcher.
+                    // Coexists with InventoryFramework's listener during the transition —
+                    // VcGuiListener only routes events whose inventory holder is a BaseHolder,
+                    // so IF-backed views are unaffected.
+                    server.pluginManager.registerEvents(
+                        io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiListener(),
+                        this@TrialChamberPro
+                    )
                     // v1.4.0: copy `tcp:preset_id` PDC tag from preset items
                     // onto placed TrialSpawner TileStates so the wild-spawner
                     // resolver seam can identify the source preset.
