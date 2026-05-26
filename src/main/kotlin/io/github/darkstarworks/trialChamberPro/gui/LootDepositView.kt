@@ -109,18 +109,31 @@ class LootDepositView(
             )
         }
 
-        // Hand items back + reopen editor on the player's region thread
-        // (Folia-correct; on Paper this is just the main thread).
+        // Hand items back on the player's region thread (Folia-correct; on Paper this
+        // is just the main thread). Safe inside the close event — we're only mutating
+        // the player's own inventory and dropping items into the world, not opening
+        // anything new.
         plugin.scheduler.runAtEntity(player, Runnable {
-            try {
-                for (item in itemsToReturn) {
-                    val leftover = player.inventory.addItem(item)
-                    leftover.values.forEach { player.world.dropItemNaturally(player.location, it) }
-                }
-            } finally {
-                if (h.chamber != null) menu.openLootEditor(player, h.chamber, h.kind, h.poolName)
-                else h.globalTableName?.let { menu.openGlobalLootEditor(player, it, h.poolName) }
+            for (item in itemsToReturn) {
+                val leftover = player.inventory.addItem(item)
+                leftover.values.forEach { player.world.dropItemNaturally(player.location, it) }
             }
         })
+
+        // CRITICAL: opening a new inventory while still inside `InventoryCloseEvent`
+        // re-fires the close event for the currently-detaching inventory on Paper 1.21+.
+        // On the Paper scheduler that's not even one tick later — `runAtEntity` runs
+        // synchronously when already on the primary thread, so the chain `close →
+        // open → close → open …` recurses until the JVM stack overflows. (Observed in
+        // a v1.5.0 pre-release local-test crash: 571k log lines, one root cause.)
+        //
+        // Schedule the editor reopen exactly one tick out via `runAtEntityLater` so the
+        // InventoryCloseEvent dispatch fully unwinds before we touch `openInventory`
+        // again.
+        plugin.scheduler.runAtEntityLater(player, Runnable {
+            if (!player.isOnline) return@Runnable
+            if (h.chamber != null) menu.openLootEditor(player, h.chamber, h.kind, h.poolName)
+            else h.globalTableName?.let { menu.openGlobalLootEditor(player, it, h.poolName) }
+        }, 1L)
     }
 }
