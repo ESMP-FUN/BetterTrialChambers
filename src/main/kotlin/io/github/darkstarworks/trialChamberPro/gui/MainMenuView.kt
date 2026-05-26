@@ -1,82 +1,44 @@
 package io.github.darkstarworks.trialChamberPro.gui
 
-import com.github.stefvanschie.inventoryframework.gui.GuiItem
-import com.github.stefvanschie.inventoryframework.gui.type.ChestGui
-import com.github.stefvanschie.inventoryframework.pane.StaticPane
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.gui.components.GuiComponents
+import io.github.darkstarworks.trialChamberPro.gui.framework.BaseHolder
+import io.github.darkstarworks.trialChamberPro.gui.framework.VcGui
+import io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 
+class MainMenuHolder : BaseHolder()
+
 /**
- * Main menu view — central hub for the TrialChamberPro admin GUI.
- *
- * v1.4.x: Flattened the previous "Settings → Plugin Settings → Global Settings"
- * navigation. Global Settings, Protection Settings, Performance Info and Reload
- * Configuration are now top-level entries on this hub instead of being hidden
- * one level deeper. The intermediate `SettingsMenuView` was removed.
- *
- * All strings are sourced from `messages.yml` under `gui.main-menu.*`.
+ * Main menu view — central hub. v1.4.x flattened the old Settings sub-menu;
+ * v1.5.0 migrated to VcGui.
  */
 class MainMenuView(
     private val plugin: TrialChamberPro,
-    private val menu: MenuService
+    private val menu: MenuService,
+) : VcGui(
+    rows = 6,
+    title = plugin.getGuiText("gui.main-menu.title"),
+    holder = MainMenuHolder(),
 ) {
-    fun build(player: Player): ChestGui {
-        val gui = ChestGui(6, plainText("gui.main-menu.title"))
-        val pane = StaticPane(0, 0, 9, 6)
+    init { layout() }
 
-        // Row 0: header
-        pane.addItem(GuiItem(createHeaderItem()) { it.isCancelled = true }, 4, 0)
-
-        // Row 1: primary action tiles
-        pane.addItem(GuiItem(createChambersItem()) { event ->
-            event.isCancelled = true
-            menu.openChamberList(player)
-        }, 1, 1)
-
-        pane.addItem(GuiItem(createLootTablesItem()) { event ->
-            event.isCancelled = true
-            menu.openLootTableList(player)
-        }, 3, 1)
-
-        pane.addItem(GuiItem(createGlobalSettingsItem()) { event ->
-            event.isCancelled = true
-            menu.openGlobalSettings(player)
-        }, 5, 1)
-
-        pane.addItem(GuiItem(createProtectionItem()) { event ->
-            event.isCancelled = true
-            menu.openProtectionMenu(player)
-        }, 7, 1)
-
-        // Row 2: secondary tiles + read-only info
-        pane.addItem(GuiItem(createHelpItem()) { event ->
-            event.isCancelled = true
-            menu.openHelpMenu(player)
-        }, 2, 2)
-
-        pane.addItem(GuiItem(createPerformanceInfoItem()) { it.isCancelled = true }, 4, 2)
-
-        pane.addItem(GuiItem(createStatisticsItem()) { event ->
-            event.isCancelled = true
-            menu.openStatsMenu(player)
-        }, 6, 2)
-
-        // Row 4: reload (shift-click to fire so accidental clicks don't reload)
-        pane.addItem(GuiItem(createReloadItem()) { event ->
-            event.isCancelled = true
-            if (event.isShiftClick) reloadConfig(player)
-        }, 4, 4)
-
-        // Row 5: close
-        pane.addItem(GuiComponents.closeButton(plugin, player), 8, 5)
-
-        gui.addPane(pane)
-        gui.setOnGlobalClick { it.isCancelled = true }
-        gui.setOnGlobalDrag { it.isCancelled = true }
-        return gui
+    private fun layout() {
+        clear()
+        set(4, VcGuiItem.wrap(createHeaderItem()))
+        set(10, VcGuiItem.wrap(createChambersItem()) { ctx -> menu.openChamberList(ctx.player) })
+        set(12, VcGuiItem.wrap(createLootTablesItem()) { ctx -> menu.openLootTableList(ctx.player) })
+        set(14, VcGuiItem.wrap(createGlobalSettingsItem()) { ctx -> menu.openGlobalSettings(ctx.player) })
+        set(16, VcGuiItem.wrap(createProtectionItem()) { ctx -> menu.openProtectionMenu(ctx.player) })
+        set(20, VcGuiItem.wrap(createHelpItem()) { ctx -> menu.openHelpMenu(ctx.player) })
+        set(22, VcGuiItem.wrap(createPerformanceInfoItem()))
+        set(24, VcGuiItem.wrap(createStatisticsItem()) { ctx -> menu.openStatsMenu(ctx.player) })
+        set(40, VcGuiItem.wrap(createReloadItem()) { ctx ->
+            if (ctx.event.isShiftClick) reloadConfig(ctx.player)
+        })
+        set(53, GuiComponents.closeVcItem(plugin))
     }
 
     private fun createHeaderItem(): ItemStack {
@@ -92,38 +54,30 @@ class MainMenuView(
     }
 
     private fun createChambersItem(): ItemStack {
-        val chamberCount = plugin.chamberManager.getCachedChambers().size
-        return GuiComponents.infoItem(
-            plugin, Material.LODESTONE,
-            "gui.main-menu.chambers-name", "gui.main-menu.chambers-lore",
-            "count" to chamberCount
-        )
+        val n = plugin.chamberManager.getCachedChambers().size
+        return GuiComponents.infoItem(plugin, Material.LODESTONE,
+            "gui.main-menu.chambers-name", "gui.main-menu.chambers-lore", "count" to n)
     }
 
     private fun createLootTablesItem(): ItemStack {
-        val tableCount = plugin.lootManager.getLootTableNames().size
-        return GuiComponents.infoItem(
-            plugin, Material.CHEST,
-            "gui.main-menu.loot-name", "gui.main-menu.loot-lore",
-            "count" to tableCount
-        )
+        val n = plugin.lootManager.getLootTableNames().size
+        return GuiComponents.infoItem(plugin, Material.CHEST,
+            "gui.main-menu.loot-name", "gui.main-menu.loot-lore", "count" to n)
     }
 
     private fun createStatisticsItem(): ItemStack {
-        val statsEnabled = plugin.config.getBoolean("statistics.enabled", true)
-        val loreKey = if (statsEnabled) "gui.main-menu.stats-lore-enabled" else "gui.main-menu.stats-lore-disabled"
+        val on = plugin.config.getBoolean("statistics.enabled", true)
+        val loreKey = if (on) "gui.main-menu.stats-lore-enabled" else "gui.main-menu.stats-lore-disabled"
         return GuiComponents.infoItem(plugin, Material.WRITABLE_BOOK, "gui.main-menu.stats-name", loreKey)
     }
 
     private fun createGlobalSettingsItem(): ItemStack =
-        GuiComponents.infoItem(
-            plugin, Material.COMMAND_BLOCK,
-            "gui.main-menu.global-settings-name", "gui.main-menu.global-settings-lore"
-        )
+        GuiComponents.infoItem(plugin, Material.COMMAND_BLOCK,
+            "gui.main-menu.global-settings-name", "gui.main-menu.global-settings-lore")
 
     private fun createProtectionItem(): ItemStack {
-        val protectionEnabled = plugin.config.getBoolean("protection.enabled", true)
-        val loreKey = if (protectionEnabled) "gui.main-menu.protection-lore-enabled" else "gui.main-menu.protection-lore-disabled"
+        val on = plugin.config.getBoolean("protection.enabled", true)
+        val loreKey = if (on) "gui.main-menu.protection-lore-enabled" else "gui.main-menu.protection-lore-disabled"
         return GuiComponents.infoItem(plugin, Material.SHIELD, "gui.main-menu.protection-name", loreKey)
     }
 
@@ -146,19 +100,12 @@ class MainMenuView(
     }
 
     private fun createReloadItem(): ItemStack =
-        GuiComponents.infoItem(
-            plugin, Material.REPEATER,
-            "gui.main-menu.reload-name", "gui.main-menu.reload-lore"
-        )
+        GuiComponents.infoItem(plugin, Material.REPEATER,
+            "gui.main-menu.reload-name", "gui.main-menu.reload-lore")
 
     private fun reloadConfig(player: Player) {
         player.sendMessage(plugin.getMessageComponent("config-reloading"))
         plugin.reloadPluginConfig()
         player.sendMessage(plugin.getMessageComponent("config-reloaded"))
     }
-
-    private fun plainText(key: String): String =
-        net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
-            .plainText()
-            .serialize(plugin.getGuiText(key))
 }
