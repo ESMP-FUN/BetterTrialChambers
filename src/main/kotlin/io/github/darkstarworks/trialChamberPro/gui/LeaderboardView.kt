@@ -1,31 +1,39 @@
 package io.github.darkstarworks.trialChamberPro.gui
 
-import com.github.stefvanschie.inventoryframework.gui.GuiItem
-import com.github.stefvanschie.inventoryframework.gui.type.ChestGui
-import com.github.stefvanschie.inventoryframework.pane.StaticPane
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.gui.components.GuiComponents
-import io.github.darkstarworks.trialChamberPro.gui.components.GuiText
+import io.github.darkstarworks.trialChamberPro.gui.framework.BaseHolder
+import io.github.darkstarworks.trialChamberPro.gui.framework.VcGui
+import io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem
 import kotlinx.coroutines.runBlocking
+import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 
+class LeaderboardHolder : BaseHolder()
+
+/**
+ * Top-10 leaderboard view. Category switcher across the bottom row.
+ * Migrated to VcGui in v1.5.0. `runBlocking` for the leaderboard fetch is
+ */
 class LeaderboardView(
     private val plugin: TrialChamberPro,
     private val menu: MenuService,
-    private val leaderboardType: String
+    private val viewer: Player,
+    private val leaderboardType: String,
+) : VcGui(
+    rows = 6,
+    title = plugin.getGuiText("gui.leaderboard.title-" + leaderboardTypeOrDefault(leaderboardType)),
+    holder = LeaderboardHolder(),
 ) {
-    fun build(player: Player): ChestGui {
-        val titleKey = "gui.leaderboard.title-" + when (leaderboardType) {
-            "vaults", "chambers", "mobs", "time" -> leaderboardType
-            else -> "default"
-        }
-        val gui = ChestGui(6, GuiText.plain(plugin, titleKey))
-        val pane = StaticPane(0, 0, 9, 6)
+    init { layout() }
 
-        pane.addItem(GuiItem(createHeaderItem()) { it.isCancelled = true }, 4, 0)
+    private fun layout() {
+        clear()
+        // Header at (4, 0) = slot 4
+        set(4, VcGuiItem.wrap(createHeaderItem()))
 
         val leaderboard = runBlocking { plugin.statisticsManager.getLeaderboard(leaderboardType, 10) }
 
@@ -33,35 +41,41 @@ class LeaderboardView(
             val row = 1 + (index / 2)
             val col = if (index % 2 == 0) 2 else 6
             if (row <= 4) {
-                pane.addItem(GuiItem(createLeaderboardEntry(index + 1, entry)) { event ->
-                    event.isCancelled = true
-                    menu.openPlayerStats(player, entry.first)
-                }, col, row)
+                set(row * 9 + col, VcGuiItem.wrap(createLeaderboardEntry(index + 1, entry)) { ctx ->
+                    menu.openPlayerStats(ctx.player, entry.first)
+                })
             }
         }
 
         if (leaderboard.isEmpty()) {
-            pane.addItem(GuiItem(
+            set(22, VcGuiItem.wrap(
                 GuiComponents.infoItem(plugin, Material.BARRIER,
                     "gui.leaderboard.empty-name", "gui.leaderboard.empty-lore")
-            ) { it.isCancelled = true }, 4, 2)
+            ))
         }
 
-        pane.addItem(GuiComponents.backButton(plugin, "gui.common.dest-stats") {
-            menu.openStatsMenu(player)
-        }, 0, 5)
+        // Bottom row: back / switchers / close
+        set(45, GuiComponents.backVcItem(plugin, "gui.common.dest-stats") { ctx ->
+            menu.openStatsMenu(ctx.player)
+        })
+        set(47, switcher("vaults", Material.VAULT))
+        set(48, switcher("chambers", Material.LODESTONE))
+        set(50, switcher("mobs", Material.IRON_SWORD))
+        set(51, switcher("time", Material.CLOCK))
+        set(53, GuiComponents.closeVcItem(plugin))
+    }
 
-        addCategorySwitcher(pane, player, "vaults", Material.VAULT, 2, 5)
-        addCategorySwitcher(pane, player, "chambers", Material.LODESTONE, 3, 5)
-        addCategorySwitcher(pane, player, "mobs", Material.IRON_SWORD, 5, 5)
-        addCategorySwitcher(pane, player, "time", Material.CLOCK, 6, 5)
-
-        pane.addItem(GuiComponents.closeButton(plugin, player), 8, 5)
-
-        gui.addPane(pane)
-        gui.setOnGlobalClick { it.isCancelled = true }
-        gui.setOnGlobalDrag { it.isCancelled = true }
-        return gui
+    private fun switcher(type: String, material: Material): VcGuiItem {
+        val isCurrent = type == leaderboardType
+        val stack = ItemStack(if (isCurrent) Material.LIME_DYE else material).apply {
+            itemMeta = itemMeta?.apply {
+                displayName(plugin.getGuiText("gui.leaderboard.switcher-$type"))
+                if (isCurrent) lore(listOf(plugin.getGuiText("gui.leaderboard.switcher-current")))
+            }
+        }
+        return VcGuiItem.wrap(stack) { ctx ->
+            if (!isCurrent) menu.openLeaderboard(ctx.player, type)
+        }
     }
 
     private fun createHeaderItem(): ItemStack {
@@ -92,22 +106,6 @@ class LeaderboardView(
         )
     }
 
-    private fun addCategorySwitcher(pane: StaticPane, player: Player, type: String, material: Material, x: Int, y: Int) {
-        val isCurrent = type == leaderboardType
-        val item = ItemStack(if (isCurrent) Material.LIME_DYE else material).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(plugin.getGuiText("gui.leaderboard.switcher-$type"))
-                if (isCurrent) {
-                    lore(listOf(plugin.getGuiText("gui.leaderboard.switcher-current")))
-                }
-            }
-        }
-        pane.addItem(GuiItem(item) { event ->
-            event.isCancelled = true
-            if (!isCurrent) menu.openLeaderboard(player, type)
-        }, x, y)
-    }
-
     private fun formatTime(seconds: Long): String {
         val hours = seconds / 3600
         val minutes = (seconds % 3600) / 60
@@ -118,4 +116,9 @@ class LeaderboardView(
             else -> "${secs}s"
         }
     }
+}
+
+private fun leaderboardTypeOrDefault(type: String): String = when (type) {
+    "vaults", "chambers", "mobs", "time" -> type
+    else -> "default"
 }

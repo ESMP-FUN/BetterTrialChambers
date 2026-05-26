@@ -225,13 +225,13 @@ class MenuService(private val plugin: TrialChamberPro) {
         // Warm vault counts cache
         warmVaultCountsCache()
 
-        val view = ChamberListView(plugin, this)
-        val gui = view.build(player, page)
+        // v1.5.0 — VcGui pattern.
+        val view = ChamberListView(plugin, this, player, page)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.CHAMBER_LIST
             currentPage = page
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openChamberDetail(player: Player, chamber: Chamber) {
@@ -269,14 +269,14 @@ class MenuService(private val plugin: TrialChamberPro) {
     // ==================== Loot Screens ====================
 
     fun openLootTableList(player: Player) {
+        // v1.5.0 — VcGui pattern.
         val view = LootTableListView(plugin, this)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.LOOT_TABLE_LIST
             // Leave globalLootEdit state alone — the list itself isn't a loot editor
             // screen, and the flag governs restoration of editor/pool/amount screens.
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openPoolSelect(player: Player, chamber: Chamber, kind: LootKind) {
@@ -433,13 +433,13 @@ class MenuService(private val plugin: TrialChamberPro) {
     }
 
     fun openLeaderboard(player: Player, type: String) {
-        val view = LeaderboardView(plugin, this, type)
-        val gui = view.build(player)
+        // v1.5.0 — VcGui pattern.
+        val view = LeaderboardView(plugin, this, player, type)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.LEADERBOARD
             leaderboardType = type
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openPlayerStats(player: Player, targetUuid: UUID) {
