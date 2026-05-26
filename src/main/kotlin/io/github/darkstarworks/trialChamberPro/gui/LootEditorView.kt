@@ -253,12 +253,13 @@ class LootEditorView(
         // Clear controls region.
         for (s in 36..53) set(s, null)
 
-        // Row 4 (slots 36..44) — bottom-area controls
-        // Save at (0, 4) = slot 36
+        // Row 5 (slots 45..53) — bottom-area controls. Row 4 is left empty as a
+        // visual gap between the loot-entry grid (rows 0-3) and the action row.
+        // Save at (0, 5) = slot 45
         val saveLoreKey = if (draft.dirty) "gui.loot-editor.save-lore-dirty" else "gui.loot-editor.save-lore-clean"
         val save = GuiComponents.infoItem(plugin, Material.GREEN_CONCRETE,
             "gui.loot-editor.save-name", saveLoreKey)
-        set(36, VcGuiItem.wrap(save) { ctx ->
+        set(45, VcGuiItem.wrap(save) { ctx ->
             saveDraft(ctx.player)
             draft.dirty = false
             if (chamber != null) {
@@ -272,11 +273,11 @@ class LootEditorView(
             }
         })
 
-        // Rolls at (2, 4) = slot 38
+        // Rolls at (2, 5) = slot 47
         val rolls = GuiComponents.infoItem(plugin, Material.PAPER,
             "gui.loot-editor.rolls-name", "gui.loot-editor.rolls-lore",
             "min" to draft.minRolls, "max" to draft.maxRolls)
-        set(38, VcGuiItem.wrap(rolls) { ctx ->
+        set(47, VcGuiItem.wrap(rolls) { ctx ->
             val left = ctx.click == ClickType.LEFT || ctx.click == ClickType.SHIFT_LEFT
             val right = ctx.click == ClickType.RIGHT || ctx.click == ClickType.SHIFT_RIGHT
             val shift = ctx.click == ClickType.SHIFT_LEFT || ctx.click == ClickType.SHIFT_RIGHT
@@ -293,10 +294,10 @@ class LootEditorView(
             }
         })
 
-        // Add (from hand) at (4, 4) = slot 40
+        // Add (from hand) at (4, 5) = slot 49
         val add = GuiComponents.infoItem(plugin, Material.LIME_DYE,
             "gui.loot-editor.add-name", "gui.loot-editor.add-lore")
-        set(40, VcGuiItem.wrap(add) { ctx ->
+        set(49, VcGuiItem.wrap(add) { ctx ->
             val hand = ctx.player.inventory.itemInMainHand
             if (hand.type == Material.AIR) {
                 ctx.player.sendMessage(plugin.getMessageComponent("gui-hold-item-to-add"))
@@ -318,7 +319,7 @@ class LootEditorView(
             update()
         })
 
-        // Bulk add at (6, 4) = slot 42
+        // Bulk add at (6, 5) = slot 51
         val bulkAdd = ItemStack(Material.CHEST).apply {
             itemMeta = itemMeta?.apply {
                 displayName(
@@ -335,17 +336,17 @@ class LootEditorView(
                 ))
             }
         }
-        set(42, VcGuiItem.wrap(bulkAdd) { ctx ->
+        set(51, VcGuiItem.wrap(bulkAdd) { ctx ->
             // Persist current draft so the deposit appends to it, then open the chest.
             if (chamber != null) menu.saveDraft(ctx.player, chamber, kind, poolName, draft)
             else menu.saveGlobalDraft(ctx.player, globalTableName!!, poolName, draft)
             menu.openLootDeposit(ctx.player, chamber, kind, poolName, globalTableName)
         })
 
-        // Discard at (8, 4) = slot 44
+        // Discard at (8, 5) = slot 53
         val discard = GuiComponents.infoItem(plugin, Material.RED_CONCRETE,
             "gui.loot-editor.discard-name", "gui.loot-editor.discard-lore")
-        set(44, VcGuiItem.wrap(discard) { ctx ->
+        set(53, VcGuiItem.wrap(discard) { ctx ->
             discardRequested = true
             if (chamber != null) {
                 if (poolName != null) menu.openPoolSelect(ctx.player, chamber, kind)
