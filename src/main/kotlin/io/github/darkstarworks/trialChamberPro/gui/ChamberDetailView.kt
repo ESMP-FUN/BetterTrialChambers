@@ -194,16 +194,32 @@ class ChamberDetailView(
             "gui.chamber-detail.snapshot-name", loreKey)
     }
 
-    private fun createPauseToggleItem(): ItemStack =
-        GuiComponents.toggleItem(
-            plugin,
-            enabled = !chamber.isPaused,
-            labelKey = "gui.chamber-detail.pause-toggle-name",
-            descKey = if (chamber.isPaused)
-                "gui.chamber-detail.pause-toggle-lore-paused"
-            else
-                "gui.chamber-detail.pause-toggle-lore-active"
-        )
+    /**
+     * Built inline rather than via [GuiComponents.toggleItem] because the pause
+     * tooltip needs a multi-line lore with paragraph breaks and an embedded
+     * Status line, which the generic toggle template can't represent (toggleItem
+     * takes a single `descKey` string). The active/paused lore lists live under
+     * `gui.chamber-detail.pause-toggle-lore-*` in messages.yml and are pulled
+     * verbatim via [TrialChamberPro.getGuiLore].
+     */
+    private fun createPauseToggleItem(): ItemStack {
+        val active = !chamber.isPaused
+        val material = if (active) Material.LIME_WOOL else Material.RED_WOOL
+        val nameKey = if (active)
+            "gui.chamber-detail.pause-toggle-name"
+        else
+            "gui.chamber-detail.pause-toggle-name-paused"
+        val loreKey = if (active)
+            "gui.chamber-detail.pause-toggle-lore-active"
+        else
+            "gui.chamber-detail.pause-toggle-lore-paused"
+        return org.bukkit.inventory.ItemStack(material).apply {
+            itemMeta = itemMeta?.apply {
+                displayName(plugin.getGuiText(nameKey))
+                lore(plugin.getGuiLore(loreKey))
+            }
+        }
+    }
 
     // ==================== Click Handlers (verbatim from IF version) ====================
 
