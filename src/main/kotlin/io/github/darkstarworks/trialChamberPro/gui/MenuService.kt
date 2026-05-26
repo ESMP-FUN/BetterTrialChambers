@@ -212,11 +212,10 @@ class MenuService(private val plugin: TrialChamberPro) {
 
     fun openMainMenu(player: Player) {
         val view = MainMenuView(plugin, this)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.MAIN_MENU
         }
-        gui.show(player)
+        view.open(player)
     }
 
     // ==================== Chamber Screens ====================
@@ -422,12 +421,11 @@ class MenuService(private val plugin: TrialChamberPro) {
     // ==================== Stats Screens ====================
 
     fun openStatsMenu(player: Player) {
-        val view = StatsMenuView(plugin, this)
-        val gui = view.build(player)
+        val view = StatsMenuView(plugin, this, player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.STATS_MENU
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openLeaderboard(player: Player, type: String) {
@@ -457,31 +455,28 @@ class MenuService(private val plugin: TrialChamberPro) {
 
     fun openGlobalSettings(player: Player) {
         val view = GlobalSettingsView(plugin, this)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.GLOBAL_SETTINGS
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openProtectionMenu(player: Player) {
         val view = ProtectionMenuView(plugin, this)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.PROTECTION_MENU
         }
-        gui.show(player)
+        view.open(player)
     }
 
     // ==================== Help Screen ====================
 
     fun openHelpMenu(player: Player) {
         val view = HelpMenuView(plugin, this)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.HELP_MENU
         }
-        gui.show(player)
+        view.open(player)
     }
 
     // ==================== Utility Methods ====================

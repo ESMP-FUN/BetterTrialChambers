@@ -1,90 +1,86 @@
 package io.github.darkstarworks.trialChamberPro.gui
 
-import com.github.stefvanschie.inventoryframework.gui.GuiItem
-import com.github.stefvanschie.inventoryframework.gui.type.ChestGui
-import com.github.stefvanschie.inventoryframework.pane.StaticPane
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.gui.components.GuiComponents
-import io.github.darkstarworks.trialChamberPro.gui.components.GuiText
+import io.github.darkstarworks.trialChamberPro.gui.framework.BaseHolder
+import io.github.darkstarworks.trialChamberPro.gui.framework.VcGui
+import io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem
+import org.bukkit.Material
 import org.bukkit.entity.Player
 
+class GlobalSettingsHolder : BaseHolder()
+
 /**
- * Global settings view — toggle plugin features at runtime.
- * All strings from `messages.yml` under `gui.global-settings.*` (v1.3.0).
+ * Global settings view. v1.3.0; migrated to VcGui in v1.5.0.
  */
 class GlobalSettingsView(
     private val plugin: TrialChamberPro,
-    private val menu: MenuService
+    private val menu: MenuService,
+) : VcGui(
+    rows = 6,
+    title = plugin.getGuiText("gui.global-settings.title"),
+    holder = GlobalSettingsHolder(),
 ) {
     private data class ToggleDef(
         val configPath: String,
         val labelKey: String,
         val descKey: String,
-        val x: Int,
-        val y: Int
+        val slot: Int,
     )
 
     private val toggles = listOf(
         ToggleDef("reset.clear-ground-items",
             "gui.global-settings.clear-ground-items-label",
-            "gui.global-settings.clear-ground-items-desc", 1, 1),
+            "gui.global-settings.clear-ground-items-desc", 1 * 9 + 1),  // (1,1) = 10
         ToggleDef("reset.remove-spawner-mobs",
             "gui.global-settings.remove-spawner-mobs-label",
-            "gui.global-settings.remove-spawner-mobs-desc", 3, 1),
+            "gui.global-settings.remove-spawner-mobs-desc", 1 * 9 + 3), // (3,1) = 12
         ToggleDef("reset.reset-trial-spawners",
             "gui.global-settings.reset-trial-spawners-label",
-            "gui.global-settings.reset-trial-spawners-desc", 5, 1),
+            "gui.global-settings.reset-trial-spawners-desc", 1 * 9 + 5),// (5,1) = 14
         ToggleDef("reset.reset-vault-cooldowns",
             "gui.global-settings.reset-vault-cooldowns-label",
-            "gui.global-settings.reset-vault-cooldowns-desc", 7, 1),
+            "gui.global-settings.reset-vault-cooldowns-desc", 1 * 9 + 7),// (7,1) = 16
         ToggleDef("spawner-waves.enabled",
             "gui.global-settings.spawner-waves-label",
-            "gui.global-settings.spawner-waves-desc", 1, 2),
+            "gui.global-settings.spawner-waves-desc", 2 * 9 + 1),       // (1,2) = 19
         ToggleDef("spawner-waves.show-boss-bar",
             "gui.global-settings.wave-boss-bar-label",
-            "gui.global-settings.wave-boss-bar-desc", 3, 2),
+            "gui.global-settings.wave-boss-bar-desc", 2 * 9 + 3),       // (3,2) = 21
         ToggleDef("spectator-mode.enabled",
             "gui.global-settings.spectator-mode-label",
-            "gui.global-settings.spectator-mode-desc", 5, 2),
+            "gui.global-settings.spectator-mode-desc", 2 * 9 + 5),      // (5,2) = 23
         ToggleDef("statistics.enabled",
             "gui.global-settings.statistics-label",
-            "gui.global-settings.statistics-desc", 7, 2),
+            "gui.global-settings.statistics-desc", 2 * 9 + 7),          // (7,2) = 25
         ToggleDef("loot.apply-luck-effect",
             "gui.global-settings.luck-effect-label",
-            "gui.global-settings.luck-effect-desc", 3, 3),
+            "gui.global-settings.luck-effect-desc", 3 * 9 + 3),         // (3,3) = 30
         ToggleDef("vaults.per-player-loot",
             "gui.global-settings.per-player-loot-label",
-            "gui.global-settings.per-player-loot-desc", 5, 3),
+            "gui.global-settings.per-player-loot-desc", 3 * 9 + 5),     // (5,3) = 32
     )
 
-    fun build(player: Player): ChestGui {
-        val gui = ChestGui(6, GuiText.plain(plugin, "gui.global-settings.title"))
-        val pane = StaticPane(0, 0, 9, 6)
+    init { layout() }
 
-        pane.addItem(GuiItem(
-            GuiComponents.infoItem(plugin, org.bukkit.Material.COMMAND_BLOCK,
+    private fun layout() {
+        clear()
+        set(4, VcGuiItem.wrap(
+            GuiComponents.infoItem(plugin, Material.COMMAND_BLOCK,
                 "gui.global-settings.header-name", "gui.global-settings.header-lore")
-        ) { it.isCancelled = true }, 4, 0)
+        ))
 
         for (def in toggles) {
             val enabled = plugin.config.getBoolean(def.configPath, true)
-            pane.addItem(GuiItem(
+            set(def.slot, VcGuiItem.wrap(
                 GuiComponents.toggleItem(plugin, enabled, def.labelKey, def.descKey)
-            ) { event ->
-                event.isCancelled = true
-                toggleSetting(def, event.whoClicked as Player)
-            }, def.x, def.y)
+            ) { ctx -> toggleSetting(def, ctx.player) })
         }
 
-        pane.addItem(GuiComponents.backButton(plugin, "gui.common.dest-main-menu") {
-            menu.openMainMenu(player)
-        }, 0, 5)
-        pane.addItem(GuiComponents.closeButton(plugin, player), 8, 5)
-
-        gui.addPane(pane)
-        gui.setOnGlobalClick { it.isCancelled = true }
-        gui.setOnGlobalDrag { it.isCancelled = true }
-        return gui
+        set(45, GuiComponents.backVcItem(plugin, "gui.common.dest-main-menu") { ctx ->
+            menu.openMainMenu(ctx.player)
+        })
+        set(53, GuiComponents.closeVcItem(plugin))
     }
 
     private fun toggleSetting(def: ToggleDef, player: Player) {
