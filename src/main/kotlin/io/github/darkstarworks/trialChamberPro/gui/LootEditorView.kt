@@ -44,7 +44,7 @@ class LootEditorView(
     private val globalTableName: String? = null,
 ) : VcGui(
     rows = 6,
-    title = buildTitle(chamber, kind, poolName, globalTableName, existingDraft != null) ?: Component.text("Loot Editor"),
+    title = buildTitle(plugin, chamber, kind, poolName, globalTableName),
     holder = LootEditorHolder(),
 ) {
     init {
@@ -407,30 +407,27 @@ class LootEditorView(
 /**
  * Build the title Component for the editor. Pulled out of the class body so
  * we can pass it into `super(title = ...)` — Kotlin requires super-call args
- * be expressions, no class-member access.
+ * be expressions, no class-member access. Primary-constructor parameters
+ * (`plugin`, `chamber`, etc.) ARE in scope here, so the title pulls straight
+ * from `gui.loot-editor.title-*` like every other localized string.
  */
 private fun buildTitle(
+    plugin: TrialChamberPro,
     chamber: Chamber?,
     kind: MenuService.LootKind,
     poolName: String?,
     globalTableName: String?,
-    @Suppress("UNUSED_PARAMETER") dummy: Boolean,
-): Component? {
-    // We don't have a `plugin` reference at super-call time, so the title
-    // is built with raw Components (no `gui.loot-editor.title-*` lookup).
-    // The titles use the same wording as messages.yml; if the message keys
-    // are translated to other locales, this branch will not pick those up.
-    // Fixing that requires either passing `plugin` through or moving title
-    // build to a post-construction step; tracked as a follow-up.
+): Component {
     val base = if (chamber != null) {
-        when (kind) {
-            MenuService.LootKind.NORMAL ->
-                Component.text("Loot — ${chamber.name}", NamedTextColor.DARK_GREEN)
-            MenuService.LootKind.OMINOUS ->
-                Component.text("Ominous Loot — ${chamber.name}", NamedTextColor.DARK_PURPLE)
+        val key = when (kind) {
+            MenuService.LootKind.NORMAL -> "gui.loot-editor.title-chamber-normal"
+            MenuService.LootKind.OMINOUS -> "gui.loot-editor.title-chamber-ominous"
         }
+        plugin.getGuiText(key, "chamber" to chamber.name)
     } else {
-        Component.text("Loot — ${globalTableName ?: ""}", NamedTextColor.DARK_AQUA)
+        plugin.getGuiText("gui.loot-editor.title-global", "table" to (globalTableName ?: ""))
     }
-    return if (poolName != null) base.append(Component.text(" / $poolName", NamedTextColor.GRAY)) else base
+    return if (poolName != null) {
+        base.append(plugin.getGuiText("gui.loot-editor.title-pool-suffix", "pool" to poolName))
+    } else base
 }
