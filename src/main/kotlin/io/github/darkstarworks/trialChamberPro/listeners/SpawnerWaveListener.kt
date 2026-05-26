@@ -50,7 +50,10 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
         val location = event.location
 
         // Find the trial spawner that spawned this mob (search nearby)
-        val spawnerLocation = findNearbyTrialSpawner(location) ?: return
+        // The spawning spawner is by definition adjacent (vanilla trial-spawn radius
+        // is 5). Query the index instead of poking 1,331 blocks; take the closest.
+        val spawnerLocation = plugin.trialSpawnerIndex.query(location, 5)
+            .minByOrNull { it.distanceSquared(location) } ?: return
 
         // Determine if ominous from spawner block state
         val world = spawnerLocation.world ?: return
@@ -301,8 +304,13 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
         val location = to
 
         // Find nearby trial spawners and add player to their waves
-        // Works for both chamber spawners and wild spawners
-        findNearbyTrialSpawners(location, detectionRadius).forEach { spawnerLocation ->
+        // Works for both chamber spawners and wild spawners.
+        //
+        // v1.5.0: was an O(r³) raw block scan (~33,500 getBlockAt().type calls
+        // per move at radius=20, ~1ms/call in Spark). Now an O(spawners-near-
+        // player) chunk-keyed query against TrialSpawnerIndex, populated by
+        // chunk-load tile-entity scans + block break/place tracking.
+        plugin.trialSpawnerIndex.query(location, detectionRadius).forEach { spawnerLocation ->
             plugin.spawnerWaveManager.addPlayerToWave(player, spawnerLocation)
         }
 
@@ -330,59 +338,6 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
         if (!plugin.isReady) return
 
         plugin.spawnerWaveManager.removePlayer(event.player)
-    }
-
-    /**
-     * Finds a trial spawner near the given location.
-     */
-    private fun findNearbyTrialSpawner(location: org.bukkit.Location): org.bukkit.Location? {
-        val world = location.world ?: return null
-        val searchRadius = 5 // Trial spawner spawn range
-
-        for (x in -searchRadius..searchRadius) {
-            for (y in -searchRadius..searchRadius) {
-                for (z in -searchRadius..searchRadius) {
-                    val block = world.getBlockAt(
-                        location.blockX + x,
-                        location.blockY + y,
-                        location.blockZ + z
-                    )
-                    if (block.type == Material.TRIAL_SPAWNER) {
-                        return block.location
-                    }
-                }
-            }
-        }
-
-        return null
-    }
-
-    /**
-     * Finds all trial spawners within a radius.
-     */
-    private fun findNearbyTrialSpawners(location: org.bukkit.Location, radius: Int): List<org.bukkit.Location> {
-        val world = location.world ?: return emptyList()
-        val spawners = mutableListOf<org.bukkit.Location>()
-
-        for (x in -radius..radius) {
-            for (y in -radius..radius) {
-                for (z in -radius..radius) {
-                    // Optimize: only check blocks within sphere
-                    if (x * x + y * y + z * z > radius * radius) continue
-
-                    val block = world.getBlockAt(
-                        location.blockX + x,
-                        location.blockY + y,
-                        location.blockZ + z
-                    )
-                    if (block.type == Material.TRIAL_SPAWNER) {
-                        spawners.add(block.location)
-                    }
-                }
-            }
-        }
-
-        return spawners
     }
 
     /**

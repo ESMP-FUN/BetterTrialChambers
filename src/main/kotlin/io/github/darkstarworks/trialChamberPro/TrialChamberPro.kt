@@ -90,6 +90,12 @@ class TrialChamberPro : JavaPlugin() {
     lateinit var chamberDiscoveryManager: ChamberDiscoveryManager
         private set
 
+    // v1.5.0: per-world spatial index of known trial-spawner positions.
+    // Replaces the O(r³) block scan in SpawnerWaveListener.onPlayerMove
+    // with an O(spawners-near-player) chunk-keyed query.
+    lateinit var trialSpawnerIndex: io.github.darkstarworks.trialChamberPro.managers.TrialSpawnerIndex
+        private set
+
     // Custom mob provider registry (v1.3.0) — always contains VanillaMobProvider;
     // additional providers (MythicMobs, ...) are registered after soft-deps are up.
     lateinit var trialMobProviderRegistry: io.github.darkstarworks.trialChamberPro.providers.TrialMobProviderRegistry
@@ -228,6 +234,7 @@ class TrialChamberPro : JavaPlugin() {
                 spawnerWaveManager = SpawnerWaveManager(this@TrialChamberPro)
                 spectatorManager = SpectatorManager(this@TrialChamberPro)
                 chamberDiscoveryManager = ChamberDiscoveryManager(this@TrialChamberPro)
+                trialSpawnerIndex = io.github.darkstarworks.trialChamberPro.managers.TrialSpawnerIndex()
 
                 // Expose the managers a network/extension module needs to resolve
                 // (alongside DatabaseManager registered above). The planned premium
@@ -343,6 +350,13 @@ class TrialChamberPro : JavaPlugin() {
                     )
                     server.pluginManager.registerEvents(
                         ChamberDiscoveryListener(this@TrialChamberPro),
+                        this@TrialChamberPro
+                    )
+                    // v1.5.0: maintain TrialSpawnerIndex in lock-step with the world
+                    // (chunk loads scan tile entities; block break/place keep the
+                    // index live; world unload drops cached entries).
+                    server.pluginManager.registerEvents(
+                        io.github.darkstarworks.trialChamberPro.listeners.TrialSpawnerIndexListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
                     io.github.darkstarworks.trialChamberPro.listeners.VaultDropOwnerListener.init(this@TrialChamberPro)
@@ -477,6 +491,18 @@ class TrialChamberPro : JavaPlugin() {
                     // Sweep already-loaded chunks for chambers that existed before the
                     // ChunkLoadEvent listener was registered (spawn regions, pre-loaded worlds).
                     chamberDiscoveryManager.runStartupSweep()
+
+                    // v1.5.0: seed the trial-spawner spatial index from chunks that
+                    // were already resident before TrialSpawnerIndexListener registered.
+                    // Symmetric to the discovery startup sweep above. Without this, the
+                    // spawner-wave proximity query returns empty for spawn-area chambers
+                    // until those chunks happen to fire ChunkLoadEvent again (which they
+                    // won't, if they're permanently spawn-chunked).
+                    var seeded = 0
+                    for (world in server.worlds) {
+                        seeded += trialSpawnerIndex.seedFromLoadedChunks(world)
+                    }
+                    logger.info("[Spawner Index] Seeded $seeded trial spawner(s) from already-loaded chunks")
                 })
             } catch (e: Exception) {
                 logger.severe("Failed to initialize plugin: ${e.message}")
