@@ -1,4 +1,4 @@
-# 🧪 Example Setups
+# Example Setups
 
 TrialChamberPro is a big plugin with ten-plus subsystems (resets, snapshots, protection, statistics, leaderboards, spawner waves, spectator mode, custom mob providers, …). You don't have to use all of them — most are designed to be turned off cleanly, and the ones you keep stay on independently.
 
@@ -12,7 +12,7 @@ All recipes only touch the keys that matter for that setup. Everything else stay
 
 ---
 
-## 🔁 Recipe: Reusable Vaults Only
+## Recipe: Reusable Vaults Only
 
 > *"I just want players to be able to open the same vault more than once. I don't want chamber resets, snapshots, protection, stats, or any of that. Pretend TCP is a vault-cooldown plugin."*
 
@@ -83,7 +83,7 @@ That's it. No background scheduler runs, no protection listeners fire, no statis
 
 ---
 
-## 💡 Other minimal setups
+## Other minimal setups
 
 If your "just one thing" is different from the recipe above, the same idea applies — turn off the systems you don't care about by flipping their top-level `enabled` flag:
 

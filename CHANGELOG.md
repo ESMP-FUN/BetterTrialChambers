@@ -30,6 +30,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - **Players teleported into walls (suffocating) on reset.** The "safe location" scan ran down the chamber's own centre column and didn't verify the destination was open; it now scans columns outside the chamber and requires solid ground with two passable, non-hazard cells above.
 - **Loot items losing their enchantments/potions** when added through the editor (see Added → faithful loot items).
 - **Pause-chamber tooltip rendered raw `&` codes and squashed its multi-line lore** into a bracketed single line. Tooltip now reads cleanly with paragraph breaks and full colour styling.
+- **Spawner-wave proximity check no longer scans 33,500 blocks per player move.** `SpawnerWaveListener.onPlayerMove` previously walked an O(r³) cube around every moving player calling `world.getBlockAt().type` (~1 ms/call in Spark profiles, compounding across players). Replaced with a per-world spatial index (`TrialSpawnerIndex`) populated by chunk-load tile-entity scans + block break/place tracking; the proximity query is now O(spawners-near-player) — typically zero or one chunk's worth of positions, sub-microsecond on the hot path.
 
 ### Config additions
 - **`reset.clear-added-blocks`** (default `true`) — whether chamber reset also clears player-added blocks that fall outside the snapshot (see Fixed above).
