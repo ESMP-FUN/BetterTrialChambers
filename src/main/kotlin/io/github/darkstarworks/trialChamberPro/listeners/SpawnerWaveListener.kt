@@ -9,8 +9,11 @@ import org.bukkit.event.Listener
 import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.entity.CreatureSpawnEvent
 import org.bukkit.event.entity.EntityDeathEvent
+import org.bukkit.event.player.PlayerChangedWorldEvent
 import org.bukkit.event.player.PlayerMoveEvent
 import org.bukkit.event.player.PlayerQuitEvent
+import org.bukkit.event.player.PlayerRespawnEvent
+import org.bukkit.event.player.PlayerTeleportEvent
 
 /**
  * Listens for trial spawner events and updates wave tracking.
@@ -338,6 +341,59 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
         if (!plugin.isReady) return
 
         plugin.spawnerWaveManager.removePlayer(event.player)
+    }
+
+    /**
+     * v1.5.0: catch chamber exits that aren't a walking move.
+     *
+     * [onPlayerMove] above is the only call site of `removePlayerFromDistantWaves`,
+     * and it only fires when the player's block coordinates change — `PlayerMoveEvent`
+     * does NOT fire for teleports, respawns, or world changes. Without these three
+     * extra hooks the boss bar attaches forever when a player leaves a chamber by
+     * any non-walking exit (die-and-respawn, `/spawn`, `/home`, plugin teleports,
+     * end portals, etc.). Reported in v1.4.7 against a die-inside, respawn-elsewhere
+     * scenario.
+     *
+     * Each handler runs `removePlayerFromDistantWaves` one tick later — at the time
+     * the event fires, `player.location` may still be the source position, so we wait
+     * a tick for the destination to settle. The cleanup itself cross-world-checks and
+     * distance-checks every tracked wave; bars attached to spawners that are no
+     * longer near the player are dropped.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    fun onPlayerTeleport(event: PlayerTeleportEvent) {
+        if (!plugin.isReady) return
+        if (!plugin.config.getBoolean("spawner-waves.enabled", true)) return
+        if (!plugin.config.getBoolean("spawner-waves.show-boss-bar", true)) return
+        val player = event.player
+        plugin.scheduler.runAtEntityLater(player, Runnable {
+            if (!player.isOnline) return@Runnable
+            plugin.spawnerWaveManager.removePlayerFromDistantWaves(player, removeDistance)
+        }, 1L)
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    fun onPlayerRespawn(event: PlayerRespawnEvent) {
+        if (!plugin.isReady) return
+        if (!plugin.config.getBoolean("spawner-waves.enabled", true)) return
+        if (!plugin.config.getBoolean("spawner-waves.show-boss-bar", true)) return
+        val player = event.player
+        plugin.scheduler.runAtEntityLater(player, Runnable {
+            if (!player.isOnline) return@Runnable
+            plugin.spawnerWaveManager.removePlayerFromDistantWaves(player, removeDistance)
+        }, 1L)
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    fun onPlayerChangedWorld(event: PlayerChangedWorldEvent) {
+        if (!plugin.isReady) return
+        if (!plugin.config.getBoolean("spawner-waves.enabled", true)) return
+        if (!plugin.config.getBoolean("spawner-waves.show-boss-bar", true)) return
+        val player = event.player
+        plugin.scheduler.runAtEntityLater(player, Runnable {
+            if (!player.isOnline) return@Runnable
+            plugin.spawnerWaveManager.removePlayerFromDistantWaves(player, removeDistance)
+        }, 1L)
     }
 
     /**
