@@ -366,12 +366,10 @@ class TrialChamberPro : JavaPlugin() {
                         io.github.darkstarworks.trialChamberPro.listeners.MenuSessionCleanupListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
-                    // Bulk loot-deposit chest: capture dragged-in items into the draft on close.
-                    server.pluginManager.registerEvents(
-                        io.github.darkstarworks.trialChamberPro.listeners.LootDepositListener(this@TrialChamberPro),
-                        this@TrialChamberPro
-                    )
                     // v1.5.0 GUI migration: central VcGui click/drag/close dispatcher.
+                    // Replaces the standalone LootDepositListener — bulk-deposit
+                    // close handling now lives in LootDepositView.handleClose,
+                    // routed through this listener like every other VcGui view.
                     // Coexists with InventoryFramework's listener during the transition —
                     // VcGuiListener only routes events whose inventory holder is a BaseHolder,
                     // so IF-backed views are unaffected.

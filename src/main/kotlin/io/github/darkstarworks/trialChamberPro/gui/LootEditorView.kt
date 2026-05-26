@@ -1,12 +1,11 @@
 package io.github.darkstarworks.trialChamberPro.gui
 
-import com.github.stefvanschie.inventoryframework.gui.GuiItem
-import com.github.stefvanschie.inventoryframework.gui.type.ChestGui
-import com.github.stefvanschie.inventoryframework.pane.OutlinePane
-import com.github.stefvanschie.inventoryframework.pane.StaticPane
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.gui.components.GuiComponents
-import io.github.darkstarworks.trialChamberPro.gui.components.GuiText
+import io.github.darkstarworks.trialChamberPro.gui.framework.BaseHolder
+import io.github.darkstarworks.trialChamberPro.gui.framework.ClickContext
+import io.github.darkstarworks.trialChamberPro.gui.framework.VcGui
+import io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem
 import io.github.darkstarworks.trialChamberPro.models.Chamber
 import io.github.darkstarworks.trialChamberPro.models.LootEditorDraft
 import io.github.darkstarworks.trialChamberPro.models.LootItem
@@ -21,8 +20,19 @@ import org.bukkit.event.inventory.ClickType
 import org.bukkit.inventory.ItemStack
 
 /**
+ * Holder for the loot-editor GUI. Empty payload — the editor's state
+ * (draft, dirty flag, discard intent) lives on the [LootEditorView] itself.
+ */
+class LootEditorHolder : BaseHolder()
+
+/**
  * Loot editor — edits a single loot table (or one pool of a multi-pool table).
  * All strings from `messages.yml` under `gui.loot-editor.*` (v1.3.0).
+ *
+ * v1.5.0 — migrated from InventoryFramework to the in-house VcGui framework.
+ * Layout is identical (6 rows; rows 0–3 = loot entries, rows 4–5 = controls);
+ * the change is purely in event handling (central [io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiListener]
+ * dispatch, partial-cancel for safe bottom-inventory actions).
  */
 class LootEditorView(
     private val plugin: TrialChamberPro,
@@ -30,8 +40,12 @@ class LootEditorView(
     private val chamber: Chamber?,
     private val kind: MenuService.LootKind,
     private val poolName: String? = null,
-    private val existingDraft: LootEditorDraft? = null,
-    private val globalTableName: String? = null
+    existingDraft: LootEditorDraft? = null,
+    private val globalTableName: String? = null,
+) : VcGui(
+    rows = 6,
+    title = buildTitle(chamber, kind, poolName, globalTableName, existingDraft != null) ?: Component.text("Loot Editor"),
+    holder = LootEditorHolder(),
 ) {
     init {
         require(chamber != null || globalTableName != null) {
@@ -39,50 +53,23 @@ class LootEditorView(
         }
     }
 
-    private lateinit var gui: ChestGui
-    private lateinit var contentPane: OutlinePane
-    private lateinit var controlsPane: StaticPane
-    private lateinit var draft: LootEditorDraft
+    private var draft: LootEditorDraft = existingDraft?.let { cloneDraft(it) } ?: loadInitialDraft()
     private var discardRequested: Boolean = false
 
-    fun build(player: Player): ChestGui {
-        gui = ChestGui(6, title())
-        gui.setOnGlobalClick { it.isCancelled = true }
-        gui.setOnGlobalDrag { it.isCancelled = true }
-
-        draft = existingDraft?.let { cloneDraft(it) } ?: loadInitialDraft()
-
-        gui.setOnClose {
-            if (!discardRequested) {
-                if (chamber != null) menu.saveDraft(player, chamber, kind, poolName, draft)
-                else menu.saveGlobalDraft(player, globalTableName!!, poolName, draft)
-            }
-        }
-
-        contentPane = OutlinePane(0, 0, 9, 4).apply { isVisible = true }
-        gui.addPane(contentPane)
-        controlsPane = StaticPane(0, 4, 9, 2)
-        gui.addPane(controlsPane)
-
-        refreshContent(player)
-        buildControls(player)
-        gui.update()
-        return gui
+    init {
+        refreshContent()
+        buildControls()
     }
 
-    private fun title(): String {
-        val baseTitle = if (chamber != null) {
-            val key = when (kind) {
-                MenuService.LootKind.NORMAL -> "gui.loot-editor.title-chamber-normal"
-                MenuService.LootKind.OMINOUS -> "gui.loot-editor.title-chamber-ominous"
-            }
-            GuiText.plain(plugin, key, "chamber" to chamber.name)
-        } else {
-            GuiText.plain(plugin, "gui.loot-editor.title-global", "table" to (globalTableName ?: ""))
-        }
-        return if (poolName != null) {
-            baseTitle + GuiText.plain(plugin, "gui.loot-editor.title-pool-suffix", "pool" to poolName)
-        } else baseTitle
+    /**
+     * Persist the draft to the session map on close, unless the user
+     * explicitly hit Discard (in which case [discardRequested] is set
+     * by the discard button's onClick and the close-save is skipped).
+     */
+    override fun handleClose(player: Player) {
+        if (discardRequested) return
+        if (chamber != null) menu.saveDraft(player, chamber, kind, poolName, draft)
+        else menu.saveGlobalDraft(player, globalTableName!!, poolName, draft)
     }
 
     private fun cloneDraft(source: LootEditorDraft): LootEditorDraft = LootEditorDraft(
@@ -135,30 +122,33 @@ class LootEditorView(
         )
     }
 
-    private fun refreshContent(player: Player) {
-        contentPane.clear()
-        val totalWeight = draft.weighted.filter { it.enabled }.sumOf { it.weight }
+    /** Repaint the loot-entries region (rows 0–3, slots 0..35). */
+    private fun refreshContent() {
+        // Clear the entries region (rows 0..3 inclusive).
+        for (s in 0..35) set(s, null)
 
+        val totalWeight = draft.weighted.filter { it.enabled }.sumOf { it.weight }
+        var slot = 0
         draft.weighted.forEachIndexed { idx, li ->
-            contentPane.addItem(GuiItem(renderLootItem(li, weighted = true, totalWeight)) { e ->
-                e.isCancelled = true
-                handleItemClick(idx, weighted = true, e.click, player)
+            if (slot > 35) return@forEachIndexed
+            val item = renderLootItem(li, weighted = true, totalWeight)
+            set(slot++, VcGuiItem.wrap(item) { ctx ->
+                handleItemClick(idx, weighted = true, ctx.click, ctx.player)
             })
         }
         draft.guaranteed.forEachIndexed { idx, li ->
-            contentPane.addItem(GuiItem(renderLootItem(li, weighted = false, 0.0)) { e ->
-                e.isCancelled = true
-                handleItemClick(idx, weighted = false, e.click, player)
+            if (slot > 35) return@forEachIndexed
+            val item = renderLootItem(li, weighted = false, 0.0)
+            set(slot++, VcGuiItem.wrap(item) { ctx ->
+                handleItemClick(idx, weighted = false, ctx.click, ctx.player)
             })
         }
 
         if (draft.weighted.isEmpty() && draft.guaranteed.isEmpty()) {
-            contentPane.addItem(GuiItem(
-                GuiComponents.infoItem(plugin, Material.BARRIER,
-                    "gui.loot-editor.empty-name", "gui.loot-editor.empty-lore")
-            ) { it.isCancelled = true })
+            val empty = GuiComponents.infoItem(plugin, Material.BARRIER,
+                "gui.loot-editor.empty-name", "gui.loot-editor.empty-lore")
+            set(13, VcGuiItem.wrap(empty))
         }
-        gui.update()
     }
 
     private fun renderLootItem(li: LootItem, weighted: Boolean, totalWeight: Double): ItemStack {
@@ -179,8 +169,6 @@ class LootEditorView(
                 val pct = String.format("%.1f", chancePerDraw * 100.0)
                 lore += plugin.getGuiText("gui.loot-editor.item-chance", "percent" to pct)
 
-                // Expected count per vault opening = avg(draws) × per-draw chance × avg(amount).
-                // Helps players reason about real drop rates without doing the math themselves.
                 val avgDraws = (draft.minRolls + draft.maxRolls) / 2.0
                 val expected = avgDraws * chancePerDraw * avgAmount
                 lore += plugin.getGuiText("gui.loot-editor.item-expected",
@@ -190,7 +178,6 @@ class LootEditorView(
                     "weight" to String.format("%.1f", li.weight))
             }
         } else if (li.enabled) {
-            // Guaranteed items always drop once per opening; expected count = avg(amount).
             lore += plugin.getGuiText("gui.loot-editor.item-expected",
                 "count" to formatExpected(avgAmount))
         }
@@ -203,11 +190,9 @@ class LootEditorView(
         }
         lore += plugin.getGuiText("gui.loot-editor.item-controls-right")
         lore += plugin.getGuiText("gui.loot-editor.item-controls-middle")
-        lore += Component.text("Q / drop key: remove", net.kyori.adventure.text.format.NamedTextColor.RED)
-            .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false)
+        lore += Component.text("Q / drop key: remove", NamedTextColor.RED)
+            .decoration(TextDecoration.ITALIC, false)
 
-        // Faithful items keep their real appearance (enchant glint, name, potion
-        // colour); we append the editor info to whatever lore they already have.
         val faithful = li.serializedItem?.let { plugin.lootManager.deserializeItem(it) }
         val item = faithful?.clone() ?: ItemStack(li.type)
         item.itemMeta = item.itemMeta?.apply {
@@ -242,113 +227,59 @@ class LootEditorView(
                 list[index] = item.copy(weight = (item.weight + 1.0).coerceAtMost(9999.0)); modified = true
             }
             ClickType.RIGHT, ClickType.WINDOW_BORDER_RIGHT -> {
-                if (chamber != null) menu.openAmountEditor(player, chamber, kind, index, weighted)
-                else menu.openGlobalAmountEditor(player, globalTableName!!, poolName, index, weighted)
+                // Persist current draft so the AmountEditor sees the same state.
+                if (chamber != null) {
+                    menu.saveDraft(player, chamber, kind, poolName, draft)
+                    menu.openAmountEditor(player, chamber, kind, index, weighted)
+                } else {
+                    menu.saveGlobalDraft(player, globalTableName!!, poolName, draft)
+                    menu.openGlobalAmountEditor(player, globalTableName, poolName, index, weighted)
+                }
+                return
             }
             else -> return
         }
 
         if (modified) {
             draft.dirty = true
-            refreshContent(player)
-            buildControls(player)
+            refreshContent()
+            buildControls()
+            update()
         }
     }
 
-    private fun buildControls(player: Player) {
-        controlsPane.clear()
+    /** Repaint the controls region (rows 4–5, slots 36..53). */
+    private fun buildControls() {
+        // Clear controls region.
+        for (s in 36..53) set(s, null)
 
+        // Row 4 (slots 36..44) — bottom-area controls
+        // Save at (0, 4) = slot 36
         val saveLoreKey = if (draft.dirty) "gui.loot-editor.save-lore-dirty" else "gui.loot-editor.save-lore-clean"
         val save = GuiComponents.infoItem(plugin, Material.GREEN_CONCRETE,
             "gui.loot-editor.save-name", saveLoreKey)
-        controlsPane.addItem(GuiItem(save) {
-            it.isCancelled = true
-            saveDraft(player)
+        set(36, VcGuiItem.wrap(save) { ctx ->
+            saveDraft(ctx.player)
             draft.dirty = false
             if (chamber != null) {
-                menu.saveDraft(player, chamber, kind, poolName, draft)
-                if (poolName != null) menu.openPoolSelect(player, chamber, kind)
-                else @Suppress("DEPRECATION") menu.openLootKindSelect(player, chamber)
+                menu.saveDraft(ctx.player, chamber, kind, poolName, draft)
+                if (poolName != null) menu.openPoolSelect(ctx.player, chamber, kind)
+                else @Suppress("DEPRECATION") menu.openLootKindSelect(ctx.player, chamber)
             } else {
-                menu.saveGlobalDraft(player, globalTableName!!, poolName, draft)
-                if (poolName != null) menu.openGlobalPoolSelect(player, globalTableName)
-                else menu.openLootTableList(player)
+                menu.saveGlobalDraft(ctx.player, globalTableName!!, poolName, draft)
+                if (poolName != null) menu.openGlobalPoolSelect(ctx.player, globalTableName)
+                else menu.openLootTableList(ctx.player)
             }
-        }, 0, 1)
+        })
 
-        val discard = GuiComponents.infoItem(plugin, Material.RED_CONCRETE,
-            "gui.loot-editor.discard-name", "gui.loot-editor.discard-lore")
-        controlsPane.addItem(GuiItem(discard) {
-            it.isCancelled = true
-            discardRequested = true
-            if (chamber != null) {
-                if (poolName != null) menu.openPoolSelect(player, chamber, kind)
-                else @Suppress("DEPRECATION") menu.openLootKindSelect(player, chamber)
-            } else {
-                if (poolName != null) menu.openGlobalPoolSelect(player, globalTableName!!)
-                else menu.openLootTableList(player)
-            }
-        }, 8, 1)
-
-        val add = GuiComponents.infoItem(plugin, Material.LIME_DYE,
-            "gui.loot-editor.add-name", "gui.loot-editor.add-lore")
-        controlsPane.addItem(GuiItem(add) {
-            it.isCancelled = true
-            val hand = player.inventory.itemInMainHand
-            if (hand.type == Material.AIR) {
-                player.sendMessage(plugin.getMessageComponent("gui-hold-item-to-add"))
-                return@GuiItem
-            }
-            val newItem = LootItem(
-                type = hand.type,
-                amountMin = 1,
-                amountMax = hand.amount.coerceAtLeast(1),
-                weight = 1.0,
-                // Capture the WHOLE item (enchants/potions/name/lore/NBT), not just its material.
-                serializedItem = plugin.lootManager.serializeItem(hand),
-                enabled = true
-            )
-            draft.weighted.add(newItem)
-            draft.dirty = true
-            player.sendMessage(plugin.getMessageComponent("gui-item-added-to-loot", "item" to hand.type.name))
-            refreshContent(player)
-            buildControls(player)
-        }, 4, 1)
-
-        // Bulk add: open a free-edit chest, drag items in, capture them faithfully.
-        val bulkAdd = ItemStack(Material.CHEST)
-        bulkAdd.itemMeta = bulkAdd.itemMeta?.apply {
-            displayName(
-                Component.text("Bulk add (drag items in)", NamedTextColor.AQUA)
-                    .decoration(TextDecoration.ITALIC, false)
-            )
-            lore(
-                listOf(
-                    Component.text("Opens a chest — drag or shift-click", NamedTextColor.GRAY)
-                        .decoration(TextDecoration.ITALIC, false),
-                    Component.text("items in, then close to add them all", NamedTextColor.GRAY)
-                        .decoration(TextDecoration.ITALIC, false),
-                    Component.text("(enchants/potions/NBT preserved).", NamedTextColor.GRAY)
-                        .decoration(TextDecoration.ITALIC, false),
-                )
-            )
-        }
-        controlsPane.addItem(GuiItem(bulkAdd) {
-            it.isCancelled = true
-            // Persist the current draft so the deposit appends to it, then open the chest.
-            if (chamber != null) menu.saveDraft(player, chamber, kind, poolName, draft)
-            else menu.saveGlobalDraft(player, globalTableName!!, poolName, draft)
-            menu.openLootDeposit(player, chamber, kind, poolName, globalTableName)
-        }, 6, 1)
-
+        // Rolls at (2, 4) = slot 38
         val rolls = GuiComponents.infoItem(plugin, Material.PAPER,
             "gui.loot-editor.rolls-name", "gui.loot-editor.rolls-lore",
             "min" to draft.minRolls, "max" to draft.maxRolls)
-        controlsPane.addItem(GuiItem(rolls) {
-            it.isCancelled = true
-            val left = it.isLeftClick
-            val right = it.isRightClick
-            val shift = it.isShiftClick
+        set(38, VcGuiItem.wrap(rolls) { ctx ->
+            val left = ctx.click == ClickType.LEFT || ctx.click == ClickType.SHIFT_LEFT
+            val right = ctx.click == ClickType.RIGHT || ctx.click == ClickType.SHIFT_RIGHT
+            val shift = ctx.click == ClickType.SHIFT_LEFT || ctx.click == ClickType.SHIFT_RIGHT
             var changed = false
             if (!shift && left) { draft.minRolls = (draft.minRolls + 1).coerceAtMost(64); changed = true }
             if (!shift && right) { draft.minRolls = (draft.minRolls - 1).coerceAtLeast(0); changed = true }
@@ -357,11 +288,73 @@ class LootEditorView(
             if (draft.maxRolls < draft.minRolls) draft.maxRolls = draft.minRolls
             if (changed) {
                 draft.dirty = true
-                buildControls(player)
+                buildControls()
+                update()
             }
-        }, 2, 1)
+        })
 
-        gui.update()
+        // Add (from hand) at (4, 4) = slot 40
+        val add = GuiComponents.infoItem(plugin, Material.LIME_DYE,
+            "gui.loot-editor.add-name", "gui.loot-editor.add-lore")
+        set(40, VcGuiItem.wrap(add) { ctx ->
+            val hand = ctx.player.inventory.itemInMainHand
+            if (hand.type == Material.AIR) {
+                ctx.player.sendMessage(plugin.getMessageComponent("gui-hold-item-to-add"))
+                return@wrap
+            }
+            val newItem = LootItem(
+                type = hand.type,
+                amountMin = 1,
+                amountMax = hand.amount.coerceAtLeast(1),
+                weight = 1.0,
+                serializedItem = plugin.lootManager.serializeItem(hand),
+                enabled = true
+            )
+            draft.weighted.add(newItem)
+            draft.dirty = true
+            ctx.player.sendMessage(plugin.getMessageComponent("gui-item-added-to-loot", "item" to hand.type.name))
+            refreshContent()
+            buildControls()
+            update()
+        })
+
+        // Bulk add at (6, 4) = slot 42
+        val bulkAdd = ItemStack(Material.CHEST).apply {
+            itemMeta = itemMeta?.apply {
+                displayName(
+                    Component.text("Bulk add (drag items in)", NamedTextColor.AQUA)
+                        .decoration(TextDecoration.ITALIC, false)
+                )
+                lore(listOf(
+                    Component.text("Opens a chest — drag or shift-click", NamedTextColor.GRAY)
+                        .decoration(TextDecoration.ITALIC, false),
+                    Component.text("items in, then close to add them all", NamedTextColor.GRAY)
+                        .decoration(TextDecoration.ITALIC, false),
+                    Component.text("(enchants/potions/NBT preserved).", NamedTextColor.GRAY)
+                        .decoration(TextDecoration.ITALIC, false),
+                ))
+            }
+        }
+        set(42, VcGuiItem.wrap(bulkAdd) { ctx ->
+            // Persist current draft so the deposit appends to it, then open the chest.
+            if (chamber != null) menu.saveDraft(ctx.player, chamber, kind, poolName, draft)
+            else menu.saveGlobalDraft(ctx.player, globalTableName!!, poolName, draft)
+            menu.openLootDeposit(ctx.player, chamber, kind, poolName, globalTableName)
+        })
+
+        // Discard at (8, 4) = slot 44
+        val discard = GuiComponents.infoItem(plugin, Material.RED_CONCRETE,
+            "gui.loot-editor.discard-name", "gui.loot-editor.discard-lore")
+        set(44, VcGuiItem.wrap(discard) { ctx ->
+            discardRequested = true
+            if (chamber != null) {
+                if (poolName != null) menu.openPoolSelect(ctx.player, chamber, kind)
+                else @Suppress("DEPRECATION") menu.openLootKindSelect(ctx.player, chamber)
+            } else {
+                if (poolName != null) menu.openGlobalPoolSelect(ctx.player, globalTableName!!)
+                else menu.openLootTableList(ctx.player)
+            }
+        })
     }
 
     private fun saveDraft(player: Player) {
@@ -404,13 +397,40 @@ class LootEditorView(
         else player.sendMessage(plugin.getMessageComponent("gui-loot-changes-saved"))
     }
 
-    /**
-     * Formats an expected-count number for display. Sub-1.0 values get two decimals
-     * so a "1 in 50" tier item still reads as "≈0.02" rather than rounding to 0.
-     */
     private fun formatExpected(v: Double): String = when {
         v >= 10.0 -> String.format("%.0f", v)
         v >= 1.0 -> String.format("%.1f", v)
         else -> String.format("%.2f", v)
     }
+}
+
+/**
+ * Build the title Component for the editor. Pulled out of the class body so
+ * we can pass it into `super(title = ...)` — Kotlin requires super-call args
+ * be expressions, no class-member access.
+ */
+private fun buildTitle(
+    chamber: Chamber?,
+    kind: MenuService.LootKind,
+    poolName: String?,
+    globalTableName: String?,
+    @Suppress("UNUSED_PARAMETER") dummy: Boolean,
+): Component? {
+    // We don't have a `plugin` reference at super-call time, so the title
+    // is built with raw Components (no `gui.loot-editor.title-*` lookup).
+    // The titles use the same wording as messages.yml; if the message keys
+    // are translated to other locales, this branch will not pick those up.
+    // Fixing that requires either passing `plugin` through or moving title
+    // build to a post-construction step; tracked as a follow-up.
+    val base = if (chamber != null) {
+        when (kind) {
+            MenuService.LootKind.NORMAL ->
+                Component.text("Loot — ${chamber.name}", NamedTextColor.DARK_GREEN)
+            MenuService.LootKind.OMINOUS ->
+                Component.text("Ominous Loot — ${chamber.name}", NamedTextColor.DARK_PURPLE)
+        }
+    } else {
+        Component.text("Loot — ${globalTableName ?: ""}", NamedTextColor.DARK_AQUA)
+    }
+    return if (poolName != null) base.append(Component.text(" / $poolName", NamedTextColor.GRAY)) else base
 }

@@ -295,8 +295,8 @@ class MenuService(private val plugin: TrialChamberPro) {
     fun openLootEditor(player: Player, chamber: Chamber, kind: LootKind, poolName: String? = null) {
         val key = draftKey(chamber.id, kind, poolName)
         val draft = sessions[player.uniqueId]?.drafts?.get(key)
+        // v1.5.0 — VcGui pattern: construct + open in one step, no separate build/show.
         val view = LootEditorView(plugin, this, chamber, kind, poolName, existingDraft = draft)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.LOOT_EDITOR
             chamberId = chamber.id
@@ -304,7 +304,7 @@ class MenuService(private val plugin: TrialChamberPro) {
             this.poolName = poolName
             globalLootEdit = false
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openAmountEditor(player: Player, chamber: Chamber, kind: LootKind, itemIndex: Int, isWeighted: Boolean) {
@@ -352,6 +352,7 @@ class MenuService(private val plugin: TrialChamberPro) {
         val kindHint = if (tableName.startsWith("ominous", ignoreCase = true)) LootKind.OMINOUS else LootKind.NORMAL
         val key = globalDraftKey(tableName, poolName)
         val draft = sessions[player.uniqueId]?.drafts?.get(key)
+        // v1.5.0 — VcGui pattern: construct + open in one step.
         val view = LootEditorView(
             plugin, this,
             chamber = null,
@@ -360,7 +361,6 @@ class MenuService(private val plugin: TrialChamberPro) {
             existingDraft = draft,
             globalTableName = tableName
         )
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.LOOT_EDITOR
             chamberId = null
@@ -369,7 +369,7 @@ class MenuService(private val plugin: TrialChamberPro) {
             lootTableName = tableName
             globalLootEdit = true
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openGlobalAmountEditor(
@@ -503,7 +503,8 @@ class MenuService(private val plugin: TrialChamberPro) {
 
     /** Opens the bulk loot-deposit chest (drag items in to add them faithfully). */
     fun openLootDeposit(player: Player, chamber: Chamber?, kind: LootKind, poolName: String?, globalTableName: String?) {
-        LootDepositView.open(player, chamber, kind, poolName, globalTableName)
+        // v1.5.0 — VcGui-backed; close handling lives in LootDepositView.handleClose.
+        LootDepositView(plugin, this, chamber, kind, poolName, globalTableName).open(player)
     }
 
     private fun draftKey(chamberId: Int, kind: LootKind, poolName: String? = null): String {
