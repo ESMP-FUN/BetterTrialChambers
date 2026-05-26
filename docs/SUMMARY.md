@@ -6,6 +6,7 @@
 * [⚡ Installation](getting-started/installation.md)
 * [🎯 Your First Chamber](getting-started/your-first-chamber.md)
 * [⚙️ Basic Configuration](getting-started/basic-configuration.md)
+* [🧪 Example Setups](getting-started/example-setups.md)
 
 ## Configuration
 
