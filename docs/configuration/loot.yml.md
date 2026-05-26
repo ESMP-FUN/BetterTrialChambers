@@ -218,6 +218,25 @@ loot:
 
 **Optional fields:**
 - `amount-min` / `amount-max`: Stack size range (default: 1)
+- `serialized-item`: Base64-encoded `ItemStack.serializeAsBytes()` output (set automatically when adding an item through the GUI editor — see below)
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
+**Faithful items via the GUI editor (v1.5.0+).** When you add a loot entry by clicking the **+ Add from Hand** button in `/tcp menu → Loot → …`, TCP captures the entire held `ItemStack` — enchantments, potion effects, custom names, lore, NBT, custom-model-data, third-party plugin tags, the lot — into the `serialized-item` field. The entry in `loot.yml` will look like:
+
+```yaml
+- type: ENCHANTED_BOOK
+  amount-min: 1
+  amount-max: 1
+  weight: 5.0
+  serialized-item: "AQECAAcAAAA..."   # full ItemStack bytes
+```
+
+Previously, GUI-added items only stored the material + amount, so an enchanted book turned into a plain book on drop. The serialized form fixes that. You can still hand-author entries with `enchantments:` / `potion-data:` / `custom-name:` / `lore:` and skip `serialized-item` entirely — both paths work and can coexist in the same table.
+
+For bulk authoring, the **Bulk add (drag items in)** button in the GUI opens a chest you can drag or shift-click any number of items into — on close, every item is captured the same way and added to the table at once.
+
+</div>
 
 ### Items with Custom Names & Lore
 
