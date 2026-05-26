@@ -1,4 +1,4 @@
-# 🎲 loot.yml Reference
+# loot.yml Reference
 
 Time to get creative! The `loot.yml` file is where you customize what players get from vaults. Want to rain diamonds? Give economy rewards? Drop custom items from other plugins? This is your playground.
 
@@ -34,7 +34,7 @@ TAB characters will cause the entire YAML file to fail to load silently. This re
 
 ---
 
-## 🪄 Want vanilla loot? It's already in the file.
+## Want vanilla loot? It's already in the file.
 
 Everything in `loot.yml` is fully customisable — but if you (or your players) just want the unmodified Minecraft 1.21 Trial Chamber drops, you don't have to build them yourself. Two ready-to-use loot tables — **`vanilla-normal`** and **`vanilla-ominous`** — are bundled inside `loot.yml` as a commented section titled **`VANILLA-ACCURATE LOOT TABLES`**.
 
@@ -52,7 +52,7 @@ The block includes inline comments explaining the small approximations the plugi
 
 ---
 
-## 🎯 Understanding Loot Tables
+## Understanding Loot Tables
 
 A **loot table** is a collection of possible rewards. When a player opens a vault, the plugin:
 
@@ -65,7 +65,7 @@ Think of it like rolling dice—higher weight = bigger section of the die.
 
 ---
 
-## 📦 Loot Table Structure
+## Loot Table Structure
 
 ```yaml
 loot-tables:
@@ -97,7 +97,7 @@ How many times to randomly pick from `weighted-items`. A random number between m
 
 ---
 
-## 🎱 Multi-Pool Loot System (NEW!)
+## Multi-Pool Loot System (NEW!)
 
 **Like vanilla Trial Chambers**, you can now create multiple loot pools that each roll independently! This gives you much finer control over loot distribution.
 
@@ -201,7 +201,7 @@ loot:
 
 ---
 
-## ✨ Item Types
+## Item Types
 
 ### Basic Items
 
@@ -291,11 +291,11 @@ Pro tip: Give ONLY enchanted books for specific enchants, not enchanted gear. Le
 
 ---
 
-## 🔮 Advanced Loot Features (NEW!)
+## Advanced Loot Features (NEW!)
 
 **Version 1.1.9+** brings vanilla-style loot customization with full Minecraft 1.21+ support! Create dynamic, randomized loot just like vanilla Trial Chambers.
 
-### 🏹 Tipped Arrows
+### Tipped Arrows
 
 Add potion effects to arrows with custom amplifier levels!
 
@@ -360,7 +360,7 @@ The `effect-duration` field lets you override how long potion effects last. When
 
 **Manual override:** Specify `effect-duration: <ticks>` to use a custom duration instead of auto-calculation (20 ticks = 1 second)
 
-### 🧪 Potions with Custom Levels
+### Potions with Custom Levels
 
 Create potions with any effect level—perfect for ominous vault rewards!
 
@@ -398,7 +398,7 @@ Create potions with any effect level—perfect for ominous vault rewards!
   potion-level: 2
 ```
 
-### 🌑 Ominous Potions (1.21+ Exclusive)
+### Ominous Potions (1.21+ Exclusive)
 
 **NEW IN 1.21!** Ominous potions are special bottles with extreme effect levels—only available from Trial Chambers in vanilla!
 
@@ -448,7 +448,7 @@ Create potions with any effect level—perfect for ominous vault rewards!
 
 </div>
 
-### 🔮 Ominous Bottles (Bad Omen Effect)
+### Ominous Bottles (Bad Omen Effect)
 
 **NEW IN 1.21!** Ominous Bottles are special potions that give the **Bad Omen** effect, which triggers **Ominous Trials** when entering a Trial Chamber. In vanilla Minecraft, these bottles are only found in ominous vaults and come in levels **III-V** (never I or II).
 
@@ -548,7 +548,7 @@ You can use `custom-effect-type` for other special effects:
   name: "&eGlowing Splash Potion"
 ```
 
-### ✨ Enchantment Randomization
+### Enchantment Randomization
 
 Add dynamic enchantments with random levels—just like vanilla treasure loot!
 
@@ -654,7 +654,7 @@ You can mix fixed enchantments, ranges, and random pools!
     - "FIRE_ASPECT:1:2"
 ```
 
-### 🔨 Variable Durability
+### Variable Durability
 
 Drop pre-damaged items with random wear—makes loot feel "used" and realistic!
 
@@ -710,7 +710,7 @@ Drop pre-damaged items with random wear—makes loot feel "used" and realistic!
 
 </div>
 
-### 🎨 Combining Everything
+### Combining Everything
 
 You can mix **all** advanced features on a single item!
 
@@ -746,7 +746,7 @@ This creates an incredible loot item with:
 
 ---
 
-## ⚖️ Understanding Weights
+## Understanding Weights
 
 **Weight determines probability.** Higher weight = more likely to be picked.
 
@@ -802,7 +802,7 @@ weighted-items:
 
 ---
 
-## 🎁 Guaranteed Items
+## Guaranteed Items
 
 Items in `guaranteed-items` ALWAYS drop, regardless of rolls or weight.
 
@@ -830,7 +830,7 @@ Every player gets 1 Golden Apple + 2-4 random items from weighted-items.
 
 ---
 
-## 🌑 Ominous Vault Loot
+## Ominous Vault Loot
 
 The `ominous-default` table is for ominous vaults. Make it WAY better than normal vaults!
 
@@ -869,7 +869,7 @@ loot-tables:
 
 ---
 
-## 💰 Economy Rewards
+## Economy Rewards
 
 Got Vault + an economy plugin? Give money as loot!
 
@@ -902,7 +902,7 @@ See the full [💰 COMMAND Rewards](#-command-rewards-economy--permissions) sect
 
 ---
 
-## 🎨 Custom Plugin Items
+## Custom Plugin Items
 
 ### Nexo, ItemsAdder, Oraxen, CraftEngine, MythicCrucible
 
@@ -961,7 +961,7 @@ You can also stack extra `name:`, `lore:`, and `enchantments:` on top of the res
 
 ---
 
-### 🖼️ Custom Model Data (Vanilla Items)
+### Custom Model Data (Vanilla Items)
 
 To give a vanilla item a custom model (for resource pack textures), add `custom-model-data:`:
 
@@ -981,7 +981,7 @@ weighted-items:
 
 ---
 
-## 🎯 Example Loot Tables
+## Example Loot Tables
 
 ### Beginner-Friendly Server
 
@@ -1161,7 +1161,7 @@ Best of all worlds—custom items, vanilla loot, and special perks.
 
 ---
 
-## 🔧 Per-Chamber Loot Tables
+## Per-Chamber Loot Tables
 
 Want different chambers to drop different loot? You can create multiple tables!
 
@@ -1235,7 +1235,7 @@ You can also set these overrides from the GUI: `/tcp menu` → pick the chamber 
 
 ---
 
-## 💡 Design Tips
+## Design Tips
 
 ### Balance Philosophy
 
@@ -1266,7 +1266,7 @@ Super rare items: <5% chance
 
 ---
 
-## 🎲 Advanced: Conditional Loot (Future Feature)
+## Advanced: Conditional Loot (Future Feature)
 
 In future versions, you'll be able to add conditions:
 
@@ -1284,7 +1284,7 @@ Not available yet, but coming soon!
 
 ---
 
-## 🔄 Testing Your Loot
+## Testing Your Loot
 
 ### Quick Test Cycle
 
@@ -1306,7 +1306,7 @@ Open 50 vaults, record what you get, calculate actual drop rates. Does it match 
 
 ---
 
-## ❓ Common Questions
+## Common Questions
 
 **"My loot tables aren't loading / vaults give no loot!"**
 Most likely caused by TAB characters in your YAML file. Check the console for `Loot table not found: default (available: )` - if the available list is empty, your entire loot.yml failed to parse. Open the file in an editor that shows whitespace and replace all TABs with spaces. See the warning at the top of this page for more details.
@@ -1328,7 +1328,7 @@ You can't remove vanilla loot directly—TrialChamberPro *replaces* vault loot e
 
 ---
 
-## 💰 COMMAND Rewards (Economy & Permissions)
+## COMMAND Rewards (Economy & Permissions)
 
 Want to give players **money**, **permissions**, **experience**, or run **any console command** when they open vaults? COMMAND rewards let you do exactly that!
 
@@ -1602,7 +1602,7 @@ Command rewards work with **any** plugin that uses console commands:
 
 ---
 
-## 🎯 What's Next?
+## What's Next?
 
 Now that you've mastered loot configuration, check out:
 
@@ -1624,7 +1624,7 @@ Hands-on guide to creating themed loot tables with examples.
 
 ---
 
-## 💎 Pro Tips
+## Pro Tips
 
 <div data-gb-custom-block data-tag="hint" data-style="success">
 
