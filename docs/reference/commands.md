@@ -1,4 +1,4 @@
-# 📝 Commands Reference
+# Commands Reference
 
 All commands start with `/tcp` (short for TrialChamberPro). Most require specific permissions—check the [Permissions](permissions.md) page for details.
 <div data-gb-custom-block data-tag="hint" data-style="info">
@@ -11,7 +11,7 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 
 ---
 
-## 🎯 Quick Reference
+## Quick Reference
 
 | Command | Description | Permission |
 |---------|-------------|------------|
@@ -47,7 +47,7 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 
 ---
 
-## 📚 Command Details
+## Command Details
 
 ### `/tcp help`
 
@@ -759,7 +759,7 @@ Reloads the plugin configuration without restarting the server.
 
 ---
 
-## 🎮 Common Command Sequences
+## Common Command Sequences
 
 ### Registering an Existing Chamber (Full Process)
 
@@ -845,7 +845,7 @@ Reloads the plugin configuration without restarting the server.
 
 ---
 
-## 💡 Pro Tips
+## Pro Tips
 
 <div data-gb-custom-block data-tag="hint" data-style="success">
 
@@ -873,7 +873,7 @@ Reloads the plugin configuration without restarting the server.
 
 ---
 
-## 🔧 Command Permissions
+## Command Permissions
 
 For a complete list of all permissions (including per-command permissions), see the [Permissions](permissions.md) page.
 
@@ -899,7 +899,7 @@ tcp.stats       # Can view own stats
 
 ---
 
-## ❓ Troubleshooting
+## Troubleshooting
 
 **"Unknown subcommand"**
 - Check spelling (use tab completion!)
@@ -931,7 +931,7 @@ tcp.stats       # Can view own stats
 
 ---
 
-## 🎯 Related Pages
+## Related Pages
 
 <div data-gb-custom-block data-tag="content-ref" data-url="permissions.md">
 

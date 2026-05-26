@@ -12,6 +12,26 @@ After making changes, reload with `/tcp reload`
 
 ---
 
+## Reading config paths in this guide
+
+This guide refers to settings as **dotted paths** like `global.reset-complete-alert` or `vaults.normal-cooldown-hours`. That's the *display form* — it's how the value is looked up from code, not how it's written in YAML. The actual `config.yml` is **nested**:
+
+| Documented path | What it looks like in `config.yml` |
+| --- | --- |
+| `global.reset-complete-alert: false` | <pre>global:<br>  reset-complete-alert: false</pre> |
+| `vaults.normal-cooldown-hours: 1` | <pre>vaults:<br>  normal-cooldown-hours: 1</pre> |
+| `protection.prevent-block-break: true` | <pre>protection:<br>  prevent-block-break: true</pre> |
+
+So when a setting is documented as `foo.bar.baz`, add `baz` **inside** the existing `foo:` → `bar:` block. Don't paste `foo.bar.baz: value` as a flat line at the top level — YAML treats the dots as part of the key name, the plugin's `getBoolean("foo.bar.baz")` lookup never resolves it, and the change silently has no effect.
+
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
+If you edit `config.yml` and a setting "doesn't seem to do anything," the first thing to check is whether you wrote it as a flat dotted key (`global.something: false`) instead of nesting it under the right section (`global:` → `  something: false`).
+
+</div>
+
+---
+
 ## Database Settings
 
 ```yaml
