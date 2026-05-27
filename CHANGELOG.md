@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.5.3] - 2026-05-27
+### Added
+- **In-game update notification with clickable Modrinth download link.** `UpdateChecker` is now also a `Listener`. When the periodic GitHub check detects a newer release, any admin (`tcp.admin`) who logs in afterwards (and any already-online admins) gets a short MiniMessage line: `You are using version X.Y.Z, latest version is A.B.C.` followed by a clickable `[Download Latest Version]` pointing at the Modrinth versions page (`https://modrinth.com/plugin/trialchamberpro/versions`, hover tooltip explains it opens in a browser). One-shot per check; no in-game spam beyond the join ping.
+
 ## [1.5.2] - 2026-05-27
 ### Fixed
 - **`/tcp reset` silently failing with "check console" but nothing in the console.** When a previous reset for the same chamber was still in `inProgress` (mid-restore, or stuck), the duplicate request returned false after only a `logger.fine` line, which Bukkit suppresses by default — so admins saw the failure chat message with no visible explanation. The log line is now a `warning` and tells you exactly what happened plus the restart-to-clear hint.
