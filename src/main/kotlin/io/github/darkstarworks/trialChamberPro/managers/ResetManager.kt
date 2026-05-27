@@ -234,7 +234,12 @@ class ResetManager(private val plugin: TrialChamberPro) {
         reason: ChamberResetEvent.Reason = ChamberResetEvent.Reason.MANUAL
     ): Boolean {
         if (!inProgress.add(chamber.id)) {
-            plugin.logger.fine("Reset already running for ${chamber.name}; skipping duplicate")
+            // Visible (not fine) so admins running /tcp reset see WHY it failed when the
+            // previous attempt is still mid-restore (or got stuck and never released the slot).
+            plugin.logger.warning(
+                "Reset already in progress for chamber '${chamber.name}'; ignoring duplicate request. " +
+                    "If this persists after a minute or two, restart the server to clear stuck state."
+            )
             return false
         }
         return try {
