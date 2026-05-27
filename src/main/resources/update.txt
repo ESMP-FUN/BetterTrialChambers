@@ -1,4 +1,8 @@
 <black>.
+<aqua>[1.5.2] <gray>- <white>(COMING SOON)
+<lime>+ <white>FIX: <green><yellow>/tcp reset<green> no longer silently fails when a previous reset for the same chamber is still in progress — the duplicate-request log line is now a visible warning instead of a hidden FINE entry, so admins see why it bounced.
+<lime>+ <white>FIX: <green><yellow>/tcp snapshot create<green> now actually verifies the DB link before claiming success. Previously a failed DB update could leave the .dat file on disk but the chamber row pointing at nothing, so the next reset logged "No snapshot found" and skipped restoration.
+<lime>+ <white>FIX: <green>Tab-completion suggests <yellow>/tcp loot audit<green> (the 1.5.1 command worked but wasn't autocompleted).
 <aqua>[1.5.1] <gray>- <white>(COMING SOON)
 <lime>+ <white>NEW: <green>Per-chamber spawner cooldown can now <yellow>Match Chamber Reset<green> — set in Chamber Settings, spawners rearm right as the chamber resets.
 <lime>+ <white>NEW: <green>Snapshot reminder: admins are pinged on login (and every 30 min) when discovered chambers are missing snapshots and can't be reset. Toggle under <yellow>discovery.snapshot-reminder<green>.
