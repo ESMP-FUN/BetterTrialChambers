@@ -1,59 +1,55 @@
 package io.github.darkstarworks.trialChamberPro.gui
 
-import com.github.stefvanschie.inventoryframework.gui.GuiItem
-import com.github.stefvanschie.inventoryframework.gui.type.ChestGui
-import com.github.stefvanschie.inventoryframework.pane.StaticPane
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.gui.components.GuiComponents
-import io.github.darkstarworks.trialChamberPro.gui.components.GuiText
+import io.github.darkstarworks.trialChamberPro.gui.framework.BaseHolder
+import io.github.darkstarworks.trialChamberPro.gui.framework.VcGui
+import io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 
+class StatsMenuHolder : BaseHolder()
+
 class StatsMenuView(
     private val plugin: TrialChamberPro,
-    private val menu: MenuService
+    private val menu: MenuService,
+    private val viewer: Player,
+) : VcGui(
+    rows = 4,
+    title = plugin.getGuiText("gui.stats-menu.title"),
+    holder = StatsMenuHolder(),
 ) {
-    fun build(player: Player): ChestGui {
-        val gui = ChestGui(4, GuiText.plain(plugin, "gui.stats-menu.title"))
-        val pane = StaticPane(0, 0, 9, 4)
+    init { layout() }
 
-        pane.addItem(GuiItem(createHeaderItem()) { it.isCancelled = true }, 4, 0)
-
-        pane.addItem(GuiItem(categoryItem(Material.VAULT, "gui.stats-menu.category-vaults-name")) { e ->
-            e.isCancelled = true; menu.openLeaderboard(player, "vaults")
-        }, 1, 1)
-        pane.addItem(GuiItem(categoryItem(Material.LODESTONE, "gui.stats-menu.category-chambers-name")) { e ->
-            e.isCancelled = true; menu.openLeaderboard(player, "chambers")
-        }, 3, 1)
-        pane.addItem(GuiItem(categoryItem(Material.IRON_SWORD, "gui.stats-menu.category-mobs-name")) { e ->
-            e.isCancelled = true; menu.openLeaderboard(player, "mobs")
-        }, 5, 1)
-        pane.addItem(GuiItem(categoryItem(Material.CLOCK, "gui.stats-menu.category-time-name")) { e ->
-            e.isCancelled = true; menu.openLeaderboard(player, "time")
-        }, 7, 1)
-
-        pane.addItem(GuiItem(
-            GuiComponents.playerHead(plugin, player.uniqueId,
+    private fun layout() {
+        clear()
+        set(4, VcGuiItem.wrap(createHeaderItem()))
+        set(10, VcGuiItem.wrap(categoryItem(Material.VAULT, "gui.stats-menu.category-vaults-name")) { ctx ->
+            menu.openLeaderboard(ctx.player, "vaults")
+        })
+        set(12, VcGuiItem.wrap(categoryItem(Material.LODESTONE, "gui.stats-menu.category-chambers-name")) { ctx ->
+            menu.openLeaderboard(ctx.player, "chambers")
+        })
+        set(14, VcGuiItem.wrap(categoryItem(Material.IRON_SWORD, "gui.stats-menu.category-mobs-name")) { ctx ->
+            menu.openLeaderboard(ctx.player, "mobs")
+        })
+        set(16, VcGuiItem.wrap(categoryItem(Material.CLOCK, "gui.stats-menu.category-time-name")) { ctx ->
+            menu.openLeaderboard(ctx.player, "time")
+        })
+        set(22, VcGuiItem.wrap(
+            GuiComponents.playerHead(plugin, viewer.uniqueId,
                 "gui.stats-menu.your-stats-name", "gui.stats-menu.your-stats-lore")
-        ) { e ->
-            e.isCancelled = true; menu.openPlayerStats(player, player.uniqueId)
-        }, 4, 2)
-
-        pane.addItem(GuiComponents.backButton(plugin, "gui.common.dest-main-menu") {
-            menu.openMainMenu(player)
-        }, 0, 3)
-        pane.addItem(GuiComponents.closeButton(plugin, player), 8, 3)
-
-        gui.addPane(pane)
-        gui.setOnGlobalClick { it.isCancelled = true }
-        gui.setOnGlobalDrag { it.isCancelled = true }
-        return gui
+        ) { ctx -> menu.openPlayerStats(ctx.player, ctx.player.uniqueId) })
+        set(27, GuiComponents.backVcItem(plugin, "gui.common.dest-main-menu") { ctx ->
+            menu.openMainMenu(ctx.player)
+        })
+        set(35, GuiComponents.closeVcItem(plugin))
     }
 
     private fun createHeaderItem(): ItemStack {
-        val statsEnabled = plugin.config.getBoolean("statistics.enabled", true)
-        val loreKey = if (statsEnabled) "gui.stats-menu.header-lore-enabled" else "gui.stats-menu.header-lore-disabled"
+        val on = plugin.config.getBoolean("statistics.enabled", true)
+        val loreKey = if (on) "gui.stats-menu.header-lore-enabled" else "gui.stats-menu.header-lore-disabled"
         return GuiComponents.infoItem(plugin, Material.WRITABLE_BOOK, "gui.stats-menu.header-name", loreKey)
     }
 

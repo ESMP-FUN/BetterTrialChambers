@@ -1,6 +1,5 @@
 package io.github.darkstarworks.trialChamberPro.gui
 
-import com.github.stefvanschie.inventoryframework.gui.type.ChestGui
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.models.Chamber
 import io.github.darkstarworks.trialChamberPro.models.LootEditorDraft
@@ -200,23 +199,21 @@ class MenuService(private val plugin: TrialChamberPro) {
 
     fun openCustomMobProvider(player: Player, chamber: Chamber) {
         val view = CustomMobProviderView(plugin, this, chamber)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.CUSTOM_MOB_PROVIDER
             chamberId = chamber.id
         }
-        gui.show(player)
+        view.open(player)
     }
 
     // ==================== Main Menu ====================
 
     fun openMainMenu(player: Player) {
         val view = MainMenuView(plugin, this)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.MAIN_MENU
         }
-        gui.show(player)
+        view.open(player)
     }
 
     // ==================== Chamber Screens ====================
@@ -225,63 +222,72 @@ class MenuService(private val plugin: TrialChamberPro) {
         // Warm vault counts cache
         warmVaultCountsCache()
 
-        val view = ChamberListView(plugin, this)
-        val gui = view.build(player, page)
+        // v1.5.0 — VcGui pattern.
+        val view = ChamberListView(plugin, this, player, page)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.CHAMBER_LIST
             currentPage = page
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openChamberDetail(player: Player, chamber: Chamber) {
+        // v1.5.0 — VcGui pattern.
         val view = ChamberDetailView(plugin, this, chamber)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.CHAMBER_DETAIL
             chamberId = chamber.id
             lootKind = null
             poolName = null
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openChamberSettings(player: Player, chamber: Chamber) {
         val view = ChamberSettingsView(plugin, this, chamber)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.CHAMBER_SETTINGS
             chamberId = chamber.id
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openVaultManagement(player: Player, chamber: Chamber) {
         val view = VaultManagementView(plugin, this, chamber)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.VAULT_MANAGEMENT
             chamberId = chamber.id
         }
-        gui.show(player)
+        view.open(player)
     }
 
     // ==================== Loot Screens ====================
 
     fun openLootTableList(player: Player) {
+        // v1.5.0 — VcGui pattern.
         val view = LootTableListView(plugin, this)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.LOOT_TABLE_LIST
             // Leave globalLootEdit state alone — the list itself isn't a loot editor
             // screen, and the flag governs restoration of editor/pool/amount screens.
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openPoolSelect(player: Player, chamber: Chamber, kind: LootKind) {
+        // Short-circuit for legacy/missing tables — open the editor directly
+        // (the old IF view returned an empty ChestGui in this case, which the
+        // VcGui rewrite can't do cleanly from super(...)).
+        val tableName = when (kind) {
+            LootKind.NORMAL -> "chamber-${chamber.name.lowercase()}"
+            LootKind.OMINOUS -> "ominous-${chamber.name.lowercase()}"
+        }
+        val table = plugin.lootManager.getTable(tableName)
+        if (table == null || table.isLegacyFormat()) {
+            openLootEditor(player, chamber, kind, null)
+            return
+        }
         val view = PoolSelectorView(plugin, this, chamber, kind)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.POOL_SELECT
             chamberId = chamber.id
@@ -289,14 +295,14 @@ class MenuService(private val plugin: TrialChamberPro) {
             poolName = null
             globalLootEdit = false
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openLootEditor(player: Player, chamber: Chamber, kind: LootKind, poolName: String? = null) {
         val key = draftKey(chamber.id, kind, poolName)
         val draft = sessions[player.uniqueId]?.drafts?.get(key)
+        // v1.5.0 — VcGui pattern: construct + open in one step, no separate build/show.
         val view = LootEditorView(plugin, this, chamber, kind, poolName, existingDraft = draft)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.LOOT_EDITOR
             chamberId = chamber.id
@@ -304,7 +310,7 @@ class MenuService(private val plugin: TrialChamberPro) {
             this.poolName = poolName
             globalLootEdit = false
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openAmountEditor(player: Player, chamber: Chamber, kind: LootKind, itemIndex: Int, isWeighted: Boolean) {
@@ -317,7 +323,6 @@ class MenuService(private val plugin: TrialChamberPro) {
             return
         }
         val view = AmountEditorView(plugin, this, chamber, kind, poolName, itemIndex, isWeighted, draft)
-        val gui = view.build()
         session.apply {
             screen = Screen.AMOUNT_EDITOR
             chamberId = chamber.id
@@ -326,7 +331,7 @@ class MenuService(private val plugin: TrialChamberPro) {
             this.isWeighted = isWeighted
             globalLootEdit = false
         }
-        gui.show(player)
+        view.open(player)
     }
 
     // ==================== Global (non-chamber) Loot Editing ====================
@@ -335,8 +340,13 @@ class MenuService(private val plugin: TrialChamberPro) {
         // Use OMINOUS kind hint for ominous-prefixed tables so any icon heuristics still work;
         // this value is ignored in global flow.
         val kindHint = if (tableName.startsWith("ominous", ignoreCase = true)) LootKind.OMINOUS else LootKind.NORMAL
+        // Short-circuit for legacy/missing tables (see openPoolSelect for rationale).
+        val table = plugin.lootManager.getTable(tableName)
+        if (table == null || table.isLegacyFormat()) {
+            openGlobalLootEditor(player, tableName)
+            return
+        }
         val view = PoolSelectorView(plugin, this, chamber = null, kind = kindHint, globalTableName = tableName)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.POOL_SELECT
             chamberId = null
@@ -345,13 +355,14 @@ class MenuService(private val plugin: TrialChamberPro) {
             lootTableName = tableName
             globalLootEdit = true
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openGlobalLootEditor(player: Player, tableName: String, poolName: String? = null) {
         val kindHint = if (tableName.startsWith("ominous", ignoreCase = true)) LootKind.OMINOUS else LootKind.NORMAL
         val key = globalDraftKey(tableName, poolName)
         val draft = sessions[player.uniqueId]?.drafts?.get(key)
+        // v1.5.0 — VcGui pattern: construct + open in one step.
         val view = LootEditorView(
             plugin, this,
             chamber = null,
@@ -360,7 +371,6 @@ class MenuService(private val plugin: TrialChamberPro) {
             existingDraft = draft,
             globalTableName = tableName
         )
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.LOOT_EDITOR
             chamberId = null
@@ -369,7 +379,7 @@ class MenuService(private val plugin: TrialChamberPro) {
             lootTableName = tableName
             globalLootEdit = true
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openGlobalAmountEditor(
@@ -398,7 +408,6 @@ class MenuService(private val plugin: TrialChamberPro) {
             draft = draft,
             globalTableName = tableName
         )
-        val gui = view.build()
         session.apply {
             screen = Screen.AMOUNT_EDITOR
             chamberId = null
@@ -409,7 +418,7 @@ class MenuService(private val plugin: TrialChamberPro) {
             lootTableName = tableName
             globalLootEdit = true
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun saveGlobalDraft(player: Player, tableName: String, poolName: String?, draft: LootEditorDraft) {
@@ -424,32 +433,30 @@ class MenuService(private val plugin: TrialChamberPro) {
     // ==================== Stats Screens ====================
 
     fun openStatsMenu(player: Player) {
-        val view = StatsMenuView(plugin, this)
-        val gui = view.build(player)
+        val view = StatsMenuView(plugin, this, player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.STATS_MENU
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openLeaderboard(player: Player, type: String) {
-        val view = LeaderboardView(plugin, this, type)
-        val gui = view.build(player)
+        // v1.5.0 — VcGui pattern.
+        val view = LeaderboardView(plugin, this, player, type)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.LEADERBOARD
             leaderboardType = type
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openPlayerStats(player: Player, targetUuid: UUID) {
         val view = PlayerStatsView(plugin, this, targetUuid)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.PLAYER_STATS
             targetPlayerUuid = targetUuid
         }
-        gui.show(player)
+        view.open(player)
     }
 
     // ==================== Settings Screens ====================
@@ -459,31 +466,28 @@ class MenuService(private val plugin: TrialChamberPro) {
 
     fun openGlobalSettings(player: Player) {
         val view = GlobalSettingsView(plugin, this)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.GLOBAL_SETTINGS
         }
-        gui.show(player)
+        view.open(player)
     }
 
     fun openProtectionMenu(player: Player) {
         val view = ProtectionMenuView(plugin, this)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.PROTECTION_MENU
         }
-        gui.show(player)
+        view.open(player)
     }
 
     // ==================== Help Screen ====================
 
     fun openHelpMenu(player: Player) {
         val view = HelpMenuView(plugin, this)
-        val gui = view.build(player)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.HELP_MENU
         }
-        gui.show(player)
+        view.open(player)
     }
 
     // ==================== Utility Methods ====================
@@ -503,7 +507,8 @@ class MenuService(private val plugin: TrialChamberPro) {
 
     /** Opens the bulk loot-deposit chest (drag items in to add them faithfully). */
     fun openLootDeposit(player: Player, chamber: Chamber?, kind: LootKind, poolName: String?, globalTableName: String?) {
-        LootDepositView.open(player, chamber, kind, poolName, globalTableName)
+        // v1.5.0 — VcGui-backed; close handling lives in LootDepositView.handleClose.
+        LootDepositView(plugin, this, chamber, kind, poolName, globalTableName).open(player)
     }
 
     private fun draftKey(chamberId: Int, kind: LootKind, poolName: String? = null): String {

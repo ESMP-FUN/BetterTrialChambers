@@ -1,11 +1,8 @@
 package io.github.darkstarworks.trialChamberPro.gui.components
 
-import com.github.stefvanschie.inventoryframework.gui.GuiItem
-import com.github.stefvanschie.inventoryframework.pane.StaticPane
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import org.bukkit.Material
 import org.bukkit.OfflinePlayer
-import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.SkullMeta
 import java.util.UUID
@@ -65,101 +62,6 @@ import java.util.UUID
 object GuiComponents {
 
     /** Fills an entire row with a single-material filler (invisible border). */
-    fun fillRow(pane: StaticPane, row: Int, width: Int = 9, material: Material = Material.GRAY_STAINED_GLASS_PANE) {
-        val filler = ItemStack(material).apply {
-            itemMeta = itemMeta?.apply { displayName(net.kyori.adventure.text.Component.empty()) }
-        }
-        for (x in 0 until width) {
-            pane.addItem(GuiItem(filler.clone()) { it.isCancelled = true }, x, row)
-        }
-    }
-
-    /**
-     * Canonical back button. Place at slot (0, lastRow).
-     *
-     * @param destinationKey messages.yml key for the destination label (e.g. `gui.common.dest-main-menu`).
-     *        Substituted into `gui.common.back-button` as `{destination}`.
-     */
-    fun backButton(
-        plugin: TrialChamberPro,
-        destinationKey: String,
-        onClick: (click: org.bukkit.event.inventory.InventoryClickEvent) -> Unit
-    ): GuiItem {
-        val destination = plugin.getMessage(destinationKey)
-        val item = ItemStack(Material.ARROW).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(plugin.getGuiText("gui.common.back-button", "destination" to destination))
-            }
-        }
-        return GuiItem(item) { event ->
-            event.isCancelled = true
-            onClick(event)
-        }
-    }
-
-    /** Canonical close button. Place at slot (8, lastRow). */
-    fun closeButton(plugin: TrialChamberPro, player: Player): GuiItem {
-        val item = ItemStack(Material.BARRIER).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(plugin.getGuiText("gui.common.close-button"))
-            }
-        }
-        return GuiItem(item) { event ->
-            event.isCancelled = true
-            player.closeInventory()
-        }
-    }
-
-    /** Previous-page button for paginated lists. Disabled state when no prior page. */
-    fun prevPageButton(
-        plugin: TrialChamberPro,
-        currentPage: Int,
-        totalPages: Int,
-        onClick: (click: org.bukkit.event.inventory.InventoryClickEvent) -> Unit
-    ): GuiItem {
-        val enabled = currentPage > 0
-        val material = if (enabled) Material.SPECTRAL_ARROW else Material.GRAY_STAINED_GLASS_PANE
-        val item = ItemStack(material).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(plugin.getGuiText("gui.common.prev-page"))
-                lore(plugin.getGuiLore(
-                    "gui.common.page-indicator-lore",
-                    "current" to (currentPage + 1),
-                    "total" to totalPages
-                ))
-            }
-        }
-        return GuiItem(item) { event ->
-            event.isCancelled = true
-            if (enabled) onClick(event)
-        }
-    }
-
-    /** Next-page button. Disabled state when no subsequent page. */
-    fun nextPageButton(
-        plugin: TrialChamberPro,
-        currentPage: Int,
-        totalPages: Int,
-        onClick: (click: org.bukkit.event.inventory.InventoryClickEvent) -> Unit
-    ): GuiItem {
-        val enabled = currentPage < totalPages - 1
-        val material = if (enabled) Material.TIPPED_ARROW else Material.GRAY_STAINED_GLASS_PANE
-        val item = ItemStack(material).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(plugin.getGuiText("gui.common.next-page"))
-                lore(plugin.getGuiLore(
-                    "gui.common.page-indicator-lore",
-                    "current" to (currentPage + 1),
-                    "total" to totalPages
-                ))
-            }
-        }
-        return GuiItem(item) { event ->
-            event.isCancelled = true
-            if (enabled) onClick(event)
-        }
-    }
-
     /**
      * Canonical "informational item" where both name and lore come from
      * messages.yml. For items that only have a name, pass `loreKey = null`.
@@ -234,6 +136,96 @@ object GuiComponents {
         loreKey: String? = null,
         vararg replacements: Pair<String, Any?>
     ): ItemStack = playerHead(plugin, org.bukkit.Bukkit.getOfflinePlayer(uuid), nameKey, loreKey, *replacements)
+
+    // ==================== VcGui nav helpers ====================
+    //
+    // Navigation buttons that bundle a click handler — these return
+    // `VcGuiItem` directly because the click behavior is the helper's value.
+    // The `Vc` prefix is a historical artifact of the v1.5.0 IF→VcGui
+    // migration; the old IF-returning `backButton`/`closeButton`/etc. lived
+    // here in parallel during the transition. The names can collapse to
+    // unprefixed (`backItem` etc.) in a future renaming pass — held off for
+    // now to keep the v1.5.0 diff focused.
+    //
+    // ItemStack-returning helpers above (infoItem, toggleItem, playerHead)
+    // are framework-agnostic — views wrap with `VcGuiItem.wrap(stack, onClick = ...)`.
+
+    /** Back-button as a `VcGuiItem`. */
+    fun backVcItem(
+        plugin: TrialChamberPro,
+        destinationKey: String,
+        onClick: (io.github.darkstarworks.trialChamberPro.gui.framework.ClickContext) -> Unit
+    ): io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem {
+        val destination = plugin.getMessage(destinationKey)
+        val stack = ItemStack(Material.ARROW).apply {
+            itemMeta = itemMeta?.apply {
+                displayName(plugin.getGuiText("gui.common.back-button", "destination" to destination))
+            }
+        }
+        return io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem.wrap(stack, onClick = onClick)
+    }
+
+    /** Close-button (closes the player's open inventory). */
+    fun closeVcItem(
+        plugin: TrialChamberPro
+    ): io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem {
+        val stack = ItemStack(Material.BARRIER).apply {
+            itemMeta = itemMeta?.apply {
+                displayName(plugin.getGuiText("gui.common.close-button"))
+            }
+        }
+        return io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem.wrap(stack) { ctx ->
+            ctx.player.closeInventory()
+        }
+    }
+
+    /** Previous-page button for paginated lists. Disabled-state lore + onClick gating when there's no prior page. */
+    fun prevPageVcItem(
+        plugin: TrialChamberPro,
+        currentPage: Int,
+        totalPages: Int,
+        onClick: (io.github.darkstarworks.trialChamberPro.gui.framework.ClickContext) -> Unit
+    ): io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem {
+        val enabled = currentPage > 0
+        val material = if (enabled) Material.SPECTRAL_ARROW else Material.GRAY_STAINED_GLASS_PANE
+        val stack = ItemStack(material).apply {
+            itemMeta = itemMeta?.apply {
+                displayName(plugin.getGuiText("gui.common.prev-page"))
+                lore(plugin.getGuiLore(
+                    "gui.common.page-indicator-lore",
+                    "current" to (currentPage + 1),
+                    "total" to totalPages
+                ))
+            }
+        }
+        return io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem.wrap(stack) { ctx ->
+            if (enabled) onClick(ctx)
+        }
+    }
+
+    /** Next-page button for paginated lists. Disabled-state lore + onClick gating when there's no next page. */
+    fun nextPageVcItem(
+        plugin: TrialChamberPro,
+        currentPage: Int,
+        totalPages: Int,
+        onClick: (io.github.darkstarworks.trialChamberPro.gui.framework.ClickContext) -> Unit
+    ): io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem {
+        val enabled = currentPage < totalPages - 1
+        val material = if (enabled) Material.TIPPED_ARROW else Material.GRAY_STAINED_GLASS_PANE
+        val stack = ItemStack(material).apply {
+            itemMeta = itemMeta?.apply {
+                displayName(plugin.getGuiText("gui.common.next-page"))
+                lore(plugin.getGuiLore(
+                    "gui.common.page-indicator-lore",
+                    "current" to (currentPage + 1),
+                    "total" to totalPages
+                ))
+            }
+        }
+        return io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem.wrap(stack) { ctx ->
+            if (enabled) onClick(ctx)
+        }
+    }
 }
 
 /**

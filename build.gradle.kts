@@ -13,7 +13,7 @@ plugins {
 }
 
 group = "io.github.darkstarworks"
-version = "1.5.0"
+version = "1.5.1"
 
 repositories {
     mavenCentral()
@@ -47,8 +47,10 @@ dependencies {
     implementation("org.xerial:sqlite-jdbc:3.44.1.0")
     implementation("com.zaxxer:HikariCP:5.1.0")
 
-    // GUI Framework
-    implementation("com.github.stefvanschie.inventoryframework:IF:0.11.6")
+    // GUI Framework — TCP uses its own in-house VcGui framework
+    // (`gui/framework/`) as of v1.5.0; the prior InventoryFramework
+    // dependency (com.github.stefvanschie.inventoryframework:IF) was
+    // dropped in the same release.
 
     // JSON parsing for update checker
     implementation("com.google.code.gson:gson:2.10.1")
@@ -122,7 +124,7 @@ tasks {
         // This avoids NoClassDefFoundError for kotlinx.coroutines.Dispatchers during plugin bootstrap
         // Important: Do NOT relocate org.sqlite, or the sqlite-jdbc native bindings (JNI) will fail to load
         relocate("com.zaxxer.hikari", "io.github.darkstarworks.tcp.hikari")
-        relocate("com.github.stefvanschie.inventoryframework", "io.github.darkstarworks.tcp.inventoryframework")
+        // InventoryFramework relocation removed in v1.5.0 — see dependency comment.
 
         // Exclude unnecessary SQLite native binaries to reduce jar size
         // Keep only Windows (x86/x64), Linux (x86/x64), and Linux-ARM for common MC server platforms
