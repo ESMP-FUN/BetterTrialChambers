@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
 ## [1.5.2] - 2026-05-27
+### Added
+- **In-game update notification with clickable Modrinth download link.** `UpdateChecker` is now also a `Listener`. When the periodic GitHub check detects a newer release, any admin (`tcp.admin`) who logs in afterwards (and any already-online admins) gets a short MiniMessage line: `You are using version X.Y.Z, latest version is A.B.C.` followed by a clickable `[Download Latest Version]` pointing at the Modrinth versions page (hover tooltip explains it opens in a browser). One-shot per check; no in-game spam beyond the join ping.
+
 ### Fixed
 - **`/tcp reset` silently failing with "check console" but nothing in the console.** When a previous reset for the same chamber was still in `inProgress` (mid-restore, or stuck), the duplicate request returned false after only a `logger.fine` line, which Bukkit suppresses by default — so admins saw the failure chat message with no visible explanation. The log line is now a `warning` and tells you exactly what happened plus the restart-to-clear hint.
 - **`/tcp snapshot create` reporting success when the chamber row wasn't actually updated.** `captureSnapshot` wrote the `.dat` file then called `setSnapshotFile()` without checking the return value; a failed DB update left the chamber's `snapshot_file` column NULL, so the *next* reset logged "No snapshot found" and skipped restoration even though the file was on disk. Both `createSnapshot` and `setSnapshotFile` are now wrapped — exceptions are logged with stack traces, and a failed DB link produces a clear `snapshot-failed` chat message instead of the misleading "created" line.
