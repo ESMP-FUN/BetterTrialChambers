@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.5.2] - 2026-05-27
+### Fixed
+- **`/tcp reset` silently failing with "check console" but nothing in the console.** When a previous reset for the same chamber was still in `inProgress` (mid-restore, or stuck), the duplicate request returned false after only a `logger.fine` line, which Bukkit suppresses by default — so admins saw the failure chat message with no visible explanation. The log line is now a `warning` and tells you exactly what happened plus the restart-to-clear hint.
+- **`/tcp snapshot create` reporting success when the chamber row wasn't actually updated.** `captureSnapshot` wrote the `.dat` file then called `setSnapshotFile()` without checking the return value; a failed DB update left the chamber's `snapshot_file` column NULL, so the *next* reset logged "No snapshot found" and skipped restoration even though the file was on disk. Both `createSnapshot` and `setSnapshotFile` are now wrapped — exceptions are logged with stack traces, and a failed DB link produces a clear `snapshot-failed` chat message instead of the misleading "created" line.
+- **Tab completion missing for `/tcp loot audit`.** The 1.5.1 audit subcommand worked but wasn't suggested by tab-complete; added to `lootActions`.
+
 ## [1.5.1] - 2026-05-27
 ### Added
 - **Per-chamber spawner cooldown can now match the chamber's reset interval.** New cycle option in `ChamberSettingsView`'s spawner-cooldown toggle: **Match Chamber Reset**. At reset time, each trial spawner in the chamber is stamped with `cooldownLength = chamber.resetInterval`, so the spawner naturally rearms right as the chamber resets. Stored as the sentinel value `-2` on `chambers.spawner_cooldown_minutes`; existing per-chamber values, the `null = global config` default, and the `-1 = vanilla 30m` / `0 = immediate` modes are unchanged.
@@ -1293,6 +1299,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.5.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.7...v1.5.0
 [1.4.7]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.6...v1.4.7
