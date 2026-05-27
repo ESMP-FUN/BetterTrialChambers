@@ -182,6 +182,11 @@ class LootEditorView(
                 "count" to formatExpected(avgAmount))
         }
         lore += plugin.getGuiText(if (li.enabled) "gui.loot-editor.item-enabled" else "gui.loot-editor.item-disabled")
+        if (plugin.lootManager.isLegacy(li)) {
+            lore += Component.empty()
+            lore += Component.text("⚠ Legacy entry — re-add to capture NBT", NamedTextColor.GOLD)
+                .decoration(TextDecoration.ITALIC, false)
+        }
         lore += Component.empty()
         lore += plugin.getGuiText("gui.loot-editor.item-controls-header")
         if (weighted) {

@@ -59,9 +59,17 @@ class ResetManager(private val plugin: TrialChamberPro) {
         resetScope.launch {
             while (isActive) {
                 try {
+                    val before = pendingResets.size
                     val chambers = plugin.chamberManager.getAllChambers()
                     chambers.forEach { chamber ->
                         scheduleResetIfNeeded(chamber)
+                    }
+                    val newlyPending = pendingResets.size - before
+                    if (newlyPending > 0) {
+                        plugin.logger.info(
+                            "$newlyPending chamber(s) due for reset — ${pendingResets.size} total awaiting confirmation. " +
+                                "Use /tcp reset pending to list, /tcp reset confirm all to release."
+                        )
                     }
                 } catch (e: Exception) {
                     plugin.logger.severe("Error in reset scheduler: ${e.message}")
@@ -128,9 +136,6 @@ class ResetManager(private val plugin: TrialChamberPro) {
     private fun triggerScheduledReset(chamber: Chamber) {
         if (plugin.config.getBoolean("global.reset-require-confirmation", false)) {
             if (pendingResets.add(chamber.id)) {
-                plugin.logger.info(
-                    "Chamber '${chamber.name}' is due for reset — awaiting confirmation (/tcp reset confirm ${chamber.name})."
-                )
                 notifyAdminsPending(chamber)
             }
         } else {
@@ -552,9 +557,13 @@ class ResetManager(private val plugin: TrialChamberPro) {
                         val resetOminous = plugin.config.getBoolean("reset.reset-ominous-spawners", true)
 
                         // Get cooldown setting: per-chamber override > global config > vanilla default (-1)
-                        val cooldownMinutes = cooldownMinutesOverride
+                        // Sentinel -2 = "match chamber reset interval" (clamped to >= 0 minutes).
+                        val rawCooldown = cooldownMinutesOverride
                             ?: chamber.spawnerCooldownMinutes
                             ?: plugin.config.getInt("reset.spawner-cooldown-minutes", -1)
+                        val cooldownMinutes = if (rawCooldown == -2) {
+                            (chamber.resetInterval / 60L).toInt().coerceAtLeast(0)
+                        } else rawCooldown
 
                         val verboseLogging = plugin.config.getBoolean("debug.verbose-logging", false)
                         if (verboseLogging) {

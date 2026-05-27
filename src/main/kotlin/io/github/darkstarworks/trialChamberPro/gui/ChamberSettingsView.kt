@@ -39,6 +39,7 @@ class ChamberSettingsView(
 
         private val SPAWNER_COOLDOWNS = listOf<Pair<Int?, String>>(
             null to "gui.chamber-settings.spawner-cd-global",
+            -2 to "gui.chamber-settings.spawner-cd-match",
             -1 to "gui.chamber-settings.spawner-cd-vanilla",
             0 to "gui.chamber-settings.spawner-cd-none",
             5 to "gui.chamber-settings.spawner-cd-5m",

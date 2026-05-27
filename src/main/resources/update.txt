@@ -1,4 +1,10 @@
 <black>.
+<aqua>[1.5.1] <gray>- <white>(COMING SOON)
+<lime>+ <white>NEW: <green>Per-chamber spawner cooldown can now <yellow>Match Chamber Reset<green> — set in Chamber Settings, spawners rearm right as the chamber resets.
+<lime>+ <white>NEW: <green>Snapshot reminder: admins are pinged on login (and every 30 min) when discovered chambers are missing snapshots and can't be reset. Toggle under <yellow>discovery.snapshot-reminder<green>.
+<lime>+ <white>NEW: <green><yellow>/tcp loot audit<green> — lists pre-1.5.0 loot entries that lost their NBT (e.g. "enchanted book" rows that drop plain books). The loot editor also flags them with a <yellow>⚠ Legacy entry<green> badge; re-add to restore enchantments.
+<lime>+ <white>CHG: <green>Pending-reset console output coalesced: one summary line per scheduler tick instead of one line per chamber.
+<lime>+ <white>CHG: <green>Default vault cooldowns now <yellow>0<green> (vanilla — locked until chamber reset). The old <yellow>-1<green> default was being clamped to 0 anyway.
 <aqua>[1.5.0] <gray>- <white>(COMING SOON)
 <lime>+ <white>FIX: <green>Vaults in older chambers no longer hand out vanilla trial loot (crossbows, poison arrows, etc.) instead of your configured loot tables. On servers with 100+ chambers the cache was evicting older ones, which made their vaults fall back to vanilla and ignore loot-table edits.
 <lime>+ <white>FIX: <green>Automatic resets that failed with "StandaloneCoroutine was cancelled" and flooded the console with <yellow>Trial Spawner ... has no detected players<green>. Resets now complete cleanly, so spawners reset properly and the spam stops.
