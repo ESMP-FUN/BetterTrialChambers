@@ -22,7 +22,7 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
 
     private val snapshotActions = listOf("create", "update", "restore")
     private val statTypes = listOf("chambers", "normal", "ominous", "mobs", "time")
-    private val lootActions = listOf("set", "clear", "info", "list")
+    private val lootActions = listOf("set", "clear", "info", "list", "audit")
     private val vaultTypes = listOf("normal", "ominous")
     private val mobsActions = listOf("provider", "add", "remove", "list")
     private val mobsWaveTypes = listOf("normal", "ominous")

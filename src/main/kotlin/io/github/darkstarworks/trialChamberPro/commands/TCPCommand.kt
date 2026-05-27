@@ -257,8 +257,36 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             }
 
             sender.sendMessage(plugin.getMessageComponent("snapshot-creating", "chamber" to chamberName))
-            val file = plugin.snapshotManager.createSnapshot(chamber)
-            plugin.chamberManager.setSnapshotFile(chamberName, file.absolutePath)
+            val file = try {
+                plugin.snapshotManager.createSnapshot(chamber)
+            } catch (e: Exception) {
+                plugin.logger.severe("Snapshot creation failed for chamber ${chamberName}: ${e.javaClass.simpleName}: ${e.message}")
+                e.printStackTrace()
+                sender.sendMessage(plugin.getMessageComponent("snapshot-failed", "error" to (e.message ?: "see console")))
+                return@launchAsync
+            }
+
+            // v1.5.1: verify the DB update before claiming success. Previously a failed
+            // DB write left the chamber row with snapshot_file = NULL, so the *next* reset
+            // logged "No snapshot found" and skipped restoration even though the .dat file
+            // was on disk — and the user got a misleading "snapshot created" message.
+            val linked = try {
+                plugin.chamberManager.setSnapshotFile(chamberName, file.absolutePath)
+            } catch (e: Exception) {
+                plugin.logger.severe("Snapshot DB link failed for chamber ${chamberName}: ${e.javaClass.simpleName}: ${e.message}")
+                e.printStackTrace()
+                false
+            }
+
+            if (!linked) {
+                plugin.logger.severe(
+                    "Snapshot file written to ${file.absolutePath} but the chamber DB row was NOT updated. " +
+                        "The chamber will reset as if no snapshot exists. Re-run /tcp snapshot create."
+                )
+                sender.sendMessage(plugin.getMessageComponent("snapshot-failed",
+                    "error" to "file saved but DB link failed — see console"))
+                return@launchAsync
+            }
 
             sender.sendMessage(plugin.getMessageComponent("snapshot-created",
                 "chamber" to chamberName,
