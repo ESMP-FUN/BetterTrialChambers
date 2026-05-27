@@ -960,6 +960,7 @@ gui:
       - "&cRight Click: Decrease"
       - "&eShift+Right: Use global config"
     spawner-cd-global: "Global Config"
+    spawner-cd-match: "Match Chamber Reset"
     spawner-cd-vanilla: "Vanilla (30m)"
     spawner-cd-none: "No Cooldown"
     spawner-cd-5m: "5 minutes"

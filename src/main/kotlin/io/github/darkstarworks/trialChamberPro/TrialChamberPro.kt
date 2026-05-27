@@ -117,6 +117,7 @@ class TrialChamberPro : JavaPlugin() {
     private lateinit var playerMovementListener: PlayerMovementListener
     private lateinit var playerDeathListener: PlayerDeathListener
     private lateinit var pasteConfirmListener: PasteConfirmListener
+    private lateinit var snapshotReminderService: io.github.darkstarworks.trialChamberPro.managers.SnapshotReminderService
 
     // Update checker
     private lateinit var updateChecker: UpdateChecker
@@ -380,6 +381,11 @@ class TrialChamberPro : JavaPlugin() {
                         io.github.darkstarworks.trialChamberPro.listeners.MenuSessionCleanupListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
+                    // v1.5.1: snapshot reminder for auto-discovered chambers without a snapshot
+                    snapshotReminderService = io.github.darkstarworks.trialChamberPro.managers.SnapshotReminderService(this@TrialChamberPro)
+                    server.pluginManager.registerEvents(snapshotReminderService, this@TrialChamberPro)
+                    snapshotReminderService.startScheduler()
+
                     // v1.5.0 GUI migration: central VcGui click/drag/close dispatcher.
                     // Replaces the standalone LootDepositListener — bulk-deposit
                     // close handling now lives in LootDepositView.handleClose,
@@ -576,6 +582,9 @@ class TrialChamberPro : JavaPlugin() {
         }
         if (::pasteConfirmListener.isInitialized) {
             pasteConfirmListener.shutdown()
+        }
+        if (::snapshotReminderService.isInitialized) {
+            snapshotReminderService.shutdown()
         }
 
         // Close database connections
