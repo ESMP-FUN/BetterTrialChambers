@@ -169,8 +169,6 @@ class TrialChamberPro : JavaPlugin() {
             "https://raw.githubusercontent.com/darkstarworks/TrialChamberPro/master/src/main/resources/update.txt"
         )
         updateChecker.checkForUpdates()
-        // v1.5.3: also notify admins in-game on join with a clickable Modrinth link
-        server.pluginManager.registerEvents(updateChecker, this)
 
         // Schedule periodic update checks (every 6 hours = 432000 ticks)
         scheduler.runTaskTimerAsync(Runnable {
