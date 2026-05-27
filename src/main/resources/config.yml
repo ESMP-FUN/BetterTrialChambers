@@ -62,10 +62,10 @@ vaults:
   per-player-loot: true
 
   # Separate cooldowns for normal and ominous vaults
-  # Set to -1 for permanent lock (vanilla behavior: once opened, stays locked until chamber reset)
+  # Set to 0 for vanilla behavior (once opened, stays locked until chamber reset)
   # Set to a positive number for time-based cooldowns (e.g., 24 = 24 hours)
-  normal-cooldown-hours: -1
-  ominous-cooldown-hours: -1
+  normal-cooldown-hours: 0
+  ominous-cooldown-hours: 0
 
   # Visual indicators
   show-cooldown-particles: true
@@ -241,6 +241,14 @@ discovery:
                                    # Set to -1 to disable merging entirely.
   max-merged-volume: 1500000       # Hard cap on the post-merge bounding-box volume (blocks). Prevents pathological
                                    # daisy-chaining from swallowing huge regions into a single logical chamber.
+
+  # v1.5.1: Nag operators when discovered chambers are missing a snapshot.
+  # Without a snapshot the chamber cannot be reset, so this is actionable.
+  # Notifications go to anyone with `tcp.admin.snapshot`.
+  snapshot-reminder:
+    enabled: true
+    on-join: true                  # Ping an admin individually when they log in
+    interval-minutes: 30           # Periodic console summary + admin chat ping (0 disables periodic only)
 
 # Debug mode
 debug:
