@@ -1,6 +1,4 @@
 <black>.
-<aqua>[1.5.3] <gray>- <white>(COMING SOON)
-<lime>+ <white>NEW: <green>In-game update reminder. Admins now see a one-line "You are using vX, latest is vY" message with a clickable <yellow>[Download Latest Version]<green> link to Modrinth when they log in (and once on detection if already online). No in-game spam.
 <aqua>[1.5.2] <gray>- <white>(COMING SOON)
 <lime>+ <white>FIX: <green><yellow>/tcp reset<green> no longer silently fails when a previous reset for the same chamber is still in progress — the duplicate-request log line is now a visible warning instead of a hidden FINE entry, so admins see why it bounced.
 <lime>+ <white>FIX: <green><yellow>/tcp snapshot create<green> now actually verifies the DB link before claiming success. Previously a failed DB update could leave the .dat file on disk but the chamber row pointing at nothing, so the next reset logged "No snapshot found" and skipped restoration.
