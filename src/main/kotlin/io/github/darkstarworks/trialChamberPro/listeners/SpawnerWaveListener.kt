@@ -9,8 +9,11 @@ import org.bukkit.event.Listener
 import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.entity.CreatureSpawnEvent
 import org.bukkit.event.entity.EntityDeathEvent
+import org.bukkit.event.player.PlayerChangedWorldEvent
 import org.bukkit.event.player.PlayerMoveEvent
 import org.bukkit.event.player.PlayerQuitEvent
+import org.bukkit.event.player.PlayerRespawnEvent
+import org.bukkit.event.player.PlayerTeleportEvent
 
 /**
  * Listens for trial spawner events and updates wave tracking.
@@ -50,7 +53,10 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
         val location = event.location
 
         // Find the trial spawner that spawned this mob (search nearby)
-        val spawnerLocation = findNearbyTrialSpawner(location) ?: return
+        // The spawning spawner is by definition adjacent (vanilla trial-spawn radius
+        // is 5). Query the index instead of poking 1,331 blocks; take the closest.
+        val spawnerLocation = plugin.trialSpawnerIndex.query(location, 5)
+            .minByOrNull { it.distanceSquared(location) } ?: return
 
         // Determine if ominous from spawner block state
         val world = spawnerLocation.world ?: return
@@ -301,8 +307,13 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
         val location = to
 
         // Find nearby trial spawners and add player to their waves
-        // Works for both chamber spawners and wild spawners
-        findNearbyTrialSpawners(location, detectionRadius).forEach { spawnerLocation ->
+        // Works for both chamber spawners and wild spawners.
+        //
+        // v1.5.0: was an O(r³) raw block scan (~33,500 getBlockAt().type calls
+        // per move at radius=20, ~1ms/call in Spark). Now an O(spawners-near-
+        // player) chunk-keyed query against TrialSpawnerIndex, populated by
+        // chunk-load tile-entity scans + block break/place tracking.
+        plugin.trialSpawnerIndex.query(location, detectionRadius).forEach { spawnerLocation ->
             plugin.spawnerWaveManager.addPlayerToWave(player, spawnerLocation)
         }
 
@@ -333,56 +344,56 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
     }
 
     /**
-     * Finds a trial spawner near the given location.
+     * v1.5.0: catch chamber exits that aren't a walking move.
+     *
+     * [onPlayerMove] above is the only call site of `removePlayerFromDistantWaves`,
+     * and it only fires when the player's block coordinates change — `PlayerMoveEvent`
+     * does NOT fire for teleports, respawns, or world changes. Without these three
+     * extra hooks the boss bar attaches forever when a player leaves a chamber by
+     * any non-walking exit (die-and-respawn, `/spawn`, `/home`, plugin teleports,
+     * end portals, etc.). Reported in v1.4.7 against a die-inside, respawn-elsewhere
+     * scenario.
+     *
+     * Each handler runs `removePlayerFromDistantWaves` one tick later — at the time
+     * the event fires, `player.location` may still be the source position, so we wait
+     * a tick for the destination to settle. The cleanup itself cross-world-checks and
+     * distance-checks every tracked wave; bars attached to spawners that are no
+     * longer near the player are dropped.
      */
-    private fun findNearbyTrialSpawner(location: org.bukkit.Location): org.bukkit.Location? {
-        val world = location.world ?: return null
-        val searchRadius = 5 // Trial spawner spawn range
-
-        for (x in -searchRadius..searchRadius) {
-            for (y in -searchRadius..searchRadius) {
-                for (z in -searchRadius..searchRadius) {
-                    val block = world.getBlockAt(
-                        location.blockX + x,
-                        location.blockY + y,
-                        location.blockZ + z
-                    )
-                    if (block.type == Material.TRIAL_SPAWNER) {
-                        return block.location
-                    }
-                }
-            }
-        }
-
-        return null
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    fun onPlayerTeleport(event: PlayerTeleportEvent) {
+        if (!plugin.isReady) return
+        if (!plugin.config.getBoolean("spawner-waves.enabled", true)) return
+        if (!plugin.config.getBoolean("spawner-waves.show-boss-bar", true)) return
+        val player = event.player
+        plugin.scheduler.runAtEntityLater(player, Runnable {
+            if (!player.isOnline) return@Runnable
+            plugin.spawnerWaveManager.removePlayerFromDistantWaves(player, removeDistance)
+        }, 1L)
     }
 
-    /**
-     * Finds all trial spawners within a radius.
-     */
-    private fun findNearbyTrialSpawners(location: org.bukkit.Location, radius: Int): List<org.bukkit.Location> {
-        val world = location.world ?: return emptyList()
-        val spawners = mutableListOf<org.bukkit.Location>()
+    @EventHandler(priority = EventPriority.MONITOR)
+    fun onPlayerRespawn(event: PlayerRespawnEvent) {
+        if (!plugin.isReady) return
+        if (!plugin.config.getBoolean("spawner-waves.enabled", true)) return
+        if (!plugin.config.getBoolean("spawner-waves.show-boss-bar", true)) return
+        val player = event.player
+        plugin.scheduler.runAtEntityLater(player, Runnable {
+            if (!player.isOnline) return@Runnable
+            plugin.spawnerWaveManager.removePlayerFromDistantWaves(player, removeDistance)
+        }, 1L)
+    }
 
-        for (x in -radius..radius) {
-            for (y in -radius..radius) {
-                for (z in -radius..radius) {
-                    // Optimize: only check blocks within sphere
-                    if (x * x + y * y + z * z > radius * radius) continue
-
-                    val block = world.getBlockAt(
-                        location.blockX + x,
-                        location.blockY + y,
-                        location.blockZ + z
-                    )
-                    if (block.type == Material.TRIAL_SPAWNER) {
-                        spawners.add(block.location)
-                    }
-                }
-            }
-        }
-
-        return spawners
+    @EventHandler(priority = EventPriority.MONITOR)
+    fun onPlayerChangedWorld(event: PlayerChangedWorldEvent) {
+        if (!plugin.isReady) return
+        if (!plugin.config.getBoolean("spawner-waves.enabled", true)) return
+        if (!plugin.config.getBoolean("spawner-waves.show-boss-bar", true)) return
+        val player = event.player
+        plugin.scheduler.runAtEntityLater(player, Runnable {
+            if (!player.isOnline) return@Runnable
+            plugin.spawnerWaveManager.removePlayerFromDistantWaves(player, removeDistance)
+        }, 1L)
     }
 
     /**

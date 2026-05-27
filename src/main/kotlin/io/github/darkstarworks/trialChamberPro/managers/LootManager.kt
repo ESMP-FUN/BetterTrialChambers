@@ -22,6 +22,16 @@ class LootManager(private val plugin: TrialChamberPro) {
 
     private val lootTables = mutableMapOf<String, LootTable>()
 
+    /** One legacy (pre-1.5.0) loot entry that lost its NBT and needs to be re-added. */
+    data class LegacyItemRef(
+        val table: String,
+        val pool: String,
+        val kind: String, // "guaranteed" | "weighted"
+        val index: Int,
+        val material: Material,
+        val reason: String
+    )
+
     fun getTable(name: String): LootTable? = lootTables[name]
 
 
@@ -55,6 +65,68 @@ class LootManager(private val plugin: TrialChamberPro) {
                 plugin.logger.severe("Failed to parse loot table $tableName: ${e.message}")
                 e.printStackTrace()
             }
+        }
+
+        // v1.5.1: Surface pre-1.5.0 loot entries that lost their NBT (e.g. an
+        // ENCHANTED_BOOK row without any enchant data). They still drop as the
+        // bare material — re-add them through the editor to restore intent.
+        val legacy = findLegacyItems()
+        if (legacy.isNotEmpty()) {
+            plugin.logger.warning(
+                "${legacy.size} loot entr${if (legacy.size == 1) "y has" else "ies have"} no serialized NBT " +
+                    "and look like pre-1.5.0 leftovers (e.g. enchanted book without enchantments). " +
+                    "Run /tcp loot audit to see which tables/pools they're in."
+            )
+        }
+    }
+
+    /**
+     * Returns loot entries whose structured fields are obviously insufficient
+     * to produce a meaningful item (the v1.5.0 faithful-loot fix only affects
+     * NEW entries — older ones still need to be re-added by the admin).
+     *
+     * Heuristic — only flags rows where the *intended* item plainly differs
+     * from what the bare material would produce:
+     *  - ENCHANTED_BOOK with no enchant data
+     *  - POTION / SPLASH_POTION / LINGERING_POTION / TIPPED_ARROW with no potionType + no customEffect
+     *  - GOAT_HORN with no instrument
+     * Plain "10 cobblestone" entries are NOT flagged.
+     */
+    fun findLegacyItems(): List<LegacyItemRef> {
+        val out = mutableListOf<LegacyItemRef>()
+        lootTables.values.forEach { table ->
+            table.getEffectivePools().forEach { pool ->
+                pool.guaranteedItems.forEachIndexed { idx, item ->
+                    legacyReason(item)?.let { out += LegacyItemRef(table.name, pool.name, "guaranteed", idx, item.type, it) }
+                }
+                pool.weightedItems.forEachIndexed { idx, item ->
+                    legacyReason(item)?.let { out += LegacyItemRef(table.name, pool.name, "weighted", idx, item.type, it) }
+                }
+            }
+        }
+        return out
+    }
+
+    /** Returns true (with reason) if [item] is a legacy entry that needs re-adding. */
+    fun isLegacy(item: LootItem): Boolean = legacyReason(item) != null
+
+    private fun legacyReason(item: LootItem): String? {
+        if (item.serializedItem != null) return null
+        val mat = item.type
+        val name = mat.name
+        return when {
+            mat == Material.ENCHANTED_BOOK &&
+                item.enchantments.isNullOrEmpty() &&
+                item.enchantmentRanges.isNullOrEmpty() &&
+                item.randomEnchantmentPool.isNullOrEmpty() ->
+                "enchanted book without enchantments"
+            (name == "POTION" || name == "SPLASH_POTION" || name == "LINGERING_POTION" || name == "TIPPED_ARROW") &&
+                item.potionType == null &&
+                item.customEffectType.isNullOrBlank() ->
+                "${name.lowercase().replace('_', ' ')} without potion type"
+            mat == Material.GOAT_HORN && item.instrument.isNullOrBlank() ->
+                "goat horn without instrument"
+            else -> null
         }
     }
 

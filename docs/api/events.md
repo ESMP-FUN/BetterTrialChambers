@@ -1,4 +1,4 @@
-# 📡 Event API
+# Event API
 
 TrialChamberPro fires Bukkit events at the key points in its lifecycle so other plugins can hook in without forking. All events live under `io.github.darkstarworks.trialChamberPro.api.events` and follow the standard Bukkit `Event` / `Cancellable` contracts — register a listener with `@EventHandler` and you're done.
 
@@ -115,6 +115,29 @@ fun gateDiscovery(event: ChamberDiscoveredEvent) {
 }
 ```
 
+### `StatisticsUpdatedEvent` (not cancellable, **async**)
+
+Fired after every statistic write reaches the database. Designed as the outbound signal for cross-server / network-sync modules that need to broadcast stat changes; single-server installs can mostly ignore this.
+
+Fires asynchronously on the IO dispatcher (writes happen off-thread). If your listener calls Bukkit API, schedule it back onto the main / region thread yourself.
+
+| Field | Type | Notes |
+|---|---|---|
+| `playerUuid` | `UUID` | The player whose stats changed. |
+| `reason` | `Reason` | Why the write happened — see enum below. |
+
+`Reason` enum: `VAULT_OPENED`, `MOB_KILLED`, `PLAYER_DEATH`, `CHAMBER_TIME_FLUSH`, `CHAMBER_COMPLETED`, `BATCH_FLUSH`.
+
+```kotlin
+@EventHandler
+fun onStatsUpdated(event: StatisticsUpdatedEvent) {
+    // e.g. broadcast a Redis message for cross-server invalidation
+    redisPublisher.publish("tcp:stats:invalidate", event.playerUuid.toString())
+}
+```
+
+Added in **v1.5.0** as part of the network-sync foundation.
+
 ### `TrialKeyDropEvent` (cancellable)
 
 Fired immediately before the plugin drops a trial key for a wave participant. **Provider-driven waves only** — vanilla trial spawners drop their own keys via the spawner state machine and do not pass through this event.
@@ -148,4 +171,4 @@ If your project pulls in TrialChamberPro as a soft dependency, gate listener reg
 
 ## Versioning
 
-The event API is part of v1.3.0+ (`ChamberClearedEvent` added in v1.5.0). Event class names, field names, and `Reason`/`Method` enum constants are considered stable; new events and new enum constants may be added in minor releases. Removals or renames will be flagged in the changelog and given a deprecation cycle.
+The event API is part of v1.3.0+ (`ChamberClearedEvent` and `StatisticsUpdatedEvent` added in v1.5.0). Event class names, field names, and `Reason`/`Method` enum constants are considered stable; new events and new enum constants may be added in minor releases. Removals or renames will be flagged in the changelog and given a deprecation cycle.

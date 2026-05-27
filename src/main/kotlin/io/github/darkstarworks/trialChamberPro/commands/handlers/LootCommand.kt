@@ -29,8 +29,47 @@ class LootCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
             "clear" -> handleClear(sender, args)
             "info" -> handleInfo(sender, args)
             "list" -> handleList(sender)
+            "audit" -> handleAudit(sender)
             else -> sender.sendMessage(plugin.getMessageComponent("usage-loot"))
         }
+    }
+
+    /**
+     * `/tcp loot audit` — lists loot entries that lack serialized NBT and look
+     * like pre-1.5.0 leftovers (enchanted books without enchantments, potions
+     * without potion type, etc). The faithful-loot fix only applies to entries
+     * added after upgrading; older rows have to be re-entered through the
+     * loot editor.
+     */
+    private fun handleAudit(sender: CommandSender) {
+        val legacy = plugin.lootManager.findLegacyItems()
+        if (legacy.isEmpty()) {
+            sender.sendRichMessage("<gold>[TCP] <green>No legacy loot entries found.")
+            return
+        }
+
+        sender.sendRichMessage(
+            "<gold>[TCP] <yellow>${legacy.size}</yellow> legacy loot entr" +
+                if (legacy.size == 1) "y:" else "ies:"
+        )
+        // Group by table:pool for readability; cap output at ~50 lines to avoid spam.
+        val capped = legacy.take(50)
+        capped.groupBy { "${it.table} / ${it.pool}" }.forEach { (header, items) ->
+            sender.sendRichMessage("<gray>$header")
+            items.forEach { ref ->
+                sender.sendRichMessage(
+                    "  <dark_gray>•</dark_gray> <white>${ref.kind}[${ref.index}]</white> " +
+                        "<gray>${ref.material.name}</gray> <dark_gray>—</dark_gray> <yellow>${ref.reason}"
+                )
+            }
+        }
+        if (legacy.size > capped.size) {
+            sender.sendRichMessage("<gray>… and ${legacy.size - capped.size} more.")
+        }
+        sender.sendRichMessage(
+            "<gray>Re-add each entry via <click:run_command:'/tcp menu'><aqua>/tcp menu</aqua></click> " +
+                "→ Loot to restore full enchantments/NBT."
+        )
     }
 
     /** `/tcp loot set <chamber> <normal|ominous> <table>` */
