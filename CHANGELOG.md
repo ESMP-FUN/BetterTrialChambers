@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.5.3] - UNRELEASED
+### Fixed
+- **Update checker mis-parsed `-mc26` release tags.** `fetchLatestVersion()` only stripped a leading `v`, so a `releases/latest` tag of `v1.5.2-mc26` became `1.5.2-mc26` and `isNewerVersion()` parsed the third segment (`2-mc26`) as `0` — i.e. `1.5.0` — producing wrong update results whenever the most recently published release was an mc26 tag. It now also strips the track suffix (`.substringBefore('-')`) so both `vX.Y.Z` and `vX.Y.Z-mc26` collapse to the same `X.Y.Z` before comparison.
+
 ## [1.5.2] - 2026-05-27
 ### Added
 - **In-game update notification with clickable Modrinth download link.** `UpdateChecker` is now also a `Listener`. When the periodic GitHub check detects a newer release, any admin (`tcp.admin`) who logs in afterwards (and any already-online admins) gets a short MiniMessage line: `You are using version X.Y.Z, latest version is A.B.C.` followed by a clickable `[Download Latest Version]` pointing at the Modrinth versions page (hover tooltip explains it opens in a browser). One-shot per check; no in-game spam beyond the join ping.
