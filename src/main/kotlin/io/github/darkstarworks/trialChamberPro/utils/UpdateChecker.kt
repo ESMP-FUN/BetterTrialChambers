@@ -96,7 +96,14 @@ class UpdateChecker(
     private fun fetchLatestVersion(): String {
         val url = "https://api.github.com/repos/$githubRepo/releases/latest"
         val json = URI(url).toURL().readText()
-        return JsonParser.parseString(json).asJsonObject["tag_name"].asString.removePrefix("v")
+        // Tags are vX.Y.Z or vX.Y.Z-mc26. Strip the leading "v" and any track
+        // suffix ("-mc26") so the numeric comparison in isNewerVersion never
+        // sees a non-numeric segment (e.g. "2-mc26" -> 0). Both tracks share
+        // the same X.Y.Z, so collapsing them is correct for "is there a newer
+        // version?" — and it doesn't matter which track releases/latest returns.
+        return JsonParser.parseString(json).asJsonObject["tag_name"].asString
+            .removePrefix("v")
+            .substringBefore('-')
     }
 
     private fun isNewerVersion(latest: String): Boolean {
