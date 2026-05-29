@@ -1,16 +1,16 @@
 <black>.
-<aqua>[1.5.2] <gray>- <white>(COMING SOON)
+<aqua>[1.5.2] <gray>- <white>2026-05-27
 <lime>+ <white>NEW: <green>In-game update reminder. Admins now see a one-line "You are using vX, latest is vY" message with a clickable <yellow>[Download Latest Version]<green> link to Modrinth when they log in (and once on detection if already online). No in-game spam.
 <lime>+ <white>FIX: <green><yellow>/tcp reset<green> no longer silently fails when a previous reset for the same chamber is still in progress — the duplicate-request log line is now a visible warning instead of a hidden FINE entry, so admins see why it bounced.
 <lime>+ <white>FIX: <green><yellow>/tcp snapshot create<green> now actually verifies the DB link before claiming success. Previously a failed DB update could leave the .dat file on disk but the chamber row pointing at nothing, so the next reset logged "No snapshot found" and skipped restoration.
 <lime>+ <white>FIX: <green>Tab-completion suggests <yellow>/tcp loot audit<green> (the 1.5.1 command worked but wasn't autocompleted).
-<aqua>[1.5.1] <gray>- <white>(COMING SOON)
+<aqua>[1.5.1] <gray>- <white>2026-05-27
 <lime>+ <white>NEW: <green>Per-chamber spawner cooldown can now <yellow>Match Chamber Reset<green> — set in Chamber Settings, spawners rearm right as the chamber resets.
 <lime>+ <white>NEW: <green>Snapshot reminder: admins are pinged on login (and every 30 min) when discovered chambers are missing snapshots and can't be reset. Toggle under <yellow>discovery.snapshot-reminder<green>.
 <lime>+ <white>NEW: <green><yellow>/tcp loot audit<green> — lists pre-1.5.0 loot entries that lost their NBT (e.g. "enchanted book" rows that drop plain books). The loot editor also flags them with a <yellow>⚠ Legacy entry<green> badge; re-add to restore enchantments.
 <lime>+ <white>CHG: <green>Pending-reset console output coalesced: one summary line per scheduler tick instead of one line per chamber.
 <lime>+ <white>CHG: <green>Default vault cooldowns now <yellow>0<green> (vanilla — locked until chamber reset). The old <yellow>-1<green> default was being clamped to 0 anyway.
-<aqua>[1.5.0] <gray>- <white>(COMING SOON)
+<aqua>[1.5.0] <gray>- <white>2026-05-26
 <lime>+ <white>FIX: <green>Vaults in older chambers no longer hand out vanilla trial loot (crossbows, poison arrows, etc.) instead of your configured loot tables. On servers with 100+ chambers the cache was evicting older ones, which made their vaults fall back to vanilla and ignore loot-table edits.
 <lime>+ <white>FIX: <green>Automatic resets that failed with "StandaloneCoroutine was cancelled" and flooded the console with <yellow>Trial Spawner ... has no detected players<green>. Resets now complete cleanly, so spawners reset properly and the spam stops.
 <lime>+ <white>FIX: <green>When many chambers were due at once they all reset together and tanked TPS. Resets are now throttled and spaced out (<yellow>global.max-concurrent-resets<green>, <yellow>global.reset-stagger-seconds<green>).
@@ -22,12 +22,4 @@
 <lime>+ <white>NEW: <green>Optional <yellow>global.use-fawe<green> to place blocks via FastAsyncWorldEdit during automatic resets (Paper-only) to reduce lag on large chambers.
 <lime>+ <white>NEW: <green>Optional <yellow>global.reset-require-confirmation<green> — due chambers wait for an operator to confirm via <yellow>/tcp reset pending<green> / <yellow>/tcp reset confirm<green>, then run staggered.
 <lime>+ <white>NEW: <green>Public <yellow>ChamberClearedEvent<green> for plugin developers. Fires once when every trial spawner inside a registered chamber has completed a wave in the same reset cycle — i.e. the chamber was cleared in one continuous run. Carries the chamber, the cumulative set of participating players, and the run duration. Designed to power progression plugins (per-player chamber tiers, run-based achievements, leaderboards).
-<aqua>[1.4.7] <gray>- <white>2026-05-19
-<lime>+ <white>NEW: <green>Per-chamber reset broadcast toggle. Each chamber now has a <yellow>Reset Broadcast<green> toggle in Chamber Settings. Disable it to suppress the server-wide "chamber X has reset" message for that chamber only. A new <yellow>global.reset-complete-alert<green> config option (default <yellow>true<green>) acts as a master switch — set it to <yellow>false<green> to silence all chambers at once. The GUI toggle shows a "Disabled by global config" indicator when the master switch overrides it.
-<aqua>[1.4.6] <gray>- <white>2026-05-14
-<lime>+ <white>FIX: <green>Folia/Luminol: chamber reset no longer crashes when teleporting players out (<yellow>Must use teleportAsync<green> error).
-<lime>+ <white>FIX: <green>Folia/Luminol: GUI teleport buttons (<yellow>Teleport to Exit<green>, <yellow>Teleport to Center<green>) no longer crash.
-<lime>+ <white>FIX: <green>Folia/Luminol: spectator mode enter/exit teleports no longer crash. Paper users: no change in behavior.
-<aqua>[1.4.5] <gray>- <white>2026-05-13
-<lime>+ <white>FIX: <green>TCP-preset spawners placed outside chambers can now be recovered with Silk Touch. Previously a spawner issued via <yellow>/tcp give<green> and placed anywhere on the map was permanently stuck with no way to retrieve it. Now: Silk Touch recovers the full preset item (PDC tag intact); without Silk Touch the break is cancelled and the player gets a hint. If the preset has since been removed from <yellow>spawner_presets.yml<green>, a plain trial spawner item drops as a fallback.
 <black>.
