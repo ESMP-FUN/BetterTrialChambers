@@ -79,7 +79,25 @@ Take this **before** players start breaking things. You can also take a fresh sn
 
 **Fix for auto-discovered chambers:**
 
-Set `discovery.auto-snapshot: true` in `config.yml` and `/tcp reload`. New chambers discovered from that point forward will snapshot on registration. For chambers already auto-discovered without a snapshot, create one manually with `/tcp snapshot create <chamber>` (use `/tcp list` to find the auto-generated name).
+Set `discovery.auto-snapshot: true` in `config.yml` and `/tcp reload`. New chambers discovered from that point forward will snapshot on registration. For chambers already auto-discovered without a snapshot, create one manually with `/tcp snapshot create <chamber>` (use `/tcp list` to find the auto-generated name, or just stand inside it and run `/tcp snapshot create` with no name).
+
+**Note:** `discovery.auto-snapshot` requires **1.5.6+** to actually work — older builds saved the snapshot file but never linked it to the chamber, so resets still reported "No snapshot found" even with the option enabled.
+
+---
+
+## A reset deleted blocks around the chamber / the chamber came back broken
+
+**Fixed in 1.5.6 — update first.** On older versions, an auto-discovered chamber whose bounding box *grew* after its snapshot was taken (discovery merges adjacent regions as their chunks load) could have its reset wipe everything inside the grown bounds while only restoring the old, smaller region. Since 1.5.6 the reset can never clear ground its snapshot doesn't cover, and merges automatically re-capture the snapshot.
+
+**If one of your chambers was already affected:**
+
+```
+/tcp delete <chamber>
+```
+
+That single command is the complete plugin-side fix — it removes the broken registration **and** deletes its stale snapshot. If discovery is enabled, the chamber re-registers cleanly the next time its chunks load (with a fresh snapshot if `discovery.auto-snapshot: true`); otherwise re-register it manually with `/tcp generate`.
+
+Terrain that an affected reset already deleted **cannot be restored by the plugin** — the snapshot never contained those blocks. Restore that area from a world backup, or let it regenerate if it was untouched wilderness.
 
 ---
 

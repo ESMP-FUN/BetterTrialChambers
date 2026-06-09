@@ -92,6 +92,33 @@ fun onChamberCleared(event: ChamberClearedEvent) {
 
 This is the signal the premium **Mythic Trials** module uses to bump each participant's per-chamber tier and pay out chamber-clear rewards. Added in **v1.5.0**.
 
+### `ChamberEnteredEvent` / `ChamberExitedEvent` (not cancellable, may fire async)
+
+*Added in v1.5.4.* Fired when a player crosses into / out of the bounding box of a registered, non-paused chamber. Each entry fires exactly one `ChamberEnteredEvent` and is always balanced by exactly one `ChamberExitedEvent` — including on disconnect (`PlayerQuitEvent` fires the exit for any player still inside), so listeners that allocate per-player state on entry can release it reliably. A player moving directly between two chambers fires an exit for the old chamber then an entry for the new one.
+
+Both events fire **unconditionally** — unlike entry/exit messages and time tracking, they are *not* gated on the `statistics.*` config flags, so your integration can't be silently disabled by the server admin's stats preferences.
+
+| Field | Type | Notes |
+|---|---|---|
+| `player` | `Player` | Who crossed the boundary (on exit-via-quit, the player is about to go offline). |
+| `chamber` | `Chamber` | The chamber entered / exited. |
+
+```kotlin
+@EventHandler
+fun onChamberEntered(event: ChamberEnteredEvent) {
+    // Fires off the player's region thread — schedule Bukkit API calls back:
+    plugin.scheduler.runAtEntity(event.player, Runnable {
+        event.player.sendActionBar(Component.text("Entering ${event.chamber.name}…"))
+    })
+}
+```
+
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
+These events fire from a coroutine off the player's region thread. Don't call Bukkit API directly in the handler — schedule onto the entity's thread first (see example). This is the signal TCP-MythicTrials uses to drive its in-chamber HUD.
+
+</div>
+
 ### `ChamberDiscoveredEvent` (cancellable)
 
 Fired by the auto-discovery system after a candidate chamber passes validation but **before** it is registered. Cancel to abort auto-registration (e.g. world-restricted whitelist, custom registration logic).

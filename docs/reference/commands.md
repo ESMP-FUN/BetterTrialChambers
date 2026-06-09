@@ -20,7 +20,7 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | `/tcp generate <value|coords|wand|blocks>` | Register chamber from saved var, coords, WE wand, or by block amount | `tcp.admin.generate` |
 | `/tcp scan <chamber>` | Scan for vaults/spawners | `tcp.admin.scan` |
 | `/tcp setexit <chamber>` | Set exit location | `tcp.admin.generate` |
-| `/tcp snapshot <create\|update\|restore> [chamber]` | Manage snapshots (`update` with no name uses the chamber you're standing in) | `tcp.admin.snapshot` |
+| `/tcp snapshot <create\|update\|restore> [chamber]` | Manage snapshots (omit the name to target the chamber you're standing in) | `tcp.admin.snapshot` |
 | `/tcp reset <chamber>` | Force chamber reset | `tcp.admin.reset` |
 | `/tcp reset pending` | List chambers awaiting reset confirmation | `tcp.admin.reset` |
 | `/tcp reset confirm <chamber\|all>` | Confirm queued reset(s) (when confirmation mode is on) | `tcp.admin.reset` |
@@ -234,15 +234,18 @@ Stand where you want players to teleport (usually just outside the entrance), th
 
 ---
 
-### `/tcp snapshot <action> <chamber>`
+### `/tcp snapshot <action> [chamber]`
 
 Manage chamber snapshots (saved states for resets).
 
 **Usage:**
 ```
-/tcp snapshot create <chamber_name>
-/tcp snapshot restore <chamber_name>
+/tcp snapshot create [chamber_name]
+/tcp snapshot update [chamber_name]
+/tcp snapshot restore [chamber_name]
 ```
+
+The chamber name is **optional on all three actions** *(1.5.5+; previously only `update`)*: omit it while standing inside a registered chamber and the command targets that chamber. Handy on servers with many chambers.
 
 **Permission:** `tcp.admin.snapshot`
 
