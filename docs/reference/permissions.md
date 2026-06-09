@@ -166,6 +166,16 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 ---
 
+#### `tcp.admin.menu`
+**Description:** Open the in-game admin GUI
+**Default:** Operators only
+**Allows:**
+- `/tcp menu` - Open the full admin GUI (chambers, loot editing, stats, settings)
+
+**Use this for:** Staff who manage chambers through the GUI instead of commands. Note that GUI actions still respect the underlying feature permissions.
+
+---
+
 #### `tcp.admin.stats`
 **Description:** View other players' statistics
 **Default:** Operators only
@@ -278,6 +288,23 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 <div data-gb-custom-block data-tag="hint" data-style="danger">
 
 **DO NOT give to regular players!** This allows complete modification of protected chambers.
+
+</div>
+
+---
+
+#### `tcp.bypass.droplock`
+**Description:** Bypass owner-only pickup on dropped vault loot *(1.2.28+)*
+**Default:** Operators only
+**Effect:**
+- Pick up another player's vault loot drops during the owner-only grace window (`vaults.drop-loot-owner-grace-seconds`)
+- Only relevant when `vaults.drop-loot-at-vault: true`
+
+**Use this for:** Staff cleaning up dropped items or investigating loot disputes.
+
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
+Giving this to regular players defeats the owner-only drop protection — they can snatch other players' vault loot.
 
 </div>
 
