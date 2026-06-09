@@ -8,6 +8,7 @@ import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.entity.EntityDeathEvent
 import org.bukkit.event.entity.PlayerDeathEvent
+import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.event.player.PlayerRespawnEvent
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -20,6 +21,16 @@ class PlayerDeathListener(private val plugin: TrialChamberPro) : Listener {
     // Track pending spectator offers keyed by player UUID
     private data class PendingOffer(val chamberId: Int, val chamberName: String, val deathLocation: Location)
     private val pendingOffers = ConcurrentHashMap<UUID, PendingOffer>()
+
+    /**
+     * Drop any pending spectator offer when a player disconnects on the death
+     * screen — otherwise the entry (and its Location → world reference) lingers
+     * until they rejoin and respawn, which may be never.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    fun onQuit(event: PlayerQuitEvent) {
+        pendingOffers.remove(event.player.uniqueId)
+    }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     fun onPlayerDeath(event: PlayerDeathEvent) {

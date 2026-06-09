@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [1.5.6] - UNRELEASED
+## [1.5.6] - 2026-06-10
 ### Fixed
 - **CRITICAL: chamber reset could wipe terrain far beyond what the snapshot covers.** When an auto-discovered chamber's bounds *grew* after its snapshot was captured (discovery region merges), the reset's clear-added-blocks pass cleared the **entire current AABB** while the snapshot could only restore the old, smaller region — deleting every block in the newly annexed volume (terrain, builds, neighbouring structures). The clear region is now clamped to the intersection of the chamber bounds and the snapshot's actual coverage, with a console warning pointing at `/tcp snapshot create` when a mismatch is detected. A snapshot can no longer destroy ground it cannot put back.
 - **Discovery auto-snapshot never linked the snapshot in the database.** `discovery.auto-snapshot: true` captured the `.dat` file but skipped the `snapshot_file` DB update (the step `/tcp generate` performs), so auto-discovered chambers reported "No snapshot found" at reset time and skipped restoration — or worse, kept a stale link. Both the registration and merge paths now link the file and log loudly if the DB write fails.

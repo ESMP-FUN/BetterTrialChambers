@@ -335,6 +335,24 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
     }
 
     /**
+     * Removes the chamber-remaining standalone glow at [spawnerLocation], if one
+     * exists. Called when a trial-spawner block is broken: [cancelWaveAt] only
+     * cleans the wave-attached glow of an *active* spawner — a non-active
+     * spawner glowing in `chamber-remaining` mode would otherwise keep its
+     * orphaned glow shulker floating in place until the next chamber reset.
+     */
+    fun removeStandaloneGlowAt(spawnerLocation: Location) {
+        val chamber = plugin.chamberManager.getCachedChamberAt(spawnerLocation) ?: return
+        val key = getSpawnerKey(spawnerLocation)
+        val entityId = chamberRemainingGlows[chamber.id]?.remove(key) ?: return
+        val world = spawnerLocation.world ?: return
+        val ent = world.getEntity(entityId) ?: return
+        plugin.scheduler.runAtEntity(ent, Runnable {
+            try { ent.remove() } catch (_: Throwable) { /* already gone */ }
+        })
+    }
+
+    /**
      * Periodic sweep that fixes the two ways a wave can deadlock:
      *   1. A tracked mob disappears without firing EntityDeathEvent (despawn, /kill, void,
      *      removed by another plugin) — its UUID stays in trackedMobs and the wave never
@@ -580,34 +598,67 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
     }
 
     /**
-     * Counts trial-spawner blocks inside [chamber], caching the result. The
-     * scan is O(chamber volume) on first call and O(1) thereafter. Chamber
-     * resets preserve the count (snapshot restoration keeps the same spawner
-     * geometry); only a `/tcp scan` after manual edits should warrant cache
-     * invalidation, which is rare enough that a server restart is acceptable.
+     * Counts trial-spawner blocks inside [chamber], caching the result.
+     * Backed by [scanSpawnerLocations] (chunk tile-entity scan, not a per-block
+     * scan). Invalidate via [invalidateChamberSpawnerCaches] when the chamber's
+     * bounds change (discovery merge), after `/tcp scan`, or when a spawner
+     * block is broken/placed inside the chamber.
      */
     private fun countSpawnersInChamber(
         chamber: io.github.darkstarworks.trialChamberPro.models.Chamber
     ): Int {
         chamberSpawnerCountCache[chamber.id]?.let { return it }
-        val world = chamber.getWorld() ?: return 0
-        var count = 0
+        val locations = scanSpawnerLocations(chamber) ?: return 0
+        chamberSpawnerCountCache[chamber.id] = locations.size
+        return locations.size
+    }
+
+    /**
+     * Scans [chamber] for trial-spawner blocks by iterating each chunk's tile
+     * entities — O(chunks × tile-entities) instead of the previous
+     * O(chamber volume) per-block scan, which on a merged discovery chamber
+     * near the 1.5M-block cap meant millions of `getBlockAt` calls on the
+     * region thread (a multi-second freeze on first wave completion).
+     * Returns null when the world is gone or the scan fails.
+     */
+    private fun scanSpawnerLocations(
+        chamber: io.github.darkstarworks.trialChamberPro.models.Chamber
+    ): List<Location>? {
+        val world = chamber.getWorld() ?: return null
+        val out = mutableListOf<Location>()
         try {
-            for (x in chamber.minX..chamber.maxX) {
-                for (y in chamber.minY..chamber.maxY) {
-                    for (z in chamber.minZ..chamber.maxZ) {
-                        if (world.getBlockAt(x, y, z).type == Material.TRIAL_SPAWNER) count++
+            for (cx in (chamber.minX shr 4)..(chamber.maxX shr 4)) {
+                for (cz in (chamber.minZ shr 4)..(chamber.maxZ shr 4)) {
+                    for (state in world.getChunkAt(cx, cz).tileEntities) {
+                        if (state.type != Material.TRIAL_SPAWNER) continue
+                        if (state.x in chamber.minX..chamber.maxX &&
+                            state.y in chamber.minY..chamber.maxY &&
+                            state.z in chamber.minZ..chamber.maxZ
+                        ) {
+                            out += Location(world, state.x.toDouble(), state.y.toDouble(), state.z.toDouble())
+                        }
                     }
                 }
             }
         } catch (e: Throwable) {
             plugin.logger.warning(
-                "[ChamberCleared] Failed to count spawners in ${chamber.name}: ${e.message}"
+                "[SpawnerScan] Failed to scan spawners in ${chamber.name}: ${e.message}"
             )
-            return 0
+            return null
         }
-        chamberSpawnerCountCache[chamber.id] = count
-        return count
+        return out
+    }
+
+    /**
+     * Drops the cached spawner count + locations for [chamberId] so the next
+     * read re-scans. Call when the chamber's spawner geometry may have changed:
+     * bounds updates (discovery merges), `/tcp scan`, or a trial-spawner block
+     * broken/placed inside the chamber. Without this, [ChamberClearedEvent]'s
+     * all-spawners-complete threshold goes stale and fires early or never.
+     */
+    fun invalidateChamberSpawnerCaches(chamberId: Int) {
+        chamberSpawnerCountCache.remove(chamberId)
+        chamberSpawnerLocationsCache.remove(chamberId)
     }
 
     /**
@@ -934,6 +985,12 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
                     s.isSilent = true
                     s.isPersistent = false
                     s.isGlowing = true
+                    // Invulnerable: a damageable marker can be killed (removing the
+                    // glow mid-wave) and a dead shulker rolls vanilla loot — free
+                    // shulker shells farmable at every glowing spawner. Collidable
+                    // off so it doesn't intercept arrows or push entities.
+                    s.isInvulnerable = true
+                    s.isCollidable = false
                     // Tag for mob-cap / anti-cheat allow-listing.
                     s.persistentDataContainer.set(
                         glowMarkerKey,
@@ -1037,6 +1094,9 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
                     s.isSilent = true
                     s.isPersistent = false
                     s.isGlowing = true
+                    // See spawnGlowDisplay: marker must be unkillable + non-colliding.
+                    s.isInvulnerable = true
+                    s.isCollidable = false
                     s.persistentDataContainer.set(
                         glowMarkerKey,
                         org.bukkit.persistence.PersistentDataType.BYTE,
@@ -1097,24 +1157,7 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         chamber: io.github.darkstarworks.trialChamberPro.models.Chamber
     ): List<Location> {
         chamberSpawnerLocationsCache[chamber.id]?.let { return it }
-        val world = chamber.getWorld() ?: return emptyList()
-        val out = mutableListOf<Location>()
-        try {
-            for (x in chamber.minX..chamber.maxX) {
-                for (y in chamber.minY..chamber.maxY) {
-                    for (z in chamber.minZ..chamber.maxZ) {
-                        if (world.getBlockAt(x, y, z).type == Material.TRIAL_SPAWNER) {
-                            out += Location(world, x.toDouble(), y.toDouble(), z.toDouble())
-                        }
-                    }
-                }
-            }
-        } catch (e: Throwable) {
-            plugin.logger.warning(
-                "[ChamberRemainingGlow] Failed to scan spawners in ${chamber.name}: ${e.message}"
-            )
-            return emptyList()
-        }
+        val out = scanSpawnerLocations(chamber) ?: return emptyList()
         chamberSpawnerLocationsCache[chamber.id] = out
         return out
     }

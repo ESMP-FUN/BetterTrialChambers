@@ -330,7 +330,15 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
     fun onBlockBreak(event: BlockBreakEvent) {
         if (!plugin.isReady) return
         if (event.block.type != Material.TRIAL_SPAWNER) return
-        plugin.spawnerWaveManager.cancelWaveAt(event.block.location)
+        val loc = event.block.location
+        plugin.spawnerWaveManager.cancelWaveAt(loc)
+        // A non-active spawner may carry a chamber-remaining standalone glow.
+        plugin.spawnerWaveManager.removeStandaloneGlowAt(loc)
+        // The chamber's spawner count just changed — drop the cached count so
+        // ChamberClearedEvent's all-spawners threshold re-scans.
+        plugin.chamberManager.getCachedChamberAt(loc)?.let {
+            plugin.spawnerWaveManager.invalidateChamberSpawnerCaches(it.id)
+        }
     }
 
     /**
