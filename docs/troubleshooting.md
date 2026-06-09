@@ -1,4 +1,4 @@
-# ❓ Troubleshooting
+# Troubleshooting
 
 Most problems fall into one of the buckets below. Scan headings first — if you recognise the symptom, the fix is usually a few lines down.
 

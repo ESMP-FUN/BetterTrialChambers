@@ -1,4 +1,4 @@
-# 🔐 Permissions Reference
+# Permissions Reference
 
 TrialChamberPro uses a hierarchical permission system. Grant broad access with wildcards or fine-tune with specific permissions.
 
@@ -12,7 +12,7 @@ TrialChamberPro uses a hierarchical permission system. Grant broad access with w
 
 ---
 
-## 🎯 Quick Setup
+## Quick Setup
 
 ### Full Admin Access
 ```yaml
@@ -41,7 +41,7 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 ---
 
-## 📋 Complete Permission List
+## Complete Permission List
 
 ### Admin Permissions
 
@@ -331,7 +331,7 @@ Only fires when `discovery.notify-ops: true` (the default) in config.yml. You ca
 
 ---
 
-## 🎭 Permission Groups Examples
+## Permission Groups Examples
 
 ### Example 1: Player Rank
 ```yaml
@@ -417,7 +417,7 @@ Full access to everything. Simple!
 
 ---
 
-## 🔧 LuckPerms Examples
+## LuckPerms Examples
 
 ### Grant Full Admin Access
 ```
@@ -456,7 +456,7 @@ Full access to everything. Simple!
 
 ---
 
-## 🌍 Per-World Permissions
+## Per-World Permissions
 
 Want staff to manage chambers only in certain worlds?
 
@@ -470,7 +470,7 @@ Steve can only create/scan chambers in the nether.
 
 ---
 
-## 🎯 Permission Hierarchy
+## Permission Hierarchy
 
 ```
 tcp.admin.*
@@ -496,7 +496,7 @@ tcp.bypass.protection      (Build in protected chambers)
 
 ---
 
-## 💡 Common Setups
+## Common Setups
 
 ### Survival Server
 ```yaml
@@ -565,7 +565,7 @@ admin:
 
 ---
 
-## ❓ FAQ
+## FAQ
 
 **"Do I need `tcp.admin` for `tcp.admin.create`?"**
 No! Specific permissions (like `tcp.admin.create`) work independently. `tcp.admin` only grants access to `/tcp list` and `/tcp info`.
@@ -596,7 +596,7 @@ Yes! If a group has `tcp.admin.*`, all members inherit all child permissions aut
 
 ---
 
-## 🔗 Related Pages
+## Related Pages
 
 <div data-gb-custom-block data-tag="content-ref" data-url="commands.md">
 
@@ -616,7 +616,7 @@ Protection settings and their interaction with bypass permissions.
 
 ---
 
-## 🛡️ Security Best Practices
+## Security Best Practices
 
 <div data-gb-custom-block data-tag="hint" data-style="success">
 
@@ -644,7 +644,7 @@ Protection settings and their interaction with bypass permissions.
 
 ---
 
-## 🎉 Quick Permission Cheat Sheet
+## Quick Permission Cheat Sheet
 
 | Role | Permissions | Why |
 |------|-------------|-----|
