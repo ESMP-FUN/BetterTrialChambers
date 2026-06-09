@@ -80,6 +80,18 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
     // counts or detection scans. Value is a sentinel byte.
     private val glowMarkerKey = org.bukkit.NamespacedKey(plugin, "glow_marker")
 
+    // v1.5.4: chamber-remaining glow tracking. Maps chamberId → (spawnerKey → entityUUID)
+    // for "standalone" glows spawned on uncleared sister-spawners in chamber-remaining mode.
+    // Distinct from WaveState.glowEntityId (which tracks the wave-attached glow on the
+    // spawner that triggered the wave). On wave-start for a spawner that was previously
+    // standalone-glowed, the standalone is upgraded to a wave-attached glow.
+    private val chamberRemainingGlows = ConcurrentHashMap<Int, MutableMap<String, UUID>>()
+
+    // v1.5.4: cache of spawner LOCATIONS per chamber (vs. chamberSpawnerCountCache
+    // which caches just the count). Same lazy-scan-then-cache pattern; populated on
+    // first chamber-remaining glow refresh and reused on subsequent waves in the cycle.
+    private val chamberSpawnerLocationsCache = ConcurrentHashMap<Int, List<Location>>()
+
     init {
         // Periodic sweep: drop UUIDs whose entity is gone (despawned, /kill, removed by another
         // plugin, void death without an EntityDeathEvent); close out waves whose spawner block
@@ -401,6 +413,8 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         chamberSpawnersCompletedThisCycle.remove(chamber.id)
         chamberParticipantsThisCycle.remove(chamber.id)
         chamberCycleStartMs.remove(chamber.id)
+        // v1.5.4: drop any chamber-remaining standalone glows the reset would orphan.
+        clearChamberRemainingGlows(chamber.id)
     }
 
     /**
@@ -958,13 +972,28 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
                 plugin.logger.warning("[SpawnerWave] Failed to spawn glow entity: ${e.message}")
             }
         })
+
+        // v1.5.4: chamber-remaining mode also lights up every uncleared sister-spawner
+        // in the same chamber, so players see at a glance which spawners are still
+        // pending in the current cycle. Skipped in default wave-active mode.
+        if (plugin.config.getString("spawner-waves.glow-mode", "wave-active") == "chamber-remaining") {
+            refreshChamberRemainingGlows(wave)
+        }
     }
 
     /**
      * Removes the glow shulker previously spawned for this wave, if any.
      * Safe to call multiple times — no-op once the entity id is cleared.
+     *
+     * Also clears the chamber-remaining-mode standalone-glow record for this
+     * spawner so the next wave-start can re-create it cleanly.
      */
     private fun removeGlowDisplay(wave: WaveState) {
+        // Drop the standalone-glow record for this spawner if present (no entity
+        // to remove — the wave-attached entity is the one that was visible).
+        plugin.chamberManager.getCachedChamberAt(wave.location)?.let { chamber ->
+            chamberRemainingGlows[chamber.id]?.remove(wave.spawnerId)
+        }
         val id = wave.glowEntityId ?: return
         wave.glowEntityId = null
         val world = wave.location.world ?: return
@@ -975,6 +1004,134 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
                 // Entity may already be unloaded/removed; harmless
             }
         })
+    }
+
+    /**
+     * Spawns a standalone glow shulker at a spawner location for chamber-remaining
+     * mode. Same entity setup as [spawnGlowDisplay] but not attached to any
+     * [WaveState] — tracked in [chamberRemainingGlows] for later cleanup.
+     */
+    private fun spawnStandaloneGlow(spawnerLocation: Location, isOminous: Boolean, chamberId: Int) {
+        val world = spawnerLocation.world ?: return
+        val center = spawnerLocation.clone().add(0.5, 0.5, 0.5)
+        val spawnerKey = getSpawnerKey(spawnerLocation)
+
+        plugin.scheduler.runAtLocation(spawnerLocation, Runnable {
+            try {
+                val colorHex = if (isOminous) {
+                    plugin.config.getString("spawner-waves.glow-color-ominous", "#A020F0") ?: "#A020F0"
+                } else {
+                    plugin.config.getString("spawner-waves.glow-color-normal", "#FFFF55") ?: "#FFFF55"
+                }
+                val color = parseGlowColor(colorHex)
+                val invisType = org.bukkit.Registry.POTION_EFFECT_TYPE.get(
+                    org.bukkit.NamespacedKey.minecraft("invisibility")
+                )
+
+                val entity = world.spawn(center, org.bukkit.entity.Shulker::class.java) { s ->
+                    s.setAI(false)
+                    s.isSilent = true
+                    s.isPersistent = false
+                    s.isGlowing = true
+                    s.persistentDataContainer.set(
+                        glowMarkerKey,
+                        org.bukkit.persistence.PersistentDataType.BYTE,
+                        1
+                    )
+                    if (invisType != null) {
+                        s.addPotionEffect(
+                            org.bukkit.potion.PotionEffect(
+                                invisType,
+                                org.bukkit.potion.PotionEffect.INFINITE_DURATION,
+                                0, false, false, false
+                            )
+                        )
+                    }
+                    if (color != null) {
+                        try {
+                            s.javaClass.getMethod("setGlowColorOverride", org.bukkit.Color::class.java)
+                                .invoke(s, color)
+                        } catch (_: Throwable) { /* white fallback */ }
+                    }
+                }
+                chamberRemainingGlows.computeIfAbsent(chamberId) { ConcurrentHashMap() }[spawnerKey] = entity.uniqueId
+            } catch (e: Exception) {
+                plugin.logger.warning("[SpawnerWave] Failed to spawn standalone glow at $spawnerKey: ${e.message}")
+            }
+        })
+    }
+
+    /**
+     * Chamber-remaining mode refresh: for every uncleared spawner in [triggerWave]'s
+     * chamber, ensure a glow is up. Uncleared = not in [chamberSpawnersCompletedThisCycle]
+     * AND not the wave's own spawner (which already has its own wave-attached glow).
+     * Already-glowed standalones are left alone — re-spawning would just churn entities.
+     */
+    private fun refreshChamberRemainingGlows(triggerWave: WaveState) {
+        val chamber = plugin.chamberManager.getCachedChamberAt(triggerWave.location)
+            ?.takeIf { !it.isPaused } ?: return
+        val locations = spawnerLocationsInChamber(chamber)
+        if (locations.isEmpty()) return
+
+        val completed = chamberSpawnersCompletedThisCycle[chamber.id] ?: emptySet()
+        val existing = chamberRemainingGlows[chamber.id] ?: emptyMap()
+        for (loc in locations) {
+            val key = getSpawnerKey(loc)
+            if (key == triggerWave.spawnerId) continue        // covered by wave-attached glow
+            if (key in completed) continue                     // already done this cycle
+            if (key in existing) continue                      // already glowing
+            spawnStandaloneGlow(loc, triggerWave.isOminous, chamber.id)
+        }
+    }
+
+    /**
+     * Returns every trial-spawner block location inside [chamber]. Lazy block-scan
+     * cached for the chamber's lifetime — resets preserve geometry, so the cache
+     * survives across reset cycles. Mirrors the pattern used by [countSpawnersInChamber].
+     */
+    private fun spawnerLocationsInChamber(
+        chamber: io.github.darkstarworks.trialChamberPro.models.Chamber
+    ): List<Location> {
+        chamberSpawnerLocationsCache[chamber.id]?.let { return it }
+        val world = chamber.getWorld() ?: return emptyList()
+        val out = mutableListOf<Location>()
+        try {
+            for (x in chamber.minX..chamber.maxX) {
+                for (y in chamber.minY..chamber.maxY) {
+                    for (z in chamber.minZ..chamber.maxZ) {
+                        if (world.getBlockAt(x, y, z).type == Material.TRIAL_SPAWNER) {
+                            out += Location(world, x.toDouble(), y.toDouble(), z.toDouble())
+                        }
+                    }
+                }
+            }
+        } catch (e: Throwable) {
+            plugin.logger.warning(
+                "[ChamberRemainingGlow] Failed to scan spawners in ${chamber.name}: ${e.message}"
+            )
+            return emptyList()
+        }
+        chamberSpawnerLocationsCache[chamber.id] = out
+        return out
+    }
+
+    /**
+     * Removes every standalone chamber-remaining glow for [chamberId]. Called on
+     * chamber reset (after [clearWavesInChamber] has dropped the wave-attached
+     * glows) and on plugin shutdown.
+     */
+    private fun clearChamberRemainingGlows(chamberId: Int) {
+        val entries = chamberRemainingGlows.remove(chamberId) ?: return
+        for ((_, entityId) in entries) {
+            // Best-effort removal across any world the entity might be in.
+            for (world in plugin.server.worlds) {
+                val ent = world.getEntity(entityId) ?: continue
+                plugin.scheduler.runAtEntity(ent, Runnable {
+                    try { ent.remove() } catch (_: Throwable) { /* already gone */ }
+                })
+                break
+            }
+        }
     }
 
     /**
@@ -1030,6 +1187,9 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         chamberParticipantsThisCycle.clear()
         chamberCycleStartMs.clear()
         chamberSpawnerCountCache.clear()
+        // v1.5.4: drop any chamber-remaining standalone glow entities tied to active chambers.
+        chamberRemainingGlows.keys.toList().forEach { clearChamberRemainingGlows(it) }
+        chamberSpawnerLocationsCache.clear()
     }
 
     /**
