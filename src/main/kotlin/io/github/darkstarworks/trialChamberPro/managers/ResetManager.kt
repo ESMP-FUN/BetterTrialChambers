@@ -690,15 +690,48 @@ class ResetManager(private val plugin: TrialChamberPro) {
         // blocks a player ADDED into formerly-empty cells (lava, cobble, etc.).
         // Clear those first; disable via reset.clear-added-blocks if a server
         // intentionally lets players build inside chambers.
-        if (plugin.config.getBoolean("reset.clear-added-blocks", true)) {
+        //
+        // SAFETY: the clear region is the INTERSECTION of the chamber bounds and
+        // the snapshot's own coverage. If the chamber AABB grew after capture
+        // (e.g. a discovery merge), clearing the full chamber bounds would wipe
+        // everything in the annexed volume that the snapshot can't put back —
+        // terrain, builds, the lot. Never clear ground the snapshot doesn't cover.
+        if (plugin.config.getBoolean("reset.clear-added-blocks", true) && snapshot.isNotEmpty()) {
             val world = chamber.getWorld()
             if (world != null) {
-                blockRestorer.clearAddedBlocks(
-                    world,
-                    chamber.minX, chamber.minY, chamber.minZ,
-                    chamber.maxX, chamber.maxY, chamber.maxZ,
-                    snapshot,
-                )
+                var snapMinX = Int.MAX_VALUE; var snapMinY = Int.MAX_VALUE; var snapMinZ = Int.MAX_VALUE
+                var snapMaxX = Int.MIN_VALUE; var snapMaxY = Int.MIN_VALUE; var snapMaxZ = Int.MIN_VALUE
+                for (loc in snapshot.keys) {
+                    if (loc.blockX < snapMinX) snapMinX = loc.blockX
+                    if (loc.blockY < snapMinY) snapMinY = loc.blockY
+                    if (loc.blockZ < snapMinZ) snapMinZ = loc.blockZ
+                    if (loc.blockX > snapMaxX) snapMaxX = loc.blockX
+                    if (loc.blockY > snapMaxY) snapMaxY = loc.blockY
+                    if (loc.blockZ > snapMaxZ) snapMaxZ = loc.blockZ
+                }
+                if (snapMinX > chamber.minX || snapMinY > chamber.minY || snapMinZ > chamber.minZ ||
+                    snapMaxX < chamber.maxX || snapMaxY < chamber.maxY || snapMaxZ < chamber.maxZ
+                ) {
+                    plugin.logger.warning(
+                        "Snapshot for chamber ${chamber.name} covers a smaller region than the chamber " +
+                            "bounds (chamber likely grew after capture). Clearing only the snapshot-covered " +
+                            "region — run /tcp snapshot create ${chamber.name} to recapture the full bounds."
+                    )
+                }
+                val clrMinX = maxOf(chamber.minX, snapMinX)
+                val clrMinY = maxOf(chamber.minY, snapMinY)
+                val clrMinZ = maxOf(chamber.minZ, snapMinZ)
+                val clrMaxX = minOf(chamber.maxX, snapMaxX)
+                val clrMaxY = minOf(chamber.maxY, snapMaxY)
+                val clrMaxZ = minOf(chamber.maxZ, snapMaxZ)
+                if (clrMinX <= clrMaxX && clrMinY <= clrMaxY && clrMinZ <= clrMaxZ) {
+                    blockRestorer.clearAddedBlocks(
+                        world,
+                        clrMinX, clrMinY, clrMinZ,
+                        clrMaxX, clrMaxY, clrMaxZ,
+                        snapshot,
+                    )
+                }
             }
         }
 
