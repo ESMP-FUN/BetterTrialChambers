@@ -1,5 +1,8 @@
 <black>.
 <aqua>[1.5.5] <gray>- <white>(COMING SOON)
+<lime>+ <white>FIX: <red>CRITICAL: <green>chamber resets could delete terrain far outside what the snapshot covers when an auto-discovered chamber grew (region merge) after its snapshot was taken. The reset clear pass is now clamped to the snapshot's own coverage — a reset can never wipe ground it can't restore.
+<lime>+ <white>FIX: <green><yellow>discovery.auto-snapshot<green> captured the snapshot file but never linked it in the database, so auto-discovered chambers said "No snapshot found" at reset time. Auto-snapshots (and post-merge re-snapshots) are now properly linked.
+<lime>+ <white>FIX: <green>Merging a new discovery region into an existing chamber now re-captures its snapshot (a pre-merge snapshot is stale and unsafe to restore).
 <lime>+ <white>FIX: <green>Active-spawner glow outline sat one block above the spawner — it now wraps the spawner block exactly. Affects both <yellow>wave-active<green> and <yellow>chamber-remaining<green> glow modes.
 <lime>+ <white>CHG: <green><yellow>/tcp snapshot create<green> and <yellow>/tcp snapshot restore<green> now take the chamber name as an optional argument — omit it while standing inside a chamber to target that one (like <yellow>/tcp snapshot update<green> already did). Handy on servers with lots of chambers.
 <aqua>[1.5.4] <gray>- <white>2026-06-09
