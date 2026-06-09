@@ -200,14 +200,26 @@ spawner-waves:
   remove-distance: 32
   award-stats: true             # Track wave kills in player statistics
   completion-message: true      # Send message when wave is complete
-  # Glow outline on active trial spawners (v1.2.27)
-  # When true, spawns an invisible entity at each active spawner with the GLOWING effect
+  # Glow outline on active trial spawners (v1.2.27, fixed v1.5.4)
+  # When true, spawns an invisible shulker at each active spawner with the GLOWING effect
   # applied, producing a colored block outline that's visible through walls — helps players
   # locate the remaining active spawners in large chambers. Cleared automatically when the
   # wave completes, the spawner enters cooldown, or the chamber is reset.
+  # NOTE: in v1.2.27..v1.5.3 this used an Interaction entity which is silently glow-immune;
+  #       the feature has only actually rendered visible outlines from v1.5.4 onward.
   glow-active-spawners: false
   glow-color-normal: "#FFFF55"  # Outline color for normal trial spawners (hex RGB)
   glow-color-ominous: "#A020F0" # Outline color for ominous trial spawners (hex RGB)
+
+  # Glow mode (v1.5.4) — controls *which* spawners glow when glow-active-spawners is true.
+  #   wave-active        (default) — only the spawner with the currently-active wave glows.
+  #                                   Restores per-wave focus, easier on entity counts.
+  #   chamber-remaining            — when any wave starts in a chamber, every UNCLEARED
+  #                                   spawner in that chamber glows for the rest of the
+  #                                   cycle. Solves "where's the spawner I haven't done
+  #                                   yet?" — recommended for premium difficulty modules
+  #                                   (TCP-MythicTrials's HUD pairs with this).
+  glow-mode: "wave-active"
 
 # Spectator Mode
 # Allows players to spectate chambers after death
