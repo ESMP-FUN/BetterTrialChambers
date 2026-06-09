@@ -1,8 +1,8 @@
-# ⚡ Installation
+# Installation
 
 Getting TrialChamberPro up and running is easier than finding diamonds at Y=11. Let's do this!
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before you start, make sure you have:
 
@@ -16,7 +16,7 @@ Before you start, make sure you have:
 
 </div>
 
-## 📦 Download
+## Download
 
 Grab the latest version from one of these sources:
 
@@ -26,7 +26,7 @@ Grab the latest version from one of these sources:
 
 Look for the file named something like `TrialChamberPro-<version>.jar`.
 
-## 🚀 Installation Steps
+## Installation Steps
 
 ### 1. Stop Your Server
 
@@ -77,7 +77,7 @@ plugins/TrialChamberPro/
 
 Don't touch anything yet! We'll configure everything in the next section.
 
-## 🔌 Optional Dependencies
+## Optional Dependencies
 
 TrialChamberPro works great on its own, but these plugins add extra functionality:
 
@@ -113,7 +113,7 @@ Display things like "Chambers Completed: 5" in your custom UIs.
 
 If you already use WorldGuard, TrialChamberPro can integrate with it for protection.
 
-## 🎮 Verify Installation
+## Verify Installation
 
 Run this command in-game:
 
@@ -123,7 +123,7 @@ Run this command in-game:
 
 You should see a list of commands. If you do, congrats! You're ready to create your first chamber.
 
-## 🔄 Updating
+## Updating
 
 Updating is just as easy:
 
@@ -138,7 +138,7 @@ Updating is just as easy:
 
 </div>
 
-## ❓ What's Next?
+## What's Next?
 
 Now that you're installed, let's create your first managed chamber!
 
@@ -150,7 +150,7 @@ Now that you're installed, let's create your first managed chamber!
 
 ---
 
-## 💡 Quick Tips
+## Quick Tips
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
