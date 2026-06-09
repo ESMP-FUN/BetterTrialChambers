@@ -363,6 +363,9 @@ class ChamberManager(private val plugin: TrialChamberPro) {
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     suspend fun scanChamber(chamber: Chamber): Triple<Int, Int, Int> {
+        // A re-scan implies the spawner set may have changed — drop the wave
+        // manager's cached count/locations so ChamberClearedEvent re-counts.
+        runCatching { plugin.spawnerWaveManager.invalidateChamberSpawnerCaches(chamber.id) }
         // Use location-based scheduling for Folia compatibility
         val chamberCenter = Location(
             chamber.getWorld(),
@@ -962,6 +965,9 @@ class ChamberManager(private val plugin: TrialChamberPro) {
                                 updateCacheExpiry(chamber.name)
                             }
                         }
+                        // New bounds can contain a different spawner set — stale
+                        // counts make ChamberClearedEvent fire early or never.
+                        runCatching { plugin.spawnerWaveManager.invalidateChamberSpawnerCaches(chamberId) }
                         plugin.logger.info("Updated bounds for chamber $chamberId: ($minX,$minY,$minZ)-($maxX,$maxY,$maxZ)")
                     }
                     updated
