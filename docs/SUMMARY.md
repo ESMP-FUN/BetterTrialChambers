@@ -16,6 +16,7 @@
 * [🌐 Localization](configuration/localization.md)
 * [🧟 Custom Mobs](configuration/custom-mobs.md)
 * [🌀 spawner\_presets.yml](configuration/spawner-presets.yml.md)
+* [🏗️ dungeon.yml](configuration/dungeon.yml.md)
 
 ## Reference
 
