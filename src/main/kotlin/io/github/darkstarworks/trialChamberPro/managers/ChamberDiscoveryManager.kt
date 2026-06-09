@@ -270,11 +270,28 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
         if (refreshed != null) {
             plugin.chamberManager.scanChamber(refreshed)
 
-            if (plugin.config.getBoolean("discovery.auto-snapshot", false)) {
+            // Re-snapshot when auto-snapshot is on OR the chamber already has a
+            // snapshot. A pre-merge snapshot covers the old, smaller bounds —
+            // restoring it against the grown AABB makes the reset's
+            // clear-added-blocks pass wipe everything in the newly annexed
+            // volume. A stale snapshot here is actively dangerous, not just
+            // incomplete, so it must be recaptured (and DB-linked) immediately.
+            val hadSnapshot = refreshed.snapshotFile != null
+            if (hadSnapshot || plugin.config.getBoolean("discovery.auto-snapshot", false)) {
                 try {
-                    plugin.snapshotManager.createSnapshot(refreshed)
+                    val file = plugin.snapshotManager.createSnapshot(refreshed)
+                    if (!plugin.chamberManager.setSnapshotFile(refreshed.name, file.absolutePath)) {
+                        plugin.logger.warning(
+                            "[Discovery] Post-merge snapshot for '${existing.name}' captured but DB link " +
+                                "failed — run /tcp snapshot create ${existing.name} to retry."
+                        )
+                    }
                 } catch (e: Exception) {
-                    plugin.logger.warning("[Discovery] Auto-snapshot after merge failed for '${existing.name}': ${e.message}")
+                    plugin.logger.warning(
+                        "[Discovery] Auto-snapshot after merge failed for '${existing.name}': ${e.message}" +
+                            if (hadSnapshot) " — the existing snapshot is STALE (pre-merge bounds); " +
+                                "run /tcp snapshot create ${existing.name} before the next reset." else ""
+                    )
                 }
             }
         }
@@ -351,7 +368,15 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
 
         if (plugin.config.getBoolean("discovery.auto-snapshot", false)) {
             try {
-                plugin.snapshotManager.createSnapshot(chamber)
+                val file = plugin.snapshotManager.createSnapshot(chamber)
+                // Link the file in the DB row — without this the chamber reports
+                // "no snapshot" at reset time even though the .dat is on disk.
+                if (!plugin.chamberManager.setSnapshotFile(name, file.absolutePath)) {
+                    plugin.logger.warning(
+                        "[Discovery] Auto-snapshot for '$name' captured but DB link failed — " +
+                            "run /tcp snapshot create $name to retry."
+                    )
+                }
             } catch (e: Exception) {
                 plugin.logger.warning("[Discovery] Auto-snapshot failed for '$name': ${e.message}")
             }
