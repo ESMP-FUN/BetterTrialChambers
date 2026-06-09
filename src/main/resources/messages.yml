@@ -252,7 +252,7 @@ loot-received: "&aYou received: {item}"
 # Command Usage Messages
 usage-scan: "&cUsage: /tcp scan <chamber>"
 usage-setexit: "&cUsage: /tcp setexit <chamber>"
-usage-snapshot: "&cUsage: /tcp snapshot <create|update|restore> [chamber] &7(update with no name uses the chamber you're standing in)"
+usage-snapshot: "&cUsage: /tcp snapshot <create|update|restore> [chamber] &7(omit the name to use the chamber you're standing in)"
 usage-info: "&cUsage: /tcp info <chamber>"
 usage-delete: "&cUsage: /tcp delete <chamber>"
 usage-pause: "&cUsage: /tcp pause <chamber>"
