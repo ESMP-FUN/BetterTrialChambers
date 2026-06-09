@@ -4,17 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [1.5.4] - UNRELEASED
+## [1.5.5] - 2026-06-09
+### Fixed
+- **Spawner glow outline rendered one block too high.** The glow Shulker was spawned at the spawner block's centre (`+0.5` on Y), but a Shulker's bounding box originates at its *feet*, so the 1×1×1 outline floated a full block above the spawner. It's now spawned with its feet on the block floor (`+0.0` Y) so the shell encloses the spawner block exactly. Applies to both the wave-active and `chamber-remaining` glow modes.
+
+### Changed
+- **`/tcp snapshot create` and `/tcp snapshot restore` now take the chamber name as an *optional* argument.** Omit it while standing inside a chamber and the command targets that chamber — the same convenience `/tcp snapshot update` already had. On servers with many chambers, typing exact names for create/restore was impractical; you can now just stand in the chamber and run the bare command. Naming a chamber explicitly still works exactly as before.
+
+## [1.5.4] - 2026-06-09
 ### Fixed
 - **Spawner glow outline never rendered (v1.2.27 regression).** The opt-in `spawner-waves.glow-active-spawners` feature spawned an Interaction entity at each active spawner and set its `isGlowing` flag — but Interaction entities are explicitly *immune* to the Glowing effect (no renderable model for the outline pass), so the feature silently rendered nothing on every client since v1.2.27. Swap to an invisible Shulker: shell-cube hidden by `INVISIBILITY`, glow outline remains, perfect 1×1×1 cube marker through walls. Inert mob (no AI, silent, non-persistent), PDC-tagged so mob-cap / anti-cheat plugins can identify the overlay and skip it from monster counts.
+- **Update checker mis-parsed `-mc26` release tags.** `fetchLatestVersion()` only stripped a leading `v`, so a `releases/latest` tag of `v1.5.2-mc26` became `1.5.2-mc26` and `isNewerVersion()` parsed the third segment (`2-mc26`) as `0` — i.e. `1.5.0` — producing wrong update results whenever the most recently published release was an mc26 tag. It now also strips the track suffix (`.substringBefore('-')`) so both `vX.Y.Z` and `vX.Y.Z-mc26` collapse to the same `X.Y.Z` before comparison.
 
 ### Added
 - **`ChamberEnteredEvent` / `ChamberExitedEvent` — public Bukkit events for "player crossed into/out of a registered chamber."** Fired from `PlayerMovementListener` on the block-boundary-crossing transition, and from `PlayerQuitEvent` for any player who disconnects while inside (keeping entry/exit pairs balanced for downstream listeners that allocate per-player state on entry). Both fire un-gated by the `statistics.*` config flags — listeners that need chamber-presence signals shouldn't have their behaviour silently disabled by the admin's stats preferences. Direct chamber→chamber transitions fire an exit-then-entry pair (with entry/exit messages suppressed on the transition to avoid spam). Primary intended consumer: the TCP-MythicTrials HUD; useful for any plugin reacting to chamber presence (welcome messages, region effects, etc.).
 - **`spawner-waves.glow-mode`** (default `wave-active`). New `chamber-remaining` mode lights up *every* uncleared spawner in a chamber when any wave starts inside it, not just the wave-active one — solves "which spawner did I miss?" navigation on large chambers. Standalone glow entities are tracked per chamber, cleaned up on each spawner's wave completion and on chamber reset. Recommended for premium difficulty modules (TCP-MythicTrials's HUD pairs with this).
-
-## [1.5.3] - 2026-05-27
-### Fixed
-- **Update checker mis-parsed `-mc26` release tags.** `fetchLatestVersion()` only stripped a leading `v`, so a `releases/latest` tag of `v1.5.2-mc26` became `1.5.2-mc26` and `isNewerVersion()` parsed the third segment (`2-mc26`) as `0` — i.e. `1.5.0` — producing wrong update results whenever the most recently published release was an mc26 tag. It now also strips the track suffix (`.substringBefore('-')`) so both `vX.Y.Z` and `vX.Y.Z-mc26` collapse to the same `X.Y.Z` before comparison.
 
 ## [1.5.2] - 2026-05-27
 ### Added
@@ -1313,6 +1317,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.5.5]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.4...v1.5.5
+[1.5.4]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.2...v1.5.4
 [1.5.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.7...v1.5.0
