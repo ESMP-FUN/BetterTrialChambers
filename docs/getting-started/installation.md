@@ -24,7 +24,7 @@ Grab the latest version from one of these sources:
 * [Modrinth](https://modrinth.com/plugin/trialchamberpro)
 * [SpigotMC](https://www.spigotmc.org/resources/trialchamberpro)
 
-Look for the file named something like `TrialChamberPro-1.0.0.jar`.
+Look for the file named something like `TrialChamberPro-<version>.jar`.
 
 ## 🚀 Installation Steps
 
@@ -34,12 +34,12 @@ Yeah, yeah, you know the drill. Shut it down properly with `/stop`.
 
 ### 2. Drop the JAR
 
-Move `TrialChamberPro-1.0.0.jar` into your server's `plugins/` folder.
+Move `TrialChamberPro-<version>.jar` into your server's `plugins/` folder.
 
 ```
 your-server/
 ├── plugins/
-│   ├── TrialChamberPro-1.0.0.jar  ← Put it here!
+│   ├── TrialChamberPro-<version>.jar  ← Put it here!
 │   ├── WorldEdit.jar
 │   └── ... other plugins
 └── ...
@@ -50,7 +50,7 @@ your-server/
 Fire it back up! Watch the console for this beautiful message:
 
 ```
-[TrialChamberPro] Enabling TrialChamberPro v1.0.0
+[TrialChamberPro] Enabling TrialChamberPro v<version>
 [TrialChamberPro] Database connected successfully
 [TrialChamberPro] Loaded 2 loot tables
 [TrialChamberPro] TrialChamberPro enabled successfully!
