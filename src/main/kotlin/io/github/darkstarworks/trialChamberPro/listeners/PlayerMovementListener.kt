@@ -1,6 +1,9 @@
 package io.github.darkstarworks.trialChamberPro.listeners
 
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
+import io.github.darkstarworks.trialChamberPro.api.events.ChamberEnteredEvent
+import io.github.darkstarworks.trialChamberPro.api.events.ChamberExitedEvent
+import io.github.darkstarworks.trialChamberPro.models.Chamber
 import io.github.darkstarworks.trialChamberPro.scheduler.ScheduledTask
 import io.github.darkstarworks.trialChamberPro.utils.AdvancementUtil
 import kotlinx.coroutines.*
@@ -35,13 +38,12 @@ class PlayerMovementListener(private val plugin: TrialChamberPro) : Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     fun onPlayerMove(event: PlayerMoveEvent) {
-        if (!plugin.config.getBoolean("statistics.enabled", true)) return
-        if (!plugin.config.getBoolean("statistics.track-time-spent", true)) return
-
         val from = event.from
         val to = event.to
 
-        // Only check when crossing block boundaries (major performance optimization)
+        // Only check when crossing block boundaries (major performance optimization).
+        // Done first — applies to both event-firing AND stats paths; sub-block movement
+        // can't change chamber membership.
         if (from.blockX == to.blockX &&
             from.blockY == to.blockY &&
             from.blockZ == to.blockZ) {
@@ -50,55 +52,117 @@ class PlayerMovementListener(private val plugin: TrialChamberPro) : Listener {
 
         val player = event.player
         val uuid = player.uniqueId
+        val statsEnabled = plugin.config.getBoolean("statistics.enabled", true) &&
+            plugin.config.getBoolean("statistics.track-time-spent", true)
 
         movementScope.launch {
-            val wasInChamber = plugin.chamberManager.getChamberAt(from)?.takeIf { !it.isPaused } != null
-            val isInChamber = plugin.chamberManager.getChamberAt(to)?.takeIf { !it.isPaused } != null
+            val previousChamber = plugin.chamberManager.getChamberAt(from)?.takeIf { !it.isPaused }
+            val currentChamber = plugin.chamberManager.getChamberAt(to)?.takeIf { !it.isPaused }
+            val wasInChamber = previousChamber != null
+            val isInChamber = currentChamber != null
 
-            // Player entered a chamber
+            // Player entered a chamber (or crossed straight from one chamber to another).
             if (!wasInChamber && isInChamber) {
-                playersInChambers.add(uuid)
-                playerEntryTimes[uuid] = System.currentTimeMillis()
-
-                // Grant "Minecraft: Trial(s) Edition" advancement (must run on entity thread)
-                // Only grant to survival/adventure players - not spectators or creative
-                plugin.scheduler.runAtEntity(player, Runnable {
-                    if (player.isOnline &&
-                        (player.gameMode == GameMode.SURVIVAL || player.gameMode == GameMode.ADVENTURE)) {
-                        val granted = AdvancementUtil.grantTrialChamberEntry(player)
-                        if (!granted) {
-                            plugin.logger.warning("Failed to grant trial chamber entry advancement to ${player.name}")
-                        }
-                    }
-                })
-
-                // Optional: Send entry message
-                if (plugin.config.getBoolean("messages.chamber-entry-message", false)) {
-                    val chamber = plugin.chamberManager.getChamberAt(to)?.takeIf { !it.isPaused }
-                    player.sendMessage(
-                        plugin.getMessageComponent("chamber-entered", "chamber" to chamber?.name)
-                    )
-                }
+                onChamberEntered(player, uuid, currentChamber!!, statsEnabled, sendEntryMessage = true)
             }
-
-            // Player left a chamber
+            // Player left a chamber (or crossed straight from one chamber to another).
             else if (wasInChamber && !isInChamber) {
-                playersInChambers.remove(uuid)
+                onChamberExited(player, uuid, previousChamber!!, statsEnabled, sendExitMessage = true)
+            }
+            // Direct chamber-to-chamber transition (different chamber ids). Fire both.
+            else if (wasInChamber && isInChamber && previousChamber!!.id != currentChamber!!.id) {
+                onChamberExited(player, uuid, previousChamber, statsEnabled, sendExitMessage = false)
+                onChamberEntered(player, uuid, currentChamber, statsEnabled, sendEntryMessage = false)
+            }
+        }
+    }
 
-                // Immediately flush their time
-                flushPlayerTime(uuid)
+    /**
+     * Common entry handling — fires the public [ChamberEnteredEvent] unconditionally,
+     * then runs the stats / advancement / message side-effects when their respective
+     * config flags are on. Pulled out of the move handler so a chamber-to-chamber
+     * transition can reuse it without duplicating the body.
+     */
+    private fun onChamberEntered(
+        player: org.bukkit.entity.Player,
+        uuid: UUID,
+        chamber: Chamber,
+        statsEnabled: Boolean,
+        sendEntryMessage: Boolean,
+    ) {
+        // Public event — always fires regardless of stats config.
+        plugin.server.pluginManager.callEvent(ChamberEnteredEvent(player, chamber))
 
-                // Optional: Send exit message
-                if (plugin.config.getBoolean("messages.chamber-exit-message", false)) {
-                    player.sendMessage(plugin.getMessageComponent("chamber-exited"))
+        if (statsEnabled) {
+            playersInChambers.add(uuid)
+            playerEntryTimes[uuid] = System.currentTimeMillis()
+        }
+
+        // Grant "Minecraft: Trial(s) Edition" advancement (must run on entity thread).
+        // Only grant to survival/adventure players — not spectators or creative.
+        plugin.scheduler.runAtEntity(player, Runnable {
+            if (player.isOnline &&
+                (player.gameMode == GameMode.SURVIVAL || player.gameMode == GameMode.ADVENTURE)) {
+                val granted = AdvancementUtil.grantTrialChamberEntry(player)
+                if (!granted) {
+                    plugin.logger.warning("Failed to grant trial chamber entry advancement to ${player.name}")
                 }
             }
+        })
+
+        // Optional: Send entry message (suppressed on chamber→chamber transitions).
+        if (sendEntryMessage && plugin.config.getBoolean("messages.chamber-entry-message", false)) {
+            player.sendMessage(
+                plugin.getMessageComponent("chamber-entered", "chamber" to chamber.name)
+            )
+        }
+    }
+
+    /**
+     * Common exit handling — fires the public [ChamberExitedEvent] unconditionally,
+     * then runs the stats / message side-effects when their respective config flags
+     * are on.
+     */
+    private suspend fun onChamberExited(
+        player: org.bukkit.entity.Player,
+        uuid: UUID,
+        chamber: Chamber,
+        statsEnabled: Boolean,
+        sendExitMessage: Boolean,
+    ) {
+        // Public event — always fires regardless of stats config.
+        plugin.server.pluginManager.callEvent(ChamberExitedEvent(player, chamber))
+
+        if (statsEnabled) {
+            playersInChambers.remove(uuid)
+            // Immediately flush their time.
+            flushPlayerTime(uuid)
+        }
+
+        // Optional: Send exit message (suppressed on chamber→chamber transitions).
+        if (sendExitMessage && plugin.config.getBoolean("messages.chamber-exit-message", false)) {
+            player.sendMessage(plugin.getMessageComponent("chamber-exited"))
         }
     }
 
     @EventHandler
     fun onPlayerQuit(event: PlayerQuitEvent) {
-        val uuid = event.player.uniqueId
+        val player = event.player
+        val uuid = player.uniqueId
+        val location = player.location
+
+        // Fire ChamberExitedEvent for any player who disconnects while inside a chamber
+        // — keeps the entry/exit pair balanced for downstream listeners (e.g. MT's HUD
+        // that allocates per-player state on entry). Decoupled from stats so it fires
+        // whether or not time-tracking is on.
+        movementScope.launch {
+            val chamber = plugin.chamberManager.getChamberAt(location)?.takeIf { !it.isPaused }
+            if (chamber != null) {
+                plugin.server.pluginManager.callEvent(ChamberExitedEvent(player, chamber))
+            }
+        }
+
+        // Stats path (unchanged): flush their tracked time if we were tracking it.
         if (playersInChambers.remove(uuid)) {
             movementScope.launch {
                 flushPlayerTime(uuid)
