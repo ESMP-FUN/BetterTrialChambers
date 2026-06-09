@@ -599,6 +599,10 @@ spawner-waves:
   remove-distance: 32
   award-stats: true
   completion-message: true
+  glow-active-spawners: false
+  glow-color-normal: "#FFFF55"
+  glow-color-ominous: "#A020F0"
+  glow-mode: "wave-active"
 ```
 
 ### `enabled`
@@ -630,6 +634,28 @@ Track mob kills from waves in player statistics. Used for leaderboards.
 **Default:** `true`
 
 Send a chat message when a wave is complete showing kill count and duration.
+
+### `glow-active-spawners`
+**Default:** `false` *(works correctly since 1.5.6 — see note below)*
+
+Draw a glowing outline around the active trial spawner while a wave is running, visible through walls. Helps players find the spawner that's still firing in a big chamber. The outline is an invisible, invulnerable, non-colliding marker entity — it can't be hit, killed, or farmed, and it's removed the moment the wave completes or the chamber resets.
+
+### `glow-color-normal` / `glow-color-ominous`
+**Defaults:** `"#FFFF55"` (yellow) / `"#A020F0"` (purple)
+
+Outline colors as hex RGB, per wave type.
+
+### `glow-mode`
+**Default:** `"wave-active"` *(added in 1.5.4)*
+
+- `wave-active` — only the spawner whose wave is currently running glows.
+- `chamber-remaining` — when any wave starts in a chamber, **every uncleared spawner** in that chamber glows until its own wave completes. Solves "which spawner did I miss?" navigation on large chambers. Pairs well with TCP-MythicTrials' HUD.
+
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
+**Update to 1.5.6+ before enabling the glow.** On older builds the outline either didn't render at all (pre-1.5.4), floated one block above the spawner (1.5.4), or could be punched out and farmed for shulker shells (1.5.4–1.5.5).
+
+</div>
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
@@ -706,6 +732,12 @@ discovery:
   notify-ops: true                 # Broadcast registration to tcp.discovery.notify holders
   cooldown-seconds: 300            # Per-region debounce after a successful or failed discovery
   pending-retry-seconds: 30        # How long to keep a partial-load seed pending while adjacent chunks load
+  merge-distance-blocks: 250       # Merge a new region into an existing chamber within this distance
+  max-merged-volume: 1500000       # Hard cap on the post-merge bounding-box volume (blocks)
+  snapshot-reminder:
+    enabled: true
+    on-join: true                  # Ping an admin individually when they log in
+    interval-minutes: 30           # Periodic console summary + admin chat ping (0 disables periodic only)
 ```
 
 ### `enabled`
@@ -733,6 +765,8 @@ Reject if the AABB's center Y is above this. Trial chambers generate deep underg
 
 Snapshot blocks on registration. Disabled by default because snapshotting a large chamber costs a few seconds of I/O per registration, which adds up if you're running a world pregenerator. **Enable this if you want auto-discovered chambers to be restorable on reset** — without a snapshot, the chamber gets per-player loot and protection, but resets can't rebuild broken blocks.
 
+Requires **1.5.6+** to function: older builds wrote the snapshot file but never linked it to the chamber row, so resets still reported "No snapshot found" with this enabled.
+
 ### `notify-ops`
 **Default:** `true`
 
@@ -742,6 +776,18 @@ Broadcast a message to anyone with the `tcp.discovery.notify` permission when a 
 **Defaults:** `300` / `30`
 
 Internal debounce and retry timers. `cooldown-seconds` prevents re-scanning the same 128-block region right after a successful or failed discovery. `pending-retry-seconds` is how long the plugin waits for neighbouring chunks to load before finalizing a partial-load chamber. Defaults are fine for almost everyone.
+
+### `merge-distance-blocks` / `max-merged-volume`
+**Defaults:** `250` / `1500000` *(added in 1.4.1)*
+
+When a newly discovered region's bounding box sits within `merge-distance-blocks` (Chebyshev distance) of an already-registered chamber, the two are merged into one chamber instead of registering a duplicate — vanilla chambers often load in pieces as their chunks stream in. `max-merged-volume` hard-caps the post-merge bounding box so pathological geometry can't swallow half the world into one logical chamber; regions that would exceed it stay separate.
+
+Since **1.5.6**, a merge automatically re-captures the chamber's snapshot whenever one exists (a pre-merge snapshot covers the old, smaller bounds and is unsafe to restore). If you see a console warning that a post-merge snapshot failed, run `/tcp snapshot create <chamber>` before the next reset.
+
+### `snapshot-reminder`
+**Defaults:** `enabled: true`, `on-join: true`, `interval-minutes: 30` *(added in 1.5.1)*
+
+Auto-discovered chambers without a snapshot silently can't be reset. This pings admins holding `tcp.admin.snapshot` — once on login and as a periodic coalesced console/chat summary — whenever any chamber is missing its snapshot. Set `interval-minutes: 0` to disable only the periodic ping.
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
