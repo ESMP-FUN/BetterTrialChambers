@@ -1,4 +1,8 @@
 <black>.
+<aqua>[1.5.4] <gray>- <white>(COMING SOON)
+<lime>+ <white>FIX: <green>Active-spawner glow outline now actually renders (previously used Interaction entities which are silently glow-immune — the feature has never worked since v1.2.27). Opt in via <yellow>spawner-waves.glow-active-spawners<green>.
+<lime>+ <white>NEW: <green><yellow>spawner-waves.glow-mode<green> — set to <yellow>chamber-remaining<green> to light up every uncleared spawner in the chamber while any wave is active, not just the spawner currently firing. Solves "where's the one I missed?".
+<lime>+ <white>NEW: <green>Public <yellow>ChamberEnteredEvent<green> / <yellow>ChamberExitedEvent<green> for sibling plugins reacting to chamber presence (TCP-MythicTrials uses these for its in-chamber HUD).
 <aqua>[1.5.3] <gray>- <white>(COMING SOON)
 <lime>+ <white>FIX: <green>Update checker no longer misreads <yellow>-mc26<green> release tags as an older version, so update notifications are accurate on both the Paper and mc26 download tracks.
 <aqua>[1.5.2] <gray>- <white>2026-05-27
