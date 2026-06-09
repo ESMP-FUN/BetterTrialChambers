@@ -75,6 +75,11 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
     // a chamber's snapshot restoration keeps spawner geometry stable.
     private val chamberSpawnerCountCache = ConcurrentHashMap<Int, Int>()
 
+    // PDC marker stamped on glow-overlay entities so mob-cap / anti-cheat
+    // plugins can identify them as a TCP overlay and skip them from monster
+    // counts or detection scans. Value is a sentinel byte.
+    private val glowMarkerKey = org.bukkit.NamespacedKey(plugin, "glow_marker")
+
     init {
         // Periodic sweep: drop UUIDs whose entity is gone (despawned, /kill, removed by another
         // plugin, void death without an EntityDeathEvent); close out waves whose spawner block
@@ -868,14 +873,28 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
     }
 
     /**
-     * Spawns an invisible Interaction entity at the spawner with the GLOWING effect applied,
-     * producing a colored outline on the spawner block that is visible through walls.
-     * Opt-in via `spawner-waves.glow-active-spawners`. Colors configurable per-type.
+     * Spawns an invisible Shulker at the spawner with the GLOWING effect applied,
+     * producing a colored 1×1×1 cube outline that is visible through walls.
+     *
+     * **Why a Shulker and not Interaction / Display:** Interaction entities are
+     * explicitly *immune* to the glow effect in vanilla — they have no renderable
+     * model for the outline pass to draw around. (Confirmed against the Minecraft
+     * Wiki: Withers, ender dragons, dropped items, display entities, and
+     * **Interaction entities are immune to Glowing**.) The pre-v1.5.4 implementation
+     * used an Interaction, which is why the feature silently rendered nothing on
+     * every client since v1.2.27. A Shulker's shell is a perfect 1×1×1 cube; with
+     * INVISIBILITY applied the shell hides but the glow outline remains, giving the
+     * intended block-shaped marker.
+     *
+     * Configured to be inert: AI off, silent, non-persistent. Tagged with
+     * [glowMarkerKey] in PDC so mob-cap and anti-cheat plugins can identify it as
+     * a TCP overlay and exclude it from monster counts. Opt-in via
+     * `spawner-waves.glow-active-spawners`; colors configurable per-type.
      */
     private fun spawnGlowDisplay(wave: WaveState) {
         if (!plugin.config.getBoolean("spawner-waves.glow-active-spawners", false)) return
         val world = wave.location.world ?: return
-        // Center the interaction box on the spawner block
+        // Centre the shulker on the spawner block.
         val center = wave.location.clone().add(0.5, 0.5, 0.5)
 
         plugin.scheduler.runAtLocation(wave.location, Runnable {
@@ -887,28 +906,53 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
                 }
                 val color = parseGlowColor(colorHex)
 
-                val entity = world.spawn(center, org.bukkit.entity.Interaction::class.java) { e ->
-                    // Interaction entities are invisible; hitbox sized to wrap the 1x1x1 spawner
-                    e.interactionWidth = 1.2f
-                    e.interactionHeight = 1.2f
-                    e.isResponsive = false
-                    e.isPersistent = false
-                    e.isGlowing = true
+                // Pre-resolve the invisibility effect type via Registry so we use
+                // the modern path (the static PotionEffectType.INVISIBILITY field
+                // is deprecated on 1.21+).
+                val invisType = org.bukkit.Registry.POTION_EFFECT_TYPE.get(
+                    org.bukkit.NamespacedKey.minecraft("invisibility")
+                )
+
+                val entity = world.spawn(center, org.bukkit.entity.Shulker::class.java) { s ->
+                    s.setAI(false)
+                    s.isSilent = true
+                    s.isPersistent = false
+                    s.isGlowing = true
+                    // Tag for mob-cap / anti-cheat allow-listing.
+                    s.persistentDataContainer.set(
+                        glowMarkerKey,
+                        org.bukkit.persistence.PersistentDataType.BYTE,
+                        1
+                    )
+                    if (invisType != null) {
+                        // Infinite-duration invisibility so the shulker shell never
+                        // re-appears; particles + icon off to keep the chamber visually clean.
+                        s.addPotionEffect(
+                            org.bukkit.potion.PotionEffect(
+                                invisType,
+                                org.bukkit.potion.PotionEffect.INFINITE_DURATION,
+                                0,
+                                false,  // ambient
+                                false,  // particles
+                                false   // icon
+                            )
+                        )
+                    }
                     if (color != null) {
                         try {
-                            // Invoke reflectively so we don't hard-bind to a specific Paper API revision
-                            e.javaClass.getMethod("setGlowColorOverride", org.bukkit.Color::class.java)
-                                .invoke(e, color)
+                            // Reflective so we don't hard-bind to a specific Paper API revision.
+                            // Falls back to the default team-less white outline on older forks.
+                            s.javaClass.getMethod("setGlowColorOverride", org.bukkit.Color::class.java)
+                                .invoke(s, color)
                         } catch (_: Throwable) {
-                            // Some server forks or older API revisions may not support this; fall back
-                            // to the default team-less glow color (white)
+                            // Older fork / API: leave the outline white. Better than nothing.
                         }
                     }
                 }
                 wave.glowEntityId = entity.uniqueId
 
                 if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-                    plugin.logger.info("[SpawnerWave] Spawned glow entity ${entity.uniqueId} at ${wave.spawnerId}")
+                    plugin.logger.info("[SpawnerWave] Spawned glow shulker ${entity.uniqueId} at ${wave.spawnerId}")
                 }
             } catch (e: Exception) {
                 plugin.logger.warning("[SpawnerWave] Failed to spawn glow entity: ${e.message}")
@@ -917,7 +961,7 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
     }
 
     /**
-     * Removes the glow Interaction entity previously spawned for this wave, if any.
+     * Removes the glow shulker previously spawned for this wave, if any.
      * Safe to call multiple times — no-op once the entity id is cleared.
      */
     private fun removeGlowDisplay(wave: WaveState) {
