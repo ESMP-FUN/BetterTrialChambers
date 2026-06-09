@@ -189,39 +189,20 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         val action = args[1].lowercase()
 
         when (action) {
-            // `create` and `update` both (re)capture, overwriting any existing
-            // snapshot — `update` is the discoverable name for "save my edits"
-            // and lets you omit the chamber name when standing inside one.
+            // `create`, `update` and `restore` all accept the chamber name as an
+            // optional final arg — omit it while standing inside a chamber and the
+            // command targets that one. `update` is the discoverable alias for
+            // "save my edits". (`create` and `update` both (re)capture, overwriting.)
             "create" -> {
-                if (args.size < 3) {
-                    sender.sendMessage(plugin.getMessageComponent("usage-snapshot"))
-                    return
-                }
-                captureSnapshot(sender, args[2])
+                val chamberName = resolveSnapshotChamberName(sender, args.getOrNull(2)) ?: return
+                captureSnapshot(sender, chamberName)
             }
             "update" -> {
-                if (args.size >= 3) {
-                    captureSnapshot(sender, args[2])
-                    return
-                }
-                val player = sender as? Player
-                if (player == null) {
-                    sender.sendMessage(plugin.getMessageComponent("player-only"))
-                    return
-                }
-                val chamber = plugin.chamberManager.getCachedChamberAt(player.location)
-                if (chamber == null) {
-                    sender.sendMessage(plugin.getMessageComponent("snapshot-not-in-chamber"))
-                    return
-                }
-                captureSnapshot(sender, chamber.name)
+                val chamberName = resolveSnapshotChamberName(sender, args.getOrNull(2)) ?: return
+                captureSnapshot(sender, chamberName)
             }
             "restore" -> {
-                if (args.size < 3) {
-                    sender.sendMessage(plugin.getMessageComponent("usage-snapshot"))
-                    return
-                }
-                val chamberName = args[2]
+                val chamberName = resolveSnapshotChamberName(sender, args.getOrNull(2)) ?: return
                 plugin.launchAsync {
                     val chamber = plugin.chamberManager.getChamber(chamberName)
                     if (chamber == null) {
@@ -245,6 +226,28 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 sender.sendMessage(plugin.getMessageComponent("usage-snapshot"))
             }
         }
+    }
+
+    /**
+     * Resolve the chamber a snapshot subcommand should act on: the [explicit] name
+     * if one was given, otherwise the chamber the sender is standing inside. Sends
+     * the appropriate usage/error message and returns null when it can't resolve
+     * (console without a name, or a player not inside any registered chamber).
+     */
+    private fun resolveSnapshotChamberName(sender: CommandSender, explicit: String?): String? {
+        if (explicit != null) return explicit
+        val player = sender as? Player
+        if (player == null) {
+            // No name + not a player → nothing to infer from. Show usage.
+            sender.sendMessage(plugin.getMessageComponent("usage-snapshot"))
+            return null
+        }
+        val chamber = plugin.chamberManager.getCachedChamberAt(player.location)
+        if (chamber == null) {
+            sender.sendMessage(plugin.getMessageComponent("snapshot-not-in-chamber"))
+            return null
+        }
+        return chamber.name
     }
 
     /** Capture (or re-capture) a chamber's snapshot, overwriting any existing one. Shared by create/update. */

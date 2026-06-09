@@ -908,8 +908,10 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
     private fun spawnGlowDisplay(wave: WaveState) {
         if (!plugin.config.getBoolean("spawner-waves.glow-active-spawners", false)) return
         val world = wave.location.world ?: return
-        // Centre the shulker on the spawner block.
-        val center = wave.location.clone().add(0.5, 0.5, 0.5)
+        // Align the shulker's 1×1×1 shell with the spawner block: centre on X/Z,
+        // but feet on the block floor (Y offset 0). A shulker's bounding box starts
+        // at its feet, so a +0.5 Y push the outline up ~a block above the spawner.
+        val center = wave.location.clone().add(0.5, 0.0, 0.5)
 
         plugin.scheduler.runAtLocation(wave.location, Runnable {
             try {
@@ -1013,7 +1015,9 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
      */
     private fun spawnStandaloneGlow(spawnerLocation: Location, isOminous: Boolean, chamberId: Int) {
         val world = spawnerLocation.world ?: return
-        val center = spawnerLocation.clone().add(0.5, 0.5, 0.5)
+        // Feet on block floor (Y offset 0) so the 1×1×1 shell outlines the spawner
+        // block exactly — see spawnGlowDisplay for why +0.5 Y reads as a block too high.
+        val center = spawnerLocation.clone().add(0.5, 0.0, 0.5)
         val spawnerKey = getSpawnerKey(spawnerLocation)
 
         plugin.scheduler.runAtLocation(spawnerLocation, Runnable {
