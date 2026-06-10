@@ -48,6 +48,7 @@ class TrialChamberPro : JavaPlugin() {
 
     // Vault manager
     lateinit var vaultManager: VaultManager
+    lateinit var containerLootManager: io.github.darkstarworks.trialChamberPro.managers.ContainerLootManager
         private set
 
     // Loot manager
@@ -226,6 +227,7 @@ class TrialChamberPro : JavaPlugin() {
                 roomTemplateManager = io.github.darkstarworks.trialChamberPro.dungeon.RoomTemplateManager(this@TrialChamberPro)
                 dungeonGenerator = io.github.darkstarworks.trialChamberPro.dungeon.DungeonGenerator(this@TrialChamberPro, roomTemplateManager)
                 vaultManager = VaultManager(this@TrialChamberPro)
+                containerLootManager = io.github.darkstarworks.trialChamberPro.managers.ContainerLootManager(this@TrialChamberPro)
                 lootManager = LootManager(this@TrialChamberPro)
                 resetManager = ResetManager(this@TrialChamberPro)
                 statisticsManager = StatisticsManager(this@TrialChamberPro)
@@ -322,6 +324,10 @@ class TrialChamberPro : JavaPlugin() {
                     )
                     server.pluginManager.registerEvents(
                         ProtectionListener(this@TrialChamberPro),
+                        this@TrialChamberPro
+                    )
+                    server.pluginManager.registerEvents(
+                        io.github.darkstarworks.trialChamberPro.listeners.ContainerLootListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
                     playerMovementListener = PlayerMovementListener(this@TrialChamberPro)
