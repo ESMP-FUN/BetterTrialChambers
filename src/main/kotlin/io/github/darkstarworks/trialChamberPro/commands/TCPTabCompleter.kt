@@ -51,8 +51,8 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                             emptyList()
                         }
                     }
-                    "scan", "setexit", "info", "delete", "pause", "resume" -> {
-                        // Chamber names
+                    "scan", "setexit", "info", "delete", "pause", "resume", "menu" -> {
+                        // Chamber names (menu: optional deep-link into the chamber's GUI)
                         getChamberNames().filter { it.startsWith(args[1].lowercase()) }
                     }
                     "reset" -> {

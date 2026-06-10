@@ -57,7 +57,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             "generate" -> generateHandler.execute(sender, args)
             "dungeon" -> dungeonHandler.execute(sender, args)
             "paste" -> handlePaste(sender, args)
-            "menu" -> handleMenu(sender)
+            "menu" -> handleMenu(sender, args)
             "loot" -> lootHandler.execute(sender, args)
             "mobs" -> mobsHandler.execute(sender, args)
             "give" -> giveHandler.execute(sender, args)
@@ -361,11 +361,24 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                     "<yellow>${chambers.size}</yellow> total) — <i>/tcp list current</i> to locate"
             )
             pageItems.forEach { chamber ->
-                sender.sendMessage(plugin.getMessageComponent("chamber-list-item",
-                    "chamber" to chamber.name,
-                    "world" to chamber.world,
-                    "volume" to chamber.getVolume()
-                ))
+                if (sender is Player) {
+                    // Interactive line (v1.5.7): click the name to copy it,
+                    // click [menu] to jump straight into the chamber's GUI.
+                    val name = chamber.name
+                    sender.sendRichMessage(
+                        "<click:copy_to_clipboard:'$name'><hover:show_text:'<gray>Click to copy <yellow>$name'>" +
+                            "<yellow>$name</yellow></hover></click> <gray>— ${chamber.world} " +
+                            "(${chamber.getVolume()} blocks)</gray> " +
+                            "<click:run_command:'/tcp menu $name'><hover:show_text:'<gray>Open <yellow>$name</yellow> in the GUI'>" +
+                            "<aqua>[menu]</aqua></hover></click>"
+                    )
+                } else {
+                    sender.sendMessage(plugin.getMessageComponent("chamber-list-item",
+                        "chamber" to chamber.name,
+                        "world" to chamber.world,
+                        "volume" to chamber.getVolume()
+                    ))
+                }
             }
             if (maxPage > 1) {
                 val prev = if (page > 1) "<click:run_command:'/tcp list ${page - 1}'><green>« Prev</green></click>"
@@ -608,7 +621,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         handleReset(plugin, sender, args)
     }
 
-    private fun handleMenu(sender: CommandSender) {
+    private fun handleMenu(sender: CommandSender, args: Array<out String> = emptyArray()) {
         if (sender !is Player) {
             sender.sendMessage(plugin.getMessageComponent("player-only"))
             return
@@ -621,6 +634,30 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             sender.sendMessage(plugin.getMessageComponent("plugin-starting-up"))
             return
         }
+
+        // v1.5.7: /tcp menu <chamber> deep-links straight into that chamber's
+        // detail view — the [menu] button on /tcp list lines uses this.
+        val chamberName = args.getOrNull(1)
+        if (chamberName != null) {
+            plugin.launchAsync {
+                val chamber = plugin.chamberManager.getChamber(chamberName)
+                if (chamber == null) {
+                    sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
+                    return@launchAsync
+                }
+                plugin.scheduler.runAtEntity(sender, Runnable {
+                    if (!sender.isOnline) return@Runnable
+                    try {
+                        plugin.menuService.openChamberDetail(sender, chamber)
+                    } catch (e: Exception) {
+                        sender.sendMessage(plugin.getMessageComponent("error-menu-failed", "error" to (e.message ?: "Unknown error")))
+                        e.printStackTrace()
+                    }
+                })
+            }
+            return
+        }
+
         try {
             plugin.menuService.openFor(sender)
         } catch (e: Exception) {
