@@ -275,6 +275,19 @@ How long before a player can loot the same vault again. Separate cooldowns for n
 - Long cooldowns: `72` or `168` hours (weekly)
 - Match chamber resets: `48` hours (synchronized gameplay)
 
+### `reopen-cost-keys`
+**Default:** `0` (disabled) *(added in 1.5.7)*
+
+Key-to-reopen: when set to `N ≥ 1`, a player who has already opened a vault can open it **again** by paying `N` matching trial keys in total (a fresh open costs 1 key, so `1` = reopen at the same price, `2` = one extra key, and so on). Keys must be held in the main hand; when the player can't afford it, the locked message is replaced by a price hint.
+
+`0` keeps the standard behaviour: opened vaults stay locked until the cooldown elapses or the chamber resets. Time-based cooldowns and key-to-reopen can coexist — reopening is simply an instant paid alternative to waiting.
+
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
+**Balance note:** with farms supplying trial keys, low reopen costs effectively turn vaults into key-powered crates. `2`–`3` is a reasonable starting price on survival servers.
+
+</div>
+
 ### `show-cooldown-particles`
 **Default:** `true`
 
@@ -817,6 +830,17 @@ discovery:
 That's it. Walk/fly around the world and chambers will register themselves as you load their chunks.
 
 </div>
+
+---
+
+## Metrics
+
+```yaml
+metrics:
+  enabled: true
+```
+
+*(Added in 1.5.7.)* Anonymous aggregate usage metrics via [bStats](https://bstats.org) — database backend, whether discovery is enabled, glow mode, chamber-count bucket, and which premium modules are installed alongside TCP. **No player data is ever collected.** Disable here or server-wide in `plugins/bStats/config.yml`.
 
 ---
 

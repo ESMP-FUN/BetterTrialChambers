@@ -67,6 +67,12 @@ vaults:
   normal-cooldown-hours: 0
   ominous-cooldown-hours: 0
 
+  # Key-to-reopen: let players open an already-used vault again by paying this
+  # many matching trial keys IN TOTAL (a fresh open costs 1; so 1 = reopen at
+  # the same price, 2 = one extra key, etc.). 0 disables — players wait for
+  # the cooldown / chamber reset as usual. Keys must be held in the main hand.
+  reopen-cost-keys: 0
+
   # Visual indicators
   show-cooldown-particles: true
   particles:
@@ -261,6 +267,12 @@ discovery:
     enabled: true
     on-join: true                  # Ping an admin individually when they log in
     interval-minutes: 30           # Periodic console summary + admin chat ping (0 disables periodic only)
+
+# Anonymous usage metrics (bStats). No player data is collected — just
+# aggregate config/feature usage that guides development priorities.
+# Server-wide opt-out also available in plugins/bStats/config.yml.
+metrics:
+  enabled: true
 
 # Debug mode
 debug:

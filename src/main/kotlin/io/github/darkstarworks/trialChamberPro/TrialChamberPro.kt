@@ -475,8 +475,11 @@ class TrialChamberPro : JavaPlugin() {
                     } else {
                         "Not Found"
                     }
+                    val metricsStatus =
+                        io.github.darkstarworks.trialChamberPro.integrations.MetricsService.init(this@TrialChamberPro)
                     logger.info("✓ Phase 10 Integrations: Ready")
                     logger.info("  - PlaceholderAPI: $placeholderAPIStatus")
+                    logger.info("  - bStats Metrics: $metricsStatus")
                     logger.info("✓ Phase 11 Spawner Wave System: Ready")
                     logger.info("  - Wave Manager: Initialized")
                     logger.info("  - Wave Listener: Registered")
