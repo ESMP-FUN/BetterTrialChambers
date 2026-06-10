@@ -2,15 +2,18 @@
 
 # TrialChamberPro
 
-### What's new in 1.5.0
+### What's new in 1.5.7
 
-- **Fixed: vaults handing out vanilla loot instead of your tables.** On servers with 100+ chambers the chamber cache was evicting older ones, so their vaults quietly fell back to vanilla trial loot and ignored your loot-table edits. The cache now keeps every registered chamber — the fix also repairs spawner-wave tracking and tier scaling on large servers.
-- **Faithful loot + bulk drag-in editor.** Loot items now keep their enchantments, potion effects, custom names and NBT, and a new **Bulk add** button lets you drag/shift-click a whole chest of items in at once.
-- **Procedural dungeon generation.** Build modular rooms with `minecraft:jigsaw`-block doorways, then `/tcp dungeon generate` stitches them together (with rotation) into a brand-new chamber that resets, loots and scales like any other.
-- **Hardened resets.** No more `StandaloneCoroutine was cancelled` errors or `has no detected players` console spam; resets are throttled/staggered so a wave of due chambers can't tank TPS; evicted players are never teleported into a wall; optional operator-confirm queue and FastAsyncWorldEdit placement.
-- **New `ChamberClearedEvent` for plugin developers** — fires once when a registered chamber is cleared in one continuous run, carrying the chamber, the cumulative set of participating players, and the run duration. Built for progression plugins, achievements and leaderboards.
+- **Per-player chamber chest loot** *(opt-in)* — every player who opens a chest or barrel inside a registered chamber now gets their **own copy of its contents**, Lootr-style. No more gutted chests for the second player in. Copies reset with the chamber, hopper-draining is blocked, and player-placed containers keep vanilla behaviour. Combined with per-player vaults, the **entire chamber is now per-player**. One config line: `chests.per-player-loot: true`.
+- **Key-to-reopen vaults** *(opt-in)* — set `vaults.reopen-cost-keys` and players can open an already-used vault again by paying that many matching trial keys, instead of waiting for the cooldown or reset.
+- **Vanilla & datapack loot tables in loot.yml** — a pool entry of `type: VANILLA_TABLE` with `table: "minecraft:chests/trial_chambers/reward"` (or any datapack key) rolls the real server loot table straight into the drop.
+- **Clickable `/tcp list`** — click a chamber name to copy it, or the **[menu]** button to jump straight into that chamber's GUI (`/tcp menu <chamber>` deep-link).
+- **Wild vault protection** *(on by default)* — players can no longer place functioning VAULT blocks outside registered chambers (a permanent loot dispenser the plugin can't manage). Ops are exempt.
+- **Spawner glow outline finally works** *(1.5.4–1.5.6)* — the opt-in glow around active trial spawners now actually renders, sits flush on the block, and can't be punched out or farmed. New `glow-mode: chamber-remaining` lights up every uncleared spawner in the chamber — no more hunting the one you missed.
+- **Critical reset & discovery fixes** *(1.5.6)* — chamber resets can no longer clear terrain beyond what their snapshot covers, discovery auto-snapshots are properly linked, and merged chambers re-capture their snapshot automatically. If a pre-1.5.6 reset damaged one of your chambers: `/tcp delete <chamber>` removes the broken registration and its stale snapshot in one step.
+- **QoL** — `/tcp snapshot create|update|restore` work without a chamber name when you're standing inside one; new `ChamberEnteredEvent`/`ChamberExitedEvent` for plugin developers.
 
-Plus everything from the 1.4.x line: **per-chamber reset broadcast toggle** (1.4.7), **Folia/Luminol teleport crash fixes** (1.4.6), **Silk Touch recovery for preset spawners** (1.4.5), **vanilla-accurate bundled loot tables** (1.4.4), **chamber pause state** (1.4.3), **MiniMessage everywhere**, **smarter auto-discovery**, a **flatter admin GUI**, and **trial spawner wave tracking fixes**. And from 1.3.x: **custom mobs** (MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens), **fully translatable GUI** (~330 `gui.*` keys), **Bukkit events API**, **spawner presets**, **`/tcp give`**, and **Minecraft 26.x support** via the `-mc26` build.
+Plus the 1.5.0 foundation: **vanilla-loot-fallback fix on 100+ chamber servers**, **faithful loot NBT + bulk drag-in editor**, **procedural dungeon generation** (`/tcp dungeon`), **hardened throttled resets**, and **`ChamberClearedEvent`**. And the 1.3.x–1.4.x line: **custom mobs** (MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens), **fully translatable GUI**, **Bukkit events API**, **spawner presets**, **chamber pause state**, **MiniMessage everywhere**, and **Minecraft 26.x support** via the `-mc26` build.
 
 📘 **Full documentation:** https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation — most questions are answered there, and every section below links to its own detailed page.
 
@@ -34,6 +37,13 @@ Requires TrialChamberPro v1.4.0+ (free).
 
 👉 **[esmp.fun](https://esmp.fun/plugins)** — purchase & download
 
+### 🔺 TCP-MythicTrials
+**Per-player chamber progression with Mythic difficulty tiers.** Every chamber clear bumps each participant's personal tier (T1–T20, then opt-in Mythic M1–M5): mobs scale in health, damage, speed, armor, gear and tactics — gear-adaptive AI, themed rooms, anti-heal, true damage — while rewards scale with them. In-chamber HUD, per-chamber leaderboards, seasons with seasonal loot, and full custom-mob-provider support. Built on TCP's `ChamberClearedEvent`, so it works on every registered chamber automatically.
+
+Requires TrialChamberPro v1.5.4+ (free).
+
+👉 **[esmp.fun](https://esmp.fun/plugins)** — pre-order & download
+
 ---
 
 **The definitive Trial Chamber management plugin for multiplayer servers.**
@@ -48,8 +58,9 @@ Vanilla Trial Chambers weren't designed for multiplayer. The first player takes 
 
 | Problem | Solution |
 |---------|----------|
-| First player gets all loot | Per-player vault system with individual cooldowns |
+| First player gets all loot | Per-player **vaults** with individual cooldowns — and per-player **chests/barrels** too *(new in 1.5.7)* |
 | No way to reset chambers | Automatic scheduled resets with player warnings |
+| Vaults locked forever once opened | Time-based cooldowns, reset-based unlocks, or pay-keys-to-reopen *(new in 1.5.7)* |
 | Griefers break spawners | Full protection system with optional WorldGuard support |
 | Paper trial key bugs | Built-in fixes for known Paper issues |
 | No progression tracking | Statistics, leaderboards, and PlaceholderAPI support |
@@ -81,15 +92,17 @@ Prefer manual control? You can still register chambers with WorldEdit (`/tcp gen
 ### Core Systems
 - **Auto-Discovery** — natural chambers register themselves on chunk load + startup sweep. [Docs →](https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation/configuration/config.yml#auto-discovery-of-natural-trial-chambers)
 - **Automatic Resets** — chambers restore on schedule with configurable warnings, or set interval to `0` for manual-only.
-- **Per-Player Vaults** — everyone gets their own loot with separate cooldowns.
-- **Full Protection** — block break/place, container access, mob griefing prevention. WorldGuard-aware.
+- **Per-Player Vaults** — everyone gets their own loot with separate cooldowns, plus optional pay-keys-to-reopen.
+- **Per-Player Chests & Barrels** *(new in 1.5.7, opt-in)* — Lootr-style private container copies, so the whole chamber is per-player.
+- **Procedural Dungeon Generation** — build modular rooms with jigsaw-block doorways; `/tcp dungeon generate` stitches them into brand-new chambers.
+- **Full Protection** — block break/place, container access, mob griefing, wild-vault placement. WorldGuard-aware.
 - **Statistics & Leaderboards** — vaults opened, mobs killed, time spent. [Docs →](https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation/guides/statistics)
-- **Admin GUI** — `/tcp menu` does everything. No YAML editing required.
+- **Admin GUI** — `/tcp menu` does everything. No YAML editing required — and `/tcp list` deep-links into it.
 
 ### Advanced Loot
 - **Multi-Pool Tables** — common / rare / unique pools like vanilla, fully configurable. [Docs →](https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation/configuration/loot.yml)
 - **Per-Chamber Overrides** — assign a different loot table to any specific chamber.
-- **GUI Editing** *(new in 1.2.26)* — open `/tcp menu` → Loot Tables, click a table, and edit it. Changes save to `loot.yml` instantly.
+- **GUI Editing** — open `/tcp menu` → Loot Tables, click a table, and edit it. Changes save to `loot.yml` instantly.
 - **Custom Plugin Items** — drop Nexo, ItemsAdder, or Oraxen items directly from vaults:
   ```yaml
   - type: CUSTOM_ITEM
@@ -99,11 +112,18 @@ Prefer manual control? You can still register chambers with WorldEdit (`/tcp gen
   ```
 - **Custom Model Data** — set `custom-model-data` on any vanilla item for resource-pack integration.
 - **Command Rewards** — run any console command as loot (economy deposits, permission grants, XP).
+- **Vanilla & Datapack Tables** *(new in 1.5.7)* — reference any registered loot table directly:
+  ```yaml
+  - type: VANILLA_TABLE
+    table: "minecraft:chests/trial_chambers/reward"
+    weight: 30
+  ```
 - **Potion & Tipped Arrows** — full attribute support including Bad Omen III–V ominous bottles.
 - **LUCK Integration** — optional bonus rolls for players with the LUCK effect.
 
 ### Multiplayer Enhancements
-- **Spawner Wave Tracking** — boss bar shows wave progress as players fight. Hysteresis-based despawn means the bar disappears when you leave the area *(improved in 1.2.26)*.
+- **Spawner Wave Tracking** — boss bar shows wave progress as players fight. Hysteresis-based despawn means the bar disappears when you leave the area.
+- **Spawner Glow Outline** *(opt-in)* — active spawners glow through walls; `chamber-remaining` mode lights up every uncleared spawner so nobody hunts for the one they missed.
 - **Spectator Mode** — dead players can watch teammates complete the challenge, bounded to the chamber.
 - **PlaceholderAPI** — 20+ placeholders for scoreboards, holograms, tab lists.
 
@@ -145,10 +165,12 @@ Prefer not to use auto-discovery? Classic workflow still works:
 
 | Command | Description |
 |---------|-------------|
-| `/tcp menu` | Open the admin GUI (does everything) |
+| `/tcp menu [chamber]` | Open the admin GUI (does everything); with a name, jump straight to that chamber |
+| `/tcp list [page\|current]` | Interactive chamber list — click to copy names or open the GUI |
 | `/tcp generate wand <name>` | Register chamber from WorldEdit selection |
 | `/tcp reset <chamber>` | Force immediate reset |
-| `/tcp snapshot create <chamber>` | Enable automatic resets |
+| `/tcp snapshot create [chamber]` | Enable automatic resets (omit the name while standing inside) |
+| `/tcp dungeon generate <name>` | Stitch a procedural chamber from your room templates |
 | `/tcp loot set <chamber> <normal\|ominous> <table>` | Override loot for a chamber |
 | `/tcp stats [player]` | View statistics |
 | `/tcp leaderboard <type>` | View top players |
@@ -202,8 +224,12 @@ global:
   default-reset-interval: 172800   # 48 hours. Use 0 for manual-only resets.
 
 vaults:
-  normal-cooldown-hours: -1        # -1 = vanilla (locked until chamber reset)
-  ominous-cooldown-hours: -1       # Set a positive number for per-player time cooldown.
+  normal-cooldown-hours: 0         # 0 = vanilla (locked until chamber reset)
+  ominous-cooldown-hours: 0        # Set a positive number for per-player time cooldown.
+  reopen-cost-keys: 0              # N = open an already-used vault again for N keys. 0 = off.
+
+chests:
+  per-player-loot: false           # true = every player gets their own chest loot (Lootr-style)
 
 discovery:
   enabled: true                    # Auto-register natural chambers. Opt-in.
