@@ -56,7 +56,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
 
     // Anonymous usage metrics (relocated below — bStats requires it)
-    implementation("org.bstats:bstats-bukkit:3.0.2")
+    implementation("org.bstats:bstats-bukkit:3.2.1")
 
     // Economy (optional)
     compileOnly("com.github.MilkBowl:VaultAPI:1.7")

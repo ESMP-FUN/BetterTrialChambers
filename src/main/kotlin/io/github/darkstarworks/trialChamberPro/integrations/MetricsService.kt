@@ -22,12 +22,11 @@ import org.bstats.charts.SimplePie
 object MetricsService {
 
     /**
-     * bStats service id for TrialChamberPro. Obtained by registering the
-     * plugin at https://bstats.org/getting-started (Add Plugin → name must
-     * match). A value <= 0 disables metrics init entirely, so the plugin
-     * stays safe to ship before registration is done.
+     * bStats service id for TrialChamberPro, registered at
+     * https://bstats.org/plugin/bukkit/TrialChamberPro/31905.
+     * A value <= 0 disables metrics init entirely.
      */
-    private const val BSTATS_SERVICE_ID: Int = -1 // TODO(owner): register on bstats.org and fill in
+    private const val BSTATS_SERVICE_ID: Int = 31905
 
     fun init(plugin: TrialChamberPro): String {
         if (BSTATS_SERVICE_ID <= 0) return "Disabled (no service id)"
