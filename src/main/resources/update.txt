@@ -1,5 +1,5 @@
 <black>.
-<aqua>[1.5.7] <gray>- <white>(COMING SOON)
+<aqua>[1.5.7] <gray>- <white>2026-06-10
 <lime>+ <white>NEW: <green>Per-player chamber chest loot (<yellow>chests.per-player-loot<green>, opt-in) — every player gets their OWN copy of each chamber chest/barrel's contents, Lootr-style. No more gutted chests for the second player; copies reset with the chamber. Combined with per-player vaults, the whole chamber is now per-player.
 <lime>+ <white>NEW: <green>Placing VAULT blocks outside registered chambers is now blocked by default (<yellow>protection.block-wild-vault-placement<green>) — wild vaults are permanent loot dispensers the plugin can't manage. Ops / <yellow>tcp.bypass.vaultplace<green> holders are exempt.
 <lime>+ <white>NEW: <green>Key-to-reopen vaults — set <yellow>vaults.reopen-cost-keys<green> and players can open an already-used vault again by paying that many matching trial keys (off by default; cooldowns remain the standard behaviour).
