@@ -16,7 +16,7 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | Command | Description | Permission |
 |---------|-------------|------------|
 | `/tcp help` | Show command list | None |
-| `/tcp menu` | Open admin GUI | `tcp.admin.menu` |
+| `/tcp menu [chamber]` | Open admin GUI (with a chamber name: jump straight to that chamber's detail view) | `tcp.admin.menu` |
 | `/tcp generate <value|coords|wand|blocks>` | Register chamber from saved var, coords, WE wand, or by block amount | `tcp.admin.generate` |
 | `/tcp scan <chamber>` | Scan for vaults/spawners | `tcp.admin.scan` |
 | `/tcp setexit <chamber>` | Set exit location | `tcp.admin.generate` |
@@ -24,7 +24,7 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | `/tcp reset <chamber>` | Force chamber reset | `tcp.admin.reset` |
 | `/tcp reset pending` | List chambers awaiting reset confirmation | `tcp.admin.reset` |
 | `/tcp reset confirm <chamber\|all>` | Confirm queued reset(s) (when confirmation mode is on) | `tcp.admin.reset` |
-| `/tcp list [page\|current]` | List chambers (paginated); `current` finds the chamber you're in / nearest | `tcp.admin` |
+| `/tcp list [page\|current]` | List chambers (paginated, interactive: click a name to copy it, click `[menu]` to open its GUI); `current` finds the chamber you're in / nearest | `tcp.admin` |
 | `/tcp dungeon <pos1\|pos2\|capture\|generate\|list\|delete>` | Procedural dungeon generation from room templates | `tcp.admin.generate` |
 | `/tcp info [chamber]` | Show plugin info, or chamber details if specified | `tcp.admin` |
 | `/tcp delete <chamber>` | Delete a chamber | `tcp.admin.generate` |
@@ -73,13 +73,14 @@ Only shows commands you have permission to use!
 
 ---
 
-### `/tcp menu`
+### `/tcp menu [chamber]`
 
-Opens the admin GUI for managing all aspects of TrialChamberPro without command line.
+Opens the admin GUI for managing all aspects of TrialChamberPro without command line. With a chamber name *(1.5.7+)*, jumps straight into that chamber's detail view — this is what the `[menu]` button on `/tcp list` lines uses.
 
 **Usage:**
 ```
 /tcp menu
+/tcp menu <chamber_name>
 ```
 
 **Permission:** `tcp.admin.menu`
