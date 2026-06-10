@@ -293,6 +293,26 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 ---
 
+#### `tcp.bypass.vaultplace`
+**Description:** Place VAULT blocks outside registered chambers *(1.5.7+)*
+**Default:** Operators only
+**Effect:**
+- Exempt from `protection.block-wild-vault-placement`
+- Needed for creative builds using vault blocks and for setting up out-of-chamber crates (e.g. TCP-VaultCrates)
+
+---
+
+#### `tcp.admin.containers`
+**Description:** Open the real chamber container in per-player loot mode *(1.5.7+)*
+**Default:** Operators only
+**Effect:**
+- With `chests.per-player-loot` enabled, **sneak-click** a chamber chest/barrel to open the actual block inventory (the template every player's copy is cloned from)
+- A normal click still opens your own per-player copy — the permission only changes the sneak-click
+
+**Use this for:** Staff curating the loot inside chamber supply chests.
+
+---
+
 #### `tcp.bypass.droplock`
 **Description:** Bypass owner-only pickup on dropped vault loot *(1.2.28+)*
 **Default:** Operators only
