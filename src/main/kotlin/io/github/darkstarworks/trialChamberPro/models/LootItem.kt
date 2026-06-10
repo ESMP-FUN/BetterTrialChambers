@@ -61,6 +61,12 @@ data class LootItem(
     // tags) and the structured fields above are ignored except the amount range.
     val serializedItem: String? = null,
 
+    // Vanilla / datapack loot-table passthrough (v1.5.7). When set, 'type' is
+    // ignored and rolling this entry populates the referenced server loot table
+    // (e.g. "minecraft:chests/trial_chambers/reward" or any datapack key) via
+    // the Bukkit LootTable API — every stack the table generates is added.
+    val vanillaTable: String? = null,
+
     val enabled: Boolean = true
 )
 
