@@ -343,6 +343,10 @@ class ResetManager(private val plugin: TrialChamberPro) {
                 }
             }
 
+            // v1.5.7: per-player container-loot copies reset with the chamber —
+            // everyone gets fresh chest loot next cycle. No-op when unused.
+            plugin.containerLootManager.clearChamber(chamber.id)
+
             // Send completion message if broadcasts are enabled globally and for this chamber
             val globalAlerts = plugin.config.getBoolean("global.reset-complete-alert", true)
             if (globalAlerts && chamber.broadcastResetComplete) {

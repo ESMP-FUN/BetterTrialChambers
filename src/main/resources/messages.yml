@@ -83,6 +83,8 @@ vault-locked: "&cYou have already opened this {type} Vault! It will unlock when 
 vault-reopened: "&aReopened the {type} Vault for &e{cost}&a key(s)!"
 vault-reopen-need: "&cYou've already opened this {type} Vault. Hold &e{cost}&c matching key(s) in your main hand to open it again."
 vault-reset: "&aVault cooldown reset for &e{player}&a."
+wild-vault-place-blocked: "&cVault blocks can only be placed inside registered Trial Chambers."
+container-template-open: "&eOpening the REAL container (template edit mode) — changes affect every player's first-open loot."
 wrong-key-type: "&cYou need a {required_type} Trial Key to open this vault!"
 no-key: "&cYou need a Trial Key to open this vault!"
 vault-not-found: "&cNo vault found at this location."
@@ -455,6 +457,8 @@ mobs-unknown-action: "&cUnknown action '{action}'. Use provider|add|remove|list.
 # item names (Minecraft's default) so they render clean.
 # =====================================================================
 gui:
+  container-loot:
+    title: "&8Supply Loot (yours)"
   common:
     back-button: "&e« Back to {destination}"
     close-button: "&cClose"
