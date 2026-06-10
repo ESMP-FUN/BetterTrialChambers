@@ -207,6 +207,26 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
                     """.trimIndent()
                 )
 
+                // v1.5.7: per-player chamber container loot (chests/barrels).
+                // One row per (container position, player) holding their private
+                // copy of the container's contents. Cleared on chamber reset;
+                // cascade-deleted with the chamber.
+                stmt.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS player_container_loot (
+                        chamber_id INT NOT NULL,
+                        x INT NOT NULL,
+                        y INT NOT NULL,
+                        z INT NOT NULL,
+                        player_uuid VARCHAR(36) NOT NULL,
+                        contents TEXT NOT NULL,
+                        updated_at BIGINT NOT NULL,
+                        PRIMARY KEY (chamber_id, x, y, z, player_uuid),
+                        FOREIGN KEY (chamber_id) REFERENCES chambers(id) ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+
                 // Player statistics table
                 stmt.execute(
                     """

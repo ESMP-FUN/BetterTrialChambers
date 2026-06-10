@@ -101,6 +101,26 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
         player.sendMessage(plugin.getMessageComponent("cannot-place-blocks"))
     }
 
+    /**
+     * v1.5.7: blocks placing functioning VAULT blocks outside registered
+     * chambers. A wild vault is a permanent vanilla loot dispenser TCP can't
+     * manage (no per-player tracking, no resets, no loot tables) — and
+     * out-of-chamber vault mechanics are TCP-VaultCrates' domain. Admins
+     * holding the bypass permission (default op) can still place them, so
+     * crate setup and creative building are unaffected.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onWildVaultPlace(event: BlockPlaceEvent) {
+        if (event.block.type != org.bukkit.Material.VAULT) return
+        if (!plugin.config.getBoolean("protection.block-wild-vault-placement", true)) return
+        if (event.player.hasPermission("tcp.bypass.vaultplace")) return
+        // Inside a registered chamber the normal protection rules apply instead.
+        if (plugin.chamberManager.getCachedChamberAt(event.block.location) != null) return
+
+        event.isCancelled = true
+        event.player.sendMessage(plugin.getMessageComponent("wild-vault-place-blocked"))
+    }
+
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onContainerAccess(event: PlayerInteractEvent) {
         if (!plugin.config.getBoolean("protection.enabled", true)) return
