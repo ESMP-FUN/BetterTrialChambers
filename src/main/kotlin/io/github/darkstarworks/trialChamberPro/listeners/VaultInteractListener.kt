@@ -216,6 +216,40 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
         }
 
         if (hasAlreadyRewarded) {
+            // v1.5.7: key-to-reopen. With vaults.reopen-cost-keys > 0, a player
+            // can open an already-used vault again by paying that many matching
+            // keys in total (the normal open consumes the final one). 0 = off.
+            val reopenCost = plugin.config.getInt("vaults.reopen-cost-keys", 0)
+            if (reopenCost > 0) {
+                if (tryPayReopenCost(player, vaultType, reopenCost)) {
+                    // Clear the native rewarded flag so openVault can mark it fresh.
+                    kotlinx.coroutines.suspendCancellableCoroutine<Unit> { continuation ->
+                        plugin.scheduler.runAtLocation(location, Runnable {
+                            try {
+                                (location.block.state as? Vault)?.let { vs ->
+                                    vs.removeRewardedPlayer(player.uniqueId)
+                                    vs.update()
+                                }
+                            } catch (e: Exception) {
+                                plugin.logger.warning("[VaultReopen] Failed to clear rewarded flag: ${e.message}")
+                            }
+                            continuation.resume(Unit) {}
+                        })
+                    }
+                    player.sendMessage(plugin.getMessageComponent("vault-reopened",
+                        "cost" to reopenCost, "type" to vaultType.displayName))
+                    openVault(player, vaultData, vaultType, location)
+                    return
+                }
+                // Reopen offered but the player can't afford it — tell them the
+                // price instead of the dead-end "locked" message.
+                player.sendMessage(plugin.getMessageComponent("vault-reopen-need",
+                    "cost" to reopenCost, "type" to vaultType.displayName))
+                showCooldownParticles(player, location, vaultType)
+                playErrorSound(player)
+                return
+            }
+
             // Vault is locked for this player (they already got loot)
             // Check config to determine behavior (permanent vs time-based)
             val cooldownHours = when (vaultType) {
@@ -244,6 +278,43 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
             // Can open the vault - player hasn't been rewarded yet
             openVault(player, vaultData, vaultType, location)
         }
+    }
+
+    /**
+     * Key-to-reopen payment: verifies the player's main hand holds at least
+     * [cost] matching trial keys, and pre-consumes `cost - 1` of them — the
+     * normal [openVault] flow consumes the final key on success, so the total
+     * paid equals [cost]. Runs on the player's entity thread (Folia-safe).
+     *
+     * Returns false (and consumes nothing) when the held stack is the wrong
+     * key type or too small. Pre-consuming before the open mirrors the risk
+     * profile players already accept for the base key; the open after a passed
+     * cooldown gate only fails in pathological cases (missing loot table),
+     * which [openVault] already refuses to charge the final key for.
+     */
+    private suspend fun tryPayReopenCost(
+        player: org.bukkit.entity.Player,
+        vaultType: VaultType,
+        cost: Int
+    ): Boolean = kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
+        plugin.scheduler.runAtEntity(player, Runnable {
+            try {
+                val expected = when (vaultType) {
+                    VaultType.NORMAL -> Material.TRIAL_KEY
+                    VaultType.OMINOUS -> Material.OMINOUS_TRIAL_KEY
+                }
+                val item = player.inventory.itemInMainHand
+                if (item.type != expected || item.amount < cost) {
+                    continuation.resume(false) {}
+                    return@Runnable
+                }
+                if (cost > 1) item.amount -= (cost - 1)
+                continuation.resume(true) {}
+            } catch (e: Exception) {
+                plugin.logger.warning("[VaultReopen] Payment check failed: ${e.message}")
+                continuation.resume(false) {}
+            }
+        })
     }
 
     /**
