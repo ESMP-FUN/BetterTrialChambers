@@ -1030,3 +1030,33 @@ loot-tables:
 #   - "eco give {player} 5000"
 #   - "give {player} elytra 1"
 #   - "xp add {player} 500"
+
+# ============================================================================
+# VANILLA / DATAPACK LOOT TABLE PASSTHROUGH (v1.5.7+)
+# ============================================================================
+# A pool entry can reference any loot table registered on the server — the
+# vanilla trial chamber tables or one from your own datapack. When the entry
+# is rolled, the referenced table is populated and EVERY item it generates is
+# added to the drop (amount-min/max do not apply).
+#
+# Example — 30% of rolls defer to the real vanilla vault table:
+#
+#   my-table:
+#     pools:
+#       - name: main
+#         min-rolls: 1
+#         max-rolls: 1
+#         weighted-items:
+#           - type: VANILLA_TABLE
+#             table: "minecraft:chests/trial_chambers/reward"
+#             weight: 30.0
+#           - type: DIAMOND
+#             amount-min: 1
+#             amount-max: 3
+#             weight: 70.0
+#
+# Useful vanilla keys:
+#   minecraft:chests/trial_chambers/reward            (normal vault)
+#   minecraft:chests/trial_chambers/reward_ominous    (ominous vault)
+#   minecraft:chests/trial_chambers/supply            (supply chests)
+# Datapack tables work with their own namespace, e.g. "mypack:chambers/boss".

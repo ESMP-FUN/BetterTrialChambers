@@ -50,6 +50,35 @@ They're faithful recreations transcribed directly from Mojang's own datapack JSO
 
 The block includes inline comments explaining the small approximations the plugin's schema requires (e.g. vanilla's 25% unique-pool chance maps to the plugin's `min-rolls: 0, max-rolls: 1` ≈ 50%) so you can tune from there.
 
+**Or skip the transcription entirely** *(1.5.7+)*: reference the real vanilla tables directly with `type: VANILLA_TABLE` — see [Vanilla & Datapack Loot Tables](#vanilla--datapack-loot-tables-passthrough) below. The transcribed tables remain useful when you want to *tweak* vanilla's numbers; the passthrough is exact but not editable.
+
+---
+
+## Vanilla & Datapack Loot Tables (passthrough)
+
+*(Added in 1.5.7.)* A pool entry can defer to **any loot table registered on the server** — vanilla's own tables or one shipped by a datapack:
+
+```yaml
+weighted-items:
+  - type: VANILLA_TABLE
+    table: "minecraft:chests/trial_chambers/reward"
+    weight: 30.0
+  - type: DIAMOND
+    amount-min: 1
+    amount-max: 3
+    weight: 70.0
+```
+
+When the entry is rolled, the referenced table is populated through the server's own loot engine and **every item it generates** is added to the drop (`amount-min`/`amount-max` don't apply — the table controls its own counts). Useful keys:
+
+| Key | Contents |
+|---|---|
+| `minecraft:chests/trial_chambers/reward` | Normal vault loot |
+| `minecraft:chests/trial_chambers/reward_ominous` | Ominous vault loot |
+| `minecraft:chests/trial_chambers/supply` | Supply chest loot |
+
+Datapack tables work with their own namespace (e.g. `mypack:chambers/boss`). An unknown key logs a console warning and yields nothing — the rest of the pool still drops — so a missing datapack degrades gracefully.
+
 ---
 
 ## Understanding Loot Tables

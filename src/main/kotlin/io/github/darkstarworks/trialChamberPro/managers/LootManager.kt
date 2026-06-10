@@ -248,6 +248,25 @@ class LootManager(private val plugin: TrialChamberPro) {
             return null
         }
 
+        // Vanilla / datapack loot-table passthrough — type: VANILLA_TABLE with table field
+        val vanillaTable = if (typeStr.equals("VANILLA_TABLE", ignoreCase = true)) {
+            val tableId = data["table"] as? String
+            if (tableId.isNullOrBlank()) {
+                plugin.logger.warning(
+                    "type: VANILLA_TABLE requires a 'table:' field. Example:\n" +
+                    "  - type: VANILLA_TABLE\n" +
+                    "    table: \"minecraft:chests/trial_chambers/reward\"\n" +
+                    "    weight: 5.0"
+                )
+                return null
+            }
+            if (org.bukkit.NamespacedKey.fromString(tableId.lowercase()) == null) {
+                plugin.logger.warning("Invalid loot table key '$tableId' — expected namespace:path (e.g. minecraft:chests/trial_chambers/reward)")
+                return null
+            }
+            tableId.lowercase()
+        } else null
+
         // Custom item plugin support — type: CUSTOM_ITEM with plugin + item-id fields
         val customItemPlugin = data["plugin"] as? String
         val customItemId = data["item-id"] as? String
@@ -263,8 +282,10 @@ class LootManager(private val plugin: TrialChamberPro) {
             return null
         }
 
-        val material = if (typeStr.equals("CUSTOM_ITEM", ignoreCase = true) || customItemPlugin != null) {
-            Material.AIR // sentinel — real item resolved at generation time via plugin API
+        val material = if (typeStr.equals("CUSTOM_ITEM", ignoreCase = true) || customItemPlugin != null ||
+            vanillaTable != null
+        ) {
+            Material.AIR // sentinel — real item(s) resolved at generation time
         } else {
             try {
                 Material.valueOf(typeStr.uppercase())
@@ -381,6 +402,7 @@ class LootManager(private val plugin: TrialChamberPro) {
             customItemId = customItemId,
             customModelData = customModelData,
             serializedItem = data["serialized-item"] as? String,
+            vanillaTable = vanillaTable,
             enabled = enabled
         )
     }
@@ -451,7 +473,7 @@ class LootManager(private val plugin: TrialChamberPro) {
 
         // Add all guaranteed items (respect enabled flag)
         pool.guaranteedItems.filter { it.enabled }.forEach { lootItem ->
-            items.add(createItemStack(lootItem, player))
+            items.addAll(expandLootItem(lootItem, player))
         }
 
         // Calculate number of rolls (with optional LUCK bonus)
@@ -511,7 +533,7 @@ class LootManager(private val plugin: TrialChamberPro) {
             // Select a random weighted item
             val selectedItem = selectWeightedItem(enabledWeighted)
             if (selectedItem != null) {
-                items.add(createItemStack(selectedItem, player))
+                items.addAll(expandLootItem(selectedItem, player))
             }
         }
 
@@ -523,6 +545,58 @@ class LootManager(private val plugin: TrialChamberPro) {
         }
 
         return items
+    }
+
+    /**
+     * Expands one rolled loot entry into its item stacks: a regular entry
+     * yields exactly [createItemStack]'s single stack; a `VANILLA_TABLE`
+     * entry yields every stack the referenced server loot table generates.
+     */
+    private fun expandLootItem(lootItem: LootItem, player: Player): List<ItemStack> {
+        val tableId = lootItem.vanillaTable ?: return listOf(createItemStack(lootItem, player))
+        return rollVanillaTable(tableId, player)
+    }
+
+    /**
+     * Populates a vanilla / datapack loot table via the Bukkit LootTable API.
+     *
+     * `populateLoot` builds NMS loot params against the live world, so it must
+     * run on the player's region thread. Loot generation is invoked from an
+     * async coroutine (see VaultInteractListener), so off-thread callers hop
+     * via the scheduler and wait on a bounded future; on-thread callers roll
+     * directly. Unknown keys log once per roll and yield no items — the rest
+     * of the pool still drops.
+     */
+    private fun rollVanillaTable(tableId: String, player: Player): List<ItemStack> {
+        val key = org.bukkit.NamespacedKey.fromString(tableId) ?: run {
+            plugin.logger.warning("[VanillaTable] Invalid key '$tableId'")
+            return emptyList()
+        }
+        val table = plugin.server.getLootTable(key) ?: run {
+            plugin.logger.warning("[VanillaTable] Unknown loot table '$tableId' (not registered on this server — check the datapack is loaded)")
+            return emptyList()
+        }
+        val roll = {
+            val context = org.bukkit.loot.LootContext.Builder(player.location).build()
+            table.populateLoot(java.util.Random(), context).toList()
+        }
+        if (org.bukkit.Bukkit.isPrimaryThread()) return roll()
+
+        val future = java.util.concurrent.CompletableFuture<List<ItemStack>>()
+        plugin.scheduler.runAtEntity(player, Runnable {
+            try {
+                future.complete(roll())
+            } catch (e: Exception) {
+                plugin.logger.warning("[VanillaTable] Failed to roll '$tableId': ${e.message}")
+                future.complete(emptyList())
+            }
+        })
+        return try {
+            future.get(3, java.util.concurrent.TimeUnit.SECONDS)
+        } catch (e: Exception) {
+            plugin.logger.warning("[VanillaTable] Timed out rolling '$tableId'")
+            emptyList()
+        }
     }
 
     /**

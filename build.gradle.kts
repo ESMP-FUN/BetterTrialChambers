@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "io.github.darkstarworks"
-version = "1.5.6"
+version = "1.5.7"
 
 repositories {
     mavenCentral()
@@ -52,6 +52,9 @@ dependencies {
 
     // JSON parsing for update checker
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // Anonymous usage metrics (relocated below — bStats requires it)
+    implementation("org.bstats:bstats-bukkit:3.0.2")
 
     // Economy (optional)
     compileOnly("com.github.MilkBowl:VaultAPI:1.7")
@@ -100,6 +103,8 @@ tasks {
         // This avoids NoClassDefFoundError for kotlinx.coroutines.Dispatchers during plugin bootstrap
         // Important: Do NOT relocate org.sqlite, or the sqlite-jdbc native bindings (JNI) will fail to load
         relocate("com.zaxxer.hikari", "io.github.darkstarworks.tcp.hikari")
+        // bStats mandates relocation so multiple plugins can shade different versions
+        relocate("org.bstats", "io.github.darkstarworks.tcp.bstats")
         // InventoryFramework relocation removed in v1.5.0 — see dependency comment.
 
         // Exclude unnecessary SQLite native binaries to reduce jar size

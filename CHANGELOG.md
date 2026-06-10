@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.5.7] - UNRELEASED
+### Added
+- **Key-to-reopen vaults** (`vaults.reopen-cost-keys`, default `0` = off). Players can open an already-used vault again by paying the configured number of matching trial keys in total (a fresh open costs 1, so `1` = reopen at the same price, `2` = one extra key). Keys are taken from the main hand; the cooldown/locked message is replaced by a price hint when the player can't afford it. Covers the key-gated-reopen model popularized by single-feature vault-reset plugins while keeping TCP's time/reset-based cooldowns as the default.
+- **Vanilla / datapack loot-table passthrough in loot.yml.** A pool entry of `type: VANILLA_TABLE` with `table: "namespace:path"` (e.g. `minecraft:chests/trial_chambers/reward` or any datapack key) populates the referenced server loot table when rolled and adds every generated stack to the drop. Resolved via the Bukkit LootTable API at roll time on the player's region thread; unknown keys log a warning and yield nothing without breaking the rest of the pool. Examples documented at the bottom of `loot.yml`.
+- **Anonymous usage metrics (bStats).** Aggregate, non-personal charts that guide development: database backend, discovery enabled, glow mode, chamber-count bucket, and which premium modules are installed. Opt out via `metrics.enabled: false` or the global bStats config.
+
 ## [1.5.6] - 2026-06-10
 ### Fixed
 - **CRITICAL: chamber reset could wipe terrain far beyond what the snapshot covers.** When an auto-discovered chamber's bounds *grew* after its snapshot was captured (discovery region merges), the reset's clear-added-blocks pass cleared the **entire current AABB** while the snapshot could only restore the old, smaller region — deleting every block in the newly annexed volume (terrain, builds, neighbouring structures). The clear region is now clamped to the intersection of the chamber bounds and the snapshot's actual coverage, with a console warning pointing at `/tcp snapshot create` when a mismatch is detected. A snapshot can no longer destroy ground it cannot put back.
@@ -1330,6 +1336,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.5.7]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.6...v1.5.7
 [1.5.6]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.5...v1.5.6
 [1.5.5]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.4...v1.5.5
 [1.5.4]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.2...v1.5.4
