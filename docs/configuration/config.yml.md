@@ -375,6 +375,11 @@ Stop mobs from breaking blocks (creeper explosions, endermen picking up blocks, 
 
 If WorldGuard is installed, respect its regions? Usually `true` for compatibility. TrialChamberPro's protection layers on top of WorldGuard's.
 
+### `block-wild-vault-placement`
+**Default:** `true` *(added in 1.5.7)*
+
+Cancels placing functioning VAULT blocks **outside** registered chambers. A wild vault is a permanent vanilla loot dispenser the plugin can't manage — no per-player tracking, no resets, no loot tables. Players holding `tcp.bypass.vaultplace` (default: op) can always place them, so creative builds and crate setups are unaffected. Inside registered chambers the normal protection rules apply instead.
+
 ### `auto-pause-on-destruction`
 **Default:** `false`
 
@@ -828,6 +833,32 @@ discovery:
   auto-snapshot: true
 ```
 That's it. Walk/fly around the world and chambers will register themselves as you load their chunks.
+
+</div>
+
+---
+
+## Per-Player Chamber Container Loot
+
+```yaml
+chests:
+  per-player-loot: false
+```
+
+*(Added in 1.5.7 — opt-in.)* Lootr-style container loot: when enabled, every player who opens a **chest, trapped chest, or barrel** inside a registered chamber gets their **own private copy** of its contents. The second player into a chamber no longer finds gutted chests — together with per-player vaults, the entire chamber becomes per-player.
+
+How it behaves:
+
+- The real container is **never modified** — it's the pristine template each player's copy is cloned from on first open. Copies persist across restarts (database) and **reset with the chamber**, so each cycle is fresh loot for everyone.
+- Double chests share one copy (keyed by the left half).
+- **Hopper automation is blocked** in/out of chamber containers while enabled — it would drain or pollute the shared template.
+- Containers **placed by players** inside a chamber keep vanilla behaviour (tagged at place time).
+- **Template editing:** admins with `tcp.admin.containers` (default op) **sneak-click** to open the real container. A normal click gives them their own copy like any player — so the feature works identically for ops, no silent bypass surprises.
+- Decorated pots are excluded by design: their loot is break-based and already renews via chamber resets.
+
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
+Turn this on only after your chambers are registered — containers inside chamber bounds that players were already using as storage will start serving per-player copies (their real contents stay safe in the block, but players can't withdraw them without an admin sneak-click). Player-placed containers *from before 1.5.7* can't be distinguished from chamber loot containers.
 
 </div>
 

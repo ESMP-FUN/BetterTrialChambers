@@ -107,6 +107,12 @@ protection:
   allow-pvp: true
   prevent-mob-griefing: true
   worldguard-integration: true
+
+  # Block placing functioning VAULT blocks outside registered chambers. A wild
+  # vault is a permanent vanilla loot dispenser the plugin can't manage (no
+  # per-player tracking, resets, or loot tables). Players with the
+  # tcp.bypass.vaultplace permission (default: op) can always place them.
+  block-wild-vault-placement: true
   # Auto-pause: if enough vaults or trial spawners inside a registered chamber are
   # destroyed, automatically pause the chamber so its record stays in the database
   # but all active behavior (resets, protection, tracking, vault interactions) is
@@ -267,6 +273,18 @@ discovery:
     enabled: true
     on-join: true                  # Ping an admin individually when they log in
     interval-minutes: 30           # Periodic console summary + admin chat ping (0 disables periodic only)
+
+# Per-player chamber container loot (v1.5.7, opt-in). When enabled, every
+# player who opens a chest / trapped chest / barrel inside a registered
+# chamber gets their OWN copy of its contents (Lootr-style) — the second
+# player into a chamber no longer finds gutted chests. The real container is
+# never modified (it's the pristine template); per-player copies reset with
+# the chamber. Hopper automation against chamber containers is blocked while
+# enabled. Containers placed by players inside chambers keep vanilla
+# behaviour. Admins with tcp.admin.containers can SNEAK-click to open the
+# real container and edit the template.
+chests:
+  per-player-loot: false
 
 # Anonymous usage metrics (bStats). No player data is collected — just
 # aggregate config/feature usage that guides development priorities.
