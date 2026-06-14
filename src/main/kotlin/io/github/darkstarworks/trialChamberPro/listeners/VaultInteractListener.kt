@@ -9,7 +9,6 @@ import kotlinx.coroutines.*
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.Particle
-import org.bukkit.Sound
 import org.bukkit.block.Vault
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -97,8 +96,9 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
 
             if (keyType == null) {
                 event.isCancelled = true
-                player.sendMessage(plugin.getMessageComponent("no-key"))
-                playErrorSound(player)
+                routeVaultFeedback(player, block.location, false, plugin.getMessageComponent("no-key")) {
+                    playErrorSound(player)
+                }
                 return
             }
 
@@ -111,8 +111,12 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
             if (keyType != requiredKeyType) {
                 event.isCancelled = true
                 val requiredTypeName = if (vaultType == VaultType.OMINOUS) "Ominous" else "Normal"
-                player.sendMessage(plugin.getMessageComponent("wrong-key-type", "required_type" to requiredTypeName))
-                playErrorSound(player)
+                routeVaultFeedback(
+                    player, block.location, false,
+                    plugin.getMessageComponent("wrong-key-type", "required_type" to requiredTypeName)
+                ) {
+                    playErrorSound(player)
+                }
                 return
             }
         }
@@ -243,10 +247,14 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
                 }
                 // Reopen offered but the player can't afford it — tell them the
                 // price instead of the dead-end "locked" message.
-                player.sendMessage(plugin.getMessageComponent("vault-reopen-need",
-                    "cost" to reopenCost, "type" to vaultType.displayName))
+                routeVaultFeedback(
+                    player, location, false,
+                    plugin.getMessageComponent("vault-reopen-need",
+                        "cost" to reopenCost, "type" to vaultType.displayName)
+                ) {
+                    playErrorSound(player)
+                }
                 showCooldownParticles(player, location, vaultType)
-                playErrorSound(player)
                 return
             }
 
@@ -257,23 +265,21 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
                 VaultType.OMINOUS -> plugin.config.getLong("vaults.ominous-cooldown-hours", -1)
             }
 
-            if (cooldownHours < 0) {
-                // Permanent lock (vanilla behavior) - player must wait for chamber reset
-                player.sendMessage(plugin.getMessageComponent("vault-locked",
-                    "type" to vaultType.displayName
-                ))
-            } else {
-                // Time-based cooldown configured, but Vault API doesn't track time
-                // For now, treat as permanent until chamber reset (vanilla behavior)
-                // Future enhancement: Could use database for time-based cooldowns
-                player.sendMessage(plugin.getMessageComponent("vault-locked",
-                    "type" to vaultType.displayName
-                ))
+            // Both branches currently surface the same "locked until reset"
+            // message: time-based cooldowns aren't tracked by the native Vault
+            // API yet (treated as permanent until chamber reset). The read above
+            // is retained for the future time-based enhancement.
+            @Suppress("UNUSED_EXPRESSION")
+            cooldownHours
+            routeVaultFeedback(
+                player, location, false,
+                plugin.getMessageComponent("vault-locked", "type" to vaultType.displayName)
+            ) {
+                playErrorSound(player)
             }
 
             // Show cooldown particles
             showCooldownParticles(player, location, vaultType)
-            playErrorSound(player)
         } else {
             // Can open the vault - player hasn't been rewarded yet
             openVault(player, vaultData, vaultType, location)
@@ -459,7 +465,12 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
                         }
                     }
 
-                    player.sendMessage(plugin.getMessageComponent("vault-opened", "type" to vaultType.displayName))
+                    routeVaultFeedback(
+                        player, location, true,
+                        plugin.getMessageComponent("vault-opened", "type" to vaultType.displayName)
+                    ) {
+                        playSuccessSound(player, player.location)
+                    }
 
                     // Grant the appropriate advancement
                     when (vaultType) {
@@ -467,8 +478,7 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
                         VaultType.OMINOUS -> AdvancementUtil.grantOminousVaultUnlock(player)
                     }
 
-                    // Play success sound and particles
-                    playSuccessSound(player, player.location)
+                    // Show success particles (sound handled by routeVaultFeedback above)
                     showSuccessParticles(player, player.location, vaultType)
 
                     // Consume the trial key - ONLY if we got this far (loot was generated and given)
@@ -571,13 +581,37 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
     }
 
     /**
+     * Routes a single vault-interaction outcome to the configured feedback
+     * channel (v1.5.8). In TEXT mode (default) it sends [message] and runs the
+     * supplied [vanillaSound] block — byte-identical to the pre-v1.5.8 path. In
+     * HOLOGRAM mode it shows a per-player ✓/✗ display above the vault with the
+     * pillager sound instead, suppressing the chat line and the vanilla sound.
+     * Particles/advancements at each call site are unaffected.
+     */
+    private inline fun routeVaultFeedback(
+        player: org.bukkit.entity.Player,
+        vaultLocation: org.bukkit.Location,
+        success: Boolean,
+        message: net.kyori.adventure.text.Component,
+        vanillaSound: () -> Unit
+    ) {
+        if (io.github.darkstarworks.trialChamberPro.utils.VaultFeedback.isHologramMode(plugin)) {
+            io.github.darkstarworks.trialChamberPro.utils.VaultFeedback
+                .showHologram(plugin, player, vaultLocation, success)
+        } else {
+            player.sendMessage(message)
+            vanillaSound()
+        }
+    }
+
+    /**
      * Plays success sound to the player.
      */
     private fun playSuccessSound(player: org.bukkit.entity.Player, location: org.bukkit.Location) {
         if (!plugin.config.getBoolean("vaults.play-sound-on-open", true)) return
 
         val soundName = plugin.config.getString("vaults.sounds.normal-open", "BLOCK_VAULT_OPEN_SHUTTER")!!
-        val sound = resolveSound(soundName) ?: return
+        val sound = io.github.darkstarworks.trialChamberPro.utils.SoundUtil.resolve(soundName) ?: return
         player.playSound(location, sound, 1.0f, 1.0f)
     }
 
@@ -588,66 +622,8 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
         if (!plugin.config.getBoolean("vaults.play-sound-on-open", true)) return
 
         val soundName = plugin.config.getString("vaults.sounds.cooldown", "BLOCK_NOTE_BLOCK_BASS")!!
-        val sound = resolveSound(soundName) ?: return
+        val sound = io.github.darkstarworks.trialChamberPro.utils.SoundUtil.resolve(soundName) ?: return
         player.playSound(player.location, sound, 1.0f, 0.5f)
-    }
-
-    /**
-     * Resolves a sound from either enum name (BLOCK_VAULT_OPEN_SHUTTER) or namespaced key (block.vault.open_shutter).
-     * Uses the Registry API (Sound.valueOf is deprecated in Paper 26.x).
-     */
-    private fun resolveSound(soundName: String): org.bukkit.Sound? {
-        return try {
-            // Convert to namespaced key format: BLOCK_VAULT_OPEN_SHUTTER -> block.vault.open_shutter
-            // or pass through if already namespaced: block.vault.open_shutter
-            val key = if (soundName.contains('.')) {
-                soundName.lowercase()
-            } else {
-                convertEnumToNamespacedKey(soundName)
-            }
-            org.bukkit.Registry.SOUNDS.get(org.bukkit.NamespacedKey.minecraft(key))
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    /**
-     * Converts Bukkit Sound enum name to Minecraft namespaced key.
-     * Examples:
-     * - BLOCK_VAULT_OPEN_SHUTTER -> block.vault.open_shutter
-     * - BLOCK_NOTE_BLOCK_BASS -> block.note_block.bass
-     * - ENTITY_PLAYER_HURT -> entity.player.hurt
-     */
-    private fun convertEnumToNamespacedKey(enumName: String): String {
-        val lower = enumName.lowercase()
-
-        // Known compound words that should keep their underscores
-        val compoundWords = listOf(
-            "note_block", "trial_spawner", "ender_dragon", "wither_skeleton",
-            "elder_guardian", "iron_golem", "snow_golem", "magma_cube",
-            "slime_block", "honey_block", "soul_sand", "soul_soil",
-            "copper_bulb", "copper_door", "copper_trapdoor", "copper_grate",
-            "heavy_core", "wind_charge", "trial_key", "ominous_trial_key",
-            "cave_vines", "glow_lichen", "pointed_dripstone", "sculk_sensor",
-            "sculk_shrieker", "sculk_catalyst", "big_dripleaf", "small_dripleaf",
-            "mangrove_roots", "chorus_flower", "chorus_plant", "end_portal",
-            "end_gateway", "nether_portal", "dragon_egg", "turtle_egg",
-            "frog_spawn", "sniffer_egg", "decorated_pot", "enchanting_table",
-            "brewing_stand", "ender_chest", "shulker_box", "respawn_anchor",
-            "lodestone_compass", "item_frame", "armor_stand", "end_crystal",
-            "minecart_inside", "chest_locked", "wet_grass"
-        )
-
-        // Replace underscores with dots, but preserve compound words
-        var result = lower
-        for (compound in compoundWords) {
-            val placeholder = compound.replace('_', '\u0000')
-            result = result.replace(compound, placeholder)
-        }
-        result = result.replace('_', '.')
-        result = result.replace('\u0000', '_')
-
-        return result
     }
 
     /**
