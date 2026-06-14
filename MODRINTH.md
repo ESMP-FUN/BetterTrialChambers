@@ -2,8 +2,9 @@
 
 # TrialChamberPro
 
-### What's new in 1.5.7
+### What's new in 1.5.8
 
+- **Hologram vault feedback** *(opt-in)* — set `vaults.feedback.mode: HOLOGRAM` and the vault chat lines become a floating **green ✔ / red ✘** above the vault, shown only to the player who opened it, with a pillager cheer on success and a grumble on failure. Covers every outcome (open, no key, wrong key, on cooldown, can't afford a reopen). Symbols, sounds, size and duration are all configurable; particles and advancements are untouched.
 - **Per-player chamber chest loot** *(opt-in)* — every player who opens a chest or barrel inside a registered chamber now gets their **own copy of its contents**, Lootr-style. No more gutted chests for the second player in. Copies reset with the chamber, hopper-draining is blocked, and player-placed containers keep vanilla behaviour. Combined with per-player vaults, the **entire chamber is now per-player**. One config line: `chests.per-player-loot: true`.
 - **Key-to-reopen vaults** *(opt-in)* — set `vaults.reopen-cost-keys` and players can open an already-used vault again by paying that many matching trial keys, instead of waiting for the cooldown or reset.
 - **Vanilla & datapack loot tables in loot.yml** — a pool entry of `type: VANILLA_TABLE` with `table: "minecraft:chests/trial_chambers/reward"` (or any datapack key) rolls the real server loot table straight into the drop.
