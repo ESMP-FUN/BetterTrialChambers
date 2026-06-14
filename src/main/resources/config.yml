@@ -88,6 +88,29 @@ vaults:
     ominous-open: BLOCK_VAULT_OPEN_SHUTTER
     cooldown: BLOCK_NOTE_BLOCK_BASS
 
+  # How vault loot results are shown to the player.
+  #   TEXT     - chat lines (default, unchanged behaviour):
+  #              "You opened a Normal Vault!", "You need a Trial Key...", etc.
+  #   HOLOGRAM - a floating green check / red cross above the vault, visible
+  #              only to the player who interacted, plus a sound. Replaces the
+  #              chat line for ALL outcomes (open, no key, wrong key, locked,
+  #              reopen-needed). Particles/advancements are unaffected.
+  feedback:
+    mode: TEXT
+    hologram:
+      duration-ticks: 30      # how long the check/cross stays (20 ticks = 1s)
+      y-offset: 1.4           # height above the vault block
+      scale: 1.5              # text size multiplier
+      see-through: true       # render through blocks
+      success-text: "&a✔"     # shown on a successful open
+      fail-text: "&c✘"        # shown on any failure
+    sounds:
+      # Note: these are random-variant sound *events* — the game picks an .ogg
+      # from the pool, so a specific variant (e.g. celebrate2) can't be pinned
+      # without a resource pack.
+      success: ENTITY_PILLAGER_CELEBRATE
+      fail: ENTITY_PILLAGER_AMBIENT
+
   # Vanilla-style loot ejection: drop items from the vault block instead of
   # placing them directly into the player's inventory.
   drop-loot-at-vault: false
