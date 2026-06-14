@@ -236,6 +236,18 @@ vaults:
     normal-open: BLOCK_VAULT_OPEN_SHUTTER
     ominous-open: BLOCK_VAULT_OPEN_SHUTTER
     cooldown: BLOCK_NOTE_BLOCK_BASS
+  feedback:
+    mode: TEXT
+    hologram:
+      duration-ticks: 30
+      y-offset: 1.4
+      scale: 1.5
+      see-through: true
+      success-text: "&a✔"
+      fail-text: "&c✘"
+    sounds:
+      success: ENTITY_PILLAGER_CELEBRATE
+      fail: ENTITY_PILLAGER_AMBIENT
 ```
 
 ### `per-player-loot`
@@ -325,6 +337,36 @@ Only applies when `drop-loot-at-vault: true`. When enabled, only the player who 
 **Default:** `30`
 
 How many seconds the owner-only restriction applies after a drop. After this window, anyone can pick up the items, so gear doesn't linger forever if the opener logs off. Set to `0` to lock items to the owner until they naturally despawn.
+
+### `feedback`
+**Default:** `mode: TEXT` *(added in 1.5.8)*
+
+Chooses how a vault interaction is reported to the player.
+
+- **`TEXT`** — the classic chat lines (`You opened a Normal Vault!`, `You need a Trial Key to open this vault!`, etc.). Unchanged from earlier versions.
+- **`HOLOGRAM`** — replaces those chat lines with a floating **green ✔ / red ✘** above the vault, visible **only to the player who interacted**, plus a sound. A tick on a successful open; a cross on every failure (no key, wrong key type, on cooldown/locked, can't afford a reopen). Cooldown/success particles and vanilla advancements still fire — only the chat line and the open/error sound are swapped for the hologram and its sound.
+
+```yaml
+vaults:
+  feedback:
+    mode: HOLOGRAM
+    hologram:
+      duration-ticks: 30      # how long the ✔/✘ stays (20 ticks = 1 second)
+      y-offset: 1.4           # height above the vault block
+      scale: 1.5              # text size multiplier
+      see-through: true       # render through blocks
+      success-text: "&a✔"     # shown on a successful open
+      fail-text: "&c✘"        # shown on any failure
+    sounds:
+      success: ENTITY_PILLAGER_CELEBRATE
+      fail: ENTITY_PILLAGER_AMBIENT
+```
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
+`ENTITY_PILLAGER_CELEBRATE` and `ENTITY_PILLAGER_AMBIENT` are *random-variant* sound events — Minecraft picks one of the bundled `.ogg` clips each time, so an exact variant (e.g. "celebrate2") can't be pinned without a resource pack. Set `success` / `fail` to any value from [Spigot's Sound enum](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Sound.html) (or a `namespace:path` key) to use your own.
+
+</div>
 
 ---
 
