@@ -1,4 +1,6 @@
 <black>.
+<aqua>[1.5.8] <gray>- <white>2026-06-14
+<lime>+ <white>NEW: <green>Hologram vault feedback (<yellow>vaults.feedback.mode: HOLOGRAM<green>, opt-in) — swap the vault chat lines for a floating <green>✔<green>/<red>✘<green> above the vault, shown only to the player who opened it, with a pillager cheer on success and a grumble on failure. Covers every outcome (open, no key, wrong key, on cooldown, can't afford a reopen). Symbols, sounds, size and duration are all configurable; particles and advancements are untouched.
 <aqua>[1.5.7] <gray>- <white>2026-06-10
 <lime>+ <white>NEW: <green>Per-player chamber chest loot (<yellow>chests.per-player-loot<green>, opt-in) — every player gets their OWN copy of each chamber chest/barrel's contents, Lootr-style. No more gutted chests for the second player; copies reset with the chamber. Combined with per-player vaults, the whole chamber is now per-player.
 <lime>+ <white>NEW: <green>Placing VAULT blocks outside registered chambers is now blocked by default (<yellow>protection.block-wild-vault-placement<green>) — wild vaults are permanent loot dispensers the plugin can't manage. Ops / <yellow>tcp.bypass.vaultplace<green> holders are exempt.

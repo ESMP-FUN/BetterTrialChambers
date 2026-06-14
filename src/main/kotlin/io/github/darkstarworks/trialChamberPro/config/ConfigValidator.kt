@@ -38,6 +38,7 @@ object ConfigValidator {
         LongRule("vaults.normal-cooldown-hours", 0, null, 24),
         LongRule("vaults.ominous-cooldown-hours", 0, null, 48),
         LongRule("vaults.drop-loot-owner-grace-seconds", 0, null, 30),
+        LongRule("vaults.feedback.hologram.duration-ticks", 1, 1200, 30),
         LongRule("generation.max-volume", 1, 5_000_000, 750_000),
         LongRule("reset.default-reset-interval", 0, null, 120),
         LongRule("reset.spawner-cooldown-minutes", 0, null, 30, allowSentinel = -1),
