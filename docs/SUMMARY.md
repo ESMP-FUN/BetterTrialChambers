@@ -22,6 +22,7 @@
 
 * [📝 Commands](reference/commands.md)
 * [🔐 Permissions](reference/permissions.md)
+* [🔢 PlaceholderAPI](reference/placeholders.md)
 
 ## API
 
