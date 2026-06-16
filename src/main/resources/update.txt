@@ -1,4 +1,11 @@
 <black>.
+<aqua>[1.5.9] <gray>- <white>2026-06-16
+<lime>+ <white>FIX: <green>Per-player container loot (<yellow>chests.per-player-loot<green>) showed EMPTY chests/barrels in natural chambers — their loot is an unrolled loot table, which the feature read as empty. Containers are now seeded by rolling the real loot table, so copies actually contain loot.
+<lime>+ <white>FIX: <green>Sneak-opening a container as an op (<yellow>tcp.admin.containers<green>) now actually opens the shared loot TEMPLATE to edit — edits affect every player's first-open loot and now PERSIST across resets (stored in a new template table).
+<lime>+ <white>FIX: <green>Containers are now captured + restored by snapshots, so breaking a chest or resetting the chamber brings its loot back. <yellow>Re-run /tcp snapshot create on existing chambers<green> so their containers are captured under the new format.
+<lime>+ <white>NEW: <green>Dispensers and droppers are now covered by per-player container loot too (alongside chests, trapped chests, barrels).
+<lime>+ <white>NEW: <green>Manage container loot from the GUI (<yellow>/tcp menu <chamber><green> → Container Loot) and a new <yellow>/tcp container<green> command — list/edit/teleport to templates, materialize all containers at once, clear player copies, or reset templates.
+<lime>+ <white>NEW: <green>WorldGuard integration now actually works (<yellow>protection.worldguard-integration<green>): TCP yields inside chambers where a WorldGuard region grants the player build rights, so region owners/staff aren't blocked.
 <aqua>[1.5.8] <gray>- <white>2026-06-14
 <lime>+ <white>NEW: <green>Hologram vault feedback (<yellow>vaults.feedback.mode: HOLOGRAM<green>, opt-in) — swap the vault chat lines for a floating <green>✔<green>/<red>✘<green> above the vault, shown only to the player who opened it, with a pillager cheer on success and a grumble on failure. Covers every outcome (open, no key, wrong key, on cooldown, can't afford a reopen). Symbols, sounds, size and duration are all configurable; particles and advancements are untouched.
 <aqua>[1.5.7] <gray>- <white>2026-06-10

@@ -227,6 +227,27 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
                     """.trimIndent()
                 )
 
+                // v1.5.9: shared per-container loot TEMPLATE. The canonical
+                // contents each player's first-open copy is cloned from, one
+                // row per container position. Materialized once (by rolling the
+                // block's vanilla loot table) on first access, editable by ops
+                // (sneak-open), and — unlike per-player copies — PERSISTS across
+                // chamber resets so edits stick. Cascade-deleted with the chamber.
+                stmt.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS container_template (
+                        chamber_id INT NOT NULL,
+                        x INT NOT NULL,
+                        y INT NOT NULL,
+                        z INT NOT NULL,
+                        contents TEXT NOT NULL,
+                        updated_at BIGINT NOT NULL,
+                        PRIMARY KEY (chamber_id, x, y, z),
+                        FOREIGN KEY (chamber_id) REFERENCES chambers(id) ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+
                 // Player statistics table
                 stmt.execute(
                     """

@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.5.9] - 2026-06-16
+### Fixed
+- **Per-player chamber container loot was broken for naturally-generated chambers — every container appeared empty.** A trial-chamber chest/barrel/dispenser holds its loot as an *unrolled vanilla loot table* (the inventory is genuinely empty until a player triggers a vanilla open). The feature cancelled that vanilla open and read the empty inventory as the "template", so every player's copy came out empty. Containers are now seeded by **rolling the loot table** (Bukkit `LootTable`/`Lootable`) the first time one is accessed, so copies contain the real generated loot. Single chests, double chests (each half rolled), barrels, dispensers, and droppers are all handled.
+- **The op "edit template" (sneak-open) did nothing — no inventory opened.** It only printed a message and deferred to vanilla. Sneak-opening with `tcp.admin.containers` now opens the **shared loot template** for editing; changes affect every player's first-open loot.
+- **Container edits never persisted across a reset, and container loot was not restored on reset at all.** Two causes: (1) there was no template store — the "template" was just the live block, whose loot table a reset *wipes* (a block-data restore recreates an empty block entity); (2) the snapshot system never captured containers in the first place. Now: the shared template is stored in a new `container_template` table and **persists across resets** (per-player copies still reset for renewable loot), and snapshots **capture and restore each container's loot table** so a broken or reset container comes back with its loot intact. *Existing chambers should re-run `/tcp snapshot create` so their containers are captured under the new format; persisted templates already survive regardless.*
+
+### Added
+- **Dispensers and droppers** are now covered by per-player container loot (`chests.per-player-loot`), alongside chests, trapped chests, and barrels.
+- **Container loot in the GUI** — the chamber screen (`/tcp menu <chamber>`) gains a **Container Loot** view: status + template/copy counts, a paginated list of every container template (left-click to edit the shared template inventory, right-click to teleport), and bulk actions to **materialize all** containers, clear player copies, or reset templates.
+- **`/tcp container` command** (`tcp.admin.containers`) — CLI parity with the GUI: `list`, `materialize`, `reset`, `clearcopies`, `tp <#>`, `edit <#>`. `materialize` rolls a template for every container in a chamber at once, so loot can be curated before anyone opens it. Tab-completed.
+- **WorldGuard integration is now functional** (`protection.worldguard-integration`, previously a no-op stub). When a WorldGuard region covers a spot inside a chamber and grants the player build rights (region membership, an explicit `build` allow, or WG bypass), TCP yields and skips its own block-break / block-place / container-access protection there — so region owners and staff can work inside chambers overlapping their regions. Where there's no region (or no build rights), TCP protection applies as before.
+
 ## [1.5.8] - 2026-06-14
 ### Added
 - **Hologram vault feedback** (`vaults.feedback.mode`, default `TEXT` = unchanged). Switch to `HOLOGRAM` and the chat lines for every vault outcome are replaced by a floating **green ✔ / red ✘** above the vault — shown only to the player who interacted, so looters get a clean, glanceable result instead of a column of `[TCP]` chat. Covers all outcomes: a tick on a successful open, a cross on every failure (no key, wrong key type, on cooldown/locked, can't afford a reopen). Each result is paired with a configurable sound (defaults to the pillager celebrate cheer for success and the pillager grumble for failure) and despawns after a configurable duration. Position, scale, see-through, the symbols themselves, and both sounds are all tunable under `vaults.feedback.hologram` / `vaults.feedback.sounds`. Particles and advancements are unaffected, so existing setups keep their sparkles either way.
@@ -1343,6 +1355,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.5.9]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.8...v1.5.9
+[1.5.8]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.7...v1.5.8
 [1.5.7]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.6...v1.5.7
 [1.5.6]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.5...v1.5.6
 [1.5.5]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.4...v1.5.5

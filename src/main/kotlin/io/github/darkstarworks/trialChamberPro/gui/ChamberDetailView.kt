@@ -68,9 +68,12 @@ class ChamberDetailView(
             handleSnapshotClick(ctx.player, ctx.event.isLeftClick, ctx.event.isShiftClick)
         })
 
-        // Row 4: pause toggle
+        // Row 4: pause toggle + container loot
         set(40, VcGuiItem.wrap(createPauseToggleItem()) { ctx ->
             handlePauseToggleClick(ctx.player)
+        })
+        set(42, VcGuiItem.wrap(createContainerLootItem()) { ctx ->
+            menu.openContainerLoot(ctx.player, chamber)
         })
 
         // Row 5: nav
@@ -162,6 +165,15 @@ class ChamberDetailView(
     private fun createTeleportItem(): ItemStack =
         GuiComponents.infoItem(plugin, Material.ENDER_PEARL,
             "gui.chamber-detail.teleport-name", "gui.chamber-detail.teleport-lore")
+
+    private fun createContainerLootItem(): ItemStack {
+        val enabled = plugin.config.getBoolean("chests.per-player-loot", false)
+        return GuiComponents.infoItem(plugin, Material.CHEST,
+            "gui.chamber-detail.container-loot-name", "gui.chamber-detail.container-loot-lore",
+            "status" to plugin.getMessage(
+                if (enabled) "gui.container-loot.status-on" else "gui.container-loot.status-off"
+            ))
+    }
 
     private fun createResetChamberItem(): ItemStack {
         val playersInside = chamber.getPlayersInside().size
