@@ -18,7 +18,7 @@
 
 Plus the 1.5.0 foundation: **vanilla-loot-fallback fix on 100+ chamber servers**, **faithful loot NBT + bulk drag-in editor**, **procedural dungeon generation** (`/tcp dungeon`), **hardened throttled resets**, and **`ChamberClearedEvent`**. And the 1.3.x–1.4.x line: **custom mobs** (MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens), **fully translatable GUI**, **Bukkit events API**, **spawner presets**, **chamber pause state**, **MiniMessage everywhere**, and **Minecraft 26.x support** via the `-mc26` build.
 
-📘 **Full documentation:** https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation — most questions are answered there, and every section below links to its own detailed page.
+📘 **Full documentation:** https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation — most questions are answered there, and every section below links to its own detailed page.
 
 ---
 
@@ -84,26 +84,26 @@ discovery:
 
 Restart once. Fly or walk through your world — every natural trial chamber registers itself as its chunks load, with per-player loot, protection, and automatic resets already active. Done.
 
-> Why it's opt-in: on **old** worlds that pre-date 1.21, players sometimes build decorative structures out of tuff and copper blocks. The auto-detector could register those as chambers. On fresh worlds there's no risk. [More detail in the docs →](https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation/configuration/config.yml#auto-discovery-of-natural-trial-chambers)
+> Why it's opt-in: on **old** worlds that pre-date 1.21, players sometimes build decorative structures out of tuff and copper blocks. The auto-detector could register those as chambers. On fresh worlds there's no risk. [More detail in the docs →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/configuration/config.yml#auto-discovery-of-natural-trial-chambers)
 
-Prefer manual control? You can still register chambers with WorldEdit (`/tcp generate wand MyChamber`) or by coordinates — see [Your First Chamber](https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation/getting-started/your-first-chamber).
+Prefer manual control? You can still register chambers with WorldEdit (`/tcp generate wand MyChamber`) or by coordinates — see [Your First Chamber](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/your-first-chamber).
 
 ---
 
 ## Features
 
 ### Core Systems
-- **Auto-Discovery** — natural chambers register themselves on chunk load + startup sweep. [Docs →](https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation/configuration/config.yml#auto-discovery-of-natural-trial-chambers)
+- **Auto-Discovery** — natural chambers register themselves on chunk load + startup sweep. [Docs →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/configuration/config.yml#auto-discovery-of-natural-trial-chambers)
 - **Automatic Resets** — chambers restore on schedule with configurable warnings, or set interval to `0` for manual-only.
 - **Per-Player Vaults** — everyone gets their own loot with separate cooldowns, plus optional pay-keys-to-reopen.
 - **Per-Player Chests & Barrels** *(new in 1.5.7, opt-in)* — Lootr-style private container copies, so the whole chamber is per-player.
 - **Procedural Dungeon Generation** — build modular rooms with jigsaw-block doorways; `/tcp dungeon generate` stitches them into brand-new chambers.
 - **Full Protection** — block break/place, container access, mob griefing, wild-vault placement. WorldGuard-aware.
-- **Statistics & Leaderboards** — vaults opened, mobs killed, time spent. [Docs →](https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation/guides/statistics)
+- **Statistics & Leaderboards** — vaults opened, mobs killed, time spent. [Docs →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/reference/placeholders)
 - **Admin GUI** — `/tcp menu` does everything. No YAML editing required — and `/tcp list` deep-links into it.
 
 ### Advanced Loot
-- **Multi-Pool Tables** — common / rare / unique pools like vanilla, fully configurable. [Docs →](https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation/configuration/loot.yml)
+- **Multi-Pool Tables** — common / rare / unique pools like vanilla, fully configurable. [Docs →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/configuration/loot.yml)
 - **Per-Chamber Overrides** — assign a different loot table to any specific chamber.
 - **GUI Editing** — open `/tcp menu` → Loot Tables, click a table, and edit it. Changes save to `loot.yml` instantly.
 - **Custom Plugin Items** — drop Nexo, ItemsAdder, or Oraxen items directly from vaults:
@@ -145,7 +145,7 @@ Every user-facing string lives in `plugins/TrialChamberPro/messages.yml`. Want y
 
 Supports `&`-style color codes, `{placeholder}` substitution, and Adventure Components for boss bars.
 
-📘 [Full message reference →](https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation/configuration/messages.yml)
+📘 [Full message reference →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/configuration/messages.yml)
 
 ---
 
@@ -179,7 +179,7 @@ Prefer not to use auto-discovery? Classic workflow still works:
 | `/tcp leaderboard <type>` | View top players |
 | `/tcp reload` | Reload config & loot tables |
 
-📘 [Full command reference →](https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation/reference/commands)
+📘 [Full command reference →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/reference/commands)
 
 ---
 
@@ -196,7 +196,7 @@ Prefer not to use auto-discovery? Classic workflow still works:
 
 > **Heads up:** `tcp.bypass.cooldown` is granted to OPs by default. If you're testing cooldowns as an OP, they'll appear broken — either test as a non-OP or explicitly negate the permission.
 
-📘 [Full permissions guide with rank examples →](https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation/reference/permissions)
+📘 [Full permissions guide with rank examples →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/reference/permissions)
 
 ---
 
@@ -239,21 +239,21 @@ discovery:
   auto-snapshot: true              # Allow auto-discovered chambers to restore on reset.
 ```
 
-📘 [Full config.yml reference →](https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation/configuration/config.yml) · [loot.yml reference →](https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation/configuration/loot.yml)
+📘 [Full config.yml reference →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/configuration/config.yml) · [loot.yml reference →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/configuration/loot.yml)
 
 ---
 
 ## PlaceholderAPI (summary)
 
-20+ placeholders for player stats (`%tcp_vaults_opened%`, `%tcp_mobs_killed%`, `%tcp_time_spent%`), current state (`%tcp_current_chamber%`), and leaderboards (`%tcp_top_vaults_1_name%` through `_10_`). Built-in 60-second cache.
+30+ placeholders for player stats (`%tcp_vaults_opened%`, `%tcp_mobs_killed%`, `%tcp_kdr%`, `%tcp_time_spent%`), current state (`%tcp_current_chamber%`, `%tcp_current_chamber_reset%`, `%tcp_chamber_count%`), leaderboard rank (`%tcp_leaderboard_vaults%`), and top-10 boards (`%tcp_top_vaults_1_name%` … `_value%` for vaults/chambers/time/mobs). Built-in caching (stats 30 s, leaderboards 60 s).
 
-📘 [Full placeholder list →](https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation/guides/statistics#placeholderapi)
+📘 [Full placeholder list →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/reference/placeholders)
 
 ---
 
 ## Support
 
-- 📘 **[Documentation](https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation)** — setup guides, configuration reference, troubleshooting. **Please check here first!** Most questions are already answered.
+- 📘 **[Documentation](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation)** — setup guides, configuration reference, troubleshooting. **Please check here first!** Most questions are already answered.
 - 💬 **[Discord](https://discord.gg/qwYcTpHsNC)** — community support, announcements, feature requests. Not everyone's a reader — that's fine, come chat.
 - 🐛 **[GitHub Issues](https://github.com/darkstarworks/TrialChamberPro/issues)** — bug reports.
 - ⭐ **[Source Code](https://github.com/darkstarworks/TrialChamberPro)** — open source under CC-BY-NC-ND 4.0.
