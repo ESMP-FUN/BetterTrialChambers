@@ -1,4 +1,7 @@
 <black>.
+<aqua>[1.5.10] <gray>- <white>2026-06-16
+<lime>+ <white>NEW: <green>More PlaceholderAPI placeholders — <yellow>%tcp_kdr%<green>, <yellow>%tcp_current_chamber_reset%<green>, <yellow>%tcp_current_chamber_paused%<green>, <yellow>%tcp_chamber_count%<green>, <yellow>%tcp_leaderboard_mobs%<green>, and <yellow>%tcp_top_mobs_<n>_name/value%<green>. Full list now documented in the wiki.
+<lime>+ <white>FIX: <green><yellow>%tcp_leaderboard_vaults%<green> / <yellow>%tcp_top_vaults_*<green> now rank by the normal+ominous TOTAL (matching <yellow>%tcp_vaults_opened%<green>), not normal-only.
 <aqua>[1.5.9] <gray>- <white>2026-06-16
 <lime>+ <white>FIX: <green>Per-player container loot (<yellow>chests.per-player-loot<green>) showed EMPTY chests/barrels in natural chambers — their loot is an unrolled loot table, which the feature read as empty. Containers are now seeded by rolling the real loot table, so copies actually contain loot.
 <lime>+ <white>FIX: <green>Sneak-opening a container as an op (<yellow>tcp.admin.containers<green>) now actually opens the shared loot TEMPLATE to edit — edits affect every player's first-open loot and now PERSIST across resets (stored in a new template table).
