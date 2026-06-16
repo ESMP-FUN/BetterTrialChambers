@@ -8,7 +8,8 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * PlaceholderAPI expansion for TrialChamberPro.
  *
- * Provides the following placeholders:
+ * Provides the following placeholders (canonical list — also documented in
+ * `docs/reference/placeholders.md`; keep the two in sync):
  *
  * **Player Statistics:**
  * - %tcp_vaults_opened% - Total vaults opened (normal + ominous)
@@ -17,23 +18,30 @@ import java.util.concurrent.ConcurrentHashMap
  * - %tcp_chambers_completed% - Chambers completed
  * - %tcp_mobs_killed% - Mobs killed in chambers
  * - %tcp_deaths% - Deaths in chambers
+ * - %tcp_kdr% - Kill/death ratio (mobs killed ÷ deaths, 2 decimals)
  * - %tcp_time_spent% - Time spent in chambers (formatted: "1h 30m 45s")
  * - %tcp_time_spent_raw% - Time spent in chambers (raw seconds)
  *
  * **Current State:**
  * - %tcp_current_chamber% - Name of chamber player is in (or "None")
  * - %tcp_in_chamber% - "true" if player is in a chamber, "false" otherwise
+ * - %tcp_current_chamber_reset% - Time until the current chamber resets
+ *   (formatted; "None" if not in one, "Never" if its resets are disabled)
+ * - %tcp_current_chamber_paused% - "true" if the current chamber is paused
+ * - %tcp_chamber_count% - Number of registered chambers (server-wide)
  *
- * **Leaderboard Position:**
+ * **Leaderboard Position (1-based; 0 = unranked):**
  * - %tcp_leaderboard_vaults% - Player's rank by total vaults opened
  * - %tcp_leaderboard_chambers% - Player's rank by chambers completed
  * - %tcp_leaderboard_time% - Player's rank by time spent
+ * - %tcp_leaderboard_mobs% - Player's rank by mobs killed
  *
- * **Top Players (for scoreboards):**
- * - %tcp_top_vaults_1_name% - #1 player name by vaults
- * - %tcp_top_vaults_1_value% - #1 player value by vaults
- * - %tcp_top_vaults_2_name% through %tcp_top_vaults_10_name%
- * - %tcp_top_chambers_1_name% through %tcp_top_chambers_10_name%
+ * **Top Players (for scoreboards) — position 1-10, "name" or "value":**
+ * - %tcp_top_vaults_<1-10>_name% / %tcp_top_vaults_<1-10>_value%
+ * - %tcp_top_chambers_<1-10>_name% / %tcp_top_chambers_<1-10>_value%
+ * - %tcp_top_time_<1-10>_name% / %tcp_top_time_<1-10>_value% (value formatted)
+ * - %tcp_top_mobs_<1-10>_name% / %tcp_top_mobs_<1-10>_value%
+ *   (an empty slot returns "---")
  */
 class PlaceholderAPIExpansion(private val plugin: TrialChamberPro) : PlaceholderExpansion() {
 
@@ -84,6 +92,11 @@ class PlaceholderAPIExpansion(private val plugin: TrialChamberPro) : Placeholder
             params.equals("deaths", ignoreCase = true) -> {
                 getPlayerStats(uuid).deaths.toString()
             }
+            params.equals("kdr", ignoreCase = true) -> {
+                val s = getPlayerStats(uuid)
+                val kd = if (s.deaths <= 0) s.mobsKilled.toDouble() else s.mobsKilled.toDouble() / s.deaths
+                String.format(java.util.Locale.US, "%.2f", kd)
+            }
             params.equals("time_spent", ignoreCase = true) -> {
                 plugin.statisticsManager.formatTime(getPlayerStats(uuid).timeSpent)
             }
@@ -98,6 +111,16 @@ class PlaceholderAPIExpansion(private val plugin: TrialChamberPro) : Placeholder
             params.equals("in_chamber", ignoreCase = true) -> {
                 isInChamber(player).toString()
             }
+            params.equals("current_chamber_reset", ignoreCase = true) -> {
+                currentChamberResetText(player)
+            }
+            params.equals("current_chamber_paused", ignoreCase = true) -> {
+                val chamber = player.player?.let { plugin.chamberManager.getCachedChamberAt(it.location) }
+                (chamber?.isPaused ?: false).toString()
+            }
+            params.equals("chamber_count", ignoreCase = true) -> {
+                plugin.chamberManager.getCachedChambers().size.toString()
+            }
 
             // Leaderboard Position
             params.equals("leaderboard_vaults", ignoreCase = true) -> {
@@ -108,6 +131,9 @@ class PlaceholderAPIExpansion(private val plugin: TrialChamberPro) : Placeholder
             }
             params.equals("leaderboard_time", ignoreCase = true) -> {
                 getLeaderboardPosition(uuid, "time").toString()
+            }
+            params.equals("leaderboard_mobs", ignoreCase = true) -> {
+                getLeaderboardPosition(uuid, "mobs").toString()
             }
 
             // Top Players - vaults
@@ -123,6 +149,11 @@ class PlaceholderAPIExpansion(private val plugin: TrialChamberPro) : Placeholder
             // Top Players - time
             params.startsWith("top_time_", ignoreCase = true) -> {
                 handleTopPlaceholder(params, "time")
+            }
+
+            // Top Players - mobs killed
+            params.startsWith("top_mobs_", ignoreCase = true) -> {
+                handleTopPlaceholder(params, "mobs")
             }
 
             else -> null
@@ -168,6 +199,19 @@ class PlaceholderAPIExpansion(private val plugin: TrialChamberPro) : Placeholder
         val chamber = plugin.chamberManager.getCachedChamberAt(location)
 
         return chamber?.name ?: "None"
+    }
+
+    /**
+     * Time until the player's current chamber resets ("None" when not in a
+     * chamber, "Never" when the chamber's automatic resets are disabled).
+     * NON-BLOCKING: cache-only chamber lookup.
+     */
+    private fun currentChamberResetText(player: OfflinePlayer): String {
+        val online = player.player ?: return "None"
+        val chamber = plugin.chamberManager.getCachedChamberAt(online.location) ?: return "None"
+        if (chamber.resetInterval <= 0) return "Never"
+        val seconds = plugin.resetManager.getTimeUntilReset(chamber) / 1000
+        return plugin.statisticsManager.formatTime(seconds)
     }
 
     /**
@@ -247,24 +291,22 @@ class PlaceholderAPIExpansion(private val plugin: TrialChamberPro) : Placeholder
         // Trigger async refresh (non-blocking)
         plugin.launchAsync {
             try {
-                // Fetch top 100 for each stat to calculate positions
-                val vaultsLeaderboard = plugin.statisticsManager.getLeaderboard("normal_vaults", 100)
+                // Fetch top 100 for each stat to calculate positions.
+                // "vaults" ranks by the normal + ominous TOTAL, matching
+                // %tcp_vaults_opened% (was normal-only before v1.5.10).
+                val vaultsLeaderboard = plugin.statisticsManager.getLeaderboard("vaults", 100)
                 val chambersLeaderboard = plugin.statisticsManager.getLeaderboard("chambers", 100)
                 val timeLeaderboard = plugin.statisticsManager.getLeaderboard("time", 100)
+                val mobsLeaderboard = plugin.statisticsManager.getLeaderboard("mobs", 100)
 
                 // Convert UUIDs to names
-                leaderboardCache["vaults"] = vaultsLeaderboard.map { (uuid, value) ->
-                    val name = plugin.server.getOfflinePlayer(uuid).name ?: "Unknown"
-                    name to value
+                fun named(board: List<Pair<java.util.UUID, Int>>) = board.map { (uuid, value) ->
+                    (plugin.server.getOfflinePlayer(uuid).name ?: "Unknown") to value
                 }
-                leaderboardCache["chambers"] = chambersLeaderboard.map { (uuid, value) ->
-                    val name = plugin.server.getOfflinePlayer(uuid).name ?: "Unknown"
-                    name to value
-                }
-                leaderboardCache["time"] = timeLeaderboard.map { (uuid, value) ->
-                    val name = plugin.server.getOfflinePlayer(uuid).name ?: "Unknown"
-                    name to value
-                }
+                leaderboardCache["vaults"] = named(vaultsLeaderboard)
+                leaderboardCache["chambers"] = named(chambersLeaderboard)
+                leaderboardCache["time"] = named(timeLeaderboard)
+                leaderboardCache["mobs"] = named(mobsLeaderboard)
 
                 lastLeaderboardRefresh = System.currentTimeMillis()
             } catch (_: Exception) {
