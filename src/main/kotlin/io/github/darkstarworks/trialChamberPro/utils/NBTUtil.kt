@@ -1,13 +1,25 @@
 package io.github.darkstarworks.trialChamberPro.utils
 
+import org.bukkit.Bukkit
+import org.bukkit.NamespacedKey
 import org.bukkit.block.BlockState
+import org.bukkit.block.Container
 import org.bukkit.block.DecoratedPot
+import org.bukkit.block.TileState
 import org.bukkit.block.TrialSpawner
 import org.bukkit.block.Vault
+import org.bukkit.inventory.ItemStack
+import org.bukkit.loot.Lootable
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.DataInputStream
+import java.io.DataOutputStream
+import java.util.Base64
 
 /**
  * Utility class for handling NBT data from tile entities.
- * Captures and restores data for Trial Spawners, Vaults, and Decorated Pots.
+ * Captures and restores data for Trial Spawners, Vaults, Decorated Pots, and
+ * loot containers (chests/barrels/dispensers/droppers).
  */
 object NBTUtil {
 
@@ -22,6 +34,7 @@ object NBTUtil {
             is TrialSpawner -> captureTrialSpawner(state)
             is Vault -> captureVault(state)
             is DecoratedPot -> captureDecoratedPot(state)
+            is Container -> captureContainer(state)
             else -> null
         }
     }
@@ -75,6 +88,34 @@ object NBTUtil {
     }
 
     /**
+     * Captures a loot container (chest/barrel/dispenser/dropper).
+     *
+     * A naturally-generated trial-chamber container stores its loot as an
+     * UNROLLED loot table (empty inventory + a `LootTable`/seed) until a player
+     * first opens it. We capture the loot-table key + seed when present so the
+     * container can be re-armed on restore (a plain BlockData restore wipes the
+     * block entity, losing the loot table — which is why container loot did not
+     * survive resets before v1.5.9). When no loot table is set (already rolled,
+     * or admin-filled), we capture the literal contents instead.
+     */
+    private fun captureContainer(container: Container): Map<String, Any> {
+        val lootable = container as? Lootable
+        val table = lootable?.lootTable
+        return if (table != null) {
+            mapOf(
+                "type" to "CONTAINER",
+                "lootTable" to table.key.toString(),
+                "seed" to lootable.seed.toString()
+            )
+        } else {
+            mapOf(
+                "type" to "CONTAINER",
+                "items" to encodeItems(container.inventory.contents)
+            )
+        }
+    }
+
+    /**
      * Restores tile entity data to a block state.
      *
      * @param state The block state to restore to
@@ -88,7 +129,73 @@ object NBTUtil {
             "TRIAL_SPAWNER" -> restoreTrialSpawner(state as? TrialSpawner ?: return false, data)
             "VAULT" -> restoreVault(state as? Vault ?: return false, data)
             "DECORATED_POT" -> restoreDecoratedPot(state as? DecoratedPot ?: return false, data)
+            "CONTAINER" -> restoreContainer(state as? Container ?: return false, data)
             else -> false
+        }
+    }
+
+    /**
+     * Restores a loot container: re-arms its captured loot table (so it rolls
+     * fresh loot when next accessed), or restores literal contents.
+     */
+    private fun restoreContainer(container: Container, data: Map<String, Any>): Boolean {
+        return try {
+            val lootable = container as? Lootable
+            val key = data["lootTable"] as? String
+            if (lootable != null && key != null) {
+                val table = NamespacedKey.fromString(key)?.let { Bukkit.getLootTable(it) }
+                if (table != null) {
+                    container.inventory.clear()
+                    val seed = (data["seed"] as? String)?.toLongOrNull() ?: 0L
+                    lootable.setLootTable(table, seed)
+                }
+            } else {
+                val items = data["items"] as? String
+                if (items != null) {
+                    val decoded = decodeItems(items)
+                    val inv = container.inventory
+                    inv.clear()
+                    for (i in 0 until minOf(inv.size, decoded.size)) inv.setItem(i, decoded[i])
+                }
+            }
+            (container as? TileState)?.update(true, false)
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun encodeItems(items: Array<ItemStack?>): String {
+        val baos = ByteArrayOutputStream()
+        DataOutputStream(baos).use { out ->
+            out.writeInt(items.size)
+            for (item in items) {
+                if (item == null || item.type.isAir) {
+                    out.writeInt(-1)
+                } else {
+                    val bytes = item.serializeAsBytes()
+                    out.writeInt(bytes.size)
+                    out.write(bytes)
+                }
+            }
+        }
+        return Base64.getEncoder().encodeToString(baos.toByteArray())
+    }
+
+    private fun decodeItems(encoded: String): Array<ItemStack?> {
+        val bytes = Base64.getDecoder().decode(encoded)
+        DataInputStream(ByteArrayInputStream(bytes)).use { input ->
+            val size = input.readInt()
+            require(size in 0..128) { "implausible container size $size" }
+            return Array(size) {
+                val len = input.readInt()
+                if (len < 0) null
+                else {
+                    val buf = ByteArray(len)
+                    input.readFully(buf)
+                    ItemStack.deserializeBytes(buf)
+                }
+            }
         }
     }
 

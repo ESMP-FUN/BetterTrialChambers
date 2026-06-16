@@ -103,10 +103,178 @@ class ContainerLootManager(private val plugin: TrialChamberPro) {
     }
 
     /**
-     * Drops every player's container copies for a chamber — fresh loot for
-     * everyone after a reset. Cheap no-op when the feature is unused.
+     * Loads the shared template (the canonical contents every first-open copy
+     * is cloned from) for a container, or null when none has been materialized
+     * yet. v1.5.9.
      */
-    suspend fun clearChamber(chamberId: Int) = withContext(Dispatchers.IO) {
+    suspend fun loadTemplate(
+        chamberId: Int,
+        pos: ContainerPos
+    ): Array<ItemStack?>? = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement(
+                    "SELECT contents FROM container_template WHERE chamber_id = ? AND x = ? AND y = ? AND z = ?"
+                ).use { stmt ->
+                    stmt.setInt(1, chamberId)
+                    stmt.setInt(2, pos.x)
+                    stmt.setInt(3, pos.y)
+                    stmt.setInt(4, pos.z)
+                    stmt.executeQuery().use { rs ->
+                        if (rs.next()) decodeContents(rs.getString("contents")) else null
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.warning("[ContainerLoot] Template load failed (${pos.x},${pos.y},${pos.z}): ${e.message}")
+            null
+        }
+    }
+
+    /** Persists the shared template for a container (upsert). v1.5.9. */
+    suspend fun saveTemplate(
+        chamberId: Int,
+        pos: ContainerPos,
+        contents: Array<ItemStack?>
+    ) = withContext(Dispatchers.IO) {
+        val encoded = encodeContents(contents)
+        val sql = if (plugin.databaseManager.databaseType == DatabaseManager.DatabaseType.MYSQL) {
+            """
+            INSERT INTO container_template (chamber_id, x, y, z, contents, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE contents = VALUES(contents), updated_at = VALUES(updated_at)
+            """.trimIndent()
+        } else {
+            """
+            INSERT INTO container_template (chamber_id, x, y, z, contents, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(chamber_id, x, y, z)
+            DO UPDATE SET contents = excluded.contents, updated_at = excluded.updated_at
+            """.trimIndent()
+        }
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setInt(1, chamberId)
+                    stmt.setInt(2, pos.x)
+                    stmt.setInt(3, pos.y)
+                    stmt.setInt(4, pos.z)
+                    stmt.setString(5, encoded)
+                    stmt.setLong(6, System.currentTimeMillis())
+                    stmt.executeUpdate()
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.warning("[ContainerLoot] Template save failed (${pos.x},${pos.y},${pos.z}): ${e.message}")
+        }
+    }
+
+    /** One stored template: its position + decoded contents. */
+    data class TemplateRow(val pos: ContainerPos, val contents: Array<ItemStack?>)
+
+    /** Lists every materialized template for a chamber (for the GUI/command). */
+    suspend fun listTemplates(chamberId: Int): List<TemplateRow> = withContext(Dispatchers.IO) {
+        val out = mutableListOf<TemplateRow>()
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement(
+                    "SELECT x, y, z, contents FROM container_template WHERE chamber_id = ? ORDER BY x, y, z"
+                ).use { stmt ->
+                    stmt.setInt(1, chamberId)
+                    stmt.executeQuery().use { rs ->
+                        while (rs.next()) {
+                            val pos = ContainerPos(rs.getInt("x"), rs.getInt("y"), rs.getInt("z"))
+                            val contents = decodeContents(rs.getString("contents")) ?: arrayOfNulls(0)
+                            out.add(TemplateRow(pos, contents))
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.warning("[ContainerLoot] listTemplates failed for chamber $chamberId: ${e.message}")
+        }
+        out
+    }
+
+    /** Whether a template already exists for a container position. */
+    suspend fun hasTemplate(chamberId: Int, pos: ContainerPos): Boolean = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement(
+                    "SELECT 1 FROM container_template WHERE chamber_id = ? AND x = ? AND y = ? AND z = ?"
+                ).use { stmt ->
+                    stmt.setInt(1, chamberId)
+                    stmt.setInt(2, pos.x)
+                    stmt.setInt(3, pos.y)
+                    stmt.setInt(4, pos.z)
+                    stmt.executeQuery().use { rs -> rs.next() }
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.warning("[ContainerLoot] hasTemplate failed: ${e.message}")
+            false
+        }
+    }
+
+    /** Counts a chamber's per-player container copies. */
+    suspend fun countPlayerCopies(chamberId: Int): Int = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement(
+                    "SELECT COUNT(*) FROM player_container_loot WHERE chamber_id = ?"
+                ).use { stmt ->
+                    stmt.setInt(1, chamberId)
+                    stmt.executeQuery().use { rs -> if (rs.next()) rs.getInt(1) else 0 }
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.warning("[ContainerLoot] countPlayerCopies failed: ${e.message}")
+            0
+        }
+    }
+
+    /** Deletes every shared template for a chamber (they re-materialize on next access). Returns rows removed. */
+    suspend fun clearTemplates(chamberId: Int): Int = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement("DELETE FROM container_template WHERE chamber_id = ?").use { stmt ->
+                    stmt.setInt(1, chamberId)
+                    stmt.executeUpdate()
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.warning("[ContainerLoot] clearTemplates failed for chamber $chamberId: ${e.message}")
+            0
+        }
+    }
+
+    /** Deletes a single container's template. */
+    suspend fun deleteTemplate(chamberId: Int, pos: ContainerPos): Boolean = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement(
+                    "DELETE FROM container_template WHERE chamber_id = ? AND x = ? AND y = ? AND z = ?"
+                ).use { stmt ->
+                    stmt.setInt(1, chamberId)
+                    stmt.setInt(2, pos.x)
+                    stmt.setInt(3, pos.y)
+                    stmt.setInt(4, pos.z)
+                    stmt.executeUpdate() > 0
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.warning("[ContainerLoot] deleteTemplate failed: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Drops every player's container copies for a chamber — fresh loot for
+     * everyone after a reset. Shared templates are intentionally KEPT (op edits
+     * persist across resets). Cheap no-op when the feature is unused. Returns
+     * the number of copies removed.
+     */
+    suspend fun clearChamber(chamberId: Int): Int = withContext(Dispatchers.IO) {
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement("DELETE FROM player_container_loot WHERE chamber_id = ?").use { stmt ->
@@ -115,10 +283,12 @@ class ContainerLootManager(private val plugin: TrialChamberPro) {
                     if (n > 0 && plugin.config.getBoolean("debug.verbose-logging", false)) {
                         plugin.logger.info("[ContainerLoot] Cleared $n per-player container copies for chamber $chamberId")
                     }
+                    n
                 }
             }
         } catch (e: Exception) {
             plugin.logger.warning("[ContainerLoot] Clear failed for chamber $chamberId: ${e.message}")
+            0
         }
     }
 
