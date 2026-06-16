@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.5.10] - 2026-06-16
+### Added
+- **More PlaceholderAPI placeholders.** New: `%tcp_kdr%` (kill/death ratio), `%tcp_current_chamber_reset%` (time until the current chamber resets), `%tcp_current_chamber_paused%`, `%tcp_chamber_count%` (registered chambers server-wide), `%tcp_leaderboard_mobs%` (rank by mobs killed), and `%tcp_top_mobs_<1-10>_name%` / `_value%`. The previously-implemented-but-undocumented `%tcp_top_time_*%` board is now documented too.
+- **Full PlaceholderAPI reference** added to the docs ([reference/placeholders](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/reference/placeholders)) — the complete, accurate list with caching/freshness notes and examples. (The old "full placeholder list" link pointed at a page that didn't exist.)
+
+### Fixed
+- **`%tcp_leaderboard_vaults%` and `%tcp_top_vaults_*%` now rank by the normal + ominous TOTAL**, matching `%tcp_vaults_opened%`. They previously ranked by *normal vaults only*, so a player's "vaults" rank could disagree with their displayed vault total. (`StatisticsManager.getLeaderboard` gains a `"vaults"` total option.)
+- **Stale documentation links.** Updated all GitBook URLs in `MODRINTH.md` / `SPIGOT.md` to the current docs home (`darkstarworks.gitbook.io/plugins/mc/tcp-documentation`).
+
 ## [1.5.9] - 2026-06-16
 ### Fixed
 - **Per-player chamber container loot was broken for naturally-generated chambers — every container appeared empty.** A trial-chamber chest/barrel/dispenser holds its loot as an *unrolled vanilla loot table* (the inventory is genuinely empty until a player triggers a vanilla open). The feature cancelled that vanilla open and read the empty inventory as the "template", so every player's copy came out empty. Containers are now seeded by **rolling the loot table** (Bukkit `LootTable`/`Lootable`) the first time one is accessed, so copies contain the real generated loot. Single chests, double chests (each half rolled), barrels, dispensers, and droppers are all handled.
@@ -1355,6 +1364,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.5.10]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.9...v1.5.10
 [1.5.9]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.8...v1.5.9
 [1.5.8]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.7...v1.5.8
 [1.5.7]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.6...v1.5.7

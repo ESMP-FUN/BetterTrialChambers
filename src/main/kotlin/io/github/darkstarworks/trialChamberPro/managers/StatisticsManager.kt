@@ -195,12 +195,15 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
 
     /**
      * Gets top players by a specific stat.
-     * @param stat The stat to rank by: "chambers", "normal_vaults", "ominous_vaults", "mobs", "time"
+     * @param stat The stat to rank by: "chambers", "vaults" (normal + ominous
+     *   total), "normal_vaults", "ominous_vaults", "mobs", "time"
      * @param limit Number of top players to return
      */
     suspend fun getLeaderboard(stat: String, limit: Int = 10): List<Pair<UUID, Int>> = withContext(Dispatchers.IO) {
+        // Whitelisted column/expression — never interpolate user input here.
         val column = when (stat.lowercase()) {
             "chambers" -> "chambers_completed"
+            "vaults" -> "(normal_vaults_opened + ominous_vaults_opened)"
             "normal_vaults" -> "normal_vaults_opened"
             "ominous_vaults" -> "ominous_vaults_opened"
             "mobs" -> "mobs_killed"
@@ -210,7 +213,7 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
 
         plugin.databaseManager.connection.use { conn ->
             conn.prepareStatement(
-                "SELECT player_uuid, $column FROM player_stats ORDER BY $column DESC LIMIT ?"
+                "SELECT player_uuid, $column AS value FROM player_stats ORDER BY value DESC LIMIT ?"
             ).use { stmt ->
                 stmt.setInt(1, limit)
 
@@ -218,7 +221,7 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
                 stmt.executeQuery().use { rs ->
                     while (rs.next()) {
                         val uuid = UUID.fromString(rs.getString("player_uuid"))
-                        val value = rs.getInt(column)
+                        val value = rs.getInt("value")
                         results.add(uuid to value)
                     }
                 }
