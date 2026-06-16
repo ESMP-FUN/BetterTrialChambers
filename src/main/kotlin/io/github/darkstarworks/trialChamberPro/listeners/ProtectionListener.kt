@@ -33,6 +33,8 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
         // Check if in chamber (synchronous, cache-based); skip protection for paused chambers
         val chamber = plugin.chamberManager.getCachedChamberAt(location) ?: return
         if (chamber.isPaused) return
+        // Respect WorldGuard: defer to a region that grants this player build rights.
+        if (deferToWorldGuard(location, player)) return
         event.isCancelled = true
         player.sendMessage(plugin.getMessageComponent("cannot-break-blocks"))
     }
@@ -97,6 +99,7 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
         // Check if in chamber (synchronous, cache-based); skip protection for paused chambers
         val chamber = plugin.chamberManager.getCachedChamberAt(location) ?: return
         if (chamber.isPaused) return
+        if (deferToWorldGuard(location, player)) return
         event.isCancelled = true
         player.sendMessage(plugin.getMessageComponent("cannot-place-blocks"))
     }
@@ -141,6 +144,7 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
         // Check if in chamber (cache-only, sync); skip protection for paused chambers
         val chamber = plugin.chamberManager.getCachedChamberAt(location) ?: return
         if (chamber.isPaused) return
+        if (deferToWorldGuard(location, player)) return
         event.isCancelled = true
         player.sendMessage(plugin.getMessageComponent("cannot-access-container"))
     }
@@ -179,17 +183,16 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
     }
 
     /**
-     * WorldGuard integration check.
-     * This is a placeholder - actual WorldGuard integration would check regions here.
+     * Returns true when TCP should yield to WorldGuard at [location] — i.e.
+     * `protection.worldguard-integration` is on, WG is installed, and a WG region
+     * there grants [player] build rights (membership, an explicit `build` allow,
+     * or WG bypass). Callers `return` early (skip TCP protection) when this is
+     * true, so region owners/staff can work inside chambers overlapping their
+     * regions. No-op (false) when the setting is off or WG is absent.
      */
-    private fun checkWorldGuard(location: org.bukkit.Location, player: Player): Boolean {
-        if (!plugin.config.getBoolean("protection.worldguard-integration", true)) return true
-
-        val worldGuard = plugin.server.pluginManager.getPlugin("WorldGuard")
-        if (worldGuard == null || !worldGuard.isEnabled) return true
-
-        // TODO: Implement actual WorldGuard region check
-        // For now, return true (allow)
-        return true
+    private fun deferToWorldGuard(location: org.bukkit.Location, player: Player): Boolean {
+        if (!plugin.config.getBoolean("protection.worldguard-integration", true)) return false
+        if (!io.github.darkstarworks.trialChamberPro.utils.WorldGuardHook.isAvailable(plugin)) return false
+        return io.github.darkstarworks.trialChamberPro.utils.WorldGuardHook.grantsBuild(player, location)
     }
 }

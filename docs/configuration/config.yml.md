@@ -413,9 +413,9 @@ Allow PvP inside chambers? Great for competitive chambers where teams fight over
 Stop mobs from breaking blocks (creeper explosions, endermen picking up blocks, etc.). Highly recommended unless you want chaos.
 
 ### `worldguard-integration`
-**Default:** `true`
+**Default:** `true` *(functional since 1.5.9)*
 
-If WorldGuard is installed, respect its regions? Usually `true` for compatibility. TrialChamberPro's protection layers on top of WorldGuard's.
+If WorldGuard is installed, **respect its regions**: when a WorldGuard region covers a spot inside a chamber and grants the player build rights — region membership, an explicit `build` flag allow, or WorldGuard bypass — TrialChamberPro yields and skips its own block-break / block-place / container-access protection there. This lets region owners and staff work inside chambers that overlap their regions without disabling TCP protection elsewhere. Where there is no WG region (or the player has no build rights), TCP protection applies as normal. Set to `false` to ignore WorldGuard entirely.
 
 ### `block-wild-vault-placement`
 **Default:** `true` *(added in 1.5.7)*
@@ -887,16 +887,24 @@ chests:
   per-player-loot: false
 ```
 
-*(Added in 1.5.7 — opt-in.)* Lootr-style container loot: when enabled, every player who opens a **chest, trapped chest, or barrel** inside a registered chamber gets their **own private copy** of its contents. The second player into a chamber no longer finds gutted chests — together with per-player vaults, the entire chamber becomes per-player.
+*(Added in 1.5.7 — opt-in. Substantially fixed in 1.5.9.)* Lootr-style container loot: when enabled, every player who opens a **chest, trapped chest, barrel, dispenser, or dropper** inside a registered chamber gets their **own private copy** of its contents. The second player into a chamber no longer finds gutted containers — together with per-player vaults, the entire chamber becomes per-player.
 
 How it behaves:
 
-- The real container is **never modified** — it's the pristine template each player's copy is cloned from on first open. Copies persist across restarts (database) and **reset with the chamber**, so each cycle is fresh loot for everyone.
-- Double chests share one copy (keyed by the left half).
+- Each container has a shared **template** — the contents every player's first-open copy is cloned from. For a naturally-generated chamber the template is **materialized by rolling the container's vanilla loot table** the first time it's accessed (a trial-chamber container is empty until something rolls its loot table, which is why earlier versions showed empty copies).
+- Per-player copies persist across restarts (database) and **reset with the chamber**, so every cycle is fresh loot for everyone. The shared template, by contrast, **persists across resets** — so edits stick.
+- Double chests share one copy (keyed by the left half). Dispensers/droppers use their 9 slots.
 - **Hopper automation is blocked** in/out of chamber containers while enabled — it would drain or pollute the shared template.
 - Containers **placed by players** inside a chamber keep vanilla behaviour (tagged at place time).
-- **Template editing:** admins with `tcp.admin.containers` (default op) **sneak-click** to open the real container. A normal click gives them their own copy like any player — so the feature works identically for ops, no silent bypass surprises.
+- **Template editing:** admins with `tcp.admin.containers` (default op) **sneak-click** to open the shared template and edit it; changes affect every player's first-open loot and persist across resets. A normal click gives them their own copy like any player.
+- **Management:** the chamber GUI (`/tcp menu <chamber>` → **Container Loot**) and the [`/tcp container`](../reference/commands.md#tcp-container-action-chamber) command both let you list templates, **materialize all** containers at once (roll templates without opening each in-world), edit/teleport to a template, clear player copies, or reset templates.
 - Decorated pots are excluded by design: their loot is break-based and already renews via chamber resets.
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
+**Upgrading to 1.5.9:** container loot tables are now captured by snapshots (so breaking or resetting a container restores its loot). Re-run `/tcp snapshot create` on existing chambers so their containers are captured under the new format. Already-materialized templates persist regardless.
+
+</div>
 
 <div data-gb-custom-block data-tag="hint" data-style="warning">
 

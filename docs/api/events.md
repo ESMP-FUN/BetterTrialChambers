@@ -177,6 +177,30 @@ Fires once per participant per wave completion (so a four-player wave produces f
 | `keyType` | `Material` | `TRIAL_KEY` or `OMINOUS_TRIAL_KEY`. |
 | `ownerUuid` | `UUID` | The participant the key is being dropped for. |
 
+### `PreVaultOpenEvent` (cancellable)
+
+Fired just **before** a vault open is committed — after the cooldown/key checks pass but before loot is generated and the key consumed. Cancel to abort the open (the key is not consumed and the player gets no plugin message — a cancelling listener owns the feedback). A listener may also redirect the roll by setting `lootTableOverride` to a loot-table id. May fire async.
+
+| Field | Type | Notes |
+|---|---|---|
+| `player` | `Player` | The opener. |
+| `vault` | `VaultData` | The vault being opened. |
+| `chamber` | `Chamber?` | The owning chamber, or null. |
+| `vaultType` | `VaultType` | `NORMAL` or `OMINOUS`. |
+| `lootTableOverride` | `String?` (mutable) | Set non-null to roll a different loot table for this open. |
+
+### `ChamberMobSpawnedEvent` (not cancellable, may fire async)
+
+Fired right after a mob spawns from a trial spawner inside a registered chamber. **Not cancellable** — the entity already exists; remove or re-tag it in your handler if needed. The primary signal the premium MythicTrials module uses to scale mobs and tune the spawner.
+
+| Field | Type | Notes |
+|---|---|---|
+| `entity` | `Entity` | The freshly spawned mob. |
+| `spawnerLocation` | `Location` | The trial spawner that produced it. |
+| `chamber` | `Chamber?` | The owning chamber (null for wild spawners). |
+| `isOminous` | `Boolean` | Whether the spawner is ominous. |
+| `providerId` | `String` | The mob provider that supplied the mob (`vanilla`, `mythicmobs`, …). |
+
 ## Registering listeners
 
 Standard Bukkit registration:

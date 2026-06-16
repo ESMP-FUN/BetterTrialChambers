@@ -114,6 +114,9 @@ class TrialChamberPro : JavaPlugin() {
     // Vault interaction listener (stored for proper shutdown)
     private lateinit var vaultInteractListener: VaultInteractListener
 
+    /** Stored so the GUI / `/tcp container` command can drive container-loot template ops. */
+    lateinit var containerLootListener: io.github.darkstarworks.trialChamberPro.listeners.ContainerLootListener
+
     // Listeners with coroutine scopes (stored for proper shutdown)
     private lateinit var playerMovementListener: PlayerMovementListener
     private lateinit var playerDeathListener: PlayerDeathListener
@@ -326,8 +329,9 @@ class TrialChamberPro : JavaPlugin() {
                         ProtectionListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
+                    containerLootListener = io.github.darkstarworks.trialChamberPro.listeners.ContainerLootListener(this@TrialChamberPro)
                     server.pluginManager.registerEvents(
-                        io.github.darkstarworks.trialChamberPro.listeners.ContainerLootListener(this@TrialChamberPro),
+                        containerLootListener,
                         this@TrialChamberPro
                     )
                     playerMovementListener = PlayerMovementListener(this@TrialChamberPro)
