@@ -87,7 +87,7 @@ permissions:
     description: Place VAULT blocks outside registered chambers (crate setup, creative builds)
     default: op
   tcp.admin.containers:
-    description: Sneak-click chamber containers to open the real template (per-player loot mode)
+    description: Edit per-player container loot templates (sneak-click in-world, /tcp container, and the GUI)
     default: op
   tcp.admin.mobs:
     description: Manage per-chamber custom mob provider configuration
