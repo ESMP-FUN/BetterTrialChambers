@@ -7,6 +7,7 @@
 * [🎯 Your First Chamber](getting-started/your-first-chamber.md)
 * [⚙️ Basic Configuration](getting-started/basic-configuration.md)
 * [🧪 Example Setups](getting-started/example-setups.md)
+* [🔢 PlaceholderAPI](getting-started/placeholders.md)
 
 ## Configuration
 
@@ -22,7 +23,6 @@
 
 * [📝 Commands](reference/commands.md)
 * [🔐 Permissions](reference/permissions.md)
-* [🔢 PlaceholderAPI](reference/placeholders.md)
 
 ## API
 

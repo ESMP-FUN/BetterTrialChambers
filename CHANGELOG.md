@@ -7,7 +7,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ## [1.5.10] - 2026-06-16
 ### Added
 - **More PlaceholderAPI placeholders.** New: `%tcp_kdr%` (kill/death ratio), `%tcp_current_chamber_reset%` (time until the current chamber resets), `%tcp_current_chamber_paused%`, `%tcp_chamber_count%` (registered chambers server-wide), `%tcp_leaderboard_mobs%` (rank by mobs killed), and `%tcp_top_mobs_<1-10>_name%` / `_value%`. The previously-implemented-but-undocumented `%tcp_top_time_*%` board is now documented too.
-- **Full PlaceholderAPI reference** added to the docs ([reference/placeholders](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/reference/placeholders)) — the complete, accurate list with caching/freshness notes and examples. (The old "full placeholder list" link pointed at a page that didn't exist.)
+- **Full PlaceholderAPI reference** added to the docs ([getting-started/placeholders](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/placeholders)) — the complete, accurate list with caching/freshness notes and examples. (The old "full placeholder list" link pointed at a page that didn't exist.)
 
 ### Fixed
 - **`%tcp_leaderboard_vaults%` and `%tcp_top_vaults_*%` now rank by the normal + ominous TOTAL**, matching `%tcp_vaults_opened%`. They previously ranked by *normal vaults only*, so a player's "vaults" rank could disagree with their displayed vault total. (`StatisticsManager.getLeaderboard` gains a `"vaults"` total option.)

@@ -106,4 +106,4 @@ Hologram leaderboard (lines 1–3):
 
 ---
 
-Next: **[Commands →](commands.md)**
+Next: **[Commands →](../reference/commands.md)**
