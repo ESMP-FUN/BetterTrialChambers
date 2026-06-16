@@ -61,6 +61,7 @@ class MenuService(private val plugin: TrialChamberPro) {
         CHAMBER_DETAIL,
         CHAMBER_SETTINGS,
         VAULT_MANAGEMENT,
+        CONTAINER_LOOT,
 
         // Loot (existing + new)
         LOOT_TABLE_LIST,
@@ -134,6 +135,10 @@ class MenuService(private val plugin: TrialChamberPro) {
             Screen.VAULT_MANAGEMENT -> {
                 val chamber = s.chamberId?.let { plugin.chamberManager.getCachedChamberById(it) }
                 if (chamber != null) openVaultManagement(player, chamber) else openMainMenu(player)
+            }
+            Screen.CONTAINER_LOOT -> {
+                val chamber = s.chamberId?.let { plugin.chamberManager.getCachedChamberById(it) }
+                if (chamber != null) openContainerLoot(player, chamber) else openMainMenu(player)
             }
             Screen.LOOT_TABLE_LIST -> openLootTableList(player)
             Screen.POOL_SELECT -> {
@@ -257,6 +262,16 @@ class MenuService(private val plugin: TrialChamberPro) {
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.VAULT_MANAGEMENT
             chamberId = chamber.id
+        }
+        view.open(player)
+    }
+
+    fun openContainerLoot(player: Player, chamber: Chamber, page: Int = 0) {
+        val view = ContainerLootView(plugin, this, chamber, page)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.CONTAINER_LOOT
+            chamberId = chamber.id
+            currentPage = page
         }
         view.open(player)
     }

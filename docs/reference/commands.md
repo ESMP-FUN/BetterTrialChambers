@@ -30,6 +30,8 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | `/tcp delete <chamber>` | Delete a chamber | `tcp.admin.generate` |
 | `/tcp loot set <chamber> <normal\|ominous> <table>` | Override a chamber's loot table | `tcp.admin.loot` |
 | `/tcp loot clear <chamber> [normal\|ominous\|all]` | Remove per-chamber loot override | `tcp.admin.loot` |
+| `/tcp loot audit` | List pre-1.5.0 loot entries that lost their NBT | `tcp.admin.loot` |
+| `/tcp container <list\|materialize\|reset\|clearcopies\|tp\|edit> <chamber> [#]` | Manage per-player container loot templates | `tcp.admin.containers` |
 | `/tcp mobs providers` | List registered mob providers and their availability | `tcp.admin.mobs` |
 | `/tcp mobs <chamber> provider <id\|vanilla\|none>` | Set a chamber's custom mob provider | `tcp.admin.mobs` |
 | `/tcp mobs <chamber> add normal\|ominous <mobId>` | Add a mob id to a chamber's pool | `tcp.admin.mobs` |
@@ -476,6 +478,29 @@ Pause or resume a registered chamber.
 **Auto-pause:** Enable `protection.auto-pause-on-destruction: true` in config.yml to let the plugin pause chambers automatically once a configurable number of vaults or trial spawners are destroyed. See [config.yml](../configuration/config.yml.md) → Protection Settings.
 
 </div>
+
+---
+
+### `/tcp container <action> <chamber> [#]`
+
+Manage per-player container loot ([`chests.per-player-loot`](../configuration/config.yml.md#per-player-chamber-container-loot)) templates for a chamber. CLI parity with the chamber GUI's **Container Loot** screen (`/tcp menu <chamber>` → Container Loot). *(Added in 1.5.9.)*
+
+**Permission:** `tcp.admin.containers`
+
+| Action | Effect |
+|---|---|
+| `list <chamber>` | Show whether per-player loot is on, plus template and player-copy counts, with each template's index + position. |
+| `materialize <chamber>` | Scan the chamber and roll a shared template for every container that doesn't have one yet (so you can edit loot before anyone opens it). |
+| `reset <chamber>` | Delete all shared templates; each container re-materializes from its loot table on next access. |
+| `clearcopies <chamber>` | Drop every player's private copies (they re-clone the template next open). Templates are kept. |
+| `tp <chamber> <#>` | Teleport to a template's container (index from `list`). |
+| `edit <chamber> <#>` | Open a template's shared inventory to edit it — changes persist across resets. |
+
+```
+/tcp container list MainChamber
+/tcp container materialize MainChamber
+/tcp container edit MainChamber 3
+```
 
 ---
 

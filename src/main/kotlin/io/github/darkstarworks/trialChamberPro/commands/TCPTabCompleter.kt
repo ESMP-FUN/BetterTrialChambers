@@ -15,10 +15,11 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
         "help", "reload", "generate", "paste", "scan", "setexit",
         "snapshot", "list", "info", "delete", "vault", "key",
         "stats", "leaderboard", "lb", "top", "reset", "menu", "loot", "mobs", "give",
-        "pause", "resume", "dungeon"
+        "pause", "resume", "dungeon", "container"
     )
 
     private val dungeonActions = listOf("pos1", "pos2", "capture", "generate", "list", "delete")
+    private val containerActions = listOf("list", "materialize", "reset", "clearcopies", "tp", "edit")
 
     private val snapshotActions = listOf("create", "update", "restore")
     private val statTypes = listOf("chambers", "normal", "ominous", "mobs", "time")
@@ -79,6 +80,7 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                         getPresetNames().filter { it.startsWith(args[1].lowercase()) }
                     }
                     "dungeon" -> dungeonActions.filter { it.startsWith(args[1].lowercase()) }
+                    "container", "containers" -> containerActions.filter { it.startsWith(args[1].lowercase()) }
                     "list" -> listOf("current").filter { it.startsWith(args[1].lowercase()) }
                     else -> emptyList()
                 }
@@ -90,6 +92,7 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                         // Chamber names for snapshot command
                         getChamberNames().filter { it.startsWith(args[2].lowercase()) }
                     }
+                    "container", "containers" -> getChamberNames().filter { it.startsWith(args[2].lowercase()) }
                     "dungeon" -> {
                         if (args[1].equals("delete", ignoreCase = true)) {
                             try { plugin.roomTemplateManager.list().filter { it.startsWith(args[2], ignoreCase = true) } }

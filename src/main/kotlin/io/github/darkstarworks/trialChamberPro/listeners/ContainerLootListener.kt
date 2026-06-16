@@ -2,9 +2,13 @@ package io.github.darkstarworks.trialChamberPro.listeners
 
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.managers.ContainerLootManager
+import net.kyori.adventure.text.Component
+import org.bukkit.Bukkit
+import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
 import org.bukkit.block.Block
+import org.bukkit.block.BlockState
 import org.bukkit.block.Chest
 import org.bukkit.block.Container
 import org.bukkit.block.DoubleChest
@@ -18,36 +22,45 @@ import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.inventory.InventoryCloseEvent
 import org.bukkit.event.inventory.InventoryMoveItemEvent
 import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.inventory.BlockInventoryHolder
 import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.InventoryHolder
 import org.bukkit.inventory.ItemStack
+import org.bukkit.loot.LootContext
+import org.bukkit.loot.Lootable
 import org.bukkit.persistence.PersistentDataType
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Per-player chamber container loot (v1.5.7, opt-in via
- * `chests.per-player-loot`). Lootr-style: every player who opens a chamber's
- * chest/trapped-chest/barrel sees their own private copy of its contents,
- * so the second player into a chamber doesn't find gutted chests.
+ * Per-player chamber container loot (opt-in via `chests.per-player-loot`).
+ * Lootr-style: every player who opens a chamber's chest/trapped-chest/barrel/
+ * dispenser/dropper sees their own private copy of its contents, so the second
+ * player into a chamber doesn't find gutted containers.
  *
- * How it works:
- *  - The real block's inventory is the pristine template and is never
- *    modified. Vanilla opening is cancelled; the player gets a virtual
- *    inventory seeded from their stored copy (or cloned from the template
- *    on first open) and persisted on close ([ContainerLootManager]).
- *  - Double chests are keyed by the left half's position so both halves
- *    share one 54-slot copy.
- *  - Containers placed by players inside a chamber (when protection allows
- *    it) are PDC-tagged at place time and keep vanilla behaviour.
- *  - Hopper/hopper-minecart movement in or out of an eligible container is
- *    cancelled — automation would drain or pollute the shared template.
- *  - Admins holding `tcp.admin.containers` open the REAL container by
- *    sneaking (template editing); a normal click still gets their copy, so
- *    ops experience the feature like players do (no silent bypass).
+ * How it works (v1.5.9 rework):
+ *  - Each container has a shared **template** — the canonical contents every
+ *    first-open copy is cloned from. The template is *materialized once* by
+ *    rolling the block's vanilla loot table (`Lootable`/`LootTable`), because a
+ *    naturally-generated trial-chamber container holds an UNROLLED loot table
+ *    with an empty inventory until first opened — reading `inventory.contents`
+ *    directly (the pre-1.5.9 behaviour) therefore yielded an empty copy for
+ *    everyone. The template is stored in `container_template` and PERSISTS
+ *    across chamber resets, so op edits stick.
+ *  - Ops holding `tcp.admin.containers` **sneak-open** the shared template to
+ *    edit it (changes affect every player's first-open loot, across resets); a
+ *    normal click still gets their own per-player copy.
+ *  - Per-player copies live in `player_container_loot` and reset with the
+ *    chamber ([ContainerLootManager.clearChamber]).
+ *  - Double chests are keyed by the left half so both halves share one 54-slot
+ *    template/copy.
+ *  - Containers placed by players inside a chamber are PDC-tagged at place time
+ *    and keep vanilla behaviour.
+ *  - Hopper movement in/out of an eligible container is cancelled — automation
+ *    would drain or pollute the shared source.
  *
- * Per-player copies reset with the chamber (ResetManager calls
- * [ContainerLootManager.clearChamber]).
+ * Container loot tables are also captured/restored by the snapshot system
+ * (`NBTUtil`) so a broken or reset container comes back with its loot intact.
  */
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class ContainerLootListener(private val plugin: TrialChamberPro) : Listener {
@@ -57,8 +70,17 @@ class ContainerLootListener(private val plugin: TrialChamberPro) : Listener {
     /** Anti double-fire: last virtual-open millis per player. */
     private val openDebounce = ConcurrentHashMap<UUID, Long>()
 
-    /** Marks our virtual inventories and carries the persistence key. */
-    class ContainerLootHolder(
+    /** Marks a player's private copy inventory (saved back to player_container_loot). */
+    class CopyHolder(
+        val chamberId: Int,
+        val pos: ContainerLootManager.ContainerPos
+    ) : InventoryHolder {
+        lateinit var backing: Inventory
+        override fun getInventory(): Inventory = backing
+    }
+
+    /** Marks an op editing the shared template (saved back to container_template). */
+    class TemplateHolder(
         val chamberId: Int,
         val pos: ContainerLootManager.ContainerPos
     ) : InventoryHolder {
@@ -67,7 +89,10 @@ class ContainerLootListener(private val plugin: TrialChamberPro) : Listener {
     }
 
     private companion object {
-        val ELIGIBLE = setOf(Material.CHEST, Material.TRAPPED_CHEST, Material.BARREL)
+        val ELIGIBLE = setOf(
+            Material.CHEST, Material.TRAPPED_CHEST, Material.BARREL,
+            Material.DISPENSER, Material.DROPPER
+        )
     }
 
     private fun enabled() = plugin.config.getBoolean("chests.per-player-loot", false)
@@ -89,13 +114,12 @@ class ContainerLootListener(private val plugin: TrialChamberPro) : Listener {
             state.persistentDataContainer.has(playerPlacedKey, PersistentDataType.BYTE)
         ) return
 
+        val container = state as? Container ?: return
         val player = event.player
 
-        // Sneak + admin permission = open the real container (template editing).
-        if (player.isSneaking && player.hasPermission("tcp.admin.containers")) {
-            player.sendMessage(plugin.getMessageComponent("container-template-open"))
-            return
-        }
+        // Sneak + admin permission = edit the shared template; otherwise the
+        // player gets their own private copy. Both cancel vanilla opening.
+        val isAdminEdit = player.isSneaking && player.hasPermission("tcp.admin.containers")
 
         event.isCancelled = true
 
@@ -105,56 +129,51 @@ class ContainerLootListener(private val plugin: TrialChamberPro) : Listener {
         openDebounce[player.uniqueId] = now
         if (openDebounce.size > 100) openDebounce.entries.removeIf { now - it.value > 10_000 }
 
-        // Snapshot the pristine template + normalized position SYNCHRONOUSLY
-        // (we're on the block's region thread right now).
-        val container = state as? Container ?: return
+        // Resolve the normalized key block (left half of a double chest) and the
+        // inventory size SYNCHRONOUSLY — we're on the block's region thread now.
         val inv = container.inventory
         val holder = inv.holder
-        val (keyBlock, template) = if (holder is DoubleChest) {
-            val left = (holder.leftSide as? Chest)?.block ?: block
-            left to holder.inventory.contents.map { it?.clone() }.toTypedArray()
-        } else {
-            block to inv.contents.map { it?.clone() }.toTypedArray()
-        }
+        val keyBlock = if (holder is DoubleChest) (holder.leftSide as? Chest)?.block ?: block else block
+        val size = if (holder is DoubleChest) 54 else inv.size
         val pos = ContainerLootManager.ContainerPos(keyBlock.x, keyBlock.y, keyBlock.z)
-        val size = template.size
+        val keyLoc = keyBlock.location
 
         plugin.launchAsync {
-            val stored = plugin.containerLootManager.loadContents(chamber.id, pos, player.uniqueId)
-            val contents = stored ?: template
-            kotlinx.coroutines.suspendCancellableCoroutine<Unit> { continuation ->
-                plugin.scheduler.runAtEntity(player, Runnable {
-                    try {
-                        if (player.isOnline) {
-                            val lootHolder = ContainerLootHolder(chamber.id, pos)
-                            val virtual = plugin.server.createInventory(
-                                lootHolder, size, plugin.getGuiText("gui.container-loot.title")
-                            )
-                            lootHolder.backing = virtual
-                            // Tolerate size drift (e.g. template grew into a double
-                            // chest after the copy was stored).
-                            for (i in 0 until minOf(size, contents.size)) {
-                                virtual.setItem(i, contents[i])
-                            }
-                            player.openInventory(virtual)
-                        }
-                    } catch (e: Exception) {
-                        plugin.logger.warning("[ContainerLoot] Failed to open copy for ${player.name}: ${e.message}")
-                    }
-                    continuation.resume(Unit) {}
-                })
+            // Shared template, materialized (loot table rolled) on first access.
+            var template = plugin.containerLootManager.loadTemplate(chamber.id, pos)
+            if (template == null) {
+                template = materializeOnRegion(keyLoc, size)
+                plugin.containerLootManager.saveTemplate(chamber.id, pos, template)
+            }
+
+            if (isAdminEdit) {
+                openVirtual(
+                    player, TemplateHolder(chamber.id, pos), size,
+                    plugin.getGuiText("gui.container-loot.template-title"), template
+                )
+                player.sendMessage(plugin.getMessageComponent("container-template-open"))
+            } else {
+                val copy = plugin.containerLootManager.loadContents(chamber.id, pos, player.uniqueId) ?: template
+                openVirtual(
+                    player, CopyHolder(chamber.id, pos), size,
+                    plugin.getGuiText("gui.container-loot.title"), copy
+                )
             }
         }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     fun onContainerClose(event: InventoryCloseEvent) {
-        val holder = event.inventory.holder as? ContainerLootHolder ?: return
         val player = event.player as? Player ?: return
-        // Copy on the event thread; persist async.
         val contents = event.inventory.contents.map { it?.clone() }.toTypedArray()
-        plugin.launchAsync {
-            plugin.containerLootManager.saveContents(holder.chamberId, holder.pos, player.uniqueId, contents)
+        when (val holder = event.inventory.holder) {
+            is CopyHolder -> plugin.launchAsync {
+                plugin.containerLootManager.saveContents(holder.chamberId, holder.pos, player.uniqueId, contents)
+            }
+            is TemplateHolder -> plugin.launchAsync {
+                plugin.containerLootManager.saveTemplate(holder.chamberId, holder.pos, contents)
+            }
+            else -> return
         }
     }
 
@@ -184,11 +203,169 @@ class ContainerLootListener(private val plugin: TrialChamberPro) : Listener {
         }
     }
 
+    // ==== Helpers ====
+
+    /**
+     * Materializes a container's template on the block's region thread: rolls
+     * the vanilla loot table into a fresh inventory (the only way to get the
+     * real generated loot — the live inventory is empty until vanilla opens
+     * it), or falls back to the live contents when there is no loot table.
+     * Handles single containers and double chests (each half rolled separately).
+     */
+    private suspend fun materializeOnRegion(keyLoc: Location, size: Int): Array<ItemStack?> =
+        kotlinx.coroutines.suspendCancellableCoroutine { cont ->
+            plugin.scheduler.runAtLocation(keyLoc, Runnable {
+                val result = try {
+                    materializeTemplate(keyLoc.block, size)
+                } catch (e: Exception) {
+                    plugin.logger.warning("[ContainerLoot] Template materialize failed at ${keyLoc.blockX},${keyLoc.blockY},${keyLoc.blockZ}: ${e.message}")
+                    arrayOfNulls<ItemStack?>(size)
+                }
+                cont.resume(result) {}
+            })
+        }
+
+    private fun materializeTemplate(block: Block, size: Int): Array<ItemStack?> {
+        val container = block.state as? Container ?: return arrayOfNulls(size)
+        val holder = container.inventory.holder
+        return if (holder is DoubleChest) {
+            val out = arrayOfNulls<ItemStack?>(54)
+            rollHalf(holder.leftSide as? Chest, out, 0)
+            rollHalf(holder.rightSide as? Chest, out, 27)
+            out
+        } else {
+            rollSingle(block.state, container.inventory, size)
+        }
+    }
+
+    private fun rollSingle(state: BlockState, inv: Inventory, size: Int): Array<ItemStack?> {
+        val lootable = state as? Lootable
+        val source: Array<ItemStack?> = if (lootable?.lootTable != null && state is Container) {
+            val temp = Bukkit.createInventory(null, size)
+            lootable.lootTable!!.fillInventory(temp, java.util.Random(), LootContext.Builder(state.block.location).build())
+            temp.contents
+        } else {
+            inv.contents
+        }
+        return Array(size) { source.getOrNull(it)?.clone() }
+    }
+
+    private fun rollHalf(chest: Chest?, out: Array<ItemStack?>, offset: Int) {
+        chest ?: return
+        val half: Array<ItemStack?> = if (chest.lootTable != null) {
+            val temp = Bukkit.createInventory(null, 27)
+            chest.lootTable!!.fillInventory(temp, java.util.Random(), LootContext.Builder(chest.block.location).build())
+            temp.contents
+        } else {
+            chest.blockInventory.contents
+        }
+        for (i in 0 until 27) out[offset + i] = half.getOrNull(i)?.clone()
+    }
+
+    private suspend fun openVirtual(
+        player: Player,
+        holder: InventoryHolder,
+        size: Int,
+        title: Component,
+        contents: Array<ItemStack?>
+    ) = kotlinx.coroutines.suspendCancellableCoroutine<Unit> { cont ->
+        plugin.scheduler.runAtEntity(player, Runnable {
+            try {
+                if (player.isOnline) {
+                    val virtual = plugin.server.createInventory(holder, size, title)
+                    when (holder) {
+                        is CopyHolder -> holder.backing = virtual
+                        is TemplateHolder -> holder.backing = virtual
+                    }
+                    for (i in 0 until minOf(size, contents.size)) {
+                        virtual.setItem(i, contents[i])
+                    }
+                    player.openInventory(virtual)
+                }
+            } catch (e: Exception) {
+                plugin.logger.warning("[ContainerLoot] Failed to open container for ${player.name}: ${e.message}")
+            }
+            cont.resume(Unit) {}
+        })
+    }
+
+    /**
+     * Scans every loaded/loadable chunk in [chamber]'s bounds for eligible
+     * containers and materializes a shared template for any that don't have one
+     * yet (rolling their loot table). Lets admins prep/edit all container loot
+     * from the GUI/command without first opening each one in-world. Returns the
+     * number of new templates created. Folia-safe (region-hops per chunk).
+     */
+    suspend fun materializeChamber(chamber: io.github.darkstarworks.trialChamberPro.models.Chamber): Int {
+        val world = chamber.getWorld() ?: return 0
+        var created = 0
+        val minCX = chamber.minX shr 4; val maxCX = chamber.maxX shr 4
+        val minCZ = chamber.minZ shr 4; val maxCZ = chamber.maxZ shr 4
+        for (cx in minCX..maxCX) {
+            for (cz in minCZ..maxCZ) {
+                val rep = Location(world, (cx shl 4).toDouble(), chamber.minY.toDouble(), (cz shl 4).toDouble())
+                val rolled = kotlinx.coroutines.suspendCancellableCoroutine<List<Pair<ContainerLootManager.ContainerPos, Array<ItemStack?>>>> { cont ->
+                    plugin.scheduler.runAtLocation(rep, Runnable {
+                        val results = mutableListOf<Pair<ContainerLootManager.ContainerPos, Array<ItemStack?>>>()
+                        try {
+                            if (!world.isChunkLoaded(cx, cz)) world.getChunkAt(cx, cz)
+                            for (te in world.getChunkAt(cx, cz).tileEntities) {
+                                if (te !is Container) continue
+                                val b = te.block
+                                if (b.type !in ELIGIBLE) continue
+                                if (!chamber.contains(b.location)) continue
+                                if ((b.state as? TileState)?.persistentDataContainer
+                                        ?.has(playerPlacedKey, PersistentDataType.BYTE) == true) continue
+                                val holder = te.inventory.holder
+                                val keyBlock = if (holder is DoubleChest) (holder.leftSide as? Chest)?.block ?: b else b
+                                if (holder is DoubleChest && keyBlock != b) continue // right half — handled by the left
+                                val size = if (holder is DoubleChest) 54 else te.inventory.size
+                                results.add(
+                                    ContainerLootManager.ContainerPos(keyBlock.x, keyBlock.y, keyBlock.z)
+                                        to materializeTemplate(keyBlock, size)
+                                )
+                            }
+                        } catch (e: Exception) {
+                            plugin.logger.warning("[ContainerLoot] Chamber scan failed in chunk $cx,$cz: ${e.message}")
+                        }
+                        cont.resume(results) {}
+                    })
+                }
+                for ((pos, contents) in rolled) {
+                    if (!plugin.containerLootManager.hasTemplate(chamber.id, pos)) {
+                        plugin.containerLootManager.saveTemplate(chamber.id, pos, contents)
+                        created++
+                    }
+                }
+            }
+        }
+        return created
+    }
+
+    /**
+     * Opens a container's shared template for editing (used by the GUI and the
+     * `/tcp container` command). Does nothing if no template exists yet — the
+     * caller should materialize first. Saved back to `container_template` by the
+     * existing [onContainerClose] handler.
+     */
+    suspend fun openTemplateEditor(
+        player: Player,
+        chamber: io.github.darkstarworks.trialChamberPro.models.Chamber,
+        pos: ContainerLootManager.ContainerPos
+    ): Boolean {
+        val template = plugin.containerLootManager.loadTemplate(chamber.id, pos) ?: return false
+        val size = if (template.size in intArrayOf(9, 18, 27, 36, 45, 54)) template.size else 27
+        openVirtual(
+            player, TemplateHolder(chamber.id, pos), size,
+            plugin.getGuiText("gui.container-loot.template-title"), template
+        )
+        return true
+    }
+
     private fun isProtectedTemplate(inv: Inventory): Boolean {
         val block: Block = when (val h = inv.holder) {
             is DoubleChest -> (h.leftSide as? Chest)?.block ?: return false
-            is Chest -> h.block
-            is org.bukkit.block.Barrel -> h.block
+            is BlockInventoryHolder -> h.block
             else -> return false
         }
         if (block.type !in ELIGIBLE) return false
