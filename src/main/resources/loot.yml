@@ -1032,6 +1032,41 @@ loot-tables:
 #   - "xp add {player} 500"
 
 # ============================================================================
+# ECONOMY (MONEY) REWARDS (v1.5.12+) — native Vault integration
+# ============================================================================
+# A cleaner, economy-plugin-agnostic alternative to `eco give` command rewards:
+# pays money straight through the Vault API, so it works with EssentialsX, CMI,
+# or any Vault economy provider without hardcoding a command. Requires Vault +
+# an economy plugin; if none is installed the reward is simply skipped (other
+# loot is unaffected).
+#
+# Put an `economy-rewards` list at the POOL level (or table level in the legacy
+# single-pool format), exactly like `command-rewards`:
+#
+#  rich-vault:
+#    min-rolls: 3
+#    max-rolls: 5
+#    weighted-items:
+#      - type: DIAMOND
+#        amount-min: 1
+#        amount-max: 3
+#        weight: 10.0
+#    economy-rewards:
+#      - weight: 100.0        # % chance this payout fires (100 = always)
+#        min: 250.0           # random amount between min and max…
+#        max: 1500.0
+#        display-name: "Coins"   # optional, currently informational
+#
+#      - weight: 5.0          # 5% chance of a jackpot
+#        amount: 10000.0      # a fixed payout (use `amount` instead of min/max)
+#
+# Notes:
+# - `weight` is a 0-100 percent chance, independent per entry (same as command-rewards).
+# - Use either `amount` (fixed) or `min`/`max` (random range).
+# - The player gets a "You received <currency>" message on a successful deposit.
+# - The deposit is done on the main thread; safe with EssentialsX/CMI economies.
+
+# ============================================================================
 # VANILLA / DATAPACK LOOT TABLE PASSTHROUGH (v1.5.7+)
 # ============================================================================
 # A pool entry can reference any loot table registered on the server — the

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.5.12] - 2026-06-17
+### Added
+- **Vault economy rewards in loot tables.** A pool (or legacy table) can now pay money via Vault with an `economy-rewards` list — `weight` (% chance), a fixed `amount` or a `min`/`max` range, and an optional `display-name`. Works with any Vault economy provider (EssentialsX, CMI, …), deposits on the main thread, and is cleanly skipped (without affecting other loot) when no economy plugin is installed. A native, provider-agnostic alternative to `eco give {player} …` command rewards. New `utils/VaultEconomyHook`.
+- **Time-based vault cooldowns now actually work** (`vaults.normal-cooldown-hours` / `ominous-cooldown-hours`). A positive value reopens the vault that many hours after a player last opened it (tracked per player in `player_vaults`); the player sees the remaining time when it's still on cooldown. `0` (or negative) keeps the vanilla permanent-until-reset behaviour. Previously any positive value was read but ignored — vaults were always permanent. A chamber reset is still a full unlock regardless of cooldown.
+
+### Fixed
+- **Chamber completions were never recorded.** `chambers_completed` was permanently 0, dead-ending the chambers leaderboard, the `/tcp stats` "Chambers Completed" line, the "Vaults per Chamber" GUI stat, and the `%tcp_chambers_completed%` / `%tcp_leaderboard_chambers%` / `%tcp_top_chambers_*%` placeholders. Completions are now credited to every participant when a chamber is fully cleared (all its trial spawners finish their waves in one run), via the existing `ChamberClearedEvent`. Toggle with `statistics.track-chamber-completion` (default on).
+
 ## [1.5.11] - 2026-06-17
 ### Fixed
 - **Decorated pots came back empty after a chamber reset.** A trial-chamber pot drops its break-loot from an unrolled `LootTable` (the pot is `Lootable`), but the snapshot only captured the pot's *sherds* — so a reset restored the block without its loot table and the pot dropped nothing forever after. Snapshots now capture and re-arm the pot's loot table (or its literal item), so pots refill with fresh loot every cycle. **Re-run `/tcp snapshot create` on existing chambers** so the new snapshot includes the pot loot tables (old snapshots predate this capture).
@@ -1374,6 +1382,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.5.12]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.11...v1.5.12
 [1.5.11]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.10...v1.5.11
 [1.5.10]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.9...v1.5.10
 [1.5.9]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.8...v1.5.9

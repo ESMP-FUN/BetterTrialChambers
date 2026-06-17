@@ -900,9 +900,45 @@ loot-tables:
 
 ## Economy Rewards
 
-Got Vault + an economy plugin? Give money as loot!
+Got Vault + an economy plugin? Give money as loot — two ways:
 
-Command rewards go in a **separate `command-rewards` list** — they are NOT items in `weighted-items`.
+### Native `economy-rewards` *(recommended, added in 1.5.12)*
+
+Pays money straight through the Vault API, so it works with **any** economy provider (EssentialsX, CMI, …) without hardcoding a plugin's command. Add an `economy-rewards` list at the pool level (or table level in the legacy single-pool format):
+
+```yaml
+loot-tables:
+  rich-vault:
+    min-rolls: 3
+    max-rolls: 5
+    weighted-items:
+      - type: DIAMOND
+        amount-min: 1
+        amount-max: 3
+        weight: 10.0
+    economy-rewards:
+      - weight: 100.0          # % chance this payout fires (independent per entry)
+        min: 250.0             # random amount between min and max…
+        max: 1500.0
+        display-name: "Coins"  # optional label
+      - weight: 5.0            # 5% jackpot
+        amount: 10000.0        # …or a fixed amount
+```
+
+- `weight` is a `0`–`100` percent chance, rolled independently per entry (same as `command-rewards`).
+- Use either `amount` (fixed) or `min`/`max` (random range).
+- The deposit runs on the main thread (safe with EssentialsX/CMI); the player gets a "You received \<currency>" message.
+- If **no** Vault economy provider is installed, the reward is simply skipped — other loot is unaffected.
+
+<div data-gb-custom-block data-tag="hint" data-style="success">
+
+Round-trip safe: economy rewards survive editing a table in the in-game loot GUI (they're preserved on save, just like command rewards).
+
+</div>
+
+### Or via `command-rewards`
+
+Alternatively, run an economy command. Command rewards go in a **separate `command-rewards` list** — they are NOT items in `weighted-items`.
 
 ```yaml
 loot-tables:

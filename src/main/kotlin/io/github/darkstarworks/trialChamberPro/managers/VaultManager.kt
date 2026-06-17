@@ -286,17 +286,17 @@ class VaultManager(private val plugin: TrialChamberPro) {
 
         // Get cooldown based on vault type
         val cooldownHours = when (vault.type) {
-            VaultType.NORMAL -> plugin.config.getLong("vaults.normal-cooldown-hours", -1)
-            VaultType.OMINOUS -> plugin.config.getLong("vaults.ominous-cooldown-hours", -1)
+            VaultType.NORMAL -> plugin.config.getLong("vaults.normal-cooldown-hours", 0)
+            VaultType.OMINOUS -> plugin.config.getLong("vaults.ominous-cooldown-hours", 0)
         }
 
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
             plugin.logger.info("[Cooldown] canOpenVault: lastOpened=$lastOpened, cooldownHours=$cooldownHours")
         }
 
-        // Check for permanent lock (vanilla behavior)
-        if (cooldownHours < 0) {
-            // -1 or any negative value means permanent lock until chamber reset
+        // Check for permanent lock (vanilla behavior). 0 or negative = locked
+        // until the chamber resets; only a positive value is a timed cooldown.
+        if (cooldownHours <= 0) {
             if (plugin.config.getBoolean("debug.verbose-logging", false)) {
                 plugin.logger.info("[Cooldown] canOpenVault RESULT: BLOCKED (permanent lock, cooldownHours=$cooldownHours)")
             }

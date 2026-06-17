@@ -208,6 +208,11 @@ performance:
 statistics:
   enabled: true
   track-time-spent: true
+  # Count a "chamber completed" for every participant when a chamber is fully
+  # cleared (all its trial spawners finish their waves in one run). Drives the
+  # chambers leaderboard and the %tcp_chambers_completed% / %tcp_top_chambers_*%
+  # placeholders.
+  track-chamber-completion: true
   leaderboard-update-interval: 3600  # Update leaderboards hourly (seconds)
   top-players-count: 10
 
