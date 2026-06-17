@@ -220,26 +220,36 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
         }
 
         if (hasAlreadyRewarded) {
+            // Determine the configured cooldown. > 0 = timed (reopen N hours
+            // after this player's last open); <= 0 = permanent until the chamber
+            // resets (vanilla). The DB-backed timestamp lives in player_vaults;
+            // the native rewarded flag is cleared on chamber reset, so a reset is
+            // always a full unlock regardless of the timed cooldown.
+            val cooldownHours = when (vaultType) {
+                VaultType.NORMAL -> plugin.config.getLong("vaults.normal-cooldown-hours", 0)
+                VaultType.OMINOUS -> plugin.config.getLong("vaults.ominous-cooldown-hours", 0)
+            }
+
+            // Timed cooldown elapsed → free reopen (clear the native flag so
+            // openVault can mark it fresh and re-record the timestamp).
+            var cooldownRemainingMs = 0L
+            if (cooldownHours > 0) {
+                val (canOpen, remaining) = plugin.vaultManager.canOpenVault(player.uniqueId, vaultData)
+                if (canOpen) {
+                    clearNativeRewardedFlag(location, player)
+                    openVault(player, vaultData, vaultType, location)
+                    return
+                }
+                cooldownRemainingMs = remaining
+            }
+
             // v1.5.7: key-to-reopen. With vaults.reopen-cost-keys > 0, a player
-            // can open an already-used vault again by paying that many matching
-            // keys in total (the normal open consumes the final one). 0 = off.
+            // can pay that many matching keys to reopen now — an instant paid
+            // alternative to waiting out the cooldown (or to a permanent lock).
             val reopenCost = plugin.config.getInt("vaults.reopen-cost-keys", 0)
             if (reopenCost > 0) {
                 if (tryPayReopenCost(player, vaultType, reopenCost)) {
-                    // Clear the native rewarded flag so openVault can mark it fresh.
-                    kotlinx.coroutines.suspendCancellableCoroutine<Unit> { continuation ->
-                        plugin.scheduler.runAtLocation(location, Runnable {
-                            try {
-                                (location.block.state as? Vault)?.let { vs ->
-                                    vs.removeRewardedPlayer(player.uniqueId)
-                                    vs.update()
-                                }
-                            } catch (e: Exception) {
-                                plugin.logger.warning("[VaultReopen] Failed to clear rewarded flag: ${e.message}")
-                            }
-                            continuation.resume(Unit) {}
-                        })
-                    }
+                    clearNativeRewardedFlag(location, player)
                     player.sendMessage(plugin.getMessageComponent("vault-reopened",
                         "cost" to reopenCost, "type" to vaultType.displayName))
                     openVault(player, vaultData, vaultType, location)
@@ -258,27 +268,18 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
                 return
             }
 
-            // Vault is locked for this player (they already got loot)
-            // Check config to determine behavior (permanent vs time-based)
-            val cooldownHours = when (vaultType) {
-                VaultType.NORMAL -> plugin.config.getLong("vaults.normal-cooldown-hours", -1)
-                VaultType.OMINOUS -> plugin.config.getLong("vaults.ominous-cooldown-hours", -1)
-            }
-
-            // Both branches currently surface the same "locked until reset"
-            // message: time-based cooldowns aren't tracked by the native Vault
-            // API yet (treated as permanent until chamber reset). The read above
-            // is retained for the future time-based enhancement.
-            @Suppress("UNUSED_EXPRESSION")
-            cooldownHours
-            routeVaultFeedback(
-                player, location, false,
+            // Locked: show the remaining time for a timed cooldown, or the
+            // permanent "unlocks on reset" message otherwise.
+            val feedback = if (cooldownHours > 0 && cooldownRemainingMs > 0 && cooldownRemainingMs != Long.MAX_VALUE) {
+                plugin.getMessageComponent("vault-cooldown",
+                    "type" to vaultType.displayName,
+                    "time" to plugin.statisticsManager.formatTime(cooldownRemainingMs / 1000))
+            } else {
                 plugin.getMessageComponent("vault-locked", "type" to vaultType.displayName)
-            ) {
+            }
+            routeVaultFeedback(player, location, false, feedback) {
                 playErrorSound(player)
             }
-
-            // Show cooldown particles
             showCooldownParticles(player, location, vaultType)
         } else {
             // Can open the vault - player hasn't been rewarded yet
@@ -578,6 +579,27 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
             0.3, 0.5, 0.3,
             0.02
         )
+    }
+
+    /**
+     * Clears the native Vault `rewarded_players` flag for [player] so the vault
+     * can be opened fresh (used by the timed-cooldown and key-to-reopen paths).
+     * Runs on the block's region thread (Folia-safe) and suspends until done.
+     */
+    private suspend fun clearNativeRewardedFlag(location: Location, player: org.bukkit.entity.Player) {
+        kotlinx.coroutines.suspendCancellableCoroutine<Unit> { continuation ->
+            plugin.scheduler.runAtLocation(location, Runnable {
+                try {
+                    (location.block.state as? Vault)?.let { vs ->
+                        vs.removeRewardedPlayer(player.uniqueId)
+                        vs.update()
+                    }
+                } catch (e: Exception) {
+                    plugin.logger.warning("[Vault] Failed to clear rewarded flag: ${e.message}")
+                }
+                continuation.resume(Unit) {}
+            })
+        }
     }
 
     /**
