@@ -4,10 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.5.11] - 2026-06-17
+### Fixed
+- **Decorated pots came back empty after a chamber reset.** A trial-chamber pot drops its break-loot from an unrolled `LootTable` (the pot is `Lootable`), but the snapshot only captured the pot's *sherds* — so a reset restored the block without its loot table and the pot dropped nothing forever after. Snapshots now capture and re-arm the pot's loot table (or its literal item), so pots refill with fresh loot every cycle. **Re-run `/tcp snapshot create` on existing chambers** so the new snapshot includes the pot loot tables (old snapshots predate this capture).
+- **Container Loot GUI tooltip rendered `&` colour codes literally** (e.g. `&ePer-player-loot: &fon`). The per-player-loot status was injected as a pre-rendered section-coded string, which broke the lore line's MiniMessage re-parse; it now passes the raw message so colours render.
+
+### Changed
+- **Container Loot GUI shows each template as its real container block** — a dispenser template displays as a dispenser, a barrel as a barrel, etc., instead of every entry being a generic chest. Makes finding a specific container among 30+ far easier. (Adds a `material` column to `container_template`, migrated automatically; templates materialized before 1.5.11 show as a chest until you reset + re-materialize them via the GUI or `/tcp container`.)
+- **Editing a template from the GUI or `/tcp container edit` now returns to the Container Loot view when you close it** — a "back" affordance the deposit-style editor inventory couldn't otherwise offer. In-world sneak edits still just close.
+
 ## [1.5.10] - 2026-06-16
 ### Added
 - **More PlaceholderAPI placeholders.** New: `%tcp_kdr%` (kill/death ratio), `%tcp_current_chamber_reset%` (time until the current chamber resets), `%tcp_current_chamber_paused%`, `%tcp_chamber_count%` (registered chambers server-wide), `%tcp_leaderboard_mobs%` (rank by mobs killed), and `%tcp_top_mobs_<1-10>_name%` / `_value%`. The previously-implemented-but-undocumented `%tcp_top_time_*%` board is now documented too.
-- **Full PlaceholderAPI reference** added to the docs ([reference/placeholders](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/reference/placeholders)) — the complete, accurate list with caching/freshness notes and examples. (The old "full placeholder list" link pointed at a page that didn't exist.)
+- **Full PlaceholderAPI reference** added to the docs ([getting-started/placeholders](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/placeholders)) — the complete, accurate list with caching/freshness notes and examples. (The old "full placeholder list" link pointed at a page that didn't exist.)
 
 ### Fixed
 - **`%tcp_leaderboard_vaults%` and `%tcp_top_vaults_*%` now rank by the normal + ominous TOTAL**, matching `%tcp_vaults_opened%`. They previously ranked by *normal vaults only*, so a player's "vaults" rank could disagree with their displayed vault total. (`StatisticsManager.getLeaderboard` gains a `"vaults"` total option.)
@@ -1365,6 +1374,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.5.11]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.10...v1.5.11
 [1.5.10]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.9...v1.5.10
 [1.5.9]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.8...v1.5.9
 [1.5.8]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.7...v1.5.8

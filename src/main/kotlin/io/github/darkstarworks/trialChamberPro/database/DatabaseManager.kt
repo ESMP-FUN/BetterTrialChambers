@@ -241,6 +241,7 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
                         y INT NOT NULL,
                         z INT NOT NULL,
                         contents TEXT NOT NULL,
+                        material VARCHAR(64) NOT NULL DEFAULT 'CHEST',
                         updated_at BIGINT NOT NULL,
                         PRIMARY KEY (chamber_id, x, y, z),
                         FOREIGN KEY (chamber_id) REFERENCES chambers(id) ON DELETE CASCADE
@@ -339,6 +340,15 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
                     plugin.logger.info("Migration executed: Added broadcast_reset_complete column")
                 } catch (_: SQLException) {
                     // Column already exists
+                }
+
+                // v1.5.11: container-template icon material (the GUI shows each
+                // template as its real container block instead of a generic chest)
+                try {
+                    stmt.execute("ALTER TABLE container_template ADD COLUMN material VARCHAR(64) NOT NULL DEFAULT 'CHEST'")
+                    plugin.logger.info("Migration executed: Added container_template.material column")
+                } catch (_: SQLException) {
+                    // Column already exists (or table not yet present on a fresh install)
                 }
             }
         }
