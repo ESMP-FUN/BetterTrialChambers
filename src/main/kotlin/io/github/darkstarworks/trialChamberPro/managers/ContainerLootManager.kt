@@ -131,25 +131,30 @@ class ContainerLootManager(private val plugin: TrialChamberPro) {
         }
     }
 
-    /** Persists the shared template for a container (upsert). v1.5.9. */
+    /**
+     * Persists the shared template for a container (upsert). [material] is the
+     * container's block type, stored so the management GUI can show each
+     * template as its real container icon (v1.5.11). v1.5.9.
+     */
     suspend fun saveTemplate(
         chamberId: Int,
         pos: ContainerPos,
-        contents: Array<ItemStack?>
+        contents: Array<ItemStack?>,
+        material: org.bukkit.Material
     ) = withContext(Dispatchers.IO) {
         val encoded = encodeContents(contents)
         val sql = if (plugin.databaseManager.databaseType == DatabaseManager.DatabaseType.MYSQL) {
             """
-            INSERT INTO container_template (chamber_id, x, y, z, contents, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE contents = VALUES(contents), updated_at = VALUES(updated_at)
+            INSERT INTO container_template (chamber_id, x, y, z, contents, material, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE contents = VALUES(contents), material = VALUES(material), updated_at = VALUES(updated_at)
             """.trimIndent()
         } else {
             """
-            INSERT INTO container_template (chamber_id, x, y, z, contents, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO container_template (chamber_id, x, y, z, contents, material, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(chamber_id, x, y, z)
-            DO UPDATE SET contents = excluded.contents, updated_at = excluded.updated_at
+            DO UPDATE SET contents = excluded.contents, material = excluded.material, updated_at = excluded.updated_at
             """.trimIndent()
         }
         try {
@@ -160,7 +165,8 @@ class ContainerLootManager(private val plugin: TrialChamberPro) {
                     stmt.setInt(3, pos.y)
                     stmt.setInt(4, pos.z)
                     stmt.setString(5, encoded)
-                    stmt.setLong(6, System.currentTimeMillis())
+                    stmt.setString(6, material.name)
+                    stmt.setLong(7, System.currentTimeMillis())
                     stmt.executeUpdate()
                 }
             }
@@ -169,8 +175,42 @@ class ContainerLootManager(private val plugin: TrialChamberPro) {
         }
     }
 
-    /** One stored template: its position + decoded contents. */
-    data class TemplateRow(val pos: ContainerPos, val contents: Array<ItemStack?>)
+    /**
+     * Updates only the CONTENTS of an existing template (op edit), preserving
+     * its stored [material] icon. Used by the close handler when an op finishes
+     * editing a template. v1.5.11.
+     */
+    suspend fun updateTemplateContents(
+        chamberId: Int,
+        pos: ContainerPos,
+        contents: Array<ItemStack?>
+    ) = withContext(Dispatchers.IO) {
+        val encoded = encodeContents(contents)
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement(
+                    "UPDATE container_template SET contents = ?, updated_at = ? WHERE chamber_id = ? AND x = ? AND y = ? AND z = ?"
+                ).use { stmt ->
+                    stmt.setString(1, encoded)
+                    stmt.setLong(2, System.currentTimeMillis())
+                    stmt.setInt(3, chamberId)
+                    stmt.setInt(4, pos.x)
+                    stmt.setInt(5, pos.y)
+                    stmt.setInt(6, pos.z)
+                    stmt.executeUpdate()
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.warning("[ContainerLoot] Template content update failed (${pos.x},${pos.y},${pos.z}): ${e.message}")
+        }
+    }
+
+    /** One stored template: its position, decoded contents, and container icon. */
+    data class TemplateRow(
+        val pos: ContainerPos,
+        val contents: Array<ItemStack?>,
+        val material: org.bukkit.Material
+    )
 
     /** Lists every materialized template for a chamber (for the GUI/command). */
     suspend fun listTemplates(chamberId: Int): List<TemplateRow> = withContext(Dispatchers.IO) {
@@ -178,14 +218,16 @@ class ContainerLootManager(private val plugin: TrialChamberPro) {
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
-                    "SELECT x, y, z, contents FROM container_template WHERE chamber_id = ? ORDER BY x, y, z"
+                    "SELECT x, y, z, contents, material FROM container_template WHERE chamber_id = ? ORDER BY x, y, z"
                 ).use { stmt ->
                     stmt.setInt(1, chamberId)
                     stmt.executeQuery().use { rs ->
                         while (rs.next()) {
                             val pos = ContainerPos(rs.getInt("x"), rs.getInt("y"), rs.getInt("z"))
                             val contents = decodeContents(rs.getString("contents")) ?: arrayOfNulls(0)
-                            out.add(TemplateRow(pos, contents))
+                            val material = runCatching { org.bukkit.Material.valueOf(rs.getString("material")) }
+                                .getOrDefault(org.bukkit.Material.CHEST)
+                            out.add(TemplateRow(pos, contents, material))
                         }
                     }
                 }

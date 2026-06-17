@@ -70,21 +70,36 @@ object NBTUtil {
     }
 
     /**
-     * Captures Decorated Pot NBT data.
-     * Stores sherd information for all sides.
+     * Captures Decorated Pot NBT data: its sherds AND its loot table.
+     *
+     * Trial-chamber pots hold their break-loot as an UNROLLED `LootTable` (the
+     * pot is `Lootable`); a plain BlockData restore wipes the block entity and
+     * loses it, which is why pots came back empty after a reset before v1.5.11.
+     * We capture the loot-table key + seed when present (re-armed on restore so
+     * the pot drops fresh loot when next broken), and fall back to the literal
+     * stored item otherwise.
      */
     private fun captureDecoratedPot(pot: DecoratedPot): Map<String, Any> {
         val sherds = mutableMapOf<String, String>()
-
         DecoratedPot.Side.entries.forEach { side ->
-            val sherd = pot.getSherd(side)
-            sherds[side.name] = sherd.name
+            sherds[side.name] = pot.getSherd(side).name
         }
 
-        return mapOf(
+        val map = mutableMapOf<String, Any>(
             "type" to "DECORATED_POT",
             "sherds" to sherds
         )
+        val lootable = pot as? Lootable
+        val table = lootable?.lootTable
+        if (table != null) {
+            map["lootTable"] = table.key.toString()
+            map["seed"] = lootable.seed.toString()
+        } else {
+            pot.inventory.item?.takeUnless { it.type.isAir }?.let {
+                map["item"] = Base64.getEncoder().encodeToString(it.serializeAsBytes())
+            }
+        }
+        return map
     }
 
     /**
@@ -276,6 +291,22 @@ object NBTUtil {
 
                 if (material != null) {
                     pot.setSherd(side, material)
+                }
+            }
+
+            // Re-arm the break-loot the pot lost on a BlockData restore: its loot
+            // table (so it rolls fresh loot when next broken) or its literal item.
+            val lootable = pot as? Lootable
+            val key = data["lootTable"] as? String
+            if (lootable != null && key != null) {
+                val table = NamespacedKey.fromString(key)?.let { Bukkit.getLootTable(it) }
+                if (table != null) {
+                    val seed = (data["seed"] as? String)?.toLongOrNull() ?: 0L
+                    lootable.setLootTable(table, seed)
+                }
+            } else {
+                (data["item"] as? String)?.let { encoded ->
+                    pot.inventory.item = ItemStack.deserializeBytes(Base64.getDecoder().decode(encoded))
                 }
             }
 
