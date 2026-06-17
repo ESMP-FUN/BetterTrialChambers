@@ -298,6 +298,7 @@ error-region-too-large: "&cRegion too large. Maximum allowed volume is {maxVolum
 error-invalid-type: "&cInvalid type. Use 'normal' or 'ominous'."
 error-invalid-type-loot-clear: "&cInvalid type. Use 'normal', 'ominous', or 'all'."
 error-player-not-found: "&cPlayer not found or not online."
+player-not-found: "&cPlayer &e{player}&c not found or not online."
 error-ominous-key-unavailable: "&cOminous Trial Keys are not available in this server version."
 error-menu-failed: "&cFailed to open menu: {error}"
 error-loot-set-failed: "&cFailed to set loot table. Check console for errors."
