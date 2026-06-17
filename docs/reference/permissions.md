@@ -58,14 +58,24 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 ---
 
 #### `tcp.admin.generate`
-**Description:** Register and delete chambers
+**Description:** Register chambers
 **Default:** Operators only
 **Allows:**
 - `/tcp generate <mode> <args>` - Register chambers from WorldEdit selection, coordinates, or blocks
-- `/tcp delete <chamber>` - Delete chambers
-- `/tcp setexit <chamber>` - Set exit locations
+- `/tcp dungeon …` - Procedural dungeon assembly (also `tcp.admin.generate`)
 
-**Use this for:** Staff who manage chamber infrastructure
+**Use this for:** Staff who register chamber infrastructure
+
+---
+
+#### `tcp.admin.create`
+**Description:** Delete chambers and set exit points
+**Default:** Operators only
+**Allows:**
+- `/tcp delete <chamber>` - Delete a chamber and its data
+- `/tcp setexit <chamber>` - Set a chamber's exit location
+
+**Use this for:** Staff who manage chamber lifecycle. *(Note: `/tcp delete` and `/tcp setexit` require this node, **not** `tcp.admin.generate`.)*
 
 ---
 
@@ -142,6 +152,30 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 - `/tcp mobs <chamber> list` - Show the chamber's current config
 
 **Use this for:** Admins who manage MythicMobs / EliteMobs / EcoMobs / LevelledMobs / InfernalMobs / Citizens integrations on their chambers. See [Custom Mobs](../configuration/custom-mobs.md) for the per-provider mob-id format.
+
+---
+
+#### `tcp.admin.loot`
+**Description:** Manage per-chamber loot tables
+**Default:** Operators only
+**Allows:**
+- `/tcp loot set <chamber> <normal|ominous> <table>` - Override a chamber's loot table
+- `/tcp loot clear <chamber> [normal|ominous|all]` - Remove a per-chamber override
+- `/tcp loot audit` - List pre-1.5.0 loot entries that lost their NBT
+
+**Use this for:** Admins curating per-chamber loot.
+
+---
+
+#### `tcp.admin.containers`
+**Description:** Manage per-player container loot templates *(1.5.7+, reworked 1.5.9)*
+**Default:** Operators only
+**Allows:**
+- **Sneak-click** a chamber chest/barrel/dispenser to edit the shared loot **template** (the contents every player's first-open copy is cloned from)
+- `/tcp container <list|materialize|reset|clearcopies|tp|edit> <chamber>` - manage templates from the CLI
+- The chamber GUI's **Container Loot** view
+
+Only relevant when `chests.per-player-loot` is enabled. A normal (non-sneak) click still gives staff their own per-player copy like any player.
 
 ---
 
@@ -299,17 +333,6 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 **Effect:**
 - Exempt from `protection.block-wild-vault-placement`
 - Needed for creative builds using vault blocks and for setting up out-of-chamber crates (e.g. TCP-VaultCrates)
-
----
-
-#### `tcp.admin.containers`
-**Description:** Open the real chamber container in per-player loot mode *(1.5.7+)*
-**Default:** Operators only
-**Effect:**
-- With `chests.per-player-loot` enabled, **sneak-click** a chamber chest/barrel to open the actual block inventory (the template every player's copy is cloned from)
-- A normal click still opens your own per-player copy — the permission only changes the sneak-click
-
-**Use this for:** Staff curating the loot inside chamber supply chests.
 
 ---
 
@@ -493,16 +516,22 @@ Steve can only create/scan chambers in the nether.
 ## Permission Hierarchy
 
 ```
-tcp.admin.*
-  ├─ tcp.admin.generate    (Register, delete, set exit)
+tcp.admin.*                (wildcard — grants the children below)
+  ├─ tcp.admin.generate    (Register chambers, /tcp dungeon)
+  ├─ tcp.admin.create      (Delete chambers, set exit)
   ├─ tcp.admin.scan        (Scan chambers)
   ├─ tcp.admin.snapshot    (Manage snapshots)
   ├─ tcp.admin.reset       (Force resets)
   ├─ tcp.admin.pause       (Pause / resume chambers)
   ├─ tcp.admin.key         (Manage keys)
   ├─ tcp.admin.vault       (Manage vaults)
+  ├─ tcp.admin.menu        (Open the GUI)
   ├─ tcp.admin.reload      (Reload config)
-  └─ tcp.admin.stats       (View others' stats)
+  ├─ tcp.admin.stats       (View others' stats)
+  ├─ tcp.admin.loot        (Per-chamber loot tables)
+  ├─ tcp.admin.containers  (Per-player container loot templates)
+  ├─ tcp.admin.mobs        (Per-chamber custom mob providers)
+  └─ tcp.give              (/tcp give spawner presets)
 
 tcp.admin                  (View chambers - NOT a wildcard!)
 
@@ -512,6 +541,9 @@ tcp.spectate               (Spectate after death)
 
 tcp.bypass.cooldown        (No vault cooldowns)
 tcp.bypass.protection      (Build in protected chambers)
+tcp.bypass.vaultplace      (Place wild vaults)
+tcp.bypass.droplock        (Bypass owner-only loot pickup)
+tcp.discovery.notify       (Auto-discovery notifications)
 ```
 
 ---

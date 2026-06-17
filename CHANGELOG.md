@@ -11,6 +11,15 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ### Fixed
 - **Chamber completions were never recorded.** `chambers_completed` was permanently 0, dead-ending the chambers leaderboard, the `/tcp stats` "Chambers Completed" line, the "Vaults per Chamber" GUI stat, and the `%tcp_chambers_completed%` / `%tcp_leaderboard_chambers%` / `%tcp_top_chambers_*%` placeholders. Completions are now credited to every participant when a chamber is fully cleared (all its trial spawners finish their waves in one run), via the existing `ChamberClearedEvent`. Toggle with `statistics.track-chamber-completion` (default on).
+- **`economy-rewards` are no longer dropped when editing a legacy loot table in the GUI** — the loot editor's legacy save path carried `command-rewards` forward but not `economy-rewards`.
+- **Permissions:** `tcp.admin.loot` (required by `/tcp loot`) is now declared in plugin.yml, and `tcp.admin.loot` / `tcp.admin.containers` / `tcp.admin.mobs` are now children of `tcp.admin.*` — so a wildcard grant covers them. (Previously `loot` was undeclared and `containers`/`mobs` weren't under the wildcard.)
+- **Config validation** keyed two rules to the wrong section (`reset.default-reset-interval` / `performance.blocks-per-tick`); corrected to `global.*` so those values are actually range-checked at startup.
+
+### Removed
+- **No-op config options removed:** `performance.async-database-operations`, `performance.use-folialib`, and `statistics.leaderboard-update-interval` were never read by any code (DB is always async, Folia is auto-detected, leaderboard caching is fixed). Leftover entries in an existing `config.yml` are ignored. Five other never-implemented toggles (`protection.allow-pvp`, `trial-keys.fix-paper-bugs` / `prevent-duplication` / `max-stack-size`, `reset.clear-trial-omen-effect`) are now clearly marked **not yet implemented** in `config.yml` and the docs.
+
+### Docs
+- Full factual-accuracy sweep of `/docs`: corrected the `spawner-cooldown-minutes` / `wild-spawner-cooldown-minutes` section (`reset:`, not `global:`), the `/tcp delete` & `/tcp setexit` permission (`tcp.admin.create`, not `tcp.admin.generate`), the stale `tcp.admin.containers` description, the permission hierarchy, a bogus `/tcp debug` command reference, and the missing `tcp.admin.create` / `tcp.admin.loot` permission docs.
 
 ## [1.5.11] - 2026-06-17
 ### Fixed
