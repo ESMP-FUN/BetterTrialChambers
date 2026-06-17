@@ -170,9 +170,11 @@ class ChamberDetailView(
         val enabled = plugin.config.getBoolean("chests.per-player-loot", false)
         return GuiComponents.infoItem(plugin, Material.CHEST,
             "gui.chamber-detail.container-loot-name", "gui.chamber-detail.container-loot-lore",
-            "status" to plugin.getMessage(
+            // Raw message (legacy `&`) — getMessage() returns section codes that
+            // break the lore's MiniMessage re-parse (renders `&` codes literally).
+            "status" to (plugin.getMessageList(
                 if (enabled) "gui.container-loot.status-on" else "gui.container-loot.status-off"
-            ))
+            ).firstOrNull() ?: ""))
     }
 
     private fun createResetChamberItem(): ItemStack {

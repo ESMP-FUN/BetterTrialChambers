@@ -88,9 +88,12 @@ class ContainerLootView(
     private fun headerItem(enabled: Boolean, templates: Int, copies: Int): ItemStack =
         GuiComponents.infoItem(plugin, Material.BARREL,
             "gui.container-loot.header-name", "gui.container-loot.header-lore",
-            "enabled" to plugin.getMessage(
+            // Pass the RAW message (legacy `&` form) — not getMessage(), which
+            // returns a section-coded string that breaks the lore's MiniMessage
+            // re-parse and renders the `&` codes literally.
+            "enabled" to (plugin.getMessageList(
                 if (enabled) "gui.container-loot.status-on" else "gui.container-loot.status-off"
-            ),
+            ).firstOrNull() ?: ""),
             "templates" to templates, "copies" to copies)
 
     private fun materializeItem(): ItemStack =
@@ -109,7 +112,10 @@ class ContainerLootView(
 
     private fun entryItem(row: ContainerLootManager.TemplateRow, index: Int): ItemStack {
         val items = row.contents.count { it != null && !it.type.isAir }
-        return GuiComponents.infoItem(plugin, Material.CHEST,
+        // Icon = the real container block (chest/barrel/dispenser/dropper) so ops
+        // can spot the one they want at a glance instead of a wall of chests.
+        val icon = if (row.material.isItem) row.material else Material.CHEST
+        return GuiComponents.infoItem(plugin, icon,
             "gui.container-loot.entry-name", "gui.container-loot.entry-lore",
             "index" to (index + 1),
             "x" to row.pos.x, "y" to row.pos.y, "z" to row.pos.z,
