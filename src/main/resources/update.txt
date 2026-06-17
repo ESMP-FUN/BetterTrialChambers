@@ -1,4 +1,9 @@
 <black>.
+<aqua>[1.5.11] <gray>- <white>2026-06-17
+<lime>+ <white>FIX: <green>Decorated pots came back <red>empty<green> after a chamber reset — snapshots now capture & re-arm each pot's loot table, so pots refill every cycle. <yellow>Re-run /tcp snapshot create<green> on existing chambers to capture pot loot.
+<lime>+ <white>FIX: <green>Container Loot GUI tooltip showed raw <yellow>&<green> colour codes; status now renders correctly.
+<lime>+ <white>CHG: <green>Container Loot GUI shows each template as its <yellow>real container<green> (dispenser as a dispenser, barrel as a barrel, …) instead of all chests — much easier to find one among 30+.
+<lime>+ <white>CHG: <green>Editing a template from the GUI / <yellow>/tcp container edit<green> now returns you to the Container Loot view when you close it.
 <aqua>[1.5.10] <gray>- <white>2026-06-16
 <lime>+ <white>NEW: <green>More PlaceholderAPI placeholders — <yellow>%tcp_kdr%<green>, <yellow>%tcp_current_chamber_reset%<green>, <yellow>%tcp_current_chamber_paused%<green>, <yellow>%tcp_chamber_count%<green>, <yellow>%tcp_leaderboard_mobs%<green>, and <yellow>%tcp_top_mobs_<n>_name/value%<green>. Full list now documented in the wiki.
 <lime>+ <white>FIX: <green><yellow>%tcp_leaderboard_vaults%<green> / <yellow>%tcp_top_vaults_*<green> now rank by the normal+ominous TOTAL (matching <yellow>%tcp_vaults_opened%<green>), not normal-only.
