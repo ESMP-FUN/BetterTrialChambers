@@ -1,4 +1,4 @@
-# 🧟 Custom Mob Providers
+# Custom Mob Providers
 
 **Added in v1.3.0.**
 
@@ -12,7 +12,7 @@ Trial Chamber waves normally spawn vanilla mobs (zombies, husks, slimes, etc.) f
 
 ---
 
-## 📋 Built-in Providers
+## Built-in Providers
 
 | Provider id | Backing plugin | Mob id format | Notes |
 |---|---|---|---|
@@ -26,7 +26,7 @@ Trial Chamber waves normally spawn vanilla mobs (zombies, husks, slimes, etc.) f
 
 ---
 
-## 🎮 Configuring via GUI
+## Configuring via GUI
 
 1. `/tcp menu` → **Chambers** → pick a chamber → **Settings**
 2. Click the **Custom Mob Provider** button (spawner icon, centre of row 2)
@@ -38,7 +38,7 @@ Changes save immediately and the view refreshes. If the backing plugin isn't ins
 
 ---
 
-## 🛠️ Configuring via Command
+## Configuring via Command
 
 ```
 /tcp mobs providers                          # list registered providers
@@ -61,7 +61,7 @@ If the **ominous** list is empty, ominous waves fall back to the **normal** list
 
 ---
 
-## 🔑 Trial Key Drops
+## Trial Key Drops
 
 Vanilla trial spawners drop Trial Keys through their own state machine — that machine only knows about vanilla mobs, so once a wave is driven by a custom provider, TCP takes over key drops itself:
 
@@ -85,7 +85,7 @@ Players with permission `tcp.bypass.droplock` (default: op) can pick up keys reg
 
 ---
 
-## 🧪 Verifying a Provider Works
+## Verifying a Provider Works
 
 1. Set a provider on a chamber and list a single well-known mob id (e.g. `SkeletalKnight` for MythicMobs, from a default pack)
 2. Enable verbose logging (`debug.verbose-logging: true` in config.yml, then `/tcp reload`) and watch the server console
@@ -103,7 +103,7 @@ If the custom mob never appears and the console shows `Mob provider X could not 
 
 ---
 
-## ⚠️ Known Limitations
+## Known Limitations
 
 - Wave state is not persisted across restarts; an in-progress wave will reset to vanilla behavior if the server restarts mid-fight (matches pre-1.3.0 behavior)
 - Provider availability is evaluated at spawn time — enabling/disabling MythicMobs without a restart will not flip registered providers until plugin reload
