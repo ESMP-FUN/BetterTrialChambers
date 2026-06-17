@@ -88,7 +88,7 @@ Players with permission `tcp.bypass.droplock` (default: op) can pick up keys reg
 ## 🧪 Verifying a Provider Works
 
 1. Set a provider on a chamber and list a single well-known mob id (e.g. `SkeletalKnight` for MythicMobs, from a default pack)
-2. Stand in the chamber, enable debug: `/tcp debug on`
+2. Enable verbose logging (`debug.verbose-logging: true` in config.yml, then `/tcp reload`) and watch the server console
 3. Hit a trial spawner and watch chat:
    - Vanilla mob flash-spawns and is immediately removed
    - The custom mob appears at the same spot
