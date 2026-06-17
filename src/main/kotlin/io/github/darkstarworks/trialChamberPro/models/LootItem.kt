@@ -80,6 +80,24 @@ data class CommandReward(
 )
 
 /**
+ * Represents an economy (money) reward paid through Vault (v1.5.12).
+ *
+ * @property weight     0-100 percentage chance this reward fires on a roll.
+ * @property minAmount  Minimum payout (inclusive).
+ * @property maxAmount  Maximum payout; the amount is rolled uniformly in
+ *                      `[minAmount, maxAmount]` (equal to minAmount when not
+ *                      greater).
+ * @property displayName Optional label used in the reward message (falls back
+ *                      to the formatted amount when blank).
+ */
+data class EconomyReward(
+    val weight: Double,
+    val minAmount: Double,
+    val maxAmount: Double,
+    val displayName: String = ""
+)
+
+/**
  * Represents a loot pool within a loot table.
  * Each pool rolls independently (like vanilla's common/rare/unique).
  */
@@ -89,7 +107,8 @@ data class LootPool(
     val maxRolls: Int,
     val guaranteedItems: List<LootItem> = emptyList(),
     val weightedItems: List<LootItem> = emptyList(),
-    val commandRewards: List<CommandReward> = emptyList()
+    val commandRewards: List<CommandReward> = emptyList(),
+    val economyRewards: List<EconomyReward> = emptyList()
 )
 
 /**
@@ -108,6 +127,7 @@ data class LootTable(
     val guaranteedItems: List<LootItem> = emptyList(),
     val weightedItems: List<LootItem> = emptyList(),
     val commandRewards: List<CommandReward> = emptyList(),
+    val economyRewards: List<EconomyReward> = emptyList(),
     // New multi-pool format
     val pools: List<LootPool> = emptyList()
 ) {
@@ -129,7 +149,8 @@ data class LootTable(
                     maxRolls = maxRolls,
                     guaranteedItems = guaranteedItems,
                     weightedItems = weightedItems,
-                    commandRewards = commandRewards
+                    commandRewards = commandRewards,
+                    economyRewards = economyRewards
                 )
             )
         } else {
