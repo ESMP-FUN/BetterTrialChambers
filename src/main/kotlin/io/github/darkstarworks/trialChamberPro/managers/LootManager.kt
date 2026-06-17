@@ -2,6 +2,7 @@ package io.github.darkstarworks.trialChamberPro.managers
 
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.models.CommandReward
+import io.github.darkstarworks.trialChamberPro.models.EconomyReward
 import io.github.darkstarworks.trialChamberPro.models.LootItem
 import io.github.darkstarworks.trialChamberPro.models.LootPool
 import io.github.darkstarworks.trialChamberPro.models.LootTable
@@ -183,7 +184,16 @@ class LootManager(private val plugin: TrialChamberPro) {
                 }
             }
 
-            return LootTable(name, minRolls, maxRolls, guaranteedItems, weightedItems, commandRewards)
+            // Parse economy rewards (optional, paid via Vault)
+            val economyRewards = mutableListOf<EconomyReward>()
+            section.getList("economy-rewards")?.forEach { item ->
+                if (item is Map<*, *>) {
+                    @Suppress("UNCHECKED_CAST")
+                    parseEconomyReward(item as Map<String, Any>)?.let { economyRewards.add(it) }
+                }
+            }
+
+            return LootTable(name, minRolls, maxRolls, guaranteedItems, weightedItems, commandRewards, economyRewards)
         }
     }
 
@@ -216,7 +226,14 @@ class LootManager(private val plugin: TrialChamberPro) {
             parseCommandReward(item)?.let { commandRewards.add(it) }
         }
 
-        return LootPool(poolName, minRolls, maxRolls, guaranteedItems, weightedItems, commandRewards)
+        // Parse economy rewards (paid via Vault)
+        val economyRewards = mutableListOf<EconomyReward>()
+        @Suppress("UNCHECKED_CAST")
+        (data["economy-rewards"] as? List<Map<String, Any>>)?.forEach { item ->
+            parseEconomyReward(item)?.let { economyRewards.add(it) }
+        }
+
+        return LootPool(poolName, minRolls, maxRolls, guaranteedItems, weightedItems, commandRewards, economyRewards)
     }
 
     /**
@@ -420,6 +437,25 @@ class LootManager(private val plugin: TrialChamberPro) {
     }
 
     /**
+     * Parses an economy (money) reward. Accepts either a fixed `amount:` or a
+     * `min:`/`max:` range; `weight` is a 0-100 percentage chance. Returns null
+     * on missing/invalid fields so a typo skips one reward rather than the whole
+     * table.
+     */
+    private fun parseEconomyReward(data: Map<String, Any>): EconomyReward? {
+        val weight = (data["weight"] as? Number)?.toDouble() ?: return null
+        val min = (data["min"] as? Number)?.toDouble()
+            ?: (data["amount"] as? Number)?.toDouble() ?: return null
+        val max = (data["max"] as? Number)?.toDouble() ?: min
+        if (min < 0.0 || max < 0.0) {
+            plugin.logger.warning("loot.yml: economy-reward has a negative amount — skipped.")
+            return null
+        }
+        val displayName = data["display-name"] as? String ?: ""
+        return EconomyReward(weight, min, maxOf(min, max), displayName)
+    }
+
+    /**
      * Generates loot from a loot table.
      * Supports both legacy single-pool and new multi-pool formats.
      *
@@ -541,6 +577,13 @@ class LootManager(private val plugin: TrialChamberPro) {
         pool.commandRewards.forEach { reward ->
             if (Random.nextDouble() * 100.0 < reward.weight) {
                 executeCommandReward(reward, player)
+            }
+        }
+
+        // Process economy (money) rewards, paid via Vault
+        pool.economyRewards.forEach { reward ->
+            if (Random.nextDouble() * 100.0 < reward.weight) {
+                applyEconomyReward(reward, player)
             }
         }
 
@@ -1057,6 +1100,35 @@ class LootManager(private val plugin: TrialChamberPro) {
     }
 
     /**
+     * Pays an economy reward via Vault. Rolls the amount in `[min, max]`, then
+     * deposits + notifies on the main thread (economy providers expect it). A
+     * no-op with a debug warning when no Vault economy provider is installed —
+     * so a missing provider never silently swallows other loot.
+     */
+    private fun applyEconomyReward(reward: EconomyReward, player: Player) {
+        if (!io.github.darkstarworks.trialChamberPro.utils.VaultEconomyHook.isAvailable(plugin)) {
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.warning("Economy reward configured but no Vault economy provider is available — skipping.")
+            }
+            return
+        }
+        val rolled = if (reward.maxAmount > reward.minAmount) {
+            reward.minAmount + Random.nextDouble() * (reward.maxAmount - reward.minAmount)
+        } else reward.minAmount
+        val amount = Math.round(rolled * 100.0) / 100.0
+        if (amount <= 0.0) return
+
+        plugin.scheduler.runTask(Runnable {
+            if (io.github.darkstarworks.trialChamberPro.utils.VaultEconomyHook.deposit(plugin, player, amount)) {
+                player.sendMessage(plugin.getMessageComponent(
+                    "loot-money-received",
+                    "amount" to io.github.darkstarworks.trialChamberPro.utils.VaultEconomyHook.format(plugin, amount)
+                ))
+            }
+        })
+    }
+
+    /**
      * Replaces placeholders in strings.
      */
     private fun replacePlaceholders(text: String, player: Player): String {
@@ -1106,6 +1178,10 @@ class LootManager(private val plugin: TrialChamberPro) {
                         val rewards = table.commandRewards.map { r -> serializeCommandReward(r) }
                         sec.set("command-rewards", rewards)
                     }
+                    // economy-rewards
+                    if (table.economyRewards.isNotEmpty()) {
+                        sec.set("economy-rewards", table.economyRewards.map { serializeEconomyReward(it) })
+                    }
                 } else {
                     // Save as new multi-pool format
                     val poolsList = table.pools.map { pool ->
@@ -1124,6 +1200,10 @@ class LootManager(private val plugin: TrialChamberPro) {
 
                         if (pool.commandRewards.isNotEmpty()) {
                             poolMap["command-rewards"] = pool.commandRewards.map { serializeCommandReward(it) }
+                        }
+
+                        if (pool.economyRewards.isNotEmpty()) {
+                            poolMap["economy-rewards"] = pool.economyRewards.map { serializeEconomyReward(it) }
                         }
 
                         poolMap
@@ -1184,6 +1264,15 @@ class LootManager(private val plugin: TrialChamberPro) {
         return mapOf(
             "weight" to r.weight,
             "commands" to r.commands,
+            "display-name" to r.displayName
+        )
+    }
+
+    private fun serializeEconomyReward(r: EconomyReward): Map<String, Any> {
+        return mapOf(
+            "weight" to r.weight,
+            "min" to r.minAmount,
+            "max" to r.maxAmount,
             "display-name" to r.displayName
         )
     }

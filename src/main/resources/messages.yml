@@ -257,6 +257,7 @@ give-sent: "&aGave &fx{amount} &aof preset &f{preset} &ato &f{player}&a."
 # Inventory & Loot
 inventory-full: "&eYour inventory was full! Some items were dropped."
 loot-received: "&aYou received: {item}"
+loot-money-received: "&aYou received &e{amount}&a!"
 
 # Command Usage Messages
 usage-scan: "&cUsage: /tcp scan <chamber>"
