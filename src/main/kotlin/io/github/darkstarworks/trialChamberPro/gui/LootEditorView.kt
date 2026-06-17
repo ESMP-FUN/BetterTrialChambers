@@ -382,7 +382,10 @@ class LootEditorView(
                 minRolls = draft.minRolls, maxRolls = draft.maxRolls,
                 guaranteedItems = draft.guaranteed.toList(),
                 weightedItems = draft.weighted.toList(),
-                commandRewards = existingTable?.commandRewards ?: emptyList()
+                commandRewards = existingTable?.commandRewards ?: emptyList(),
+                // Preserve economy rewards across a GUI edit (the editor only
+                // touches items) — otherwise saving would silently drop them.
+                economyRewards = existingTable?.economyRewards ?: emptyList()
             )
         }
         plugin.lootManager.updateTable(table)
