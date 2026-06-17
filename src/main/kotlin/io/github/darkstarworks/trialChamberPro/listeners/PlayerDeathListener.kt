@@ -110,8 +110,9 @@ class PlayerDeathListener(private val plugin: TrialChamberPro) : Listener {
         }
     }
 
-    // Note: Chamber completion tracking can be implemented later with more sophisticated logic
-    // For now, we focus on death and mob kill statistics
+    // Chamber completion is tracked separately, in ChamberCompletionListener
+    // (credited per participant on ChamberClearedEvent). This listener only
+    // handles death and mob-kill statistics.
 
     fun shutdown() {
         pendingOffers.clear()

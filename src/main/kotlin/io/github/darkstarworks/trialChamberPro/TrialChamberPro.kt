@@ -334,6 +334,10 @@ class TrialChamberPro : JavaPlugin() {
                         containerLootListener,
                         this@TrialChamberPro
                     )
+                    server.pluginManager.registerEvents(
+                        io.github.darkstarworks.trialChamberPro.listeners.ChamberCompletionListener(this@TrialChamberPro),
+                        this@TrialChamberPro
+                    )
                     playerMovementListener = PlayerMovementListener(this@TrialChamberPro)
                     server.pluginManager.registerEvents(
                         playerMovementListener,

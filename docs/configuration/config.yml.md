@@ -262,27 +262,31 @@ The big one! Each player gets their own loot and cooldowns. If `false`, vaults w
 </div>
 
 ### `normal-cooldown-hours` / `ominous-cooldown-hours`
-**Default:** `-1` (permanent until reset)
+**Default:** `0` (permanent until reset)
 
 How long before a player can loot the same vault again. Separate cooldowns for normal and ominous vaults.
 
 **Values:**
-- `-1` = Permanent lock until chamber reset (vanilla behavior, recommended)
-- `0` or positive = Time-based cooldown in hours
+- `0` (or negative) = Permanent lock until chamber reset (vanilla behavior)
+- positive `N` = Timed cooldown — the vault reopens **N hours** after that player last opened it *(actually implemented since 1.5.12)*
+
+When a timed cooldown is set and a player tries to reopen too early, they're shown the remaining time. The open timestamp is tracked per player in the database; a **chamber reset is always a full unlock** regardless of the timed cooldown.
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
-**v1.2.21+:** Vault cooldowns now use Paper's native Vault API (`hasRewardedPlayer`/`addRewardedPlayer`) for tracking. This is more reliable because:
+**v1.2.21+:** Permanent (non-timed) vault locks use Paper's native Vault API (`hasRewardedPlayer`/`addRewardedPlayer`) for tracking:
 - Uses vanilla Minecraft's built-in player tracking
-- Cooldowns automatically reset when the chamber is restored from snapshot
+- Locks automatically clear when the chamber is restored from snapshot
 - No database sync issues
 
-**Note:** Time-based cooldowns (`0` or positive values) are less reliable with the native API since it doesn't track timestamps. For consistent behavior, use `-1` (permanent) and rely on chamber resets.
+Timed cooldowns layer a per-player timestamp (in `player_vaults`) on top of that flag.
+
+**Note:** A timed cooldown only governs *reopening before a reset* — the chamber's own reset interval still fully unlocks every vault when it fires. So a 6-hour cooldown on a chamber that resets every 48 hours lets a player loot the same vault up to ~8 times per cycle.
 
 </div>
 
 **Ideas:**
-- Vanilla behavior: `-1` (permanent until chamber reset)
+- Vanilla behavior: `0` (permanent until chamber reset)
 - Short cooldowns: `1` or `6` hours (for active servers)
 - Long cooldowns: `72` or `168` hours (weekly)
 - Match chamber resets: `48` hours (synchronized gameplay)
@@ -571,6 +575,7 @@ Enable Folia compatibility. If you're on Folia, this MUST be `true`. On Paper/Pu
 statistics:
   enabled: true
   track-time-spent: true
+  track-chamber-completion: true
   leaderboard-update-interval: 3600
   top-players-count: 10
 ```
@@ -584,6 +589,11 @@ Track player statistics (vaults opened, chambers completed, time spent)? Require
 **Default:** `true`
 
 Track how long players spend inside chambers. Disable if you don't care about time-based stats.
+
+### `track-chamber-completion`
+**Default:** `true` *(added in 1.5.12)*
+
+Credit a "chamber completed" to every participant when a chamber is fully cleared (all its trial spawners finish their waves in one run). Drives the chambers leaderboard and the `%tcp_chambers_completed%` / `%tcp_leaderboard_chambers%` / `%tcp_top_chambers_*%` placeholders. Disable to leave chamber-completion stats untracked.
 
 ### `leaderboard-update-interval`
 **Default:** `3600` (1 hour)

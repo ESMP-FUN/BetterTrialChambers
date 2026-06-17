@@ -1,4 +1,8 @@
 <black>.
+<aqua>[1.5.12] <gray>- <white>2026-06-17
+<lime>+ <white>NEW: <green>Vault economy rewards in loot tables — pay money on vault open via an <yellow>economy-rewards<green> list (weight + amount/min-max). Works with EssentialsX, CMI, any Vault economy; skipped cleanly if none is installed.
+<lime>+ <white>FIX: <green>Time-based vault cooldowns now actually work — <yellow>vaults.normal/ominous-cooldown-hours > 0<green> reopens the vault that many hours after opening (with a remaining-time message). <yellow>0<green> = permanent until reset, as before.
+<lime>+ <white>FIX: <green>Chamber completions are now recorded — the chambers leaderboard, <yellow>/tcp stats<green>, and the <yellow>%tcp_chambers_completed%<green> / <yellow>%tcp_top_chambers_*%<green> placeholders were stuck at 0. Credited per participant on a full chamber clear (toggle: <yellow>statistics.track-chamber-completion<green>).
 <aqua>[1.5.11] <gray>- <white>2026-06-17
 <lime>+ <white>FIX: <green>Decorated pots came back <red>empty<green> after a chamber reset — snapshots now capture & re-arm each pot's loot table, so pots refill every cycle. <yellow>Re-run /tcp snapshot create<green> on existing chambers to capture pot loot.
 <lime>+ <white>FIX: <green>Container Loot GUI tooltip showed raw <yellow>&<green> colour codes; status now renders correctly.
