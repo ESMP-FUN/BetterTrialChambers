@@ -19,7 +19,7 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | `/tcp menu [chamber]` | Open admin GUI (with a chamber name: jump straight to that chamber's detail view) | `tcp.admin.menu` |
 | `/tcp generate <value|coords|wand|blocks>` | Register chamber from saved var, coords, WE wand, or by block amount | `tcp.admin.generate` |
 | `/tcp scan <chamber>` | Scan for vaults/spawners | `tcp.admin.scan` |
-| `/tcp setexit <chamber>` | Set exit location | `tcp.admin.generate` |
+| `/tcp setexit <chamber>` | Set exit location | `tcp.admin.create` |
 | `/tcp snapshot <create\|update\|restore> [chamber]` | Manage snapshots (omit the name to target the chamber you're standing in) | `tcp.admin.snapshot` |
 | `/tcp reset <chamber>` | Force chamber reset | `tcp.admin.reset` |
 | `/tcp reset pending` | List chambers awaiting reset confirmation | `tcp.admin.reset` |
@@ -27,7 +27,7 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | `/tcp list [page\|current]` | List chambers (paginated, interactive: click a name to copy it, click `[menu]` to open its GUI); `current` finds the chamber you're in / nearest | `tcp.admin` |
 | `/tcp dungeon <pos1\|pos2\|capture\|generate\|list\|delete>` | Procedural dungeon generation from room templates | `tcp.admin.generate` |
 | `/tcp info [chamber]` | Show plugin info, or chamber details if specified | `tcp.admin` |
-| `/tcp delete <chamber>` | Delete a chamber | `tcp.admin.generate` |
+| `/tcp delete <chamber>` | Delete a chamber | `tcp.admin.create` |
 | `/tcp loot set <chamber> <normal\|ominous> <table>` | Override a chamber's loot table | `tcp.admin.loot` |
 | `/tcp loot clear <chamber> [normal\|ominous\|all]` | Remove per-chamber loot override | `tcp.admin.loot` |
 | `/tcp loot audit` | List pre-1.5.0 loot entries that lost their NBT | `tcp.admin.loot` |
@@ -215,7 +215,7 @@ Sets the exit location for a chamber. Players inside when the chamber resets wil
 /tcp setexit <chamber_name>
 ```
 
-**Permission:** `tcp.admin.generate`
+**Permission:** `tcp.admin.create`
 
 **Requirements:**
 - Must be a player (not console)
@@ -513,7 +513,7 @@ Permanently deletes a chamber and all associated data.
 /tcp delete <chamber_name>
 ```
 
-**Permission:** `tcp.admin.generate`
+**Permission:** `tcp.admin.create`
 
 **Arguments:**
 - `<chamber_name>` - Name of the chamber to delete
