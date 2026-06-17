@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.5.13] - Unreleased
+### Fixed
+- **Missing message key** — `/tcp give` and `/tcp stats` against an unknown player rendered `Message not found: player-not-found`. Added the `player-not-found` key to messages.yml. (Verified all ~350 code-referenced message keys resolve.)
+
 ## [1.5.12] - 2026-06-17
 ### Added
 - **Vault economy rewards in loot tables.** A pool (or legacy table) can now pay money via Vault with an `economy-rewards` list — `weight` (% chance), a fixed `amount` or a `min`/`max` range, and an optional `display-name`. Works with any Vault economy provider (EssentialsX, CMI, …), deposits on the main thread, and is cleanly skipped (without affecting other loot) when no economy plugin is installed. A native, provider-agnostic alternative to `eco give {player} …` command rewards. New `utils/VaultEconomyHook`.
@@ -14,7 +18,6 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - **`economy-rewards` are no longer dropped when editing a legacy loot table in the GUI** — the loot editor's legacy save path carried `command-rewards` forward but not `economy-rewards`.
 - **Permissions:** `tcp.admin.loot` (required by `/tcp loot`) is now declared in plugin.yml, and `tcp.admin.loot` / `tcp.admin.containers` / `tcp.admin.mobs` are now children of `tcp.admin.*` — so a wildcard grant covers them. (Previously `loot` was undeclared and `containers`/`mobs` weren't under the wildcard.)
 - **Config validation** keyed two rules to the wrong section (`reset.default-reset-interval` / `performance.blocks-per-tick`); corrected to `global.*` so those values are actually range-checked at startup.
-- **Missing message key** — `/tcp give` and `/tcp stats` against an unknown player rendered `Message not found: player-not-found`. Added the `player-not-found` key to messages.yml. (Verified all ~350 code-referenced message keys resolve.)
 
 ### Removed
 - **No-op config options removed:** `performance.async-database-operations`, `performance.use-folialib`, and `statistics.leaderboard-update-interval` were never read by any code (DB is always async, Folia is auto-detected, leaderboard caching is fixed). Leftover entries in an existing `config.yml` are ignored. Five other never-implemented toggles (`protection.allow-pvp`, `trial-keys.fix-paper-bugs` / `prevent-duplication` / `max-stack-size`, `reset.clear-trial-omen-effect`) are now clearly marked **not yet implemented** in `config.yml` and the docs.
