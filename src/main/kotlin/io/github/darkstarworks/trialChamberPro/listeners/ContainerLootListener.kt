@@ -79,10 +79,16 @@ class ContainerLootListener(private val plugin: TrialChamberPro) : Listener {
         override fun getInventory(): Inventory = backing
     }
 
-    /** Marks an op editing the shared template (saved back to container_template). */
+    /**
+     * Marks an op editing the shared template (saved back to container_template).
+     * [returnChamber] is non-null when the editor was opened from the management
+     * GUI/command — closing it reopens the Container Loot view (the "back" button
+     * a deposit-style inventory can't otherwise have). Null for in-world sneak edits.
+     */
     class TemplateHolder(
         val chamberId: Int,
-        val pos: ContainerLootManager.ContainerPos
+        val pos: ContainerLootManager.ContainerPos,
+        val returnChamber: io.github.darkstarworks.trialChamberPro.models.Chamber? = null
     ) : InventoryHolder {
         lateinit var backing: Inventory
         override fun getInventory(): Inventory = backing
@@ -137,13 +143,16 @@ class ContainerLootListener(private val plugin: TrialChamberPro) : Listener {
         val size = if (holder is DoubleChest) 54 else inv.size
         val pos = ContainerLootManager.ContainerPos(keyBlock.x, keyBlock.y, keyBlock.z)
         val keyLoc = keyBlock.location
+        // Read the block material now (on the region thread) — block access off
+        // the region thread throws.
+        val keyMaterial = keyBlock.type
 
         plugin.launchAsync {
             // Shared template, materialized (loot table rolled) on first access.
             var template = plugin.containerLootManager.loadTemplate(chamber.id, pos)
             if (template == null) {
                 template = materializeOnRegion(keyLoc, size)
-                plugin.containerLootManager.saveTemplate(chamber.id, pos, template)
+                plugin.containerLootManager.saveTemplate(chamber.id, pos, template, keyMaterial)
             }
 
             if (isAdminEdit) {
@@ -170,8 +179,19 @@ class ContainerLootListener(private val plugin: TrialChamberPro) : Listener {
             is CopyHolder -> plugin.launchAsync {
                 plugin.containerLootManager.saveContents(holder.chamberId, holder.pos, player.uniqueId, contents)
             }
-            is TemplateHolder -> plugin.launchAsync {
-                plugin.containerLootManager.saveTemplate(holder.chamberId, holder.pos, contents)
+            is TemplateHolder -> {
+                plugin.launchAsync {
+                    // Contents-only update so the stored container icon is preserved.
+                    plugin.containerLootManager.updateTemplateContents(holder.chamberId, holder.pos, contents)
+                }
+                // Opened from the management GUI/command → land back in the
+                // Container Loot view (the "back" affordance). One tick later so
+                // we're not re-opening an inventory inside the close event.
+                holder.returnChamber?.let { chamber ->
+                    plugin.scheduler.runAtEntityLater(player, Runnable {
+                        if (player.isOnline) plugin.menuService.openContainerLoot(player, chamber)
+                    }, 1L)
+                }
             }
             else -> return
         }
@@ -304,9 +324,9 @@ class ContainerLootListener(private val plugin: TrialChamberPro) : Listener {
         for (cx in minCX..maxCX) {
             for (cz in minCZ..maxCZ) {
                 val rep = Location(world, (cx shl 4).toDouble(), chamber.minY.toDouble(), (cz shl 4).toDouble())
-                val rolled = kotlinx.coroutines.suspendCancellableCoroutine<List<Pair<ContainerLootManager.ContainerPos, Array<ItemStack?>>>> { cont ->
+                val rolled = kotlinx.coroutines.suspendCancellableCoroutine<List<Triple<ContainerLootManager.ContainerPos, Array<ItemStack?>, Material>>> { cont ->
                     plugin.scheduler.runAtLocation(rep, Runnable {
-                        val results = mutableListOf<Pair<ContainerLootManager.ContainerPos, Array<ItemStack?>>>()
+                        val results = mutableListOf<Triple<ContainerLootManager.ContainerPos, Array<ItemStack?>, Material>>()
                         try {
                             if (!world.isChunkLoaded(cx, cz)) world.getChunkAt(cx, cz)
                             for (te in world.getChunkAt(cx, cz).tileEntities) {
@@ -321,8 +341,11 @@ class ContainerLootListener(private val plugin: TrialChamberPro) : Listener {
                                 if (holder is DoubleChest && keyBlock != b) continue // right half — handled by the left
                                 val size = if (holder is DoubleChest) 54 else te.inventory.size
                                 results.add(
-                                    ContainerLootManager.ContainerPos(keyBlock.x, keyBlock.y, keyBlock.z)
-                                        to materializeTemplate(keyBlock, size)
+                                    Triple(
+                                        ContainerLootManager.ContainerPos(keyBlock.x, keyBlock.y, keyBlock.z),
+                                        materializeTemplate(keyBlock, size),
+                                        keyBlock.type
+                                    )
                                 )
                             }
                         } catch (e: Exception) {
@@ -331,9 +354,9 @@ class ContainerLootListener(private val plugin: TrialChamberPro) : Listener {
                         cont.resume(results) {}
                     })
                 }
-                for ((pos, contents) in rolled) {
+                for ((pos, contents, material) in rolled) {
                     if (!plugin.containerLootManager.hasTemplate(chamber.id, pos)) {
-                        plugin.containerLootManager.saveTemplate(chamber.id, pos, contents)
+                        plugin.containerLootManager.saveTemplate(chamber.id, pos, contents, material)
                         created++
                     }
                 }
@@ -356,7 +379,7 @@ class ContainerLootListener(private val plugin: TrialChamberPro) : Listener {
         val template = plugin.containerLootManager.loadTemplate(chamber.id, pos) ?: return false
         val size = if (template.size in intArrayOf(9, 18, 27, 36, 45, 54)) template.size else 27
         openVirtual(
-            player, TemplateHolder(chamber.id, pos), size,
+            player, TemplateHolder(chamber.id, pos, returnChamber = chamber), size,
             plugin.getGuiText("gui.container-loot.template-title"), template
         )
         return true
