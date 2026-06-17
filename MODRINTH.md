@@ -2,6 +2,11 @@
 
 # TrialChamberPro
 
+### What's new in 1.5.11
+
+- **Decorated pots refill after a reset again** — trial-chamber pots drop their loot from a loot table that snapshots weren't capturing, so once broken they came back empty forever. Fixed: pots now re-arm their loot and drop fresh contents every cycle. *Re-run `/tcp snapshot create` on existing chambers so the snapshot includes the pot loot.*
+- **Container Loot GUI polish** — each template now shows as its **real container** (a dispenser looks like a dispenser, a barrel like a barrel) instead of a wall of identical chests, and editing a template returns you to the overview when you close it. Fixed a tooltip that showed raw `&` colour codes.
+
 ### What's new in 1.5.9
 
 - **Per-player container loot fixed & expanded** — the Lootr-style container loot from 1.5.7 now actually works in naturally-generated chambers (containers there hold an unrolled loot table, so copies came out empty before — they're now seeded by rolling the real loot table). Op template-editing (sneak-open) works and **persists across resets**, container loot is captured + restored by snapshots, and **dispensers and droppers** are now covered alongside chests, trapped chests, and barrels. Manage it all from the chamber **GUI** (`/tcp menu` → Container Loot) or the new **`/tcp container`** command — list, materialize-all, edit, teleport, clear. *Re-run `/tcp snapshot create` on existing chambers after updating.*
