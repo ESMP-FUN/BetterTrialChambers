@@ -34,6 +34,9 @@ permissions:
       tcp.admin.create: true
       tcp.admin.menu: true
       tcp.admin.pause: true
+      tcp.admin.loot: true
+      tcp.admin.containers: true
+      tcp.admin.mobs: true
       tcp.give: true
   tcp.admin.scan:
     description: Scan for chambers
@@ -85,6 +88,9 @@ permissions:
     default: op
   tcp.bypass.vaultplace:
     description: Place VAULT blocks outside registered chambers (crate setup, creative builds)
+    default: op
+  tcp.admin.loot:
+    description: Manage per-chamber loot tables (/tcp loot set/clear/audit)
     default: op
   tcp.admin.containers:
     description: Edit per-player container loot templates (sneak-click in-world, /tcp container, and the GUI)

@@ -76,12 +76,12 @@ SQLite is perfect for single servers—no setup required, everything in one file
 global:
   default-reset-interval: 172800
   reset-warning-times: [300, 60, 30]
+  reset-complete-alert: true
   teleport-players-on-reset: true
   teleport-location: EXIT_POINT
   async-block-placement: true
   blocks-per-tick: 500
   auto-snapshot-on-register: true
-  spawner-cooldown-minutes: -1
 ```
 
 ### `default-reset-interval`
@@ -150,6 +150,8 @@ Automatically create a snapshot when registering a new chamber? Super convenient
 **Default:** `-1` (vanilla behavior)
 **Unit:** Minutes
 
+> **Note:** in `config.yml` this key lives under the **`reset:`** section (`reset.spawner-cooldown-minutes`), not `global:`.
+
 Control how long trial spawners stay in cooldown after being completed. This affects when spawners can be reactivated after players defeat all mobs.
 
 **Values:**
@@ -174,6 +176,8 @@ Control how long trial spawners stay in cooldown after being completed. This aff
 ### `wild-spawner-cooldown-minutes`
 **Default:** `-1` (vanilla behavior)
 **Unit:** Minutes
+
+> **Note:** in `config.yml` this key lives under the **`reset:`** section (`reset.wild-spawner-cooldown-minutes`), not `global:`.
 
 Control cooldown for trial spawners **outside** of registered chambers (wild/unregistered Trial Chambers). This is a server-wide setting that affects all spawners not managed by TrialChamberPro.
 
@@ -392,7 +396,11 @@ Set to `true` if you have admin chests inside chambers that shouldn't be touched
 ### `allow-pvp`
 **Default:** `true`
 
-Allow PvP inside chambers? Great for competitive chambers where teams fight over loot. Set to `false` for peaceful farming.
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
+**Not yet implemented (reserved).** There is currently no PvP handler in TrialChamberPro, so this toggle has **no effect** — PvP inside chambers follows your world/server rules regardless. Setting it to `false` does not disable PvP. Reserved for a future release.
+
+</div>
 
 ### `prevent-mob-griefing`
 **Default:** `true`
@@ -439,20 +447,11 @@ trial-keys:
   validate-key-type: true
 ```
 
-### `fix-paper-bugs`
-**Default:** `true`
+<div data-gb-custom-block data-tag="hint" data-style="warning">
 
-Paper has some bugs with trial keys. This applies fixes. Keep it `true` unless it causes issues.
+**`fix-paper-bugs`, `prevent-duplication`, and `max-stack-size` are not yet implemented (reserved).** They are read by no code and have **no effect** — trial keys behave as vanilla (stack size 1, no extra dupe protection). For dupe protection use a dedicated plugin such as [DupeTrace](https://modrinth.com/plugin/dupetrace). Only `validate-key-type` below is active.
 
-### `prevent-duplication`
-**Default:** `true`
-
-Basic dupe prevention for trial keys. For industrial-grade protection, use [DupeTrace](https://modrinth.com/plugin/dupetrace).
-
-### `max-stack-size`
-**Default:** `16`
-
-How high trial keys can stack. Vanilla is 1, but that's annoying. 16 is a nice balance.
+</div>
 
 ### `validate-key-type`
 **Default:** `true`
@@ -520,7 +519,11 @@ Convert ominous trial spawners back to normal during reset. Set to `false` if yo
 ### `clear-trial-omen-effect`
 **Default:** `true`
 
-Remove Trial Omen effects from players during reset. Prevents unintended difficulty spikes.
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
+**Not yet implemented (reserved).** Trial/Bad Omen is **not** currently removed from players on reset — this toggle has no effect. Reserved for a future release.
+
+</div>
 
 ### `reset-vault-cooldowns`
 **Default:** `true`
@@ -537,9 +540,7 @@ Set to `false` if you want personal cooldowns independent of chamber state (play
 performance:
   cache-chamber-lookups: true
   cache-duration-seconds: 300
-  async-database-operations: true
   time-tracking-interval: 300
-  use-folialib: true
 ```
 
 ### `cache-chamber-lookups`
@@ -552,20 +553,16 @@ Cache which chamber a block belongs to. Huge performance boost. Only disable for
 
 How long to cache lookups. Higher = better performance, but changes take longer to propagate.
 
-### `async-database-operations`
-**Default:** `true`
-
-Run database queries asynchronously. Critical for performance—don't turn this off.
-
 ### `time-tracking-interval`
 **Default:** `300` (5 minutes)
 
 How often to save "time spent in chamber" stats to the database. More frequent = more accurate stats but more database writes.
 
-### `use-folialib`
-**Default:** `true`
+<div data-gb-custom-block data-tag="hint" data-style="info">
 
-Enable Folia compatibility. If you're on Folia, this MUST be `true`. On Paper/Purpur, it doesn't hurt to leave it `true`.
+**Removed in 1.5.12:** `async-database-operations` and `use-folialib` were no-op toggles — database operations are always asynchronous, and Folia is auto-detected at startup. They've been removed from the default config; leftover entries in an existing `config.yml` are simply ignored.
+
+</div>
 
 ---
 
@@ -576,7 +573,6 @@ statistics:
   enabled: true
   track-time-spent: true
   track-chamber-completion: true
-  leaderboard-update-interval: 3600
   top-players-count: 10
 ```
 
@@ -594,11 +590,6 @@ Track how long players spend inside chambers. Disable if you don't care about ti
 **Default:** `true` *(added in 1.5.12)*
 
 Credit a "chamber completed" to every participant when a chamber is fully cleared (all its trial spawners finish their waves in one run). Drives the chambers leaderboard and the `%tcp_chambers_completed%` / `%tcp_leaderboard_chambers%` / `%tcp_top_chambers_*%` placeholders. Disable to leave chamber-completion stats untracked.
-
-### `leaderboard-update-interval`
-**Default:** `3600` (1 hour)
-
-How often to recalculate leaderboards. Lower = more up-to-date but more database load.
 
 ### `top-players-count`
 **Default:** `10`
