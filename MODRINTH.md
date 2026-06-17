@@ -2,32 +2,17 @@
 
 # TrialChamberPro
 
-### What's new in 1.5.12
+### Everything new since 1.5.0
 
-- **Vault economy rewards** — loot tables can now pay out money through Vault (`economy-rewards`: a `weight` chance + a fixed `amount` or `min`/`max` range). Works with EssentialsX, CMI, or any Vault economy provider; skipped cleanly if none is installed. A native, provider-agnostic alternative to `eco give` command rewards.
-- **Time-based vault cooldowns now actually work** — `vaults.normal/ominous-cooldown-hours` with a positive value reopens a vault that many hours after a player loots it (with a remaining-time message). `0` stays permanent-until-reset. Previously the setting was silently ignored.
-- **Chamber completions are recorded** — the chambers leaderboard, `/tcp stats`, and the `%tcp_chambers_completed%` / `%tcp_top_chambers_*%` placeholders were stuck at 0. Now credited to every participant on a full chamber clear.
+- **The whole chamber is now per-player** — vaults *and* chests / barrels / dispensers / droppers each hand every player their own Lootr-style copy that resets with the chamber, and decorated pots refill again too. (`chests.per-player-loot: true`)
+- **Vaults, expanded** — native **Vault economy rewards** in loot tables, working **time-based cooldowns** (`vaults.*-cooldown-hours`), **key-to-reopen** vaults, and opt-in floating **✔ / ✘ hologram feedback**.
+- **Loot & dungeons** — pull real **vanilla / datapack loot tables** into drops (`type: VANILLA_TABLE`), faithful loot NBT with a bulk drag-in editor, and **procedural dungeon generation** (`/tcp dungeon`).
+- **Stats** — chamber-completion tracking, leaderboards, and a pile of new PlaceholderAPI placeholders.
+- **Protection** — real **WorldGuard integration**, **wild-vault placement** blocking, and opt-in **auto-pause** when a chamber is demolished.
+- **Reliability** — fixed vanilla-loot fallback on 100+ chamber servers, hardened/throttled resets that can't over-clear terrain, and working spawner glow outlines (`glow-mode: chamber-remaining`).
+- **Devs & networks** — a Bukkit events API (`ChamberCleared` / `Entered` / `Exited`…), custom-mob providers (MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens), a fully translatable MiniMessage GUI, and a **Minecraft 26.x** build (`-mc26`).
 
-### What's new in 1.5.11
-
-- **Decorated pots refill after a reset again** — trial-chamber pots drop their loot from a loot table that snapshots weren't capturing, so once broken they came back empty forever. Fixed: pots now re-arm their loot and drop fresh contents every cycle. *Re-run `/tcp snapshot create` on existing chambers so the snapshot includes the pot loot.*
-- **Container Loot GUI polish** — each template now shows as its **real container** (a dispenser looks like a dispenser, a barrel like a barrel) instead of a wall of identical chests, and editing a template returns you to the overview when you close it. Fixed a tooltip that showed raw `&` colour codes.
-
-### What's new in 1.5.9
-
-- **Per-player container loot fixed & expanded** — the Lootr-style container loot from 1.5.7 now actually works in naturally-generated chambers (containers there hold an unrolled loot table, so copies came out empty before — they're now seeded by rolling the real loot table). Op template-editing (sneak-open) works and **persists across resets**, container loot is captured + restored by snapshots, and **dispensers and droppers** are now covered alongside chests, trapped chests, and barrels. Manage it all from the chamber **GUI** (`/tcp menu` → Container Loot) or the new **`/tcp container`** command — list, materialize-all, edit, teleport, clear. *Re-run `/tcp snapshot create` on existing chambers after updating.*
-- **WorldGuard integration now works** — `protection.worldguard-integration` was a no-op; it now respects WG regions, so a region owner/member (or anyone with WG build rights) can build inside a chamber that overlaps their region without TCP blocking them.
-- **Hologram vault feedback** *(opt-in, new in 1.5.8)* — set `vaults.feedback.mode: HOLOGRAM` and the vault chat lines become a floating **green ✔ / red ✘** above the vault, shown only to the player who opened it, with a pillager cheer on success and a grumble on failure. Covers every outcome (open, no key, wrong key, on cooldown, can't afford a reopen). Symbols, sounds, size and duration are all configurable; particles and advancements are untouched.
-- **Per-player chamber chest loot** *(opt-in)* — every player who opens a chest or barrel inside a registered chamber now gets their **own copy of its contents**, Lootr-style. No more gutted chests for the second player in. Copies reset with the chamber, hopper-draining is blocked, and player-placed containers keep vanilla behaviour. Combined with per-player vaults, the **entire chamber is now per-player**. One config line: `chests.per-player-loot: true`.
-- **Key-to-reopen vaults** *(opt-in)* — set `vaults.reopen-cost-keys` and players can open an already-used vault again by paying that many matching trial keys, instead of waiting for the cooldown or reset.
-- **Vanilla & datapack loot tables in loot.yml** — a pool entry of `type: VANILLA_TABLE` with `table: "minecraft:chests/trial_chambers/reward"` (or any datapack key) rolls the real server loot table straight into the drop.
-- **Clickable `/tcp list`** — click a chamber name to copy it, or the **[menu]** button to jump straight into that chamber's GUI (`/tcp menu <chamber>` deep-link).
-- **Wild vault protection** *(on by default)* — players can no longer place functioning VAULT blocks outside registered chambers (a permanent loot dispenser the plugin can't manage). Ops are exempt.
-- **Spawner glow outline finally works** *(1.5.4–1.5.6)* — the opt-in glow around active trial spawners now actually renders, sits flush on the block, and can't be punched out or farmed. New `glow-mode: chamber-remaining` lights up every uncleared spawner in the chamber — no more hunting the one you missed.
-- **Critical reset & discovery fixes** *(1.5.6)* — chamber resets can no longer clear terrain beyond what their snapshot covers, discovery auto-snapshots are properly linked, and merged chambers re-capture their snapshot automatically. If a pre-1.5.6 reset damaged one of your chambers: `/tcp delete <chamber>` removes the broken registration and its stale snapshot in one step.
-- **QoL** — `/tcp snapshot create|update|restore` work without a chamber name when you're standing inside one; new `ChamberEnteredEvent`/`ChamberExitedEvent` for plugin developers.
-
-Plus the 1.5.0 foundation: **vanilla-loot-fallback fix on 100+ chamber servers**, **faithful loot NBT + bulk drag-in editor**, **procedural dungeon generation** (`/tcp dungeon`), **hardened throttled resets**, and **`ChamberClearedEvent`**. And the 1.3.x–1.4.x line: **custom mobs** (MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens), **fully translatable GUI**, **Bukkit events API**, **spawner presets**, **chamber pause state**, **MiniMessage everywhere**, and **Minecraft 26.x support** via the `-mc26` build.
+*Upgrading? Re-run `/tcp snapshot create` on existing chambers so container & decorated-pot loot is captured.*
 
 📘 **Full documentation:** https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation — most questions are answered there, and every section below links to its own detailed page.
 
