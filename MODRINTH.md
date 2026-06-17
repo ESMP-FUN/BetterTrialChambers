@@ -2,6 +2,12 @@
 
 # TrialChamberPro
 
+### What's new in 1.5.12
+
+- **Vault economy rewards** — loot tables can now pay out money through Vault (`economy-rewards`: a `weight` chance + a fixed `amount` or `min`/`max` range). Works with EssentialsX, CMI, or any Vault economy provider; skipped cleanly if none is installed. A native, provider-agnostic alternative to `eco give` command rewards.
+- **Time-based vault cooldowns now actually work** — `vaults.normal/ominous-cooldown-hours` with a positive value reopens a vault that many hours after a player loots it (with a remaining-time message). `0` stays permanent-until-reset. Previously the setting was silently ignored.
+- **Chamber completions are recorded** — the chambers leaderboard, `/tcp stats`, and the `%tcp_chambers_completed%` / `%tcp_top_chambers_*%` placeholders were stuck at 0. Now credited to every participant on a full chamber clear.
+
 ### What's new in 1.5.11
 
 - **Decorated pots refill after a reset again** — trial-chamber pots drop their loot from a loot table that snapshots weren't capturing, so once broken they came back empty forever. Fixed: pots now re-arm their loot and drop fresh contents every cycle. *Re-run `/tcp snapshot create` on existing chambers so the snapshot includes the pot loot.*
