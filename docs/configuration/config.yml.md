@@ -372,6 +372,10 @@ protection:
   allow-pvp: true
   prevent-mob-griefing: true
   worldguard-integration: true
+  residence-integration: true
+  lands-integration: true
+  griefprevention-integration: true
+  claim-conflict-scan-on-startup: true
   auto-pause-on-destruction: false
   auto-pause-threshold: 6
 ```
@@ -411,6 +415,16 @@ Stop mobs from breaking blocks (creeper explosions, endermen picking up blocks, 
 **Default:** `true` *(functional since 1.5.9)*
 
 If WorldGuard is installed, **respect its regions**: when a WorldGuard region covers a spot inside a chamber and grants the player build rights — region membership, an explicit `build` flag allow, or WorldGuard bypass — TrialChamberPro yields and skips its own block-break / block-place / container-access protection there. This lets region owners and staff work inside chambers that overlap their regions without disabling TCP protection elsewhere. Where there is no WG region (or the player has no build rights), TCP protection applies as normal. Set to `false` to ignore WorldGuard entirely.
+
+### `residence-integration` / `lands-integration` / `griefprevention-integration`
+**Default:** `true` *(added in 1.5.15)*
+
+If the matching land-claim plugin is installed, **stop players claiming a registered chamber**: TCP cancels that plugin's claim-create and claim-expand actions when the claimed area overlaps a chamber, and tells the player. This prevents someone fencing off a chamber and changing its claim flags to interfere with resets, loot, or protection. Each plugin has its own toggle and its own bypass permission (`tcp.bypass.residence` / `tcp.bypass.lands` / `tcp.bypass.griefprevention`, default op). Servers without the plugin are unaffected — the integration only activates when the plugin is present. Existing claims aren't removed; see the conflict scan below.
+
+### `claim-conflict-scan-on-startup`
+**Default:** `true` *(added in 1.5.15)*
+
+On startup, check every registered chamber against existing claims from the enabled land-claim plugins and log a warning for each overlap — including the chamber name, its location, and the claim owner. This surfaces pre-existing conflicts (e.g. a chamber registered on top of a claim made earlier) so you can resolve them. Re-run the scan at any time with **`/tcp claims scan`**. Set to `false` to skip the automatic startup scan (the command still works).
 
 ### `block-wild-vault-placement`
 **Default:** `true` *(added in 1.5.7)*

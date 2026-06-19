@@ -117,6 +117,9 @@ class TrialChamberPro : JavaPlugin() {
     /** Stored so the GUI / `/tcp container` command can drive container-loot template ops. */
     lateinit var containerLootListener: io.github.darkstarworks.trialChamberPro.listeners.ContainerLootListener
 
+    /** Land-claim plugin integrations (Residence/Lands/GriefPrevention); drives `/tcp claims scan`. */
+    lateinit var claimIntegrationManager: io.github.darkstarworks.trialChamberPro.integrations.claims.ClaimIntegrationManager
+
     // Listeners with coroutine scopes (stored for proper shutdown)
     private lateinit var playerMovementListener: PlayerMovementListener
     private lateinit var playerDeathListener: PlayerDeathListener
@@ -426,6 +429,27 @@ class TrialChamberPro : JavaPlugin() {
                         io.github.darkstarworks.trialChamberPro.listeners.OrphanSpawnerMineListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
+
+                    // v1.5.15: shield registered chambers from land-claim plugins
+                    // (Residence / Lands / GriefPrevention) via reflection — no compile-time
+                    // dependency. Each integration is gated by its own config toggle + plugin
+                    // presence. Also scans for pre-existing claim conflicts and logs them.
+                    claimIntegrationManager =
+                        io.github.darkstarworks.trialChamberPro.integrations.claims.ClaimIntegrationManager(this@TrialChamberPro)
+                    claimIntegrationManager.registerGuards()
+                    if (config.getBoolean("protection.claim-conflict-scan-on-startup", true) &&
+                        claimIntegrationManager.hasActiveProvider()
+                    ) {
+                        scheduler.runTask(Runnable {
+                            val conflicts = claimIntegrationManager.scanAndLog()
+                            if (conflicts > 0) {
+                                logger.warning(
+                                    "Claim conflict scan: $conflicts chamber(s) overlap existing claims " +
+                                        "(see warnings above). Re-check anytime with /tcp claims scan."
+                                )
+                            }
+                        })
+                    }
 
                     // Mute the vanilla "Trial Spawner ... has no detected players"
                     // console spam from any chambers still broken from before the

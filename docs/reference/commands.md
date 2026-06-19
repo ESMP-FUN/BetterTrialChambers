@@ -17,7 +17,7 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 |---------|-------------|------------|
 | `/tcp help` | Show command list | None |
 | `/tcp menu [chamber]` | Open admin GUI (with a chamber name: jump straight to that chamber's detail view) | `tcp.admin.menu` |
-| `/tcp generate <value|coords|wand|blocks>` | Register chamber from saved var, coords, WE wand, or by block amount | `tcp.admin.generate` |
+| `/tcp generate <value\|coords\|wand\|blocks>` | Register chamber from saved var, coords, WE wand, or by block amount | `tcp.admin.generate` |
 | `/tcp scan <chamber>` | Scan for vaults/spawners | `tcp.admin.scan` |
 | `/tcp setexit <chamber>` | Set exit location | `tcp.admin.create` |
 | `/tcp snapshot <create\|update\|restore> [chamber]` | Manage snapshots (omit the name to target the chamber you're standing in) | `tcp.admin.snapshot` |
@@ -45,6 +45,7 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | `/tcp key check <player>` | Check player's keys | `tcp.admin.key` |
 | `/tcp stats [player]` | View statistics | `tcp.stats` / `tcp.admin.stats` |
 | `/tcp leaderboard <type>` | View leaderboards | `tcp.stats` |
+| `/tcp claims scan` | Log chambers that overlap existing land-claim plugin claims | `tcp.admin.reload` |
 | `/tcp reload` | Reload configuration | `tcp.admin.reload` |
 
 ---
@@ -750,6 +751,36 @@ View top players for a specific statistic.
 **Leaderboards are cached** to prevent database lag. They update on the interval specified in config, not in real-time.
 
 </div>
+
+---
+
+### `/tcp claims scan`
+
+Checks every registered chamber against existing claims from any installed land-claim plugin (**Residence**, **Lands**, **GriefPrevention**) and logs a warning to the console for each overlap. Use it to find chambers that were registered on top of — or had a claim made inside them before — the [claim integrations](../configuration/config.yml.md#residence-integration-lands-integration-griefprevention-integration) existed. *(Added in 1.5.15.)*
+
+**Usage:**
+```
+/tcp claims scan
+```
+
+**Permission:** `tcp.admin.reload`
+
+**What it does:**
+- For each enabled integration, walks that plugin's claims once and reports any that overlap a chamber's bounds.
+- Logs one line per conflict to the **server console**, e.g.:
+  ```
+  [TCP] Claim conflict: chamber 'arena3' (world 120,-44,310) overlaps GriefPrevention claim(s): Steve
+  ```
+- Replies in chat with the total number of conflicting chambers (or "No claim conflicts found.").
+
+This also runs automatically on startup unless you set [`protection.claim-conflict-scan-on-startup: false`](../configuration/config.yml.md#claim-conflict-scan-on-startup).
+
+**How to resolve a reported conflict:**
+1. Note the chamber name, the location, and the claim owner from the log line.
+2. Decide which should win that space:
+   - **Keep the chamber:** remove or resize the claim in the claim plugin (e.g. Residence `/res remove`, Lands `/unclaim`, GriefPrevention claim resize/abandon), then re-run `/tcp claims scan` to confirm it's clear.
+   - **Keep the claim:** [delete the chamber](#tcp-delete-chamber) (`/tcp delete <chamber>`) or move/re-register it elsewhere.
+3. New claims can no longer be made into chambers, so once existing conflicts are cleared they won't reappear (except for players with the relevant `tcp.bypass.*` permission).
 
 ---
 
