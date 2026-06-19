@@ -211,23 +211,30 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
             else -> "chambers_completed"
         }
 
-        plugin.databaseManager.connection.use { conn ->
-            conn.prepareStatement(
-                "SELECT player_uuid, $column AS value FROM player_stats ORDER BY value DESC LIMIT ?"
-            ).use { stmt ->
-                stmt.setInt(1, limit)
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement(
+                    "SELECT player_uuid, $column AS value FROM player_stats ORDER BY value DESC LIMIT ?"
+                ).use { stmt ->
+                    stmt.setInt(1, limit)
 
-                val results = mutableListOf<Pair<UUID, Int>>()
-                stmt.executeQuery().use { rs ->
-                    while (rs.next()) {
-                        val uuid = UUID.fromString(rs.getString("player_uuid"))
-                        val value = rs.getInt("value")
-                        results.add(uuid to value)
+                    val results = mutableListOf<Pair<UUID, Int>>()
+                    stmt.executeQuery().use { rs ->
+                        while (rs.next()) {
+                            val uuid = UUID.fromString(rs.getString("player_uuid"))
+                            val value = rs.getInt("value")
+                            results.add(uuid to value)
+                        }
                     }
-                }
 
-                results
+                    results
+                }
             }
+        } catch (e: Exception) {
+            // Degrade gracefully: an empty board is far better than throwing into the GUI's
+            // click handler ("Could not pass event"). The schema self-check logs the root cause.
+            plugin.logger.warning("Leaderboard query failed (stat=$stat): ${e.message}")
+            emptyList()
         }
     }
 
@@ -251,32 +258,39 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
      * Creates a new entry if the player doesn't have stats yet.
      */
     private fun loadStatsFromDatabase(playerUuid: UUID): PlayerStats {
-        plugin.databaseManager.connection.use { conn ->
-            conn.prepareStatement(
-                "SELECT * FROM player_stats WHERE player_uuid = ?"
-            ).use { stmt ->
-                stmt.setString(1, playerUuid.toString())
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement(
+                    "SELECT * FROM player_stats WHERE player_uuid = ?"
+                ).use { stmt ->
+                    stmt.setString(1, playerUuid.toString())
 
-                stmt.executeQuery().use { rs ->
-                    return if (rs.next()) {
-                        PlayerStats(
-                            playerUuid = playerUuid,
-                            chambersCompleted = rs.getInt("chambers_completed"),
-                            normalVaultsOpened = rs.getInt("normal_vaults_opened"),
-                            ominousVaultsOpened = rs.getInt("ominous_vaults_opened"),
-                            mobsKilled = rs.getInt("mobs_killed"),
-                            deaths = rs.getInt("deaths"),
-                            timeSpent = rs.getLong("time_spent"),
-                            lastUpdated = rs.getLong("last_updated")
-                        )
-                    } else {
-                        // Create new stats entry
-                        val newStats = PlayerStats(playerUuid = playerUuid)
-                        saveStats(newStats)
-                        newStats
+                    stmt.executeQuery().use { rs ->
+                        return if (rs.next()) {
+                            PlayerStats(
+                                playerUuid = playerUuid,
+                                chambersCompleted = rs.getInt("chambers_completed"),
+                                normalVaultsOpened = rs.getInt("normal_vaults_opened"),
+                                ominousVaultsOpened = rs.getInt("ominous_vaults_opened"),
+                                mobsKilled = rs.getInt("mobs_killed"),
+                                deaths = rs.getInt("deaths"),
+                                timeSpent = rs.getLong("time_spent"),
+                                lastUpdated = rs.getLong("last_updated")
+                            )
+                        } else {
+                            // Create new stats entry
+                            val newStats = PlayerStats(playerUuid = playerUuid)
+                            saveStats(newStats)
+                            newStats
+                        }
                     }
                 }
             }
+        } catch (e: Exception) {
+            // Degrade gracefully on a schema/DB error: return empty stats rather than throwing.
+            // The schema self-check logs the underlying cause (e.g. a drifted player_stats table).
+            plugin.logger.warning("Failed to load stats for $playerUuid: ${e.message}")
+            return PlayerStats(playerUuid = playerUuid)
         }
     }
 
