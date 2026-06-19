@@ -1,4 +1,7 @@
 <black>.
+<aqua>[1.5.13] <gray>- <white>2026-06-19
+<lime>+ <white>FIX: <green>MySQL/MariaDB servers couldn't save vaults (<yellow>error in your SQL syntax … near 'CONFLICT'<green>). Vault saving and per-player open tracking now use the correct upsert on MySQL/MariaDB. SQLite is unaffected.
+<lime>+ <white>FIX: <green><yellow>/tcp give<green> and <yellow>/tcp stats<green> against an unknown player no longer show a raw <yellow>Message not found<green> line.
 <aqua>[1.5.12] <gray>- <white>2026-06-17
 <lime>+ <white>NEW: <green>Vault economy rewards in loot tables — pay money on vault open via an <yellow>economy-rewards<green> list (weight + amount/min-max). Works with EssentialsX, CMI, any Vault economy; skipped cleanly if none is installed.
 <lime>+ <white>FIX: <green>Time-based vault cooldowns now actually work — <yellow>vaults.normal/ominous-cooldown-hours > 0<green> reopens the vault that many hours after opening (with a remaining-time message). <yellow>0<green> = permanent until reset, as before.
@@ -8,7 +11,4 @@
 <lime>+ <white>FIX: <green>Container Loot GUI tooltip showed raw <yellow>&<green> colour codes; status now renders correctly.
 <lime>+ <white>CHG: <green>Container Loot GUI shows each template as its <yellow>real container<green> (dispenser as a dispenser, barrel as a barrel, …) instead of all chests — much easier to find one among 30+.
 <lime>+ <white>CHG: <green>Editing a template from the GUI / <yellow>/tcp container edit<green> now returns you to the Container Loot view when you close it.
-<aqua>[1.5.10] <gray>- <white>2026-06-16
-<lime>+ <white>NEW: <green>More PlaceholderAPI placeholders — <yellow>%tcp_kdr%<green>, <yellow>%tcp_current_chamber_reset%<green>, <yellow>%tcp_current_chamber_paused%<green>, <yellow>%tcp_chamber_count%<green>, <yellow>%tcp_leaderboard_mobs%<green>, and <yellow>%tcp_top_mobs_<n>_name/value%<green>. Full list now documented in the wiki.
-<lime>+ <white>FIX: <green><yellow>%tcp_leaderboard_vaults%<green> / <yellow>%tcp_top_vaults_*<green> now rank by the normal+ominous TOTAL (matching <yellow>%tcp_vaults_opened%<green>), not normal-only.
 <black>.
