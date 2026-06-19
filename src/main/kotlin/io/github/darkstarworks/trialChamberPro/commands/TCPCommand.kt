@@ -66,6 +66,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             "resume" -> handleResume(sender, args)
             "container", "containers" -> containerHandler.execute(sender, args)
             "claims" -> handleClaims(sender, args)
+            "debug" -> handleDebug(sender, args)
             else -> sender.sendMessage(plugin.getMessageComponent("unknown-command"))
         }
 
@@ -105,7 +106,34 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         sender.sendMessage(plugin.getMessageComponent("help-menu"))
         sender.sendRichMessage("<yellow>/tcp container <list|materialize|reset|clearcopies|tp|edit> <chamber> <gray>- Manage per-player container loot")
         sender.sendRichMessage("<yellow>/tcp claims scan <gray>- Find chambers overlapping land-claim plugin claims")
+        sender.sendRichMessage("<yellow>/tcp debug schema <gray>- Print database table columns (diagnostics)")
         sender.sendMessage(plugin.getMessageComponent("help-reload"))
+    }
+
+    private fun handleDebug(sender: CommandSender, args: Array<out String>) {
+        if (!sender.hasPermission("tcp.admin.reload")) {
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
+            return
+        }
+        if (args.getOrNull(1)?.lowercase() != "schema") {
+            sender.sendRichMessage("<yellow>/tcp debug schema <gray>- Print each database table's actual columns")
+            return
+        }
+        sender.sendRichMessage("<gray>Reading database schema…")
+        plugin.launchAsync {
+            val schema = plugin.databaseManager.describeSchema()
+            plugin.scheduler.runTask(Runnable {
+                sender.sendRichMessage("<gold>TCP database schema <gray>(${plugin.databaseManager.databaseType}):")
+                for ((table, cols) in schema) {
+                    if (cols.isEmpty()) {
+                        sender.sendRichMessage("<red>$table<gray>: (missing table)")
+                    } else {
+                        val flag = if (table == "player_stats" && "player_uuid" !in cols) "<red>" else "<green>"
+                        sender.sendRichMessage("$flag$table<gray>: ${cols.joinToString(", ")}")
+                    }
+                }
+            })
+        }
     }
 
     private fun handleClaims(sender: CommandSender, args: Array<out String>) {

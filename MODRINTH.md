@@ -2,6 +2,8 @@
 
 # TrialChamberPro
 
+**Please share your "If it would do [THING], I would use it" feedback!** [<img src="https://raw.githubusercontent.com/darkstarworks/TrialChamberPro/master/dc.png" width="30" alt="Join Discord Server">](https://discord.gg/qwYcTpHsNC)
+
 ### 🛡️ New in 1.5.15 — Land-claim protection
 
 Players can no longer fence off your Trial Chambers. If you run **Residence**, **Lands**, or **GriefPrevention**, TrialChamberPro now **blocks any claim from being created or expanded into a registered chamber** — so nobody can claim a chamber and flip its flags to break resets, loot, or protection.
