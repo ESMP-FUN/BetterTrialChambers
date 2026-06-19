@@ -2,6 +2,16 @@
 
 # TrialChamberPro
 
+### 🛡️ New in 1.5.15 — Land-claim protection
+
+Players can no longer fence off your Trial Chambers. If you run **Residence**, **Lands**, or **GriefPrevention**, TrialChamberPro now **blocks any claim from being created or expanded into a registered chamber** — so nobody can claim a chamber and flip its flags to break resets, loot, or protection.
+
+- Works with **Residence**, **Lands**, and **GriefPrevention** — each with its own on/off toggle and its own `tcp.bypass.*` permission for trusted staff.
+- **`/tcp claims scan`** (and an automatic startup scan) finds chambers that are *already* sitting under an existing claim and logs each one — name, location, and owner — so long-running servers can hunt down and clean up old conflicts (and any quiet abuse).
+- Zero setup and zero overhead if you don't run one of these plugins — the integration only activates when the plugin is present.
+
+---
+
 ### Everything new since 1.5.0
 
 - **The whole chamber is now per-player** — vaults *and* chests / barrels / dispensers / droppers each hand every player their own Lootr-style copy that resets with the chamber, and decorated pots refill again too. (`chests.per-player-loot: true`)
