@@ -20,6 +20,9 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
     private val statsCache = ConcurrentHashMap<UUID, PlayerStats>()
     private val cacheExpiry = ConcurrentHashMap<UUID, Long>()
 
+    /** TCP's namespaced stats table (`tcp_player_stats`) — see [io.github.darkstarworks.trialChamberPro.database.DatabaseManager.STATS_TABLE]. */
+    private val statsTable = io.github.darkstarworks.trialChamberPro.database.DatabaseManager.STATS_TABLE
+
     // Per-player mutexes to prevent concurrent database loads for the same player
     private val loadingLocks = ConcurrentHashMap<UUID, Mutex>()
 
@@ -151,7 +154,7 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
 
                 val sql = if (isSQLite) {
                     """
-                    INSERT INTO player_stats (player_uuid, time_spent, last_updated)
+                    INSERT INTO $statsTable (player_uuid, time_spent, last_updated)
                     VALUES (?, ?, ?)
                     ON CONFLICT(player_uuid) DO UPDATE SET
                         time_spent = time_spent + excluded.time_spent,
@@ -159,7 +162,7 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
                     """.trimIndent()
                 } else {
                     """
-                    INSERT INTO player_stats (player_uuid, time_spent, last_updated)
+                    INSERT INTO $statsTable (player_uuid, time_spent, last_updated)
                     VALUES (?, ?, ?)
                     ON DUPLICATE KEY UPDATE
                         time_spent = time_spent + VALUES(time_spent),
@@ -214,7 +217,7 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
-                    "SELECT player_uuid, $column AS value FROM player_stats ORDER BY value DESC LIMIT ?"
+                    "SELECT player_uuid, $column AS value FROM $statsTable ORDER BY value DESC LIMIT ?"
                 ).use { stmt ->
                     stmt.setInt(1, limit)
 
@@ -244,7 +247,7 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
     suspend fun resetStats(playerUuid: UUID) = withContext(Dispatchers.IO) {
         plugin.databaseManager.connection.use { conn ->
             conn.prepareStatement(
-                "DELETE FROM player_stats WHERE player_uuid = ?"
+                "DELETE FROM $statsTable WHERE player_uuid = ?"
             ).use { stmt ->
                 stmt.setString(1, playerUuid.toString())
                 stmt.executeUpdate()
@@ -261,7 +264,7 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
-                    "SELECT * FROM player_stats WHERE player_uuid = ?"
+                    "SELECT * FROM $statsTable WHERE player_uuid = ?"
                 ).use { stmt ->
                     stmt.setString(1, playerUuid.toString())
 
@@ -305,14 +308,14 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
 
             val sql = if (isSQLite) {
                 """
-                INSERT OR REPLACE INTO player_stats
+                INSERT OR REPLACE INTO $statsTable
                 (player_uuid, chambers_completed, normal_vaults_opened, ominous_vaults_opened,
                  mobs_killed, deaths, time_spent, last_updated)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """
             } else {
                 """
-                INSERT INTO player_stats
+                INSERT INTO $statsTable
                 (player_uuid, chambers_completed, normal_vaults_opened, ominous_vaults_opened,
                  mobs_killed, deaths, time_spent, last_updated)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)

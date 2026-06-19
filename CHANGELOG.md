@@ -6,11 +6,11 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [1.5.16] - Unreleased
 ### Fixed
-- **Stats / leaderboard GUI could crash** (`Could not pass event InventoryClickEvent`) on MySQL/MariaDB when the `player_stats` table predated the current schema (e.g. missing `player_uuid`). The leaderboard and per-player stat reads now degrade gracefully — log a clear `[TCP]` error and return empty — instead of throwing into the GUI click handler.
+- **Stats / leaderboard GUI crashed on shared databases** (`Could not pass event InventoryClickEvent`). If another plugin (e.g. a duels / PvP-stats plugin) already owned a generically-named `player_stats` table, TCP's `CREATE TABLE IF NOT EXISTS` saw it and never created its own — so every stat read/write hit the wrong table. TCP now uses its own namespaced **`tcp_player_stats`** table: existing TCP stats are migrated to it automatically on first start, and a foreign `player_stats` is left completely untouched. The stats GUI also now degrades gracefully (logs a clear `[TCP]` error and shows an empty board) instead of throwing into the click handler if a stat query ever fails.
 
 ### Added
-- **Database schema self-check** on startup — reads each table's live columns and reconciles drift: missing (safe) `player_stats` columns are added automatically, and a missing critical column like the `player_uuid` primary key is reported with a loud, actionable warning that lists the table's actual columns.
-- **`/tcp debug schema`** — prints every TCP table's live columns on demand (no database client needed), flagging `player_stats` if its primary key is absent.
+- **Database schema self-check** on startup — reads each table's live columns and reconciles drift: missing (safe) `tcp_player_stats` columns are added automatically, and a missing critical column like the `player_uuid` primary key is reported with a loud, actionable warning that lists the table's actual columns.
+- **`/tcp debug schema`** — prints every TCP table's live columns on demand (no database client needed), flagging the stats table if its primary key is absent.
 
 ## [1.5.15] - 2026-06-19
 ### Added
