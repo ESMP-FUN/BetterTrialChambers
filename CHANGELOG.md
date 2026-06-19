@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.5.16] - Unreleased
+### Fixed
+- **Stats / leaderboard GUI could crash** (`Could not pass event InventoryClickEvent`) on MySQL/MariaDB when the `player_stats` table predated the current schema (e.g. missing `player_uuid`). The leaderboard and per-player stat reads now degrade gracefully — log a clear `[TCP]` error and return empty — instead of throwing into the GUI click handler.
+
+### Added
+- **Database schema self-check** on startup — reads each table's live columns and reconciles drift: missing (safe) `player_stats` columns are added automatically, and a missing critical column like the `player_uuid` primary key is reported with a loud, actionable warning that lists the table's actual columns.
+- **`/tcp debug schema`** — prints every TCP table's live columns on demand (no database client needed), flagging `player_stats` if its primary key is absent.
+
 ## [1.5.15] - 2026-06-19
 ### Added
 - **Land-claim plugin protection** — registered Trial Chambers can no longer be claimed (or have a claim expanded into them) with **Residence**, **Lands**, or **GriefPrevention**. Each integration cancels that plugin's claim-create / expand events when the claimed area overlaps a chamber, with a message to the player. Per-plugin config toggles (`protection.residence-integration` / `lands-integration` / `griefprevention-integration`, default on) and per-plugin bypass permissions (`tcp.bypass.residence` / `.lands` / `.griefprevention`, default op). Integrations are reflection-based — no version pinning, and nothing is touched on servers without the plugin.
@@ -1405,6 +1413,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.5.16]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.15...v1.5.16
 [1.5.15]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.14...v1.5.15
 [1.5.14]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.13...v1.5.14
 [1.5.13]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.12...v1.5.13

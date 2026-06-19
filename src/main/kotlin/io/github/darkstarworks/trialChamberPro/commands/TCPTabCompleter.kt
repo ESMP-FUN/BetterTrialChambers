@@ -15,10 +15,11 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
         "help", "reload", "generate", "paste", "scan", "setexit",
         "snapshot", "list", "info", "delete", "vault", "key",
         "stats", "leaderboard", "lb", "top", "reset", "menu", "loot", "mobs", "give",
-        "pause", "resume", "dungeon", "container", "claims"
+        "pause", "resume", "dungeon", "container", "claims", "debug"
     )
 
     private val claimsActions = listOf("scan")
+    private val debugActions = listOf("schema")
 
     private val dungeonActions = listOf("pos1", "pos2", "capture", "generate", "list", "delete")
     private val containerActions = listOf("list", "materialize", "reset", "clearcopies", "tp", "edit")
@@ -84,6 +85,7 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                     "dungeon" -> dungeonActions.filter { it.startsWith(args[1].lowercase()) }
                     "container", "containers" -> containerActions.filter { it.startsWith(args[1].lowercase()) }
                     "claims" -> claimsActions.filter { it.startsWith(args[1].lowercase()) }
+                    "debug" -> debugActions.filter { it.startsWith(args[1].lowercase()) }
                     "list" -> listOf("current").filter { it.startsWith(args[1].lowercase()) }
                     else -> emptyList()
                 }
