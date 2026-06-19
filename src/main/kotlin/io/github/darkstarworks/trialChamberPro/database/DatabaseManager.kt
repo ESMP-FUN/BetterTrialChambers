@@ -44,6 +44,15 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
         SQLITE, MYSQL
     }
 
+    companion object {
+        /**
+         * TCP's player-statistics table. Namespaced with a `tcp_` prefix (v1.5.16) after a
+         * shared-database collision with another plugin's generic `player_stats` table; older
+         * TCP installs are migrated automatically (see `migratePlayerStatsTableName`).
+         */
+        const val STATS_TABLE = "tcp_player_stats"
+    }
+
     /**
      * Initializes the database connection pool and creates tables.
      */
@@ -139,6 +148,10 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
      */
     private suspend fun createTables() = withContext(Dispatchers.IO) {
         connection.use { conn ->
+            // Migrate TCP's own stats table to a namespaced name BEFORE creating tables,
+            // so an unrelated plugin's `player_stats` table on a shared database can't be
+            // mistaken for ours.
+            migratePlayerStatsTableName(conn)
             conn.createStatement().use { stmt ->
                 // Chambers table
                 stmt.execute(
@@ -257,7 +270,7 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
                 // Player statistics table
                 stmt.execute(
                     """
-                    CREATE TABLE IF NOT EXISTS player_stats (
+                    CREATE TABLE IF NOT EXISTS tcp_player_stats (
                         player_uuid VARCHAR(36) PRIMARY KEY,
                         chambers_completed INT DEFAULT 0,
                         normal_vaults_opened INT DEFAULT 0,
@@ -378,7 +391,7 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
     /** Every table TCP owns, for the schema report. */
     private val knownTables = listOf(
         "chambers", "vaults", "spawners", "player_vaults",
-        "player_container_loot", "container_template", "player_stats",
+        "player_container_loot", "container_template", STATS_TABLE,
     )
 
     /**
@@ -389,13 +402,13 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
      */
     private suspend fun verifyAndHealSchema() = withContext(Dispatchers.IO) {
         connection.use { conn ->
-            val statsCols = actualColumns(conn, "player_stats")
+            val statsCols = actualColumns(conn, STATS_TABLE)
             if (statsCols.isEmpty()) return@use // table absent or metadata unavailable
 
             if ("player_uuid" !in statsCols) {
-                plugin.logger.severe("[schema] 'player_stats' is MISSING its 'player_uuid' column (found: ${statsCols.joinToString(", ")}).")
-                plugin.logger.severe("[schema] This table predates the current schema, so stats saving and leaderboards cannot work.")
-                plugin.logger.severe("[schema] Fix: back up the table, then rename your id column to 'player_uuid', or drop 'player_stats' so TCP recreates it. See /tcp debug schema.")
+                plugin.logger.severe("[schema] '$STATS_TABLE' is MISSING its 'player_uuid' column (found: ${statsCols.joinToString(", ")}).")
+                plugin.logger.severe("[schema] Stats saving and leaderboards cannot work until this is reconciled.")
+                plugin.logger.severe("[schema] Back up the table, then rename its id column to 'player_uuid', or drop '$STATS_TABLE' so TCP recreates it. See /tcp debug schema.")
                 return@use
             }
 
@@ -403,13 +416,32 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
                 for ((name, ddl) in healablePlayerStatsColumns) {
                     if (name in statsCols) continue
                     try {
-                        stmt.execute("ALTER TABLE player_stats ADD COLUMN $name $ddl")
-                        plugin.logger.warning("[schema] Added missing 'player_stats' column '$name'.")
+                        stmt.execute("ALTER TABLE $STATS_TABLE ADD COLUMN $name $ddl")
+                        plugin.logger.warning("[schema] Added missing '$STATS_TABLE' column '$name'.")
                     } catch (e: SQLException) {
-                        plugin.logger.warning("[schema] Could not add 'player_stats' column '$name': ${e.message}")
+                        plugin.logger.warning("[schema] Could not add '$STATS_TABLE' column '$name': ${e.message}")
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Renames TCP's own legacy `player_stats` table to [STATS_TABLE] (`tcp_player_stats`) so it
+     * no longer collides with other plugins that use a generically-named `player_stats` table on
+     * a shared database. Only acts when the legacy table is unmistakably TCP's (it has a
+     * `player_uuid` column) and the namespaced table doesn't exist yet — a foreign `player_stats`
+     * (e.g. a duels/stats plugin's) is left completely untouched.
+     */
+    private fun migratePlayerStatsTableName(conn: Connection) {
+        if (actualColumns(conn, STATS_TABLE).isNotEmpty()) return // already migrated / fresh install
+        val legacy = actualColumns(conn, "player_stats")
+        if (legacy.isEmpty() || "player_uuid" !in legacy) return // no legacy table, or it isn't ours
+        try {
+            conn.createStatement().use { it.execute("ALTER TABLE player_stats RENAME TO $STATS_TABLE") }
+            plugin.logger.info("Renamed TCP's 'player_stats' table to '$STATS_TABLE' (avoids collisions with other plugins on shared databases).")
+        } catch (e: SQLException) {
+            plugin.logger.warning("Could not rename legacy 'player_stats' table to '$STATS_TABLE': ${e.message}")
         }
     }
 
