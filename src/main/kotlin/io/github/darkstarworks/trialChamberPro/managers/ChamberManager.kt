@@ -54,6 +54,19 @@ class ChamberManager(private val plugin: TrialChamberPro) {
     fun getCachedChamberByName(name: String): Chamber? = chamberCache[name]
 
     /**
+     * First registered chamber whose bounds overlap the given axis-aligned box
+     * (inclusive block coords) in [worldName], or null if none. Cache-only and
+     * synchronous — safe to call from an event handler.
+     */
+    fun getIntersectingChamber(
+        worldName: String,
+        ax: Int, ay: Int, az: Int,
+        bx: Int, by: Int, bz: Int,
+    ): Chamber? = chamberCache.values.firstOrNull {
+        it.intersects(worldName, ax, ay, az, bx, by, bz)
+    }
+
+    /**
      * Creates a new chamber in the database.
      *
      * @param name Unique chamber name

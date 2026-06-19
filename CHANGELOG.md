@@ -4,7 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [1.5.14] - Unreleased
+## [1.5.15] - 2026-06-19
+### Added
+- **Land-claim plugin protection** — registered Trial Chambers can no longer be claimed (or have a claim expanded into them) with **Residence**, **Lands**, or **GriefPrevention**. Each integration cancels that plugin's claim-create / expand events when the claimed area overlaps a chamber, with a message to the player. Per-plugin config toggles (`protection.residence-integration` / `lands-integration` / `griefprevention-integration`, default on) and per-plugin bypass permissions (`tcp.bypass.residence` / `.lands` / `.griefprevention`, default op). Integrations are reflection-based — no version pinning, and nothing is touched on servers without the plugin.
+- **Claim conflict scan** — on startup (toggle: `protection.claim-conflict-scan-on-startup`) and via the new **`/tcp claims scan`**, TCP checks every registered chamber against existing claims and logs a warning per overlap (chamber name + location + claim owner), to help find and fix pre-existing conflicts on long-running servers.
+
+## [1.5.14] - 2026-06-19
 ### Fixed
 - **Duplicate messages on right-clicking a vault** (e.g. the "You need a Trial Key" line printed twice). A right-click fires `PlayerInteractEvent` once per hand (main + off); `VaultInteractListener` now acts only on the main-hand pass, so feedback is sent once. The same guard was added to `ProtectionListener`'s container-access denial (`prevent-container-access`). Vault/key behaviour is unchanged — only the duplicate message is removed.
 
@@ -1400,6 +1405,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.5.15]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.14...v1.5.15
 [1.5.14]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.13...v1.5.14
 [1.5.13]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.12...v1.5.13
 [1.5.12]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.11...v1.5.12
