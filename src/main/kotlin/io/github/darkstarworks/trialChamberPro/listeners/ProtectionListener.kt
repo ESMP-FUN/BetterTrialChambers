@@ -128,6 +128,9 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
     fun onContainerAccess(event: PlayerInteractEvent) {
         if (!plugin.config.getBoolean("protection.enabled", true)) return
         if (!plugin.config.getBoolean("protection.prevent-container-access", false)) return
+        // Right-click fires PlayerInteractEvent twice (main + off hand); only act on the
+        // main-hand pass so the denial message isn't sent twice.
+        if (event.hand != org.bukkit.inventory.EquipmentSlot.HAND) return
 
         val block = event.clickedBlock ?: return
         if (block.state !is Container) return

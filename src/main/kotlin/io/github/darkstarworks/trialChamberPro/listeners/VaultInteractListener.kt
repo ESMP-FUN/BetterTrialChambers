@@ -15,6 +15,7 @@ import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.block.Action
 import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.util.Vector
@@ -39,6 +40,9 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     fun onVaultInteract(event: PlayerInteractEvent) {
         if (event.action != Action.RIGHT_CLICK_BLOCK) return
+        // A right-click fires PlayerInteractEvent twice (main hand + off hand);
+        // only process the main-hand pass so feedback isn't sent twice.
+        if (event.hand != EquipmentSlot.HAND) return
 
         val block = event.clickedBlock ?: return
         val player = event.player
