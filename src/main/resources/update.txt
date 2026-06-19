@@ -1,6 +1,6 @@
 <black>.
 <aqua>[1.5.16] <gray>- <white>2026-06-19
-<lime>+ <white>FIX: <green>Stats/leaderboard GUI no longer crashes on MySQL/MariaDB when an old <yellow>player_stats<green> table is missing columns — it now degrades gracefully and a startup schema check repairs/reports the drift (<yellow>/tcp debug schema<green>).
+<lime>+ <white>FIX: <green>Stats/leaderboard GUI crashed when another plugin already had a <yellow>player_stats<green> table on a shared database. TCP now uses its own <yellow>tcp_player_stats<green> table (existing stats are migrated automatically). New <yellow>/tcp debug schema<green> diagnostic.
 <aqua>[1.5.15] <gray>- <white>2026-06-19
 <lime>+ <white>NEW: <green>Land-claim protection — players can no longer claim a registered Trial Chamber with <yellow>Residence<green>, <yellow>Lands<green>, or <yellow>GriefPrevention<green>. Per-plugin toggles + bypass perms.
 <lime>+ <white>NEW: <green><yellow>/tcp claims scan<green> (and a startup scan) logs any chambers that already overlap existing claims, so you can find and fix conflicts.
