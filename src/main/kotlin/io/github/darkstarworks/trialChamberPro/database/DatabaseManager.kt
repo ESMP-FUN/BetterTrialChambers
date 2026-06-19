@@ -68,6 +68,11 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
 
         // Run schema migrations for new features
         runMigrations()
+
+        // Verify the live schema matches what the code expects, then heal/report drift.
+        // Catches tables created by a much older build (or externally) that CREATE TABLE
+        // IF NOT EXISTS won't update — e.g. a player_stats table missing newer columns.
+        verifyAndHealSchema()
     }
 
     /**
@@ -352,6 +357,82 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
                 }
             }
         }
+    }
+
+    /**
+     * `player_stats` columns the self-check can safely add to an older table (name → the
+     * column definition for `ALTER TABLE ADD COLUMN`). The primary key (`player_uuid`) is
+     * intentionally absent — it can't be added to a populated table, so its absence is
+     * reported loudly instead.
+     */
+    private val healablePlayerStatsColumns = linkedMapOf(
+        "chambers_completed" to "INT DEFAULT 0",
+        "normal_vaults_opened" to "INT DEFAULT 0",
+        "ominous_vaults_opened" to "INT DEFAULT 0",
+        "mobs_killed" to "INT DEFAULT 0",
+        "deaths" to "INT DEFAULT 0",
+        "time_spent" to "BIGINT DEFAULT 0",
+        "last_updated" to "BIGINT NOT NULL DEFAULT 0",
+    )
+
+    /** Every table TCP owns, for the schema report. */
+    private val knownTables = listOf(
+        "chambers", "vaults", "spawners", "player_vaults",
+        "player_container_loot", "container_template", "player_stats",
+    )
+
+    /**
+     * Compares the live schema to what the code expects and acts on drift: adds any missing
+     * (safe) `player_stats` columns, and logs a loud, actionable warning if a critical column
+     * such as the `player_uuid` primary key is missing (which means the table predates the
+     * current schema and stats can't work until it's reconciled).
+     */
+    private suspend fun verifyAndHealSchema() = withContext(Dispatchers.IO) {
+        connection.use { conn ->
+            val statsCols = actualColumns(conn, "player_stats")
+            if (statsCols.isEmpty()) return@use // table absent or metadata unavailable
+
+            if ("player_uuid" !in statsCols) {
+                plugin.logger.severe("[schema] 'player_stats' is MISSING its 'player_uuid' column (found: ${statsCols.joinToString(", ")}).")
+                plugin.logger.severe("[schema] This table predates the current schema, so stats saving and leaderboards cannot work.")
+                plugin.logger.severe("[schema] Fix: back up the table, then rename your id column to 'player_uuid', or drop 'player_stats' so TCP recreates it. See /tcp debug schema.")
+                return@use
+            }
+
+            conn.createStatement().use { stmt ->
+                for ((name, ddl) in healablePlayerStatsColumns) {
+                    if (name in statsCols) continue
+                    try {
+                        stmt.execute("ALTER TABLE player_stats ADD COLUMN $name $ddl")
+                        plugin.logger.warning("[schema] Added missing 'player_stats' column '$name'.")
+                    } catch (e: SQLException) {
+                        plugin.logger.warning("[schema] Could not add 'player_stats' column '$name': ${e.message}")
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Actual column names (lowercased) of [table] via JDBC metadata, or an empty set when the
+     * table is absent or metadata is unavailable. Works for both SQLite and MySQL/MariaDB.
+     */
+    fun actualColumns(conn: Connection, table: String): Set<String> {
+        val cols = linkedSetOf<String>()
+        val catalog = try { conn.catalog } catch (_: Exception) { null }
+        try {
+            conn.metaData.getColumns(catalog, null, table, null).use { rs ->
+                while (rs.next()) rs.getString("COLUMN_NAME")?.let { cols += it.lowercase() }
+            }
+        } catch (_: Exception) {
+            // metadata not available — leave empty
+        }
+        return cols
+    }
+
+    /** Snapshot of every TCP table's live columns, for `/tcp debug schema`. */
+    suspend fun describeSchema(): Map<String, List<String>> = withContext(Dispatchers.IO) {
+        connection.use { conn -> knownTables.associateWith { actualColumns(conn, it).toList() } }
     }
 
     /**
