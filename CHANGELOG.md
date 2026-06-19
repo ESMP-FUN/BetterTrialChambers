@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.5.14] - Unreleased
+### Fixed
+- **Duplicate messages on right-clicking a vault** (e.g. the "You need a Trial Key" line printed twice). A right-click fires `PlayerInteractEvent` once per hand (main + off); `VaultInteractListener` now acts only on the main-hand pass, so feedback is sent once. The same guard was added to `ProtectionListener`'s container-access denial (`prevent-container-access`). Vault/key behaviour is unchanged — only the duplicate message is removed.
+
 ## [1.5.13] - 2026-06-19
 ### Fixed
 - **MySQL/MariaDB vault saving failed** with `error in your SQL syntax … near 'CONFLICT(...)'`. Two vault upserts (`ChamberManager.saveVault`, `VaultManager.recordOpen`) hardcoded SQLite's `ON CONFLICT … DO UPDATE` syntax instead of branching on the database type. They now use `ON DUPLICATE KEY UPDATE` on MySQL/MariaDB (matching the existing unique keys), like the other upserts already did. SQLite is unaffected.
@@ -1396,6 +1400,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.5.14]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.13...v1.5.14
 [1.5.13]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.12...v1.5.13
 [1.5.12]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.11...v1.5.12
 [1.5.11]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.10...v1.5.11
