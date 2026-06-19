@@ -345,6 +345,17 @@ Only relevant when `chests.per-player-loot` is enabled. A normal (non-sneak) cli
 
 **Use this for:** Staff cleaning up dropped items or investigating loot disputes.
 
+---
+
+#### `tcp.bypass.residence` / `tcp.bypass.lands` / `tcp.bypass.griefprevention`
+**Description:** Create or expand a land claim that overlaps a registered Trial Chamber, with the matching plugin *(1.5.15+)*
+**Default:** Operators only
+**Effect:**
+- Exempt from the corresponding `protection.<plugin>-integration` claim shield
+- Each permission is scoped to one plugin (Residence / Lands / GriefPrevention), so you can allow staff to claim near chambers with one plugin without affecting the others
+
+**Use this for:** Trusted staff who legitimately need to claim land that touches a chamber.
+
 <div data-gb-custom-block data-tag="hint" data-style="warning">
 
 Giving this to regular players defeats the owner-only drop protection — they can snatch other players' vault loot.
@@ -543,6 +554,9 @@ tcp.bypass.cooldown        (No vault cooldowns)
 tcp.bypass.protection      (Build in protected chambers)
 tcp.bypass.vaultplace      (Place wild vaults)
 tcp.bypass.droplock        (Bypass owner-only loot pickup)
+tcp.bypass.residence       (Claim chambers with Residence)
+tcp.bypass.lands           (Claim chambers with Lands)
+tcp.bypass.griefprevention (Claim chambers with GriefPrevention)
 tcp.discovery.notify       (Auto-discovery notifications)
 ```
 
