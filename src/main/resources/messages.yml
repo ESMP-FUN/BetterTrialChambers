@@ -128,6 +128,7 @@ player-died-in-chamber: "&c{player} died in {chamber}"
 cannot-break-blocks: "&cYou cannot break blocks in a Trial Chamber!"
 cannot-place-blocks: "&cYou cannot place blocks in a Trial Chamber!"
 cannot-access-container: "&cYou cannot access containers in a Trial Chamber!"
+cannot-claim-in-chamber: "&cYou can't claim that area — it overlaps the Trial Chamber &e{chamber}&c."
 orphan-spawner-needs-silk-touch: "&cThis spawner can only be retrieved with a &fSilk Touch&c tool."
 
 # Teleport
