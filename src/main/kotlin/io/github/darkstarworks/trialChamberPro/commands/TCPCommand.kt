@@ -65,6 +65,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             "pause" -> handlePause(sender, args)
             "resume" -> handleResume(sender, args)
             "container", "containers" -> containerHandler.execute(sender, args)
+            "claims" -> handleClaims(sender, args)
             else -> sender.sendMessage(plugin.getMessageComponent("unknown-command"))
         }
 
@@ -103,7 +104,37 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         // Admin
         sender.sendMessage(plugin.getMessageComponent("help-menu"))
         sender.sendRichMessage("<yellow>/tcp container <list|materialize|reset|clearcopies|tp|edit> <chamber> <gray>- Manage per-player container loot")
+        sender.sendRichMessage("<yellow>/tcp claims scan <gray>- Find chambers overlapping land-claim plugin claims")
         sender.sendMessage(plugin.getMessageComponent("help-reload"))
+    }
+
+    private fun handleClaims(sender: CommandSender, args: Array<out String>) {
+        if (!sender.hasPermission("tcp.admin.reload")) {
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
+            return
+        }
+        if (args.getOrNull(1)?.lowercase() != "scan") {
+            sender.sendRichMessage("<yellow>/tcp claims scan <gray>- Scan registered chambers for land-claim conflicts")
+            return
+        }
+        if (!plugin.claimIntegrationManager.hasActiveProvider()) {
+            sender.sendRichMessage(
+                "<yellow>No land-claim integration is active. Install Residence, Lands, or GriefPrevention " +
+                    "and enable it under <gray>protection.*-integration<yellow> in config.yml."
+            )
+            return
+        }
+        sender.sendRichMessage("<gray>Scanning chambers for claim conflicts…")
+        plugin.scheduler.runTask(Runnable {
+            val conflicts = plugin.claimIntegrationManager.scanAndLog()
+            sender.sendRichMessage(
+                if (conflicts > 0) {
+                    "<red>Found $conflicts chamber(s) overlapping existing claims — see the console for details."
+                } else {
+                    "<green>No claim conflicts found."
+                }
+            )
+        })
     }
 
     private fun handleReload(sender: CommandSender) {

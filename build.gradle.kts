@@ -13,7 +13,7 @@ plugins {
 }
 
 group = "io.github.darkstarworks"
-version = "1.5.14"
+version = "1.5.15"
 
 repositories {
     mavenCentral()
@@ -67,6 +67,9 @@ dependencies {
     // Optional integrations
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.9")
     compileOnly("me.clip:placeholderapi:2.11.5")
+    // Land-claim plugins (Residence / Lands / GriefPrevention) are integrated purely
+    // via reflection (see integrations/claims/) — no compile-time dependency or version
+    // pin, so TCP binds to whatever version each server actually runs.
 
     // FastAsyncWorldEdit (FAWE) - preferred over vanilla WorldEdit for performance
     // Using BOM for version management and transitive=false to avoid dependency bloat
