@@ -6,6 +6,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [1.5.13] - Unreleased
 ### Fixed
+- **MySQL/MariaDB vault saving failed** with `error in your SQL syntax … near 'CONFLICT(...)'`. Two vault upserts (`ChamberManager.saveVault`, `VaultManager.recordOpen`) hardcoded SQLite's `ON CONFLICT … DO UPDATE` syntax instead of branching on the database type. They now use `ON DUPLICATE KEY UPDATE` on MySQL/MariaDB (matching the existing unique keys), like the other upserts already did. SQLite is unaffected.
 - **Missing message key** — `/tcp give` and `/tcp stats` against an unknown player rendered `Message not found: player-not-found`. Added the `player-not-found` key to messages.yml. (Verified all ~350 code-referenced message keys resolve.)
 
 ## [1.5.12] - 2026-06-17

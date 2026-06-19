@@ -234,9 +234,11 @@ class VaultManager(private val plugin: TrialChamberPro) {
             }
 
             plugin.databaseManager.connection.use { conn ->
-                // Use UPSERT (atomic INSERT or UPDATE) to avoid race conditions
-                // This is SQLite 3.24.0+ syntax
-                conn.prepareStatement(
+                // Use UPSERT (atomic INSERT or UPDATE) to avoid race conditions, with
+                // database-specific syntax. Both target PRIMARY KEY(player_uuid, vault_id).
+                val isSQLite = plugin.databaseManager.databaseType ==
+                    io.github.darkstarworks.trialChamberPro.database.DatabaseManager.DatabaseType.SQLITE
+                val sql = if (isSQLite) {
                     """
                     INSERT INTO player_vaults (player_uuid, vault_id, last_opened, times_opened)
                     VALUES (?, ?, ?, 1)
@@ -245,7 +247,16 @@ class VaultManager(private val plugin: TrialChamberPro) {
                         last_opened = excluded.last_opened,
                         times_opened = times_opened + 1
                     """.trimIndent()
-                ).use { stmt ->
+                } else {
+                    """
+                    INSERT INTO player_vaults (player_uuid, vault_id, last_opened, times_opened)
+                    VALUES (?, ?, ?, 1)
+                    ON DUPLICATE KEY UPDATE
+                        last_opened = VALUES(last_opened),
+                        times_opened = times_opened + 1
+                    """.trimIndent()
+                }
+                conn.prepareStatement(sql).use { stmt ->
                     stmt.setString(1, playerUuid.toString())
                     stmt.setInt(2, vaultId)
                     stmt.setLong(3, now)

@@ -446,22 +446,34 @@ class ChamberManager(private val plugin: TrialChamberPro) {
 
         try {
             plugin.databaseManager.connection.use { conn ->
+                // Use database-specific upsert syntax (SQLite ON CONFLICT vs MySQL/MariaDB
+                // ON DUPLICATE KEY UPDATE). Both target the UNIQUE(chamber_id, x, y, z, type).
+                val isSQLite = plugin.databaseManager.databaseType ==
+                    io.github.darkstarworks.trialChamberPro.database.DatabaseManager.DatabaseType.SQLITE
+                val sql = if (isSQLite) {
+                    """
+                    INSERT INTO vaults (chamber_id, x, y, z, type, loot_table)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(chamber_id, x, y, z, type)
+                    DO UPDATE SET
+                        loot_table = excluded.loot_table
+                    """.trimIndent()
+                } else {
+                    """
+                    INSERT INTO vaults (chamber_id, x, y, z, type, loot_table)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE
+                        loot_table = VALUES(loot_table)
+                    """.trimIndent()
+                }
+
                 // Save BOTH normal and ominous entries for this vault location
                 // This allows separate cooldown tracking for each type
                 VaultType.entries.forEach { type ->
                     val lootTable = if (type == VaultType.OMINOUS) "ominous-default" else "default"
 
                     // Use atomic UPSERT to prevent race conditions
-                    // SQLite 3.24.0+ supports INSERT ... ON CONFLICT
-                    conn.prepareStatement(
-                        """
-                        INSERT INTO vaults (chamber_id, x, y, z, type, loot_table)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                        ON CONFLICT(chamber_id, x, y, z, type)
-                        DO UPDATE SET
-                            loot_table = excluded.loot_table
-                        """.trimIndent()
-                    ).use { stmt ->
+                    conn.prepareStatement(sql).use { stmt ->
                         stmt.setInt(1, chamberId)
                         stmt.setInt(2, x)
                         stmt.setInt(3, y)
