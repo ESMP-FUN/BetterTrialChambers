@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [1.5.16] - Unreleased
+## [1.5.16] - 2026-06-20
 ### Fixed
 - **Stats / leaderboard GUI crashed on shared databases** (`Could not pass event InventoryClickEvent`). If another plugin (e.g. a duels / PvP-stats plugin) already owned a generically-named `player_stats` table, TCP's `CREATE TABLE IF NOT EXISTS` saw it and never created its own — so every stat read/write hit the wrong table. TCP now uses its own namespaced **`tcp_player_stats`** table: existing TCP stats are migrated to it automatically on first start, and a foreign `player_stats` is left completely untouched. The stats GUI also now degrades gracefully (logs a clear `[TCP]` error and shows an empty board) instead of throwing into the click handler if a stat query ever fails.
 
