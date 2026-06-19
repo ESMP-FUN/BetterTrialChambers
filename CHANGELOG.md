@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [1.5.13] - Unreleased
+## [1.5.13] - 2026-06-19
 ### Fixed
 - **MySQL/MariaDB vault saving failed** with `error in your SQL syntax … near 'CONFLICT(...)'`. Two vault upserts (`ChamberManager.saveVault`, `VaultManager.recordOpen`) hardcoded SQLite's `ON CONFLICT … DO UPDATE` syntax instead of branching on the database type. They now use `ON DUPLICATE KEY UPDATE` on MySQL/MariaDB (matching the existing unique keys), like the other upserts already did. SQLite is unaffected.
 - **Missing message key** — `/tcp give` and `/tcp stats` against an unknown player rendered `Message not found: player-not-found`. Added the `player-not-found` key to messages.yml. (Verified all ~350 code-referenced message keys resolve.)
@@ -1395,6 +1395,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.5.13]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.12...v1.5.13
 [1.5.12]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.11...v1.5.12
 [1.5.11]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.10...v1.5.11
 [1.5.10]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.9...v1.5.10
