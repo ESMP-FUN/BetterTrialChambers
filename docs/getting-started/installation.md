@@ -113,6 +113,14 @@ Display things like "Chambers Completed: 5" in your custom UIs.
 
 If you already use WorldGuard, TrialChamberPro can integrate with it for protection.
 
+### Residence / Lands / GriefPrevention
+
+**Purpose:** Stop players claiming registered Trial Chambers *(1.5.15+)*
+**Required?** No — only matters if you run one of these land-claim plugins
+**Download:** [Residence](https://www.spigotmc.org/resources/11480/) · [Lands](https://www.spigotmc.org/resources/53313/) · [GriefPrevention](https://github.com/GriefPrevention/GriefPrevention)
+
+If any of these is installed, TrialChamberPro blocks claim creation/expansion that overlaps a chamber and can scan for pre-existing conflicts (`/tcp claims scan`). Enabled by default per plugin; see [protection config](../configuration/config.yml.md) and the `tcp.bypass.*` [permissions](../reference/permissions.md).
+
 ## Verify Installation
 
 Run this command in-game:

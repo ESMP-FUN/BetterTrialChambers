@@ -16,7 +16,7 @@ TrialChamberPro fixes all of that: every player gets their own loot roll, chambe
 
 * **Automatic resets** — chambers restore on schedule, with warnings before the reset fires.
 * **Per-player vaults** — every player gets their own loot roll with their own cooldown.
-* **Full protection** — block break / place, container access, mob griefing, WorldGuard-aware.
+* **Full protection** — block break / place, container access, mob griefing, WorldGuard-aware, and claim-plugin-aware (Residence / Lands / GriefPrevention can't claim a chamber).
 * **Statistics & leaderboards** — track vaults opened, mobs killed, chambers completed, time spent.
 * **Custom loot** — multi-pool tables, command rewards, potions, tipped arrows, custom plugin items (Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible), resource-pack items via `custom-model-data`.
 * **Auto-discovery** — opt-in; the plugin finds and registers every natural chamber on its own.
@@ -33,7 +33,7 @@ TrialChamberPro fixes all of that: every player gets their own loot roll, chambe
 * **Minecraft 1.21.1+** (use the `-mc26` build for Minecraft 26.x)
 * **Paper, Folia, Purpur, or Pufferfish**
 * **Java 21+**
-* *Optional:* WorldEdit / FAWE, WorldGuard, PlaceholderAPI, Vault, LuckPerms, Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible
+* *Optional:* WorldEdit / FAWE, WorldGuard, Residence / Lands / GriefPrevention, PlaceholderAPI, Vault, LuckPerms, Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible
 
 ---
 

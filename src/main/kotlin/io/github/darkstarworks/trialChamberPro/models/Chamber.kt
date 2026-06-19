@@ -103,6 +103,25 @@ data class Chamber(
     }
 
     /**
+     * Checks if an axis-aligned box (inclusive block coords, in [worldName]) overlaps
+     * this chamber's bounds. Corner order is normalized, so callers may pass the two
+     * opposite corners in any order.
+     */
+    fun intersects(
+        worldName: String,
+        ax: Int, ay: Int, az: Int,
+        bx: Int, by: Int, bz: Int,
+    ): Boolean {
+        if (worldName != world) return false
+        val loX = minOf(ax, bx); val hiX = maxOf(ax, bx)
+        val loY = minOf(ay, by); val hiY = maxOf(ay, by)
+        val loZ = minOf(az, bz); val hiZ = maxOf(az, bz)
+        return loX <= maxX && hiX >= minX &&
+            loY <= maxY && hiY >= minY &&
+            loZ <= maxZ && hiZ >= minZ
+    }
+
+    /**
      * Gets all players currently inside this chamber.
      */
     fun getPlayersInside(): List<Player> {

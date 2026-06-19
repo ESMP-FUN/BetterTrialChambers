@@ -132,6 +132,18 @@ protection:
   allow-pvp: true
   prevent-mob-griefing: true
   worldguard-integration: true
+  # Land-claim plugin integrations: stop players creating or expanding a claim that
+  # overlaps a registered Trial Chamber (so they can't claim a chamber and change its
+  # flags). Each requires its plugin to be installed; ignored otherwise. Players with
+  # the matching bypass permission (tcp.bypass.residence / .lands / .griefprevention,
+  # default: op) are exempt.
+  residence-integration: true
+  lands-integration: true
+  griefprevention-integration: true
+  # On startup, scan every registered chamber against existing claims from the above
+  # plugins and log a warning for each overlap (with the chamber name + location), so
+  # you can find and fix pre-existing conflicts. Re-run anytime with /tcp claims scan.
+  claim-conflict-scan-on-startup: true
 
   # Block placing functioning VAULT blocks outside registered chambers. A wild
   # vault is a permanent vanilla loot dispenser the plugin can't manage (no
