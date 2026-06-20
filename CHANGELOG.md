@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [1.5.17] - Unreleased
+## [1.5.17] - 2026-06-20
 ### Fixed
 - **1.5.16 could rename another plugin's `player_stats` table.** The collision migration checked a table's columns via `DatabaseMetaData.getColumns()`, whose table-name argument treats `_` as a SQL wildcard — so the "is this table TCP's?" test could pick up a `player_uuid` column from a *different* matching table and wrongly rename a foreign `player_stats` to `tcp_player_stats`. The metadata lookup now filters to the exact table name (and catalog). **Servers affected by 1.5.16 auto-recover on next start:** a `tcp_player_stats` that isn't TCP's (no `player_uuid`) is renamed back to `player_stats` — returning the other plugin's table and data — and TCP creates its own fresh `tcp_player_stats`. If both names are already occupied, TCP logs exactly how to reconcile instead of touching anything.
 
