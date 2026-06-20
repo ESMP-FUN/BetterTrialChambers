@@ -427,16 +427,40 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
     }
 
     /**
-     * Renames TCP's own legacy `player_stats` table to [STATS_TABLE] (`tcp_player_stats`) so it
-     * no longer collides with other plugins that use a generically-named `player_stats` table on
-     * a shared database. Only acts when the legacy table is unmistakably TCP's (it has a
-     * `player_uuid` column) and the namespaced table doesn't exist yet — a foreign `player_stats`
-     * (e.g. a duels/stats plugin's) is left completely untouched.
+     * Keeps TCP's stats table namespaced as [STATS_TABLE] (`tcp_player_stats`) without
+     * disturbing any other plugin's `player_stats` table on a shared database.
+     *
+     * - **Recovery (for the 1.5.16 metadata bug):** if a `tcp_player_stats` exists but has no
+     *   `player_uuid` column, it isn't ours — it was wrongly renamed from a foreign `player_stats`
+     *   by a bug in `actualColumns`. If the `player_stats` name is free, rename it back so the
+     *   other plugin gets its table (and data) returned; TCP then creates its own fresh table.
+     * - **Adopt:** if a legacy `player_stats` is unmistakably TCP's (has `player_uuid`) and the
+     *   namespaced table doesn't exist, rename it to [STATS_TABLE] (preserves existing TCP stats).
+     * - A foreign `player_stats` is otherwise left completely untouched.
      */
     private fun migratePlayerStatsTableName(conn: Connection) {
-        if (actualColumns(conn, STATS_TABLE).isNotEmpty()) return // already migrated / fresh install
+        val tcpCols = actualColumns(conn, STATS_TABLE)
+        if (tcpCols.isNotEmpty()) {
+            if ("player_uuid" in tcpCols) return // ours already — nothing to do
+            // Not ours: a foreign table got renamed here by the 1.5.16 bug. Put it back.
+            if (actualColumns(conn, "player_stats").isEmpty()) {
+                try {
+                    conn.createStatement().use { it.execute("ALTER TABLE $STATS_TABLE RENAME TO player_stats") }
+                    plugin.logger.warning("Restored a non-TCP table that a 1.5.16 bug renamed to '$STATS_TABLE' back to 'player_stats'. TCP will use its own fresh '$STATS_TABLE'.")
+                } catch (e: SQLException) {
+                    plugin.logger.severe("Could not restore '$STATS_TABLE' back to 'player_stats': ${e.message}. Manual reconciliation needed.")
+                    return
+                }
+                // fall through: with player_stats restored, the adopt step below sees a foreign
+                // table (no player_uuid) and leaves it, and createTables makes a fresh STATS_TABLE.
+            } else {
+                plugin.logger.severe("'$STATS_TABLE' exists but isn't TCP's, and a 'player_stats' table also exists — can't auto-reconcile. TCP stats are disabled until resolved; see /tcp debug schema.")
+                return
+            }
+        }
+        // Adopt a legacy TCP table; leave a foreign one alone.
         val legacy = actualColumns(conn, "player_stats")
-        if (legacy.isEmpty() || "player_uuid" !in legacy) return // no legacy table, or it isn't ours
+        if (legacy.isEmpty() || "player_uuid" !in legacy) return
         try {
             conn.createStatement().use { it.execute("ALTER TABLE player_stats RENAME TO $STATS_TABLE") }
             plugin.logger.info("Renamed TCP's 'player_stats' table to '$STATS_TABLE' (avoids collisions with other plugins on shared databases).")
@@ -454,7 +478,19 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
         val catalog = try { conn.catalog } catch (_: Exception) { null }
         try {
             conn.metaData.getColumns(catalog, null, table, null).use { rs ->
-                while (rs.next()) rs.getString("COLUMN_NAME")?.let { cols += it.lowercase() }
+                while (rs.next()) {
+                    // CRITICAL: getColumns() treats '_' and '%' in the table-name pattern as
+                    // SQL wildcards, so it can return rows for OTHER tables (e.g. the pattern
+                    // "player_stats" also matches "playerXstats"). Filter to the exact table —
+                    // and to the current catalog — so we never union foreign tables' columns.
+                    val rowTable = rs.getString("TABLE_NAME") ?: continue
+                    if (!rowTable.equals(table, ignoreCase = true)) continue
+                    if (catalog != null) {
+                        val rowCat = rs.getString("TABLE_CAT")
+                        if (rowCat != null && !rowCat.equals(catalog, ignoreCase = true)) continue
+                    }
+                    rs.getString("COLUMN_NAME")?.let { cols += it.lowercase() }
+                }
             }
         } catch (_: Exception) {
             // metadata not available — leave empty

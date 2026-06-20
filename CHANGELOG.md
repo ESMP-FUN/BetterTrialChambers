@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.5.17] - Unreleased
+### Fixed
+- **1.5.16 could rename another plugin's `player_stats` table.** The collision migration checked a table's columns via `DatabaseMetaData.getColumns()`, whose table-name argument treats `_` as a SQL wildcard — so the "is this table TCP's?" test could pick up a `player_uuid` column from a *different* matching table and wrongly rename a foreign `player_stats` to `tcp_player_stats`. The metadata lookup now filters to the exact table name (and catalog). **Servers affected by 1.5.16 auto-recover on next start:** a `tcp_player_stats` that isn't TCP's (no `player_uuid`) is renamed back to `player_stats` — returning the other plugin's table and data — and TCP creates its own fresh `tcp_player_stats`. If both names are already occupied, TCP logs exactly how to reconcile instead of touching anything.
+
 ## [1.5.16] - 2026-06-20
 ### Fixed
 - **Stats / leaderboard GUI crashed on shared databases** (`Could not pass event InventoryClickEvent`). If another plugin (e.g. a duels / PvP-stats plugin) already owned a generically-named `player_stats` table, TCP's `CREATE TABLE IF NOT EXISTS` saw it and never created its own — so every stat read/write hit the wrong table. TCP now uses its own namespaced **`tcp_player_stats`** table: existing TCP stats are migrated to it automatically on first start, and a foreign `player_stats` is left completely untouched. The stats GUI also now degrades gracefully (logs a clear `[TCP]` error and shows an empty board) instead of throwing into the click handler if a stat query ever fails.
@@ -1412,6 +1416,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.5.17]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.16...v1.5.17
 [1.5.16]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.15...v1.5.16
 [1.5.15]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.14...v1.5.15
 [1.5.14]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.13...v1.5.14
