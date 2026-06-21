@@ -2,29 +2,25 @@
 
 # TrialChamberPro
 
+### The Most Complete Premium Trial Chamber Plugin... that's free!?
+
 **Please share your "If it would do [THING], I would use it" feedback!** [<img src="https://raw.githubusercontent.com/darkstarworks/TrialChamberPro/master/dc.png" width="30" alt="Join Discord Server">](https://discord.gg/qwYcTpHsNC)
 
-### 🛡️ New in 1.5.15 — Land-claim protection
+<br>
 
-Players can no longer fence off your Trial Chambers. If you run **Residence**, **Lands**, or **GriefPrevention**, TrialChamberPro now **blocks any claim from being created or expanded into a registered chamber** — so nobody can claim a chamber and flip its flags to break resets, loot, or protection.
+### Recently Added
 
-- Works with **Residence**, **Lands**, and **GriefPrevention** — each with its own on/off toggle and its own `tcp.bypass.*` permission for trusted staff.
-- **`/tcp claims scan`** (and an automatic startup scan) finds chambers that are *already* sitting under an existing claim and logs each one — name, location, and owner — so long-running servers can hunt down and clean up old conflicts (and any quiet abuse).
-- Zero setup and zero overhead if you don't run one of these plugins — the integration only activates when the plugin is present.
+- **The whole chamber is now per-player** — vaults *and* chests / barrels / dispensers / droppers each hand every player their own Lootr-style copy that resets with the chamber (decorated pots refill too).
+- **Your chambers can't be claimed or blast-mined** — blocks **Residence / Lands / GriefPrevention** claims from overlapping a chamber, and stops **AdvancedEnchantments** enchants (Blast Mining, etc.) from breaking into one. `/tcp claims scan` hunts down existing conflicts.
+- **Vaults, expanded** — native **Vault economy rewards** in loot tables, working **time-based cooldowns**, **key-to-reopen** vaults, and opt-in floating **✔ / ✘ hologram feedback**.
+- **Procedural dungeons + real loot tables** — assemble modular dungeons with `/tcp dungeon`, and pull genuine **vanilla / datapack loot tables** straight into vault drops.
+- **Self-updating & fully translatable** — new config options and message keys merge into your existing files automatically on every update (with a backup), and every player-facing string can be localized.
 
----
-
-### Everything new since 1.5.0
-
-- **The whole chamber is now per-player** — vaults *and* chests / barrels / dispensers / droppers each hand every player their own Lootr-style copy that resets with the chamber, and decorated pots refill again too. (`chests.per-player-loot: true`)
-- **Vaults, expanded** — native **Vault economy rewards** in loot tables, working **time-based cooldowns** (`vaults.*-cooldown-hours`), **key-to-reopen** vaults, and opt-in floating **✔ / ✘ hologram feedback**.
-- **Loot & dungeons** — pull real **vanilla / datapack loot tables** into drops (`type: VANILLA_TABLE`), faithful loot NBT with a bulk drag-in editor, and **procedural dungeon generation** (`/tcp dungeon`).
-- **Stats** — chamber-completion tracking, leaderboards, and a pile of new PlaceholderAPI placeholders.
-- **Protection** — real **WorldGuard integration**, **wild-vault placement** blocking, and opt-in **auto-pause** when a chamber is demolished.
-- **Reliability** — fixed vanilla-loot fallback on 100+ chamber servers, hardened/throttled resets that can't over-clear terrain, and working spawner glow outlines (`glow-mode: chamber-remaining`).
-- **Devs & networks** — a Bukkit events API (`ChamberCleared` / `Entered` / `Exited`…), custom-mob providers (MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens), a fully translatable MiniMessage GUI, and a **Minecraft 26.x** build (`-mc26`).
+*This plugin is updated almost daily — and many of these features came straight from a server owner's suggestion. Got an idea? Share it (Discord above) and there's a good chance it ships within days. Thank you!*
 
 *Upgrading? Re-run `/tcp snapshot create` on existing chambers so container & decorated-pot loot is captured.*
+
+<br>
 
 📘 **Full documentation:** https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation — most questions are answered there, and every section below links to its own detailed page.
 
@@ -34,6 +30,8 @@ Players can no longer fence off your Trial Chambers. If you run **Residence**, *
 
 TrialChamberPro is, and always will be, **completely free**. But after a lot of requests from server owners wanting to push things further, we now offer optional premium modules for servers that need more.
 
+<br>
+
 ### 🔷 TCP-WildSpawners
 Place TCP preset spawners **anywhere on your survival map** — no Trial Chamber required. Hand them out via shops, crates, or staff commands. Wherever a player puts one down, it summons your custom mobs. Includes an in-game GUI editor, per-preset griefing protection, holograms, mob tether, creative pick-block, and state-preserving mining so players can relocate a live spawner without losing cooldown progress.
 
@@ -41,12 +39,16 @@ Requires TrialChamberPro v1.4.0+ (free).
 
 👉 **[esmp.fun/plugins](https://esmp.fun/plugins)** — purchase & download
 
+<br>
+
 ### 🔶 TCP-VaultCrates
 The **first crate plugin that doesn't use chests.** Vanilla Trial Vaults are the only Minecraft block with built-in per-player loot state, two visual tiers (normal + ominous), a key mechanic, and a dramatic open animation that doesn't need a resource pack. TCP-VaultCrates lets you register vaults anywhere on your map as crates with configurable loot pools and per-tier keys. Hand keys out via shops, missions, or — when paired with TCP-WildSpawners — drop them from spawner mobs.
 
 Requires TrialChamberPro v1.4.0+ (free).
 
 👉 **[esmp.fun](https://esmp.fun/plugins)** — purchase & download
+
+<br>
 
 ### 🔺 TCP-MythicTrials
 **Per-player chamber progression with Mythic difficulty tiers.** Every chamber clear bumps each participant's personal tier (T1–T20, then opt-in Mythic M1–M5): mobs scale in health, damage, speed, armor, gear and tactics — gear-adaptive AI, themed rooms, anti-heal, true damage — while rewards scale with them. In-chamber HUD, per-chamber leaderboards, seasons with seasonal loot, and full custom-mob-provider support. Built on TCP's `ChamberClearedEvent`, so it works on every registered chamber automatically.
@@ -57,15 +59,11 @@ Requires TrialChamberPro v1.5.4+ (free).
 
 ---
 
-**The definitive Trial Chamber management plugin for multiplayer servers.**
-
-Transform Minecraft's Trial Chambers from single-use dungeons into renewable, multiplayer-ready content. Automatic resets, per-player loot, custom rewards, griefing protection — and it all works out of the box.
-
----
-
 ## Why TrialChamberPro?
 
-Vanilla Trial Chambers weren't designed for multiplayer. The first player takes everything, vaults stay locked forever, and griefers destroy spawners. **TrialChamberPro fixes all of that.**
+**It's the definitive Trial Chamber management plugin for multiplayer servers.**
+Vanilla Trial Chambers weren't designed for multiplayer. The first player takes everything, vaults stay locked forever, and griefers destroy spawners.
+**TrialChamberPro fixes all of that.**
 
 | Problem | Solution |
 |---------|----------|
@@ -110,6 +108,8 @@ Prefer manual control? You can still register chambers with WorldEdit (`/tcp gen
 - **Statistics & Leaderboards** — vaults opened, mobs killed, time spent. [Docs →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/placeholders)
 - **Admin GUI** — `/tcp menu` does everything. No YAML editing required — and `/tcp list` deep-links into it.
 
+<br>
+
 ### Advanced Loot
 - **Multi-Pool Tables** — common / rare / unique pools like vanilla, fully configurable. [Docs →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/configuration/loot.yml)
 - **Per-Chamber Overrides** — assign a different loot table to any specific chamber.
@@ -132,11 +132,15 @@ Prefer manual control? You can still register chambers with WorldEdit (`/tcp gen
 - **Potion & Tipped Arrows** — full attribute support including Bad Omen III–V ominous bottles.
 - **LUCK Integration** — optional bonus rolls for players with the LUCK effect.
 
+<br>
+
 ### Multiplayer Enhancements
 - **Spawner Wave Tracking** — boss bar shows wave progress as players fight. Hysteresis-based despawn means the bar disappears when you leave the area.
 - **Spawner Glow Outline** *(opt-in)* — active spawners glow through walls; `chamber-remaining` mode lights up every uncleared spawner so nobody hunts for the one they missed.
 - **Spectator Mode** — dead players can watch teammates complete the challenge, bounded to the chamber.
 - **PlaceholderAPI** — 20+ placeholders for scoreboards, holograms, tab lists.
+
+<br>
 
 ### Technical Excellence
 - **Folia Native** — full support for regionized multithreading.
@@ -215,6 +219,8 @@ Prefer not to use auto-discovery? Classic workflow still works:
 | **Minecraft** | 1.21.1+ (use `-mc26` JAR for 26.x) |
 | **Server** | Paper, Folia, Purpur, or Pufferfish |
 | **Java** | 21+ |
+
+<br>
 
 ### Optional Dependencies
 - **WorldEdit / FastAsyncWorldEdit** — selection-based chamber creation.
