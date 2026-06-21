@@ -7,9 +7,11 @@ import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
+import org.bukkit.entity.Projectile
 import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.entity.EntityChangeBlockEvent
+import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityExplodeEvent
 import org.bukkit.event.player.PlayerInteractEvent
 
@@ -103,6 +105,33 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
                 })
             }
         }
+    }
+
+    /**
+     * Prevents player-vs-player damage inside registered chambers when
+     * `protection.allow-pvp: false`. Covers melee and player-shot projectiles. Self-damage and
+     * mob damage are untouched; paused chambers and players with `tcp.bypass.protection` are
+     * exempt. When `allow-pvp` is true (default) this no-ops and PvP follows world/server rules.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onPvp(event: EntityDamageByEntityEvent) {
+        if (!plugin.config.getBoolean("protection.enabled", true)) return
+        if (plugin.config.getBoolean("protection.allow-pvp", true)) return // PvP allowed → nothing to do
+
+        val victim = event.entity as? Player ?: return
+        val attacker = when (val damager = event.damager) {
+            is Player -> damager
+            is Projectile -> damager.shooter as? Player
+            else -> null
+        } ?: return
+        if (attacker.uniqueId == victim.uniqueId) return
+        if (attacker.hasPermission("tcp.bypass.protection")) return
+
+        val chamber = plugin.chamberManager.getCachedChamberAt(victim.location) ?: return
+        if (chamber.isPaused) return
+
+        event.isCancelled = true
+        notifyBlocked(attacker, "pvp-disabled-in-chamber")
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)

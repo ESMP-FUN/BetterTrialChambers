@@ -186,6 +186,9 @@ class TrialChamberPro : JavaPlugin() {
 
         // Save default config files
         saveDefaultConfig()
+        // Merge any options added in newer versions into an existing config.yml (Bukkit's
+        // saveDefaultConfig only writes the file when absent, so upgraders never see new keys).
+        mergeConfigDefaults()
         saveResource("messages.yml", false)
         saveResource("loot.yml", false)
 
@@ -660,6 +663,45 @@ class TrialChamberPro : JavaPlugin() {
             spawnerPresetManager.load()
         }
         logger.info("Configuration reloaded")
+    }
+
+    /**
+     * Adds options introduced in newer versions to an existing config.yml. `saveDefaultConfig()`
+     * only writes the file when it's absent, so a server that installed an earlier build never
+     * gets new keys — the feature runs on its code default but can't be seen or configured.
+     *
+     * This merges every key present in the bundled default but missing from the user's file,
+     * carrying the option's comment across, and leaves existing values/comments untouched. A
+     * `config.yml.bak` is written first as a safety net. No-op when nothing is missing.
+     */
+    private fun mergeConfigDefaults() {
+        val resource = getResource("config.yml") ?: return
+        val defaults = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(
+            java.io.InputStreamReader(resource, Charsets.UTF_8)
+        )
+        val cfg = config
+        val missing = defaults.getKeys(true).filter { key ->
+            !cfg.isSet(key) && !defaults.isConfigurationSection(key)
+        }
+        if (missing.isEmpty()) return
+
+        val file = java.io.File(dataFolder, "config.yml")
+        runCatching { file.copyTo(java.io.File(dataFolder, "config.yml.bak"), overwrite = true) }
+            .onFailure { logger.warning("Could not back up config.yml before merging new options: ${it.message}") }
+
+        for (key in missing) {
+            cfg.set(key, defaults.get(key))
+            // setComments is available on Paper 1.18+ — keep the option's doc comment in the file.
+            runCatching {
+                cfg.setComments(key, defaults.getComments(key))
+                cfg.setInlineComments(key, defaults.getInlineComments(key))
+            }
+        }
+        saveConfig()
+        logger.info(
+            "config.yml: added ${missing.size} new option(s) introduced in this version " +
+                "(your existing settings are kept; previous file saved as config.yml.bak)."
+        )
     }
 
     /**

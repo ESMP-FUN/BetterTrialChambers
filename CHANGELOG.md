@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.5.19] - 2026-06-21
+### Added
+- **`config.yml` now auto-updates on startup.** Bukkit's `saveDefaultConfig()` only writes the file when it's absent, so servers that installed an earlier build never saw options added later — the feature ran on its code default but couldn't be seen or configured. TCP now merges any key present in the bundled default but missing from your file, **carrying its comment across**, while leaving your existing values and comments untouched. The previous file is saved as `config.yml.bak` first. (This is why some servers were stuck on old configs.)
+- **`protection.allow-pvp` is now implemented** (was a reserved no-op). When `false`, player-vs-player damage — melee and player-shot projectiles — is cancelled inside registered chambers. `tcp.bypass.protection` exempts staff; mob and self-damage are never affected.
+- **`reset.clear-trial-omen-effect` is now implemented** (was a reserved no-op). On reset, Trial Omen and Bad Omen are stripped from players who were inside the chamber, so leftover omen doesn't carry into the next cycle.
+
 ## [1.5.18] - 2026-06-21
 ### Added
 - **AdvancedEnchantments integration.** AE custom enchants (e.g. *Blast Mining*) break blocks through their own effect path that ignores TCP's `BlockBreakEvent` cancel — so they could bypass chamber protection. With `protection.block-advanced-enchantments: true` (and AE installed), TCP cancels AE enchant activations for a player standing in a registered chamber; `protection.advanced-enchantments-allowlist` keeps named enchants (e.g. combat ones) working there. Reflection-based — no dependency on the paid AE jar, inert when AE is absent — and `tcp.bypass.protection` exempts staff. **Off by default.**
@@ -1423,6 +1429,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.5.19]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.18...v1.5.19
 [1.5.18]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.17...v1.5.18
 [1.5.17]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.16...v1.5.17
 [1.5.16]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.15...v1.5.16
