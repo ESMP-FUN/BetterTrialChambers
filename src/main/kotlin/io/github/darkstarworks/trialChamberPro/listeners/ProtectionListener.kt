@@ -1,6 +1,7 @@
 package io.github.darkstarworks.trialChamberPro.listeners
 
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
+import org.bukkit.GameMode
 import org.bukkit.Material
 import org.bukkit.block.Container
 import org.bukkit.entity.Player
@@ -14,6 +15,8 @@ import org.bukkit.event.entity.EntityChangeBlockEvent
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityExplodeEvent
 import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.event.player.PlayerMoveEvent
+import org.bukkit.event.player.PlayerTeleportEvent
 
 /**
  * Handles protection for Trial Chambers.
@@ -132,6 +135,59 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
 
         event.isCancelled = true
         notifyBlocked(attacker, "pvp-disabled-in-chamber")
+    }
+
+    /**
+     * Blocks **teleporting into** a registered chamber from outside it when
+     * `protection.prevent-teleport-into-chamber: true`. Catches `/tpa`, `/tpahere`, `/home`,
+     * `/warp`, `/tp`, ender pearls, chorus fruit — any teleport, since it hooks the teleport
+     * itself rather than specific commands. Players with `tcp.bypass.entry`, spectators, and
+     * creative-mode players are exempt (this also covers TCP's own spectator-entry teleport,
+     * which sets SPECTATOR before teleporting). Walking in through the entrance is unaffected.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onTeleportIntoChamber(event: PlayerTeleportEvent) {
+        if (!plugin.config.getBoolean("protection.enabled", true)) return
+        if (!plugin.config.getBoolean("protection.prevent-teleport-into-chamber", false)) return
+        val player = event.player
+        if (player.gameMode == GameMode.SPECTATOR || player.gameMode == GameMode.CREATIVE) return
+        if (player.hasPermission("tcp.bypass.entry")) return
+
+        val to = event.to ?: return
+        val toChamber = plugin.chamberManager.getCachedChamberAt(to) ?: return
+        if (toChamber.isPaused) return
+        // Allow teleporting *within* the same chamber (e.g. /back while inside it).
+        if (plugin.chamberManager.getCachedChamberAt(event.from)?.id == toChamber.id) return
+
+        event.isCancelled = true
+        notifyBlocked(player, "cannot-teleport-into-chamber")
+    }
+
+    /**
+     * Gates **walking into** a registered chamber: when `protection.prevent-entry-without-permission:
+     * true`, a player without `tcp.bypass.entry` is stopped at the boundary (the move is cancelled,
+     * setting them back). Spectators and creative-mode players are exempt; moving within a chamber
+     * you're already inside is allowed. Only runs on a block change, and only when the toggle is on.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onWalkIntoChamber(event: PlayerMoveEvent) {
+        if (!plugin.config.getBoolean("protection.enabled", true)) return
+        if (!plugin.config.getBoolean("protection.prevent-entry-without-permission", false)) return
+
+        val to = event.to
+        val from = event.from
+        if (from.blockX == to.blockX && from.blockY == to.blockY && from.blockZ == to.blockZ) return // sub-block move
+
+        val player = event.player
+        if (player.gameMode == GameMode.SPECTATOR || player.gameMode == GameMode.CREATIVE) return
+        if (player.hasPermission("tcp.bypass.entry")) return
+
+        val toChamber = plugin.chamberManager.getCachedChamberAt(to) ?: return
+        if (toChamber.isPaused) return
+        if (plugin.chamberManager.getCachedChamberAt(from)?.id == toChamber.id) return // already inside it
+
+        event.isCancelled = true
+        notifyBlocked(player, "cannot-enter-chamber")
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)

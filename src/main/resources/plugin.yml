@@ -98,6 +98,9 @@ permissions:
   tcp.bypass.griefprevention:
     description: Create or expand GriefPrevention claims that overlap a registered Trial Chamber
     default: op
+  tcp.bypass.entry:
+    description: Enter chambers when entry/teleport restrictions are on (prevent-teleport-into-chamber / prevent-entry-without-permission)
+    default: op
   tcp.admin.loot:
     description: Manage per-chamber loot tables (/tcp loot set/clear/audit)
     default: op
