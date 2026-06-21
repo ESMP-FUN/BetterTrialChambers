@@ -131,6 +131,16 @@ cannot-access-container: "&cYou cannot access containers in a Trial Chamber!"
 cannot-claim-in-chamber: "&cYou can't claim that area — it overlaps the Trial Chamber &e{chamber}&c."
 cannot-use-enchant-in-chamber: "&cThat enchantment is disabled inside Trial Chambers."
 pvp-disabled-in-chamber: "&cPvP is disabled inside Trial Chambers."
+# Display names for the {type} placeholder — translate these to localize the type labels
+# everywhere they're shown. vault-type-* is also used for trial-key types.
+vault-type-normal: "Normal"
+vault-type-ominous: "Ominous"
+# {type} in the "{type} Spawner wave complete!" message.
+wave-type-normal: "Trial"
+wave-type-ominous: "Ominous"
+# {type} in the spawner-wave boss-bar progress line ("{type} - killed/total").
+wave-boss-type-normal: "Trial Spawner"
+wave-boss-type-ominous: "Ominous Trial"
 orphan-spawner-needs-silk-touch: "&cThis spawner can only be retrieved with a &fSilk Touch&c tool."
 
 # Teleport

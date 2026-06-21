@@ -238,7 +238,7 @@ class ChamberSettingsView(
             val success = plugin.chamberManager.setLootTable(chamber.name, vaultType, newTable)
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (success) {
-                    player.sendMessage(plugin.getMessageComponent("gui-loot-table-set", "type" to vaultType.displayName, "table" to newTable))
+                    player.sendMessage(plugin.getMessageComponent("gui-loot-table-set", "type" to plugin.vaultTypeDisplay(vaultType), "table" to newTable))
                     plugin.chamberManager.getCachedChamberById(chamber.id)?.let { menu.openChamberSettings(player, it) }
                 } else player.sendMessage(plugin.getMessageComponent("gui-loot-table-failed"))
             })
@@ -250,7 +250,7 @@ class ChamberSettingsView(
             val success = plugin.chamberManager.setLootTable(chamber.name, vaultType, null)
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (success) {
-                    player.sendMessage(plugin.getMessageComponent("gui-loot-table-cleared", "type" to vaultType.displayName))
+                    player.sendMessage(plugin.getMessageComponent("gui-loot-table-cleared", "type" to plugin.vaultTypeDisplay(vaultType)))
                     plugin.chamberManager.getCachedChamberById(chamber.id)?.let { menu.openChamberSettings(player, it) }
                 } else player.sendMessage(plugin.getMessageComponent("gui-loot-clear-failed"))
             })
