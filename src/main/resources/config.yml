@@ -179,13 +179,10 @@ protection:
   auto-pause-threshold: 6
 # Trial Key settings
 trial-keys:
-  # NOT YET IMPLEMENTED (reserved): fix-paper-bugs, prevent-duplication and
-  # max-stack-size are not currently enforced by any code. For dupe protection
-  # use a dedicated plugin, e.g. AntiDupePro (https://modrinth.com/plugin/AntiDupePro).
-  fix-paper-bugs: true
-  prevent-duplication: true
-  max-stack-size: 16
-  validate-key-type: true  # Ensure normal keys only open normal vaults (IMPLEMENTED)
+  # Ensure normal keys only open normal vaults (and ominous keys only open ominous vaults).
+  validate-key-type: true
+  # Note: TCP does not provide trial-key dupe protection — for that, use a dedicated plugin
+  # such as AntiDupePro (https://modrinth.com/plugin/AntiDupePro).
 
 # Reset settings
 reset:
