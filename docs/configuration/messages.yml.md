@@ -1,4 +1,4 @@
-# 💬 messages.yml Reference
+# messages.yml Reference
 
 Want your plugin to match your server's vibe? The `messages.yml` file lets you customize every single message players see. Whether you're running a serious roleplay server or a meme-filled chaos realm, you've got full control.
 
@@ -18,7 +18,7 @@ After making changes, reload with `/tcp reload`
 
 ---
 
-## 🎨 Text formatting — MiniMessage and legacy `&` codes
+## Text formatting — MiniMessage and legacy `&` codes
 
 **Added in v1.4.0.** TCP now supports the modern [MiniMessage](https://docs.advntr.dev/minimessage/format.html) syntax in every message — alongside the original `&` colour codes. You can use either format, or freely mix both in the same line.
 
@@ -100,7 +100,7 @@ Both formats work on the same line:
 
 ---
 
-## 📋 Message Categories
+## Message Categories
 
 ### General Messages
 
@@ -787,7 +787,7 @@ help-generate: "&e/tcp generate wand <name>\n  &7Registers a chamber from your W
 
 ---
 
-## 🎯 Complete Theme Examples
+## Complete Theme Examples
 
 ### Minimalist Theme
 
@@ -859,7 +859,7 @@ cannot-break-blocks: "&cHey now! No breaking stuff in here 😊"
 
 ---
 
-## 🌍 Multi-Language Support
+## Multi-Language Support
 
 Want to support multiple languages? You can create separate message files!
 
@@ -875,7 +875,7 @@ Want to support multiple languages? You can create separate message files!
 
 ---
 
-## 💡 Pro Tips
+## Pro Tips
 
 <div data-gb-custom-block data-tag="hint" data-style="success">
 
@@ -897,7 +897,7 @@ Want to support multiple languages? You can create separate message files!
 
 ---
 
-## 🎨 Color Palette Ideas
+## Color Palette Ideas
 
 ### Earthy/Natural
 - Primary: `&a` (green), `&e` (yellow)
@@ -917,7 +917,7 @@ Want to support multiple languages? You can create separate message files!
 
 ---
 
-## ⬆️ Keeping messages.yml up-to-date after plugin upgrades
+## Keeping messages.yml up-to-date after plugin upgrades
 
 **Since 1.5.19 this is automatic.** On startup, TrialChamberPro merges any message keys added in the new release into your existing `messages.yml` — **with their comments** — while leaving your existing translations and customisations untouched. The previous file is saved as `messages.yml.bak` first. So new keys just appear; you never have to delete and regenerate the file.
 
@@ -938,7 +938,7 @@ What you'll see in console when keys are added:
 
 ---
 
-## 🔄 Applying Changes
+## Applying Changes
 
 After editing `messages.yml`:
 
@@ -950,7 +950,7 @@ All messages update immediately. No restart needed!
 
 ---
 
-## ❓ Common Questions
+## Common Questions
 
 **"Can I remove the prefix from all messages?"**
 Yes! Set `prefix: ""` (empty string).
@@ -969,7 +969,7 @@ TrialChamberPro only uses the messages defined here. For custom messages, you'd 
 
 ---
 
-## 🎯 What's Next?
+## What's Next?
 
 You've completed the configuration trilogy! 🎉
 
