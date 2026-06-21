@@ -140,8 +140,10 @@ protection:
   # Enchant names that stay allowed inside chambers even when the option above is on (lowercase,
   # match the AE enchant name) — e.g. keep combat enchants working while blocking block-breakers.
   advanced-enchantments-allowlist: []
-  # NOT YET IMPLEMENTED — there is currently no PvP handler, so this toggle has
-  # no effect (PvP inside chambers follows the world/server rules). Reserved.
+  # Allow player-vs-player combat inside registered chambers. When false, TCP cancels
+  # player-on-player damage (melee + player-shot projectiles) inside a chamber. true keeps
+  # vanilla behaviour (PvP follows world/server rules). Players with tcp.bypass.protection
+  # are exempt; mob damage and self-damage are never affected.
   allow-pvp: true
   prevent-mob-griefing: true
   worldguard-integration: true
@@ -179,7 +181,7 @@ protection:
 trial-keys:
   # NOT YET IMPLEMENTED (reserved): fix-paper-bugs, prevent-duplication and
   # max-stack-size are not currently enforced by any code. For dupe protection
-  # use a dedicated plugin, e.g. DupeTrace (https://modrinth.com/plugin/dupetrace).
+  # use a dedicated plugin, e.g. AntiDupePro (https://modrinth.com/plugin/AntiDupePro).
   fix-paper-bugs: true
   prevent-duplication: true
   max-stack-size: 16
@@ -202,8 +204,8 @@ reset:
   # Vanilla behavior: 50% chance to drop a trial key for each player after all mobs are defeated.
   reset-trial-spawners: true
   reset-ominous-spawners: true  # Convert ominous spawners back to normal on reset
-  # NOT YET IMPLEMENTED (reserved) — trial/bad omen is not cleared from players on
-  # reset; this toggle currently has no effect.
+  # On reset, remove Trial Omen and Bad Omen from players who were inside the chamber, so
+  # leftover omen doesn't carry into the next cycle. Set false to leave omen untouched.
   clear-trial-omen-effect: true
   reset-vault-cooldowns: true  # Reset player vault cooldowns on chamber reset (REQUIRED for vanilla behavior)
   # Trial spawner cooldown configuration
