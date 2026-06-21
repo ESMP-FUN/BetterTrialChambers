@@ -127,7 +127,7 @@ fun handleKey(plugin: TrialChamberPro, sender: CommandSender, args: Array<out St
 
             sender.sendMessage(plugin.getMessageComponent("key-given",
                 "amount" to amount,
-                "type" to keyTypeStr.replaceFirstChar { it.uppercase() },
+                "type" to plugin.normalOminousLabel(keyTypeStr == "ominous"),
                 "player" to playerName
             ))
         }
