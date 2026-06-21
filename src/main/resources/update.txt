@@ -1,6 +1,6 @@
 <black>.
 <aqua>[1.5.19] <gray>- <white>2026-06-21
-<lime>+ <white>NEW: <green><yellow>config.yml auto-updates<green> — options added in updates are now merged into your existing file (with comments + a <yellow>.bak<green> backup) on startup, so you never silently miss new settings again.
+<lime>+ <white>NEW: <green><yellow>config.yml + messages.yml auto-update<green> — keys added in updates are now merged into your existing files (with comments + a <yellow>.bak<green> backup) on startup, so you never silently miss new settings or get <yellow><missing><green> messages again.
 <lime>+ <white>NEW: <green><yellow>protection.allow-pvp<green> now works (disable PvP inside chambers), and <yellow>reset.clear-trial-omen-effect<green> now clears Trial/Bad Omen from players on reset.
 <aqua>[1.5.18] <gray>- <white>2026-06-21
 <lime>+ <white>NEW: <green><yellow>AdvancedEnchantments<green> support — stop AE enchants like <yellow>Blast Mining<green> from breaking blocks inside chambers (<yellow>protection.block-advanced-enchantments<green>, off by default; allowlist for combat enchants).
