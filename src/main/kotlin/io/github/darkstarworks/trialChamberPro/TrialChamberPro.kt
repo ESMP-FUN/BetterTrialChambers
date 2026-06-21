@@ -184,10 +184,20 @@ class TrialChamberPro : JavaPlugin() {
             updateChecker.checkForUpdates(notifyConsole = false)
         }, 432000L, 432000L)
 
-        // Save default config files
+        // Save default config files (only written when absent)
         saveDefaultConfig()
         saveResource("messages.yml", false)
         saveResource("loot.yml", false)
+
+        // Merge keys added in newer versions into the user's existing settings/text files.
+        // saveResource/saveDefaultConfig only write when the file is ABSENT, so upgraders would
+        // otherwise never get new config options or message keys (the latter showing as
+        // "<missing: …>" in-game). Additive + comment-preserving + .bak backup. User-content
+        // files (loot.yml, spawner_presets.yml, dungeon.yml) are deliberately NOT merged —
+        // they're authored by the server owner and merging would fight their edits.
+        mergeYamlDefaults("config.yml")
+        reloadConfig() // pull the merged keys into getConfig()
+        mergeYamlDefaults("messages.yml")
 
         // v1.3.0: sanity-check numeric config values; clamp with warnings rather than hard-fail
         io.github.darkstarworks.trialChamberPro.config.ConfigValidator.validate(this)
@@ -660,6 +670,59 @@ class TrialChamberPro : JavaPlugin() {
             spawnerPresetManager.load()
         }
         logger.info("Configuration reloaded")
+    }
+
+    /**
+     * Adds keys introduced in newer versions to an existing bundled YAML file ([resourceName],
+     * e.g. `config.yml` / `messages.yml`). `saveDefaultConfig()` / `saveResource(..., false)`
+     * only write a file when it's ABSENT, so a server that installed an earlier build never gets
+     * new options or message keys — features run on code defaults that can't be configured, and
+     * new messages render as `<missing: …>` in-game.
+     *
+     * Every key present in the jar's default but missing from the user's file is added, carrying
+     * its comment across; existing values, comments, and order are left untouched. A `<file>.bak`
+     * is written first as a safety net. No-op when nothing is missing or the file doesn't exist
+     * yet (a fresh install already has the complete default).
+     *
+     * Intended for settings/text files with canonical defaults — NOT for user-content files like
+     * `loot.yml` / `spawner_presets.yml` / `dungeon.yml`, where re-adding defaults would clobber
+     * the owner's edits.
+     */
+    private fun mergeYamlDefaults(resourceName: String) {
+        val resource = getResource(resourceName) ?: return
+        val file = java.io.File(dataFolder, resourceName)
+        if (!file.exists()) return // fresh install: saveResource already wrote the full default
+
+        val defaults = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(
+            java.io.InputStreamReader(resource, Charsets.UTF_8)
+        )
+        val current = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(file)
+        val missing = defaults.getKeys(true).filter { key ->
+            !current.isSet(key) && !defaults.isConfigurationSection(key)
+        }
+        if (missing.isEmpty()) return
+
+        runCatching { file.copyTo(java.io.File(dataFolder, "$resourceName.bak"), overwrite = true) }
+            .onFailure { logger.warning("Could not back up $resourceName before merging new keys: ${it.message}") }
+
+        for (key in missing) {
+            current.set(key, defaults.get(key))
+            // setComments is Paper 1.18+ — keep each key's doc comment in the file.
+            runCatching {
+                current.setComments(key, defaults.getComments(key))
+                current.setInlineComments(key, defaults.getInlineComments(key))
+            }
+        }
+        try {
+            current.save(file)
+        } catch (e: Exception) {
+            logger.warning("Could not save merged $resourceName: ${e.message}")
+            return
+        }
+        logger.info(
+            "$resourceName: added ${missing.size} new key(s) introduced in this version " +
+                "(your existing entries are kept; previous file saved as $resourceName.bak)."
+        )
     }
 
     /**

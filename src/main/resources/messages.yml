@@ -130,6 +130,7 @@ cannot-place-blocks: "&cYou cannot place blocks in a Trial Chamber!"
 cannot-access-container: "&cYou cannot access containers in a Trial Chamber!"
 cannot-claim-in-chamber: "&cYou can't claim that area — it overlaps the Trial Chamber &e{chamber}&c."
 cannot-use-enchant-in-chamber: "&cThat enchantment is disabled inside Trial Chambers."
+pvp-disabled-in-chamber: "&cPvP is disabled inside Trial Chambers."
 orphan-spawner-needs-silk-touch: "&cThis spawner can only be retrieved with a &fSilk Touch&c tool."
 
 # Teleport

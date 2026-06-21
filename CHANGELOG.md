@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.5.19] - 2026-06-21
+### Added
+- **`config.yml` and `messages.yml` now auto-update on startup.** Bukkit only writes these files when they're *absent*, so servers that installed an earlier build never got options/message keys added later — features ran on code defaults that couldn't be configured, and new messages rendered as `<missing: …>` in-game. TCP now merges any key present in the bundled default but missing from your file, **carrying its comment across**, while leaving your existing values, comments, and order untouched. The previous file is saved as `<file>.bak` first. User-content files (`loot.yml`, `spawner_presets.yml`, `dungeon.yml`) are intentionally **not** merged — they're authored by you. (This is why some servers were stuck on old configs/messages.)
+- **`protection.allow-pvp` is now implemented** (was a reserved no-op). When `false`, player-vs-player damage — melee and player-shot projectiles — is cancelled inside registered chambers. `tcp.bypass.protection` exempts staff; mob and self-damage are never affected.
+- **`reset.clear-trial-omen-effect` is now implemented** (was a reserved no-op). On reset, Trial Omen and Bad Omen are stripped from players who were inside the chamber, so leftover omen doesn't carry into the next cycle.
+
 ## [1.5.18] - 2026-06-21
 ### Added
 - **AdvancedEnchantments integration.** AE custom enchants (e.g. *Blast Mining*) break blocks through their own effect path that ignores TCP's `BlockBreakEvent` cancel — so they could bypass chamber protection. With `protection.block-advanced-enchantments: true` (and AE installed), TCP cancels AE enchant activations for a player standing in a registered chamber; `protection.advanced-enchantments-allowlist` keeps named enchants (e.g. combat ones) working there. Reflection-based — no dependency on the paid AE jar, inert when AE is absent — and `tcp.bypass.protection` exempts staff. **Off by default.**
@@ -1424,6 +1430,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.5.19]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.18...v1.5.19
 [1.5.18]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.17...v1.5.18
 [1.5.17]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.16...v1.5.17
 [1.5.16]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.15...v1.5.16
