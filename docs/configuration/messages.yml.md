@@ -919,30 +919,20 @@ Want to support multiple languages? You can create separate message files!
 
 ## ⬆️ Keeping messages.yml up-to-date after plugin upgrades
 
-`messages.yml` is only generated once — when the plugin first runs and the file does not yet exist. **It is never overwritten automatically**, so your translations and customisations are always safe. However, this means that when a new plugin version adds new messages (GUI labels, error strings, etc.) your existing file will be missing those keys.
+**Since 1.5.19 this is automatic.** On startup, TrialChamberPro merges any message keys added in the new release into your existing `messages.yml` — **with their comments** — while leaving your existing translations and customisations untouched. The previous file is saved as `messages.yml.bak` first. So new keys just appear; you never have to delete and regenerate the file.
 
-**What happens when a key is missing?** The plugin falls back to the literal text `<missing: key.name>` wherever that key is referenced — in chat, GUI item names, boss bars, etc.
-
-**How to spot missing keys** — since v1.4.1 the plugin checks at startup and logs a warning if your file is behind. Look for a block like this in your console:
+What you'll see in console when keys are added:
 
 ```
-[messages.yml] Your file is missing 12 key(s) that this version of
-[messages.yml] TrialChamberPro expects.
-[messages.yml]   - gui.help-menu.mobs-cmd-name
-[messages.yml]   - gui.help-menu.give-cmd-name
-[messages.yml]   ...
-[messages.yml] To fix:
-[messages.yml]   1. Stop the server.
-[messages.yml]   2. Rename plugins/TrialChamberPro/messages.yml to messages.yml.bak
-[messages.yml]   3. Start the server.
-[messages.yml]   4. Port your translations from the .bak file into the new one.
+[TCP] messages.yml: added 4 new key(s) introduced in this version
+[TCP] (your existing entries are kept; previous file saved as messages.yml.bak).
 ```
 
-Follow those four steps and you'll have a fresh, complete file. Then copy any custom values you care about from the `.bak`.
+**Older behaviour (before 1.5.19):** the file was only written when absent, so upgraders' files were missing new keys and the plugin fell back to the literal text `<missing: key.name>` in chat / GUI / boss bars. A startup schema check (v1.4.1) warned about this; with the auto-merge it no longer triggers, but it remains as a backstop if a merge ever fails.
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
-**Prefer not to migrate right now?** You can silence the check with `debug.skip-messages-schema-check: true` in `config.yml`. The plugin will still work — only the missing keys will fall back to the `<missing: …>` placeholder text.
+**Translating?** Your edits are safe across updates — the merge only **adds** missing keys, it never changes or removes your values. See [Localization](localization.md) for translating the new `{type}` labels (`vault-type-normal` / `vault-type-ominous`, `wave-type-*`, `wave-boss-type-*`) and other player-facing text.
 
 </div>
 
