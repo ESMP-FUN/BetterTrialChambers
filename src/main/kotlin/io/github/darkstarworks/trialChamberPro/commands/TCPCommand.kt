@@ -566,10 +566,10 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         // Integrations
         sender.sendMessage(plugin.getMessageComponent("plugin-info-integrations-header"))
 
-        val weStatus = if (worldEdit) "§a✓" else "§c✗"
-        val wgStatus = if (worldGuard) "§a✓" else "§c✗"
-        val papiStatus = if (placeholderApi) "§a✓" else "§c✗"
-        val vaultStatus = if (vault) "§a✓" else "§c✗"
+        val weStatus = if (worldEdit) "&a✓" else "&c✗"
+        val wgStatus = if (worldGuard) "&a✓" else "&c✗"
+        val papiStatus = if (placeholderApi) "&a✓" else "&c✗"
+        val vaultStatus = if (vault) "&a✓" else "&c✗"
 
         sender.sendMessage(plugin.getMessageComponent("plugin-info-integration-worldedit", "status" to weStatus))
         sender.sendMessage(plugin.getMessageComponent("plugin-info-integration-worldguard", "status" to wgStatus))
@@ -578,10 +578,10 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
         // Config status
         sender.sendMessage(plugin.getMessageComponent("plugin-info-config-header"))
-        val perPlayerLoot = if (plugin.config.getBoolean("vaults.per-player-loot", true)) "§a✓" else "§c✗"
-        val spawnerWaves = if (plugin.config.getBoolean("spawner-waves.enabled", true)) "§a✓" else "§c✗"
-        val spectatorMode = if (plugin.config.getBoolean("spectator-mode.enabled", true)) "§a✓" else "§c✗"
-        val statistics = if (plugin.config.getBoolean("statistics.enabled", true)) "§a✓" else "§c✗"
+        val perPlayerLoot = if (plugin.config.getBoolean("vaults.per-player-loot", true)) "&a✓" else "&c✗"
+        val spawnerWaves = if (plugin.config.getBoolean("spawner-waves.enabled", true)) "&a✓" else "&c✗"
+        val spectatorMode = if (plugin.config.getBoolean("spectator-mode.enabled", true)) "&a✓" else "&c✗"
+        val statistics = if (plugin.config.getBoolean("statistics.enabled", true)) "&a✓" else "&c✗"
 
         sender.sendMessage(plugin.getMessageComponent("plugin-info-config-per-player", "status" to perPlayerLoot))
         sender.sendMessage(plugin.getMessageComponent("plugin-info-config-spawner-waves", "status" to spawnerWaves))
