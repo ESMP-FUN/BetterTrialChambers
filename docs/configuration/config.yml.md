@@ -402,6 +402,8 @@ protection:
   message-cooldown-ms: 1500
   block-advanced-enchantments: false
   advanced-enchantments-allowlist: []
+  prevent-teleport-into-chamber: false
+  prevent-entry-without-permission: false
   auto-pause-on-destruction: false
   auto-pause-threshold: 6
 ```
@@ -468,6 +470,16 @@ advanced-enchantments-allowlist:
   - lifesteal
   - poisoned
 ```
+
+### `prevent-teleport-into-chamber`
+**Default:** `false` *(added in 1.5.20)*
+
+Stop players **teleporting into** a registered chamber from outside it, so they can't skip the intended entrance. Because it hooks the teleport itself rather than specific commands, it catches every method — `/tpa`, `/tpahere`, `/home`, `/warp`, `/tp`, ender pearls, chorus fruit, plugin teleports — in one place. Walking in on foot is unaffected. Players with **`tcp.bypass.entry`** (default: op), spectators, and creative-mode players are exempt (the gamemode exemption also covers TCP's own spectator-mode entry teleport). Off by default.
+
+### `prevent-entry-without-permission`
+**Default:** `false` *(added in 1.5.20)*
+
+Gate **walking into** a chamber by rank: when `true`, only players with **`tcp.bypass.entry`** (default: op) can enter a chamber on foot — everyone else is stopped at the boundary. Use it to make chambers rank-restricted (e.g. a VIP dungeon). Pair it with `prevent-teleport-into-chamber` to close the teleport route as well. Spectators and creative-mode players are exempt. Off by default. *(This check runs on player movement; it's lightweight — only firing on a block change while the toggle is on — but only enable it if you actually need rank-gated entry.)*
 
 ### `block-wild-vault-placement`
 **Default:** `true` *(added in 1.5.7)*

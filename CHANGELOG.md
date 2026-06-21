@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
 ## [1.5.20] - 2026-06-22
+### Added
+- **Chamber entry control** — two opt-in protection toggles for gating who can get into a chamber:
+  - **`protection.prevent-teleport-into-chamber`** cancels teleporting *into* a chamber from outside — `/tpa`, `/tpahere`, `/home`, `/warp`, `/tp`, ender pearls, chorus fruit, anything. It hooks the teleport itself (`PlayerTeleportEvent`), so it catches every method rather than specific commands, and players can't `/tpa` past the intended entrance.
+  - **`protection.prevent-entry-without-permission`** gates *walking* into a chamber by rank — only players with the new **`tcp.bypass.entry`** permission (default op) can enter on foot; others are stopped at the boundary. Makes chambers rank-restricted.
+  Both are off by default. `tcp.bypass.entry`, spectators, and creative-mode players are exempt (the gamemode check also covers TCP's own spectator-entry teleport).
+
 ### Fixed
 - **`/tcp info` rendered raw colour codes** instead of formatting (e.g. `&8&l&6TRIAL CHAMBER…` and `&7WorldEdit / FAWE:`) — most visible with a translated, `&`-coded prefix. The integration/feature status ticks were built with `§` section signs, which TCP's message parser rejects, making it fall back to printing the whole line literally. They now use `&` codes, so the line formats correctly.
 

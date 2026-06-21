@@ -131,6 +131,8 @@ cannot-access-container: "&cYou cannot access containers in a Trial Chamber!"
 cannot-claim-in-chamber: "&cYou can't claim that area — it overlaps the Trial Chamber &e{chamber}&c."
 cannot-use-enchant-in-chamber: "&cThat enchantment is disabled inside Trial Chambers."
 pvp-disabled-in-chamber: "&cPvP is disabled inside Trial Chambers."
+cannot-teleport-into-chamber: "&cYou can't teleport into a Trial Chamber."
+cannot-enter-chamber: "&cYou don't have permission to enter this Trial Chamber."
 # Display names for the {type} placeholder — translate these to localize the type labels
 # everywhere they're shown. vault-type-* is also used for trial-key types.
 vault-type-normal: "Normal"
