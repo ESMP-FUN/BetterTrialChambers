@@ -127,6 +127,19 @@ protection:
   prevent-block-break: true
   prevent-block-place: true
   prevent-container-access: false
+  # How long (ms) to wait before re-showing a "can't break/place/access here" message to
+  # the same player. Stops chat spam when one action affects many blocks at once — e.g. an
+  # AdvancedEnchantments "Blast Mining" enchant, a vein miner, or rapid clicking. 0 = no throttle.
+  message-cooldown-ms: 1500
+  # AdvancedEnchantments integration: AE custom enchants (Blast Mining, etc.) break blocks
+  # through their own effect path that ignores TCP's block-break cancel — so they can bypass
+  # chamber protection. When this is on (and AE is installed), TCP cancels AE enchant activations
+  # for players standing in a registered chamber. Players with tcp.bypass.protection are exempt.
+  # Off by default so AE behaves normally until you opt in.
+  block-advanced-enchantments: false
+  # Enchant names that stay allowed inside chambers even when the option above is on (lowercase,
+  # match the AE enchant name) — e.g. keep combat enchants working while blocking block-breakers.
+  advanced-enchantments-allowlist: []
   # NOT YET IMPLEMENTED — there is currently no PvP handler, so this toggle has
   # no effect (PvP inside chambers follows the world/server rules). Reserved.
   allow-pvp: true

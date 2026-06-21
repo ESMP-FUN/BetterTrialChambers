@@ -1,9 +1,7 @@
 <black>.
+<aqua>[1.5.18] <gray>- <white>2026-06-20
+<lime>+ <white>NEW: <green><yellow>AdvancedEnchantments<green> support — stop AE enchants like <yellow>Blast Mining<green> from breaking blocks inside chambers (<yellow>protection.block-advanced-enchantments<green>, off by default; allowlist for combat enchants).
+<lime>+ <white>FIX: <green>No more chat spam when one action breaks many blocks at once — the "can't break here" message is now throttled per player (<yellow>protection.message-cooldown-ms<green>).
 <aqua>[1.5.17] <gray>- <white>2026-06-20
 <lime>+ <white>FIX: <green>A <yellow>1.5.16<green> bug could rename another plugin's <yellow>player_stats<green> table when sharing a database. Fixed — and affected servers <yellow>auto-recover<green> on restart (the other plugin's table is restored, TCP uses its own <yellow>tcp_player_stats<green>).
-<aqua>[1.5.16] <gray>- <white>2026-06-19
-<lime>+ <white>FIX: <green>Stats/leaderboard GUI crashed when another plugin already had a <yellow>player_stats<green> table on a shared database. TCP now uses its own <yellow>tcp_player_stats<green> table. New <yellow>/tcp debug schema<green> diagnostic.
-<aqua>[1.5.15] <gray>- <white>2026-06-19
-<lime>+ <white>NEW: <green>Land-claim protection — players can no longer claim a registered Trial Chamber with <yellow>Residence<green>, <yellow>Lands<green>, or <yellow>GriefPrevention<green>. Per-plugin toggles + bypass perms.
-<lime>+ <white>NEW: <green><yellow>/tcp claims scan<green> (and a startup scan) logs any chambers that already overlap existing claims, so you can find and fix conflicts.
 <black>.
