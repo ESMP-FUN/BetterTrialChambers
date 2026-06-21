@@ -107,7 +107,7 @@ class LootCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
             val success = plugin.chamberManager.setLootTable(chamberName, vaultType, tableName)
             if (success) {
                 sender.sendMessage(plugin.getMessageComponent("loot-set-success",
-                    "type" to vaultType.displayName,
+                    "type" to plugin.vaultTypeDisplay(vaultType),
                     "chamber" to chamberName,
                     "table" to tableName))
             } else {
