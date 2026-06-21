@@ -279,6 +279,12 @@ class ResetManager(private val plugin: TrialChamberPro) {
             scheduledResets.remove(chamber.id)?.cancel()
             warningJobs.remove(chamber.id)?.forEach { it.cancel() }
 
+            // Step 0: Strip Trial/Bad Omen from players inside so it doesn't carry into the next
+            // cycle. Independent of teleport — works even when players stay in the chamber.
+            if (plugin.config.getBoolean("reset.clear-trial-omen-effect", true)) {
+                clearTrialOmen(chamber)
+            }
+
             // Step 1: Teleport players out
             if (plugin.config.getBoolean("global.teleport-players-on-reset", true)) {
                 teleportPlayersOut(chamber)
@@ -377,6 +383,25 @@ class ResetManager(private val plugin: TrialChamberPro) {
             e.printStackTrace()
             false
         }
+    }
+
+    /**
+     * Removes Trial Omen and Bad Omen from players currently inside [chamber]. Fire-and-forget,
+     * Folia-correct (per-entity scheduling). Uses the registry lookup so it degrades cleanly on
+     * server versions without the effect rather than referencing a constant by name.
+     */
+    private fun clearTrialOmen(chamber: Chamber) {
+        val trialOmen = org.bukkit.Registry.POTION_EFFECT_TYPE.get(org.bukkit.NamespacedKey.minecraft("trial_omen"))
+        val badOmen = org.bukkit.Registry.POTION_EFFECT_TYPE.get(org.bukkit.NamespacedKey.minecraft("bad_omen"))
+        if (trialOmen == null && badOmen == null) return
+        plugin.scheduler.runTask(Runnable {
+            chamber.getPlayersInside().forEach { player ->
+                plugin.scheduler.runAtEntity(player, Runnable {
+                    trialOmen?.let { player.removePotionEffect(it) }
+                    badOmen?.let { player.removePotionEffect(it) }
+                })
+            }
+        })
     }
 
     /**
