@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [1.5.18] - Unreleased
+## [1.5.18] - 2026-06-21
 ### Added
 - **AdvancedEnchantments integration.** AE custom enchants (e.g. *Blast Mining*) break blocks through their own effect path that ignores TCP's `BlockBreakEvent` cancel — so they could bypass chamber protection. With `protection.block-advanced-enchantments: true` (and AE installed), TCP cancels AE enchant activations for a player standing in a registered chamber; `protection.advanced-enchantments-allowlist` keeps named enchants (e.g. combat ones) working there. Reflection-based — no dependency on the paid AE jar, inert when AE is absent — and `tcp.bypass.protection` exempts staff. **Off by default.**
 
