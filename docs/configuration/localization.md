@@ -75,6 +75,18 @@ plugin.getMessage("chamber-created",
 
 The placeholders available for each key are listed inline next to the key in the bundled `messages.yml`. Unknown placeholders are left as literal `{token}` text rather than throwing — useful for spotting typos.
 
+### Translatable `{type}` labels *(1.5.19+)*
+
+Some placeholder **values** used to be hardcoded English. The `{type}` label is now itself looked up from messages.yml, so "Normal"/"Ominous"/etc. translate everywhere they appear:
+
+| Key | Default | Used in |
+| --- | --- | --- |
+| `vault-type-normal` / `vault-type-ominous` | `Normal` / `Ominous` | vault messages (open / locked / reopen) **and** `/tcp key give` |
+| `wave-type-normal` / `wave-type-ominous` | `Trial` / `Ominous` | the "{type} Spawner wave complete!" message |
+| `wave-boss-type-normal` / `wave-boss-type-ominous` | `Trial Spawner` / `Ominous Trial` | the spawner-wave boss-bar progress line |
+
+Translate these once and every `{type}` in those messages follows.
+
 ## Multi-line lore
 
 GUI lore (and any other list-typed value) is a YAML list:
