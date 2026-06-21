@@ -1,5 +1,5 @@
 <black>.
-<aqua>[1.5.18] <gray>- <white>2026-06-20
+<aqua>[1.5.18] <gray>- <white>2026-06-21
 <lime>+ <white>NEW: <green><yellow>AdvancedEnchantments<green> support — stop AE enchants like <yellow>Blast Mining<green> from breaking blocks inside chambers (<yellow>protection.block-advanced-enchantments<green>, off by default; allowlist for combat enchants).
 <lime>+ <white>FIX: <green>No more chat spam when one action breaks many blocks at once — the "can't break here" message is now throttled per player (<yellow>protection.message-cooldown-ms<green>).
 <aqua>[1.5.17] <gray>- <white>2026-06-20
