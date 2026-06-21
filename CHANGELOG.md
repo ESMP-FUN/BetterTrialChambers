@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.5.20] - 2026-06-22
+### Fixed
+- **`/tcp info` rendered raw colour codes** instead of formatting (e.g. `&8&l&6TRIAL CHAMBER…` and `&7WorldEdit / FAWE:`) — most visible with a translated, `&`-coded prefix. The integration/feature status ticks were built with `§` section signs, which TCP's message parser rejects, making it fall back to printing the whole line literally. They now use `&` codes, so the line formats correctly.
+
 ## [1.5.19] - 2026-06-21
 ### Added
 - **`config.yml` and `messages.yml` now auto-update on startup.** Bukkit only writes these files when they're *absent*, so servers that installed an earlier build never got options/message keys added later — features ran on code defaults that couldn't be configured, and new messages rendered as `<missing: …>` in-game. TCP now merges any key present in the bundled default but missing from your file, **carrying its comment across**, while leaving your existing values, comments, and order untouched. The previous file is saved as `<file>.bak` first. User-content files (`loot.yml`, `spawner_presets.yml`, `dungeon.yml`) are intentionally **not** merged — they're authored by you. (This is why some servers were stuck on old configs/messages.)
@@ -1434,6 +1438,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.5.20]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.19...v1.5.20
 [1.5.19]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.18...v1.5.19
 [1.5.18]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.17...v1.5.18
 [1.5.17]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.16...v1.5.17
