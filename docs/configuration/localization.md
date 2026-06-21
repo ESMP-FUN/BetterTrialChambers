@@ -1,4 +1,4 @@
-# 🌐 Localization
+# Localization
 
 Every user-visible string in TrialChamberPro lives in `plugins/TrialChamberPro/messages.yml` and can be overridden — including the entire admin GUI as of v1.3.0. This page covers how to translate, the key naming conventions, and the placeholder syntax.
 
