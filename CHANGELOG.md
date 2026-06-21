@@ -11,6 +11,9 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - **`reset.clear-trial-omen-effect` is now implemented** (was a reserved no-op). On reset, Trial Omen and Bad Omen are stripped from players who were inside the chamber, so leftover omen doesn't carry into the next cycle.
 - **Translatable `{type}` labels** — the `{type}` placeholder was being filled with hardcoded English. It now resolves through new messages.yml keys so it can be localized everywhere it appears: `vault-type-normal` / `vault-type-ominous` (vault messages **and** trial-key give messages), and `wave-type-*` / `wave-boss-type-*` for the spawner-wave completion + boss-bar lines. Defaults are unchanged (`Normal`/`Ominous`, `Trial`/`Ominous`, `Trial Spawner`/`Ominous Trial`).
 
+### Removed
+- **Dropped the never-implemented `trial-keys.fix-paper-bugs`, `prevent-duplication`, and `max-stack-size` options.** They were read by no code and had no effect. A consistent key stack-size cap isn't practical (spawner keys are dropped by vanilla, and the premium add-ons hand out their own keys), and dupe protection is better left to a dedicated plugin — `validate-key-type` stays, and the comment now points to AntiDupePro. Leftover keys in an existing `config.yml` are simply ignored.
+
 ## [1.5.18] - 2026-06-21
 ### Added
 - **AdvancedEnchantments integration.** AE custom enchants (e.g. *Blast Mining*) break blocks through their own effect path that ignores TCP's `BlockBreakEvent` cancel — so they could bypass chamber protection. With `protection.block-advanced-enchantments: true` (and AE installed), TCP cancels AE enchant activations for a player standing in a registered chamber; `protection.advanced-enchantments-allowlist` keeps named enchants (e.g. combat ones) working there. Reflection-based — no dependency on the paid AE jar, inert when AE is absent — and `tcp.bypass.protection` exempts staff. **Off by default.**
