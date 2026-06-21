@@ -92,7 +92,7 @@ class VaultManagementView(
         return GuiComponents.infoItem(plugin, material,
             nameKey, "gui.vault-management.vault-lore",
             "id" to vault.id,
-            "type" to vault.type.displayName,
+            "type" to plugin.vaultTypeDisplay(vault.type),
             "x" to vault.x, "y" to vault.y, "z" to vault.z,
             "table" to vault.lootTable,
             "locks" to lockCount)

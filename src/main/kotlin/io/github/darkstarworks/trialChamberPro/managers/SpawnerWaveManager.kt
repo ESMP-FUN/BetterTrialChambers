@@ -498,7 +498,10 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
 
         // Send completion message to participants
         if (plugin.config.getBoolean("spawner-waves.completion-message", true)) {
-            val typeStr = if (wave.isOminous) "Ominous" else "Trial"
+            val typeStr = plugin.getRawMessage(
+                if (wave.isOminous) "wave-type-ominous" else "wave-type-normal",
+                if (wave.isOminous) "Ominous" else "Trial"
+            )
             val message = plugin.getMessageComponent("spawner-wave-complete",
                 "type" to typeStr,
                 "killed" to wave.mobsKilled.get(),
@@ -893,7 +896,10 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         bar.progress(progress)
 
         // Update title with kill count
-        val typeStr = if (wave.isOminous) "Ominous Trial" else "Trial Spawner"
+        val typeStr = plugin.getRawMessage(
+            if (wave.isOminous) "wave-boss-type-ominous" else "wave-boss-type-normal",
+            if (wave.isOminous) "Ominous Trial" else "Trial Spawner"
+        )
         bar.name(getMessageComponent("spawner-wave-boss-bar-progress",
             "type" to typeStr,
             "killed" to wave.mobsKilled.get(),

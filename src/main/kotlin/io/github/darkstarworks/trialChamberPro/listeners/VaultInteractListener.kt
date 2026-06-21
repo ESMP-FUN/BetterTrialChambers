@@ -255,7 +255,7 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
                 if (tryPayReopenCost(player, vaultType, reopenCost)) {
                     clearNativeRewardedFlag(location, player)
                     player.sendMessage(plugin.getMessageComponent("vault-reopened",
-                        "cost" to reopenCost, "type" to vaultType.displayName))
+                        "cost" to reopenCost, "type" to plugin.vaultTypeDisplay(vaultType)))
                     openVault(player, vaultData, vaultType, location)
                     return
                 }
@@ -264,7 +264,7 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
                 routeVaultFeedback(
                     player, location, false,
                     plugin.getMessageComponent("vault-reopen-need",
-                        "cost" to reopenCost, "type" to vaultType.displayName)
+                        "cost" to reopenCost, "type" to plugin.vaultTypeDisplay(vaultType))
                 ) {
                     playErrorSound(player)
                 }
@@ -276,10 +276,10 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
             // permanent "unlocks on reset" message otherwise.
             val feedback = if (cooldownHours > 0 && cooldownRemainingMs > 0 && cooldownRemainingMs != Long.MAX_VALUE) {
                 plugin.getMessageComponent("vault-cooldown",
-                    "type" to vaultType.displayName,
+                    "type" to plugin.vaultTypeDisplay(vaultType),
                     "time" to plugin.statisticsManager.formatTime(cooldownRemainingMs / 1000))
             } else {
-                plugin.getMessageComponent("vault-locked", "type" to vaultType.displayName)
+                plugin.getMessageComponent("vault-locked", "type" to plugin.vaultTypeDisplay(vaultType))
             }
             routeVaultFeedback(player, location, false, feedback) {
                 playErrorSound(player)
@@ -472,7 +472,7 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
 
                     routeVaultFeedback(
                         player, location, true,
-                        plugin.getMessageComponent("vault-opened", "type" to vaultType.displayName)
+                        plugin.getMessageComponent("vault-opened", "type" to plugin.vaultTypeDisplay(vaultType))
                     ) {
                         playSuccessSound(player, player.location)
                     }
