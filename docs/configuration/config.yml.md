@@ -496,15 +496,12 @@ The counter resets to zero on every pause/resume cycle and on chamber reset, so 
 
 ```yaml
 trial-keys:
-  fix-paper-bugs: true
-  prevent-duplication: true
-  max-stack-size: 16
   validate-key-type: true
 ```
 
-<div data-gb-custom-block data-tag="hint" data-style="warning">
+<div data-gb-custom-block data-tag="hint" data-style="info">
 
-**`fix-paper-bugs`, `prevent-duplication`, and `max-stack-size` are not yet implemented (reserved).** They are read by no code and have **no effect** — trial keys behave as vanilla (stack size 1, no extra dupe protection). For dupe protection use a dedicated plugin such as [DupeTrace](https://modrinth.com/plugin/dupetrace). Only `validate-key-type` below is active.
+**Trial-key dupe protection isn't handled by TCP** — for that, use a dedicated plugin such as [AntiDupePro](https://modrinth.com/plugin/AntiDupePro).
 
 </div>
 
