@@ -362,6 +362,16 @@ Giving this to regular players defeats the owner-only drop protection — they c
 
 </div>
 
+#### `tcp.bypass.entry`
+**Description:** Enter chambers when entry/teleport restrictions are on *(1.5.20+)*
+**Default:** Operators only
+**Effect:**
+- Exempt from `protection.prevent-teleport-into-chamber` (can teleport into chambers via `/tpa`, `/home`, ender pearls, etc.)
+- Exempt from `protection.prevent-entry-without-permission` (can walk into rank-gated chambers)
+- Both restrictions are off by default; this permission only matters when you enable one
+
+**Use this for:** Granting a rank access to chambers when you've made them teleport-locked or rank-restricted — e.g. give `tcp.bypass.entry` to a `vip` group so only VIPs can enter a premium dungeon.
+
 ---
 
 ### Notification Permissions
