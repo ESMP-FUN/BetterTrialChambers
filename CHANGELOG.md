@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.5.18] - Unreleased
+### Added
+- **AdvancedEnchantments integration.** AE custom enchants (e.g. *Blast Mining*) break blocks through their own effect path that ignores TCP's `BlockBreakEvent` cancel — so they could bypass chamber protection. With `protection.block-advanced-enchantments: true` (and AE installed), TCP cancels AE enchant activations for a player standing in a registered chamber; `protection.advanced-enchantments-allowlist` keeps named enchants (e.g. combat ones) working there. Reflection-based — no dependency on the paid AE jar, inert when AE is absent — and `tcp.bypass.protection` exempts staff. **Off by default.**
+
+### Fixed
+- **Protection-message chat spam.** A single multi-block action (Blast Mining, vein miners, rapid clicking) printed the "you can't break/place/access here" message once per affected block. The denial messages are now throttled per player via `protection.message-cooldown-ms` (default 1500 ms; `0` disables the throttle).
+
 ## [1.5.17] - 2026-06-20
 ### Fixed
 - **1.5.16 could rename another plugin's `player_stats` table.** The collision migration checked a table's columns via `DatabaseMetaData.getColumns()`, whose table-name argument treats `_` as a SQL wildcard — so the "is this table TCP's?" test could pick up a `player_uuid` column from a *different* matching table and wrongly rename a foreign `player_stats` to `tcp_player_stats`. The metadata lookup now filters to the exact table name (and catalog). **Servers affected by 1.5.16 auto-recover on next start:** a `tcp_player_stats` that isn't TCP's (no `player_uuid`) is renamed back to `player_stats` — returning the other plugin's table and data — and TCP creates its own fresh `tcp_player_stats`. If both names are already occupied, TCP logs exactly how to reconcile instead of touching anything.
@@ -1416,6 +1423,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.5.18]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.17...v1.5.18
 [1.5.17]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.16...v1.5.17
 [1.5.16]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.15...v1.5.16
 [1.5.15]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.14...v1.5.15

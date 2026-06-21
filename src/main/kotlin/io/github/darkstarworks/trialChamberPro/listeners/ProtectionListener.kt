@@ -19,6 +19,26 @@ import org.bukkit.event.player.PlayerInteractEvent
  */
 class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
 
+    /** Last time (ms) each player was shown a protection-denied message — for spam suppression. */
+    private val lastDenyMessage = java.util.concurrent.ConcurrentHashMap<java.util.UUID, Long>()
+
+    /**
+     * Sends a chamber-protection denial message to [player], rate-limited per player so a
+     * multi-block action (e.g. an AdvancedEnchantments "Blast Mining" enchant, a vein miner, or
+     * rapid clicking) doesn't flood the chat with one line per affected block. Throttle window is
+     * `protection.message-cooldown-ms` (default 1500; set 0 to disable throttling).
+     */
+    private fun notifyBlocked(player: Player, messageKey: String) {
+        val cooldownMs = plugin.config.getLong("protection.message-cooldown-ms", 1500L)
+        if (cooldownMs > 0L) {
+            val now = System.currentTimeMillis()
+            val last = lastDenyMessage[player.uniqueId]
+            if (last != null && now - last < cooldownMs) return
+            lastDenyMessage[player.uniqueId] = now
+        }
+        player.sendMessage(plugin.getMessageComponent(messageKey))
+    }
+
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onBlockBreak(event: BlockBreakEvent) {
         if (!plugin.config.getBoolean("protection.enabled", true)) return
@@ -36,7 +56,7 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
         // Respect WorldGuard: defer to a region that grants this player build rights.
         if (deferToWorldGuard(location, player)) return
         event.isCancelled = true
-        player.sendMessage(plugin.getMessageComponent("cannot-break-blocks"))
+        notifyBlocked(player, "cannot-break-blocks")
     }
 
     /**
@@ -101,7 +121,7 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
         if (chamber.isPaused) return
         if (deferToWorldGuard(location, player)) return
         event.isCancelled = true
-        player.sendMessage(plugin.getMessageComponent("cannot-place-blocks"))
+        notifyBlocked(player, "cannot-place-blocks")
     }
 
     /**
@@ -149,7 +169,7 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
         if (chamber.isPaused) return
         if (deferToWorldGuard(location, player)) return
         event.isCancelled = true
-        player.sendMessage(plugin.getMessageComponent("cannot-access-container"))
+        notifyBlocked(player, "cannot-access-container")
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
