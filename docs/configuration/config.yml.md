@@ -10,6 +10,12 @@ After making changes, reload with `/tcp reload`
 
 </div>
 
+<div data-gb-custom-block data-tag="hint" data-style="success">
+
+**Your config auto-updates (1.5.19+).** When you update TrialChamberPro, any new options added in the release are merged into your existing `config.yml` on startup — **with their comments** — while your current values are left untouched. The previous file is saved as `config.yml.bak` first. So you'll always see new settings without having to delete and regenerate the file. (`messages.yml` updates the same way.)
+
+</div>
+
 ---
 
 ## Reading config paths in this guide
@@ -418,13 +424,9 @@ Block access to chests, barrels, hoppers, etc. Usually `false` because you WANT 
 Set to `true` if you have admin chests inside chambers that shouldn't be touched.
 
 ### `allow-pvp`
-**Default:** `true`
+**Default:** `true` *(implemented in 1.5.19)*
 
-<div data-gb-custom-block data-tag="hint" data-style="warning">
-
-**Not yet implemented (reserved).** There is currently no PvP handler in TrialChamberPro, so this toggle has **no effect** — PvP inside chambers follows your world/server rules regardless. Setting it to `false` does not disable PvP. Reserved for a future release.
-
-</div>
+Allow player-vs-player combat inside registered chambers. When `false`, TCP cancels player-on-player damage — both melee and player-shot projectiles — inside a chamber, and tells the attacker. `true` keeps vanilla behaviour (PvP follows your world/server rules). Players with `tcp.bypass.protection` are exempt; mob damage and self-damage are never affected.
 
 ### `prevent-mob-griefing`
 **Default:** `true`
@@ -569,13 +571,9 @@ Set to `false` if you want spawners to permanently remember who completed them (
 Convert ominous trial spawners back to normal during reset. Set to `false` if you want ominous spawners to stay ominous.
 
 ### `clear-trial-omen-effect`
-**Default:** `true`
+**Default:** `true` *(implemented in 1.5.19)*
 
-<div data-gb-custom-block data-tag="hint" data-style="warning">
-
-**Not yet implemented (reserved).** Trial/Bad Omen is **not** currently removed from players on reset — this toggle has no effect. Reserved for a future release.
-
-</div>
+On reset, remove Trial Omen and Bad Omen from players who were inside the chamber, so leftover omen doesn't carry into the next cycle. Set to `false` to leave omen untouched.
 
 ### `reset-vault-cooldowns`
 **Default:** `true`
