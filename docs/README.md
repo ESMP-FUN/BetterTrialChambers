@@ -33,7 +33,7 @@ TrialChamberPro fixes all of that: every player gets their own loot roll, chambe
 * **Minecraft 1.21.1+** (use the `-mc26` build for Minecraft 26.x)
 * **Paper, Folia, Purpur, or Pufferfish**
 * **Java 21+**
-* *Optional:* WorldEdit / FAWE, WorldGuard, Residence / Lands / GriefPrevention, PlaceholderAPI, Vault, LuckPerms, Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible
+* *Optional:* WorldEdit / FAWE, WorldGuard, Residence / Lands / GriefPrevention, AdvancedEnchantments, PlaceholderAPI, Vault, LuckPerms, Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible
 
 ---
 

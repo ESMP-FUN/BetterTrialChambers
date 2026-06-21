@@ -376,6 +376,9 @@ protection:
   lands-integration: true
   griefprevention-integration: true
   claim-conflict-scan-on-startup: true
+  message-cooldown-ms: 1500
+  block-advanced-enchantments: false
+  advanced-enchantments-allowlist: []
   auto-pause-on-destruction: false
   auto-pause-threshold: 6
 ```
@@ -425,6 +428,27 @@ If the matching land-claim plugin is installed, **stop players claiming a regist
 **Default:** `true` *(added in 1.5.15)*
 
 On startup, check every registered chamber against existing claims from the enabled land-claim plugins and log a warning for each overlap — including the chamber name, its location, and the claim owner. This surfaces pre-existing conflicts (e.g. a chamber registered on top of a claim made earlier) so you can resolve them. Re-run the scan at any time with **`/tcp claims scan`**. Set to `false` to skip the automatic startup scan (the command still works).
+
+### `message-cooldown-ms`
+**Default:** `1500` *(added in 1.5.18)*
+
+How long (in milliseconds) to wait before re-showing a "you can't break / place / access here" denial to the **same** player. A single action that affects many blocks at once — an AdvancedEnchantments *Blast Mining* enchant, a vein miner, rapid clicking — used to print the message once per block and flood chat. The throttle collapses that to one line per window. Set `0` to disable throttling (every denied action messages again).
+
+### `block-advanced-enchantments`
+**Default:** `false` *(added in 1.5.18)*
+
+If [AdvancedEnchantments](https://www.spigotmc.org/resources/76519/) is installed, its custom enchants (e.g. *Blast Mining*) break blocks through their own effect path that **ignores TCP's block-break cancel** — so they can bypass chamber protection. Turn this on to make TCP cancel AE enchant activations for a player standing in a registered chamber, stopping the effect (no break, no spam). Players with `tcp.bypass.protection` are exempt. Off by default, so AE behaves normally until you opt in. Reflection-based — nothing happens on servers without AE.
+
+### `advanced-enchantments-allowlist`
+**Default:** `[]` *(added in 1.5.18)*
+
+Enchant names (lowercase, matching the AE enchant name) that stay **allowed** inside chambers even when `block-advanced-enchantments` is on. Use it to keep combat enchants working during a trial while still blocking block-breakers:
+
+```yaml
+advanced-enchantments-allowlist:
+  - lifesteal
+  - poisoned
+```
 
 ### `block-wild-vault-placement`
 **Default:** `true` *(added in 1.5.7)*
