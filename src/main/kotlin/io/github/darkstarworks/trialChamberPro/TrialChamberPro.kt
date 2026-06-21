@@ -451,6 +451,14 @@ class TrialChamberPro : JavaPlugin() {
                         })
                     }
 
+                    // v1.5.18: stop AdvancedEnchantments custom enchants (Blast Mining, etc.)
+                    // from breaking blocks inside chambers — their effect path ignores the
+                    // BlockBreakEvent cancel. Registered only when AE is installed; gated live
+                    // by protection.block-advanced-enchantments.
+                    if (io.github.darkstarworks.trialChamberPro.integrations.AdvancedEnchantmentsHook.isAvailable(this@TrialChamberPro)) {
+                        io.github.darkstarworks.trialChamberPro.integrations.AdvancedEnchantmentsHook.register(this@TrialChamberPro)
+                    }
+
                     // Mute the vanilla "Trial Spawner ... has no detected players"
                     // console spam from any chambers still broken from before the
                     // reset fixes (they clear on their next reset).

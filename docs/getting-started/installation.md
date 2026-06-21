@@ -121,6 +121,14 @@ If you already use WorldGuard, TrialChamberPro can integrate with it for protect
 
 If any of these is installed, TrialChamberPro blocks claim creation/expansion that overlaps a chamber and can scan for pre-existing conflicts (`/tcp claims scan`). Enabled by default per plugin; see [protection config](../configuration/config.yml.md) and the `tcp.bypass.*` [permissions](../reference/permissions.md).
 
+### AdvancedEnchantments
+
+**Purpose:** Stop AE enchants (e.g. Blast Mining) breaking blocks inside chambers *(1.5.18+)*
+**Required?** No — only matters if you run AdvancedEnchantments
+**Download:** [AdvancedEnchantments](https://www.spigotmc.org/resources/76519/)
+
+AE custom enchants break blocks through their own effect path that ignores TCP's block-break cancel, so they can bypass chamber protection. Set `protection.block-advanced-enchantments: true` to make TCP cancel AE enchant activations for players inside a registered chamber (with an allowlist for enchants you want to keep working). **Off by default.** See [protection config](../configuration/config.yml.md#block-advanced-enchantments).
+
 ## Verify Installation
 
 Run this command in-game:
