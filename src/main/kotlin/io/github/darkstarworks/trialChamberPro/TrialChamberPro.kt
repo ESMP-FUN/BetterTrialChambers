@@ -844,6 +844,25 @@ class TrialChamberPro : JavaPlugin() {
     }
 
     /**
+     * Raw messages.yml string for [key] (no prefix, no parsing), or [default] if absent. Use for
+     * values that get substituted into another message's `{placeholder}` rather than sent directly.
+     */
+    fun getRawMessage(key: String, default: String): String =
+        loadedMessages().getString(key, default) ?: default
+
+    /**
+     * Translatable "Normal" / "Ominous" label for the `{type}` placeholder — from the
+     * `vault-type-normal` / `vault-type-ominous` message keys (English fallback). Used for vault
+     * and trial-key types so the word can be localized everywhere it's shown.
+     */
+    fun normalOminousLabel(ominous: Boolean): String =
+        getRawMessage(if (ominous) "vault-type-ominous" else "vault-type-normal", if (ominous) "Ominous" else "Normal")
+
+    /** Translatable display name for a vault type (see [normalOminousLabel]). */
+    fun vaultTypeDisplay(type: io.github.darkstarworks.trialChamberPro.models.VaultType): String =
+        normalOminousLabel(type == io.github.darkstarworks.trialChamberPro.models.VaultType.OMINOUS)
+
+    /**
      * Internal helper: looks up the raw message string, performs
      * `{placeholder}` substitution, and prepends the chat prefix when
      * appropriate. The result is still a raw MM-or-legacy string — the
