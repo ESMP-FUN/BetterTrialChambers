@@ -140,6 +140,16 @@ protection:
   # Enchant names that stay allowed inside chambers even when the option above is on (lowercase,
   # match the AE enchant name) — e.g. keep combat enchants working while blocking block-breakers.
   advanced-enchantments-allowlist: []
+  # Stop players teleporting INTO a registered chamber from outside (/tpa, /tpahere, /home,
+  # /warp, /tp, ender pearls, etc.) — so they can't skip the intended entrance. Walking in is
+  # unaffected. Players with tcp.bypass.entry (default: op), spectators, and creative-mode
+  # players are exempt. Off by default.
+  prevent-teleport-into-chamber: false
+  # Gate WALKING into a chamber by permission: when true, only players with tcp.bypass.entry
+  # (default: op) can enter a chamber on foot — others are stopped at the boundary. Use this to
+  # make chambers rank-restricted. Spectators/creative are exempt. Off by default. (Note: this
+  # runs on player movement; it's lightweight, but only enable it if you actually need it.)
+  prevent-entry-without-permission: false
   # Allow player-vs-player combat inside registered chambers. When false, TCP cancels
   # player-on-player damage (melee + player-shot projectiles) inside a chamber. true keeps
   # vanilla behaviour (PvP follows world/server rules). Players with tcp.bypass.protection

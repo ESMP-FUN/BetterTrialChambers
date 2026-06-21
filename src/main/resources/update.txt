@@ -1,5 +1,6 @@
 <black>.
 <aqua>[1.5.20] <gray>- <white>2026-06-22
+<lime>+ <white>NEW: <green>Chamber entry control — stop players teleporting INTO chambers (<yellow>/tpa<green>, <yellow>/home<green>, ender pearls…) and/or gate walk-in entry by rank (<yellow>tcp.bypass.entry<green>). Two opt-in <yellow>protection<green> toggles, both off by default.
 <lime>+ <white>FIX: <green><yellow>/tcp info<green> no longer shows raw <yellow>&<green>colour codes — the integration/feature status lines now format correctly (was broken by <yellow>§<green> section signs, most visible with a translated prefix).
 <aqua>[1.5.19] <gray>- <white>2026-06-21
 <lime>+ <white>NEW: <green><yellow>config.yml + messages.yml auto-update<green> — keys added in updates are now merged into your existing files (with comments + a <yellow>.bak<green> backup) on startup, so you never silently miss new settings or get <yellow><missing><green> messages again.
