@@ -35,8 +35,8 @@ object AdvancedEnchantmentsHook {
     /** How far to ray-trace for the block the player is mining (survival reach ≈ 5–6 blocks). */
     private const val MINING_REACH = 6
 
-    /** Cube half-extent added around the targeted block to cover an AoE mining enchant's radius. */
-    private const val BLAST_MARGIN = 2
+    /** Default cube half-extent around the targeted block (set `…-block-radius` to your blast radius). */
+    private const val DEFAULT_BLAST_MARGIN = 2
 
     private val lastMessage = ConcurrentHashMap<UUID, Long>()
 
@@ -91,20 +91,25 @@ object AdvancedEnchantmentsHook {
      * AE's `EnchantActivateEvent` exposes no block or location — only the player — so we can't read
      * where a mining enchant like Blast Mining actually lands. We therefore check **two** things:
      *  1. the player standing inside a chamber, and
-     *  2. the block the player is targeting, expanded by [BLAST_MARGIN] on every axis, intersecting a
-     *     chamber — this catches mining the chamber *wall from outside* (the wall block is inside the
-     *     chamber bounds) and AoE breaks that reach into a chamber from just outside it.
+     *  2. the block the player is targeting, expanded by `protection.advanced-enchantments-block-radius`
+     *     (default [DEFAULT_BLAST_MARGIN]) on every axis, intersecting a chamber — this catches mining
+     *     the chamber *wall from outside* (the wall block is inside the chamber bounds) and AoE breaks
+     *     that reach into a chamber from just outside it. Set the radius to your largest blast enchant's
+     *     radius: `0` blocks only when the mined block is itself inside a chamber; larger values cover
+     *     bigger area-mining enchants. The expansion is centred on the **mined block**, not the player.
      */
     private fun affectsChamber(plugin: TrialChamberPro, player: Player): Boolean {
         plugin.chamberManager.getCachedChamberAt(player.location)?.let { return !it.isPaused }
 
         val target = runCatching { player.getTargetBlockExact(MINING_REACH) }.getOrNull() ?: return false
         val world = target.world?.name ?: return false
+        val margin = plugin.config.getInt("protection.advanced-enchantments-block-radius", DEFAULT_BLAST_MARGIN)
+            .coerceIn(0, 16)
         val b = target.location
         val chamber = plugin.chamberManager.getIntersectingChamber(
             world,
-            b.blockX - BLAST_MARGIN, b.blockY - BLAST_MARGIN, b.blockZ - BLAST_MARGIN,
-            b.blockX + BLAST_MARGIN, b.blockY + BLAST_MARGIN, b.blockZ + BLAST_MARGIN,
+            b.blockX - margin, b.blockY - margin, b.blockZ - margin,
+            b.blockX + margin, b.blockY + margin, b.blockZ + margin,
         ) ?: return false
         return !chamber.isPaused
     }
