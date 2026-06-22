@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
 ## [1.5.21] - 2026-06-22
+### Added
+- **`debug.verbose-logging` now explains protection decisions.** With it on, the console logs *why* a block-break, PvP, teleport-into-chamber, walk-in entry, or AdvancedEnchantments action was or wasn't taken — including the bypass-permission exemptions (`tcp.bypass.entry` / `tcp.bypass.protection`, which OPs hold by default). This makes "I enabled the toggle but it doesn't work" self-diagnosable: the usual answer is testing as an OP. See the new troubleshooting entry.
+
 ### Fixed
 - **AdvancedEnchantments enchants could still break into a chamber from outside.** The `protection.block-advanced-enchantments` guard only checked the **player's own** location, so a player standing just outside a chamber and mining *into* it — Blast Mining the wall, or an AoE break reaching across the boundary — wasn't stopped. AE's `EnchantActivateEvent` exposes no block, so TCP now also ray-traces the block the player is looking at and checks it — expanded by the new **`protection.advanced-enchantments-block-radius`** (default `2`, set it to your largest blast enchant's radius; `0` = only the mined block itself) — against chamber bounds via `getIntersectingChamber`, closing the outside-in route. The expansion is centred on the mined block, not the player. Standing inside a chamber is blocked as before, and `tcp.bypass.protection` / the allowlist still apply.
 

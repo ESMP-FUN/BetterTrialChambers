@@ -33,6 +33,11 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
      * rapid clicking) doesn't flood the chat with one line per affected block. Throttle window is
      * `protection.message-cooldown-ms` (default 1500; set 0 to disable throttling).
      */
+    /** Logs a diagnostic line only when `debug.verbose-logging` is on. Call sites are rare events. */
+    private fun dbg(message: String) {
+        if (plugin.config.getBoolean("debug.verbose-logging", false)) plugin.logger.info("[Protection] $message")
+    }
+
     private fun notifyBlocked(player: Player, messageKey: String) {
         val cooldownMs = plugin.config.getLong("protection.message-cooldown-ms", 1500L)
         if (cooldownMs > 0L) {
@@ -128,12 +133,16 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
             else -> null
         } ?: return
         if (attacker.uniqueId == victim.uniqueId) return
-        if (attacker.hasPermission("tcp.bypass.protection")) return
 
         val chamber = plugin.chamberManager.getCachedChamberAt(victim.location) ?: return
         if (chamber.isPaused) return
+        if (attacker.hasPermission("tcp.bypass.protection")) {
+            dbg("PvP in '${chamber.name}' allowed: ${attacker.name} has tcp.bypass.protection (note: OPs have this by default)")
+            return
+        }
 
         event.isCancelled = true
+        dbg("BLOCKED PvP in '${chamber.name}': ${attacker.name} -> ${victim.name}")
         notifyBlocked(attacker, "pvp-disabled-in-chamber")
     }
 
@@ -149,17 +158,25 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
     fun onTeleportIntoChamber(event: PlayerTeleportEvent) {
         if (!plugin.config.getBoolean("protection.enabled", true)) return
         if (!plugin.config.getBoolean("protection.prevent-teleport-into-chamber", false)) return
-        val player = event.player
-        if (player.gameMode == GameMode.SPECTATOR || player.gameMode == GameMode.CREATIVE) return
-        if (player.hasPermission("tcp.bypass.entry")) return
 
         val to = event.to ?: return
-        val toChamber = plugin.chamberManager.getCachedChamberAt(to) ?: return
+        val toChamber = plugin.chamberManager.getCachedChamberAt(to) ?: return // not teleporting into a chamber
         if (toChamber.isPaused) return
         // Allow teleporting *within* the same chamber (e.g. /back while inside it).
         if (plugin.chamberManager.getCachedChamberAt(event.from)?.id == toChamber.id) return
 
+        val player = event.player
+        if (player.gameMode == GameMode.SPECTATOR || player.gameMode == GameMode.CREATIVE) {
+            dbg("teleport into '${toChamber.name}' allowed for ${player.name}: ${player.gameMode} mode is exempt")
+            return
+        }
+        if (player.hasPermission("tcp.bypass.entry")) {
+            dbg("teleport into '${toChamber.name}' allowed for ${player.name}: has tcp.bypass.entry (note: OPs have this by default)")
+            return
+        }
+
         event.isCancelled = true
+        dbg("BLOCKED teleport into '${toChamber.name}' for ${player.name} (cause ${event.cause})")
         notifyBlocked(player, "cannot-teleport-into-chamber")
     }
 
@@ -178,15 +195,22 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
         val from = event.from
         if (from.blockX == to.blockX && from.blockY == to.blockY && from.blockZ == to.blockZ) return // sub-block move
 
-        val player = event.player
-        if (player.gameMode == GameMode.SPECTATOR || player.gameMode == GameMode.CREATIVE) return
-        if (player.hasPermission("tcp.bypass.entry")) return
-
-        val toChamber = plugin.chamberManager.getCachedChamberAt(to) ?: return
+        val toChamber = plugin.chamberManager.getCachedChamberAt(to) ?: return // not stepping into a chamber
         if (toChamber.isPaused) return
         if (plugin.chamberManager.getCachedChamberAt(from)?.id == toChamber.id) return // already inside it
 
+        val player = event.player
+        if (player.gameMode == GameMode.SPECTATOR || player.gameMode == GameMode.CREATIVE) {
+            dbg("entry into '${toChamber.name}' allowed for ${player.name}: ${player.gameMode} mode is exempt")
+            return
+        }
+        if (player.hasPermission("tcp.bypass.entry")) {
+            dbg("entry into '${toChamber.name}' allowed for ${player.name}: has tcp.bypass.entry (note: OPs have this by default)")
+            return
+        }
+
         event.isCancelled = true
+        dbg("BLOCKED entry into '${toChamber.name}' for ${player.name}")
         notifyBlocked(player, "cannot-enter-chamber")
     }
 
