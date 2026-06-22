@@ -4,4 +4,9 @@
 <aqua>[1.5.20] <gray>- <white>2026-06-21
 <lime>+ <white>NEW: <green>Chamber entry control — stop players teleporting INTO chambers (<yellow>/tpa<green>, <yellow>/home<green>, ender pearls…) and/or gate walk-in entry by rank (<yellow>tcp.bypass.entry<green>). Two opt-in <yellow>protection<green> toggles, both off by default.
 <lime>+ <white>FIX: <green><yellow>/tcp info<green> no longer shows raw <yellow>&<green>colour codes — the integration/feature status lines now format correctly (was broken by <yellow>§<green> section signs, most visible with a translated prefix).
+<aqua>[1.5.19] <gray>- <white>2026-06-21
+<lime>+ <white>NEW: <green><yellow>config.yml<green> and <yellow>messages.yml<green> now auto-update on startup — new keys merge into your existing files (with comments + a <yellow>.bak<green> backup), so you never silently miss new settings or see placeholder text where a message should be.
+<lime>+ <white>NEW: <green><yellow>protection.allow-pvp<green> now works — when <yellow>false<green>, player-vs-player damage (melee + player-shot projectiles) is cancelled inside chambers.
+<lime>+ <white>NEW: <green><yellow>reset.clear-trial-omen-effect<green> now works — Trial/Bad Omen is stripped from players inside the chamber on reset, so it doesn't carry into the next cycle.
+<lime>+ <white>NEW: <green>Translatable <yellow>{type}<green> labels — vault, key and spawner-wave messages now resolve <yellow>{type}<green> through messages.yml keys, so they can be localized.
 <black>.
