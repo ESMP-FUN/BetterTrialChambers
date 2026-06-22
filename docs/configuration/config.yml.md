@@ -385,6 +385,7 @@ protection:
   message-cooldown-ms: 1500
   block-advanced-enchantments: false
   advanced-enchantments-allowlist: []
+  advanced-enchantments-block-radius: 2
   prevent-teleport-into-chamber: false
   prevent-entry-without-permission: false
   auto-pause-on-destruction: false
@@ -453,6 +454,18 @@ advanced-enchantments-allowlist:
   - lifesteal
   - poisoned
 ```
+
+### `advanced-enchantments-block-radius`
+**Default:** `2` *(added in 1.5.21)*
+
+How far (in blocks) an AE mining enchant's blast can reach — used to catch a player mining a chamber wall from **just outside** it. AE's event carries no block, so TCP ray-traces the block the player is looking at and checks a cube of that block **± this radius** against chamber bounds; if it touches a chamber, the enchant is blocked. The expansion is centred on the **mined block, not the player**.
+
+Set it to your **largest** blast enchant's radius:
+- `0` — block only when the mined block is *itself* inside a chamber (no outside margin; zero over-blocking).
+- `2` *(default)* — covers a 5×5 area-miner.
+- Higher — covers bigger area enchants, at the cost of also denying mining a little further out from chamber walls.
+
+Note this only affects the thin shell of blocks just outside a chamber; normal mining elsewhere is never touched. (Capped at 16.)
 
 ### `prevent-teleport-into-chamber`
 **Default:** `false` *(added in 1.5.20)*
