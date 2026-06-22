@@ -127,7 +127,9 @@ If any of these is installed, TrialChamberPro blocks claim creation/expansion th
 **Required?** No — only matters if you run AdvancedEnchantments
 **Download:** [AdvancedEnchantments](https://www.spigotmc.org/resources/76519/)
 
-AE custom enchants break blocks through their own effect path that ignores TCP's block-break cancel, so they can bypass chamber protection. Set `protection.block-advanced-enchantments: true` to make TCP cancel AE enchant activations for players inside a registered chamber (with an allowlist for enchants you want to keep working). **Off by default.** See [protection config](../configuration/config.yml.md#block-advanced-enchantments).
+AE custom enchants break blocks through their own effect path that ignores TCP's block-break cancel, so they can bypass chamber protection. Set `protection.block-advanced-enchantments: true` to make TCP cancel AE enchant activations that affect a registered chamber (with an allowlist for enchants you want to keep working). As of **1.5.21** this also stops mining a chamber wall from just outside it, tunable via `protection.advanced-enchantments-block-radius`. **Off by default.** See [protection config](../configuration/config.yml.md#block-advanced-enchantments).
+
+Hotkey-style **vein miners** (e.g. VeinMiner) don't need this — they fire a normal block-break per block, so TCP's standard protection already blocks the ones inside a chamber. The toggle is only for effect engines (like AE) that skip block-break events.
 
 ## Verify Installation
 

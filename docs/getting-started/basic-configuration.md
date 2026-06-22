@@ -142,6 +142,18 @@ protection:
 
 </div>
 
+**Controlling who can get *in* (1.5.20+).** Two optional, off-by-default toggles gate chamber entry — useful if players try to skip the intended way in:
+
+```yaml
+protection:
+  prevent-teleport-into-chamber: true   # block /tpa, /home, /warp, ender pearls, chorus fruit, etc. into a chamber
+  prevent-entry-without-permission: true # only players with tcp.bypass.entry can walk in (rank-gated chambers)
+```
+
+`prevent-teleport-into-chamber` stops *every* kind of teleport into a chamber (it hooks the teleport itself, not specific commands). `prevent-entry-without-permission` makes a chamber rank-only via the `tcp.bypass.entry` permission (default: op). Spectators and creative-mode players are exempt from both. See the [protection config reference](../configuration/config.yml.md#prevent-teleport-into-chamber) for details.
+
+**Mass block-breakers (AdvancedEnchantments, vein miners).** Standard vein miners are blocked automatically inside chambers; effect-based enchants like AE *Blast Mining* need `protection.block-advanced-enchantments: true`. See [that section](../configuration/config.yml.md#block-advanced-enchantments) for the why.
+
 ---
 
 ## 🎁 Tweaking Loot
