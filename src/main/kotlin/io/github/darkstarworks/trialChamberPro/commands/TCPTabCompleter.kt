@@ -24,7 +24,7 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
     private val dungeonActions = listOf("pos1", "pos2", "capture", "generate", "list", "delete")
     private val containerActions = listOf("list", "materialize", "reset", "clearcopies", "tp", "edit")
 
-    private val snapshotActions = listOf("create", "update", "restore")
+    private val snapshotActions = listOf("create", "update", "restore", "missing")
     private val statTypes = listOf("chambers", "normal", "ominous", "mobs", "time")
     private val lootActions = listOf("set", "clear", "info", "list", "audit")
     private val vaultTypes = listOf("normal", "ominous")
@@ -93,9 +93,11 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
             3 -> {
                 // Third argument
                 when (args[0].lowercase()) {
-                    "snapshot" -> {
-                        // Chamber names for snapshot command
-                        getChamberNames().filter { it.startsWith(args[2].lowercase()) }
+                    "snapshot" -> when (args[1].lowercase()) {
+                        // `create`/`update` also accept the literal `all` (bulk backfill).
+                        "create", "update" -> (listOf("all") + getChamberNames()).filter { it.startsWith(args[2].lowercase()) }
+                        "missing" -> emptyList() // optional page number, no completion
+                        else -> getChamberNames().filter { it.startsWith(args[2].lowercase()) }
                     }
                     "container", "containers" -> getChamberNames().filter { it.startsWith(args[2].lowercase()) }
                     "dungeon" -> {

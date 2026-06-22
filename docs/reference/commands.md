@@ -21,6 +21,8 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | `/tcp scan <chamber>` | Scan for vaults/spawners | `tcp.admin.scan` |
 | `/tcp setexit <chamber>` | Set exit location | `tcp.admin.create` |
 | `/tcp snapshot <create\|update\|restore> [chamber]` | Manage snapshots (omit the name to target the chamber you're standing in) | `tcp.admin.snapshot` |
+| `/tcp snapshot create all [force]` | Backfill snapshots for all chambers missing one (staggered); `force` re-does all | `tcp.admin.snapshot` |
+| `/tcp snapshot missing [page]` | List chambers with no snapshot, with clickable `[Create]` | `tcp.admin.snapshot` |
 | `/tcp reset <chamber>` | Force chamber reset | `tcp.admin.reset` |
 | `/tcp reset pending` | List chambers awaiting reset confirmation | `tcp.admin.reset` |
 | `/tcp reset confirm <chamber\|all>` | Confirm queued reset(s) (when confirmation mode is on) | `tcp.admin.reset` |
@@ -247,11 +249,26 @@ Manage chamber snapshots (saved states for resets).
 /tcp snapshot create [chamber_name]
 /tcp snapshot update [chamber_name]
 /tcp snapshot restore [chamber_name]
+/tcp snapshot create all [force]
+/tcp snapshot missing [page]
 ```
 
-The chamber name is **optional on all three actions** *(1.5.5+; previously only `update`)*: omit it while standing inside a registered chamber and the command targets that chamber. Handy on servers with many chambers.
+The chamber name is **optional on `create` / `update` / `restore`** *(1.5.5+; previously only `update`)*: omit it while standing inside a registered chamber and the command targets that chamber. Handy on servers with many chambers.
 
 **Permission:** `tcp.admin.snapshot`
+
+#### `create all` / `missing` — Backfill missing snapshots *(1.5.22+)*
+
+If you registered chambers with `global.auto-snapshot-on-register` turned off, they have no snapshot and **can't be reset** until one is captured. These two commands fix a backlog without doing it one-by-one:
+
+- **`/tcp snapshot create all`** captures a snapshot for every registered chamber that's *missing* one. It runs them **sequentially, waiting 20 ticks after each finishes** before the next — a single capture is one heavy main-thread pass over the whole chamber, so this stagger keeps TPS healthy on a big backlog. Progress is reported every 10 chambers. Add **`force`** (`/tcp snapshot create all force`) to re-capture **all** chambers, including ones that already have a snapshot.
+- **`/tcp snapshot missing`** lists the chambers with no snapshot, 10 per page, each with a clickable **`[Create]`** button (and a **`[Create all]`** header button). This is also where the periodic "chambers have no snapshot" reminder's `[list]` link now points.
+
+```
+/tcp snapshot create all          # snapshot the 62 chambers missing one, staggered
+/tcp snapshot create all force     # re-snapshot every chamber
+/tcp snapshot missing 2            # page 2 of the missing list
+```
 
 **Actions:**
 

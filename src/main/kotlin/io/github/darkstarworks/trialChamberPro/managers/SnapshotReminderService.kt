@@ -99,7 +99,8 @@ class SnapshotReminderService(private val plugin: TrialChamberPro) : Listener {
         player.sendRichMessage(
             "<gold>[TCP] <yellow>${chambers.size}</yellow> discovered chamber(s) have no snapshot — " +
                 "<gray>$sample$more</gray> " +
-                "<click:run_command:'/tcp list'><aqua>[list]</aqua></click>"
+                "<click:run_command:'/tcp snapshot missing'><hover:show_text:'<gray>List chambers missing a snapshot'><aqua>[list]</aqua></hover></click> " +
+                "<click:run_command:'/tcp snapshot create all'><hover:show_text:'<gray>Snapshot all of them now (staggered)'><green>[create all]</green></hover></click>"
         )
     }
 }
