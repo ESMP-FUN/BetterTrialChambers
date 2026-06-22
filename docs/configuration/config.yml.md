@@ -442,7 +442,20 @@ How long (in milliseconds) to wait before re-showing a "you can't break / place 
 ### `block-advanced-enchantments`
 **Default:** `false` *(added in 1.5.18)*
 
-If [AdvancedEnchantments](https://www.spigotmc.org/resources/76519/) is installed, its custom enchants (e.g. *Blast Mining*) break blocks through their own effect path that **ignores TCP's block-break cancel** — so they can bypass chamber protection. Turn this on to make TCP cancel AE enchant activations for a player standing in a registered chamber, stopping the effect (no break, no spam). Players with `tcp.bypass.protection` are exempt. Off by default, so AE behaves normally until you opt in. Reflection-based — nothing happens on servers without AE.
+If [AdvancedEnchantments](https://www.spigotmc.org/resources/76519/) is installed, its custom enchants (e.g. *Blast Mining*) break blocks through their own effect path that **ignores TCP's block-break cancel** — so they can bypass chamber protection. Turn this on to make TCP cancel AE enchant activations that affect a registered chamber, stopping the effect (no break, no spam). Players with `tcp.bypass.protection` are exempt, and enchants in `advanced-enchantments-allowlist` are still permitted. Off by default, so AE behaves normally until you opt in. Reflection-based — nothing happens on servers without AE.
+
+Since **1.5.21** this also catches mining a chamber wall from **just outside** it (Blast Mining the wall, AoE reaching across the boundary), not only when the player stands inside — see [`advanced-enchantments-block-radius`](#advanced-enchantments-block-radius) to tune the reach.
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
+**Do I need this for vein miners / hotkey area-miners?** Usually **no**. The real question for *any* mass-breaker is whether it fires a normal, cancellable block-break for each block it removes:
+
+- **Hotkey-style area miners** (e.g. [VeinMiner](https://modrinth.com/plugin/veinminer)) simulate a player breaking each block — they fire a per-block break event, so TCP's standard block protection already cancels the ones inside a chamber. Nothing to enable; the only visible effect is the per-block denial, which `message-cooldown-ms` collapses to one line.
+- **Enchantment / skill effect engines** (AdvancedEnchantments and similar) often break blocks through their own pipeline that *doesn't* fire that event — those are what `block-advanced-enchantments` is for.
+
+So: if a tool fires an ordinary block-break per block, it's covered automatically; if it has its own effect pipeline that skips block-break events, it needs an explicit guard like this one.
+
+</div>
 
 ### `advanced-enchantments-allowlist`
 **Default:** `[]` *(added in 1.5.18)*
