@@ -89,6 +89,8 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         sender.sendMessage(plugin.getMessageComponent("help-scan"))
         sender.sendMessage(plugin.getMessageComponent("help-setexit"))
         sender.sendMessage(plugin.getMessageComponent("help-snapshot"))
+        sender.sendMessage(plugin.getMessageComponent("help-snapshot-bulk"))
+        sender.sendMessage(plugin.getMessageComponent("help-snapshot-missing"))
         sender.sendMessage(plugin.getMessageComponent("help-reset"))
         sender.sendMessage(plugin.getMessageComponent("help-pause"))
         sender.sendMessage(plugin.getMessageComponent("help-resume"))
@@ -255,14 +257,18 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             // optional final arg — omit it while standing inside a chamber and the
             // command targets that one. `update` is the discoverable alias for
             // "save my edits". (`create` and `update` both (re)capture, overwriting.)
-            "create" -> {
-                val chamberName = resolveSnapshotChamberName(sender, args.getOrNull(2)) ?: return
-                captureSnapshot(sender, chamberName)
+            "create", "update" -> {
+                val target = args.getOrNull(2)
+                if (target != null && target.equals("all", ignoreCase = true)) {
+                    // `/tcp snapshot create all [force]` — backfill every chamber missing a
+                    // snapshot (or re-capture all with `force`), staggered to protect TPS.
+                    snapshotAll(sender, force = args.getOrNull(3)?.equals("force", ignoreCase = true) == true)
+                } else {
+                    val chamberName = resolveSnapshotChamberName(sender, target) ?: return
+                    captureSnapshot(sender, chamberName)
+                }
             }
-            "update" -> {
-                val chamberName = resolveSnapshotChamberName(sender, args.getOrNull(2)) ?: return
-                captureSnapshot(sender, chamberName)
-            }
+            "missing" -> handleSnapshotMissing(sender, args.getOrNull(2))
             "restore" -> {
                 val chamberName = resolveSnapshotChamberName(sender, args.getOrNull(2)) ?: return
                 plugin.launchAsync {
@@ -310,6 +316,112 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             return null
         }
         return chamber.name
+    }
+
+    /** True if the chamber has no usable on-disk snapshot (unset path, or the `.dat` is gone). */
+    private fun isSnapshotMissing(chamber: io.github.darkstarworks.trialChamberPro.models.Chamber): Boolean {
+        val path = chamber.snapshotFile
+        return path.isNullOrBlank() || !java.io.File(path).isFile
+    }
+
+    /** Suspends for [ticks] server ticks via the scheduler (tick-paced, so it scales with TPS). */
+    private suspend fun waitTicks(ticks: Long) {
+        kotlinx.coroutines.suspendCancellableCoroutine<Unit> { cont ->
+            plugin.scheduler.runTaskLater(Runnable { cont.resume(Unit) {} }, ticks)
+        }
+    }
+
+    /**
+     * Bulk-capture snapshots for every registered chamber missing one (or *all* chambers when
+     * [force]). Runs sequentially and waits 20 ticks **after each capture finishes** before the
+     * next, because a capture is a single heavy main-thread pass over the whole chamber — firing
+     * 60+ back-to-back would tank TPS. Progress is reported every 10 chambers, not per-chamber.
+     */
+    private fun snapshotAll(sender: CommandSender, force: Boolean) {
+        plugin.launchAsync {
+            val all = plugin.chamberManager.getAllChambers()
+            val targets = (if (force) all else all.filter { isSnapshotMissing(it) }).sortedBy { it.name }
+            if (targets.isEmpty()) {
+                sender.sendRichMessage(
+                    if (all.isEmpty()) "<yellow>No chambers are registered yet."
+                    else "<green>All <yellow>${all.size}</yellow> registered chambers already have a snapshot. " +
+                        "<gray>(use <yellow>/tcp snapshot create all force</yellow> to re-capture them)"
+                )
+                return@launchAsync
+            }
+            sender.sendRichMessage(
+                "<gold>Snapshotting <yellow>${targets.size}</yellow> chamber(s)" +
+                    (if (force) " <gray>(force — re-capturing all)</gray>" else " <gray>(missing only)</gray>") +
+                    " <gray>— one every 20 ticks; this can take a while…"
+            )
+            var created = 0
+            var failed = 0
+            for ((index, chamber) in targets.withIndex()) {
+                try {
+                    val file = plugin.snapshotManager.createSnapshot(chamber)
+                    plugin.chamberManager.setSnapshotFile(chamber.name, file.absolutePath)
+                    created++
+                } catch (e: Exception) {
+                    failed++
+                    plugin.logger.warning("Bulk snapshot failed for '${chamber.name}': ${e.message}")
+                }
+                val done = index + 1
+                if (done % 10 == 0 && done < targets.size) {
+                    sender.sendRichMessage("<gray>… <yellow>$done</yellow>/<yellow>${targets.size}</yellow> done")
+                }
+                if (done < targets.size) waitTicks(20)
+            }
+            sender.sendRichMessage(
+                "<green>Snapshot backfill complete: <yellow>$created</yellow> created" +
+                    (if (failed > 0) "<gray>, <red>$failed failed</red> (see console)" else "") + "<green>."
+            )
+        }
+    }
+
+    /**
+     * Paginated list (10/page) of registered chambers with no snapshot, each row carrying a
+     * clickable `[Create]` that runs `/tcp snapshot create <name>`, plus a `[Create all]` header
+     * button. Mirrors `/tcp list`. Backs the `[list]` link in the join/periodic snapshot reminder.
+     */
+    private fun handleSnapshotMissing(sender: CommandSender, pageArg: String?) {
+        val requestedPage = pageArg?.toIntOrNull() ?: 1
+        plugin.launchAsync {
+            val missing = plugin.chamberManager.getAllChambers().filter { isSnapshotMissing(it) }.sortedBy { it.name }
+            if (missing.isEmpty()) {
+                sender.sendRichMessage("<green>Every registered chamber has a snapshot. ✔")
+                return@launchAsync
+            }
+            val pageSize = 10
+            val maxPage = (missing.size + pageSize - 1) / pageSize
+            val page = requestedPage.coerceIn(1, maxPage)
+            val start = (page - 1) * pageSize
+            val pageItems = missing.subList(start, minOf(start + pageSize, missing.size))
+
+            sender.sendRichMessage(
+                "<gold>Chambers missing a snapshot <gray>(page <yellow>$page</yellow>/<yellow>$maxPage</yellow>, " +
+                    "<yellow>${missing.size}</yellow> total)</gray> " +
+                    "<click:run_command:'/tcp snapshot create all'><hover:show_text:'<gray>Snapshot all of them now (staggered)'><green>[Create all]</green></hover></click>"
+            )
+            pageItems.forEach { chamber ->
+                if (sender is Player) {
+                    val name = chamber.name
+                    sender.sendRichMessage(
+                        "<gray>• <yellow>$name</yellow> <gray>— ${chamber.world}</gray> " +
+                            "<click:run_command:'/tcp snapshot create $name'><hover:show_text:'<gray>Create snapshot for <yellow>$name'>" +
+                            "<green>[Create]</green></hover></click>"
+                    )
+                } else {
+                    sender.sendRichMessage("<gray>• <yellow>${chamber.name}</yellow> <gray>— ${chamber.world} <dark_gray>(/tcp snapshot create ${chamber.name})")
+                }
+            }
+            if (maxPage > 1) {
+                val prev = if (page > 1) "<click:run_command:'/tcp snapshot missing ${page - 1}'><green>« Prev</green></click>"
+                else "<dark_gray>« Prev</dark_gray>"
+                val next = if (page < maxPage) "<click:run_command:'/tcp snapshot missing ${page + 1}'><green>Next »</green></click>"
+                else "<dark_gray>Next »</dark_gray>"
+                sender.sendRichMessage("$prev <gray>|</gray> $next")
+            }
+        }
     }
 
     /** Capture (or re-capture) a chamber's snapshot, overwriting any existing one. Shared by create/update. */
