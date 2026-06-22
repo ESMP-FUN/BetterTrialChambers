@@ -6,7 +6,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [1.5.21] - 2026-06-22
 ### Fixed
-- **AdvancedEnchantments enchants could still break into a chamber from outside.** The `protection.block-advanced-enchantments` guard only checked the **player's own** location, so a player standing just outside a chamber and mining *into* it — Blast Mining the wall, or an AoE break reaching across the boundary — wasn't stopped. AE's `EnchantActivateEvent` exposes no block, so TCP now also checks the block the player is looking at (plus a small blast margin) against chamber bounds via `getIntersectingChamber`, closing the outside-in route. Standing inside a chamber is blocked as before, and `tcp.bypass.protection` / the allowlist still apply.
+- **AdvancedEnchantments enchants could still break into a chamber from outside.** The `protection.block-advanced-enchantments` guard only checked the **player's own** location, so a player standing just outside a chamber and mining *into* it — Blast Mining the wall, or an AoE break reaching across the boundary — wasn't stopped. AE's `EnchantActivateEvent` exposes no block, so TCP now also ray-traces the block the player is looking at and checks it — expanded by the new **`protection.advanced-enchantments-block-radius`** (default `2`, set it to your largest blast enchant's radius; `0` = only the mined block itself) — against chamber bounds via `getIntersectingChamber`, closing the outside-in route. The expansion is centred on the mined block, not the player. Standing inside a chamber is blocked as before, and `tcp.bypass.protection` / the allowlist still apply.
 
 ## [1.5.20] - 2026-06-21
 ### Added

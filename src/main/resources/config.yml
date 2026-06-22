@@ -140,6 +140,11 @@ protection:
   # Enchant names that stay allowed inside chambers even when the option above is on (lowercase,
   # match the AE enchant name) — e.g. keep combat enchants working while blocking block-breakers.
   advanced-enchantments-allowlist: []
+  # How far (in blocks) an AE mining enchant's blast can reach, used to catch mining a chamber wall
+  # from just OUTSIDE it. The check is centred on the block being mined, expanded by this radius, and
+  # blocked if it touches a chamber — so set this to your LARGEST blast enchant's radius (e.g. a 5x5
+  # area-miner = 2). 0 = only block when the mined block is itself inside a chamber (no outside margin).
+  advanced-enchantments-block-radius: 2
   # Stop players teleporting INTO a registered chamber from outside (/tpa, /tpahere, /home,
   # /warp, /tp, ender pearls, etc.) — so they can't skip the intended entrance. Walking in is
   # unaffected. Players with tcp.bypass.entry (default: op), spectators, and creative-mode
