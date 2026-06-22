@@ -144,6 +144,24 @@ Usually a permission inheritance problem. Check:
 
 ---
 
+## A protection toggle isn't blocking anyone (entry / teleport / PvP / AdvancedEnchantments)
+
+You enabled `prevent-teleport-into-chamber`, `prevent-entry-without-permission`, `allow-pvp: false`, or `block-advanced-enchantments`, but players (or you) still get through. Work down this list:
+
+1. **Are you testing as an OP?** This is the #1 cause. OPs have **every** `tcp.bypass.*` permission by default — including `tcp.bypass.entry` and `tcp.bypass.protection` — so you exempt yourself without realising. **Test with a non-OP account**, or negate the permission:
+   ```
+   /lp user <yourname> permission set tcp.bypass.entry false
+   ```
+2. **Turn on `debug.verbose-logging: true`** and `/tcp reload`, then reproduce. The console tells you exactly what happened, e.g.:
+   - `[Protection] teleport into 'X' allowed for Steve: has tcp.bypass.entry (note: OPs have this by default)` → permission exemption (see #1).
+   - `[Protection] teleport into 'X' allowed for Steve: SPECTATOR mode is exempt` → spectators/creative are always exempt.
+   - `[Protection] BLOCKED teleport into 'X' for Steve (cause COMMAND)` → it **is** working.
+   - **No `[Protection]` line at all** when teleporting in → the destination isn't inside a *registered* chamber (wrong world, chamber not registered, or bounds don't reach where you landed). Check `/tcp list` / `/tcp info <chamber>`.
+3. **Did the config actually apply?** Confirm the key is nested under `protection:` (not pasted as a flat `protection.prevent-teleport-into-chamber:` line) and that you ran `/tcp reload` after editing.
+4. **AdvancedEnchantments specifically:** the `[AE]` debug lines tell you if the enchant was allowlisted, bypassed, or blocked. If you see **no `[AE]` lines at all** when an enchant procs, check the startup log for `AdvancedEnchantments integration: ready` — if it's missing, AE isn't being detected. Also remember `block-advanced-enchantments` is for effect-based enchants; ordinary vein miners are handled by normal block protection instead. For mining a wall from *outside*, make sure `advanced-enchantments-block-radius` covers your blast size.
+
+---
+
 ## MySQL connection errors on startup
 
 Usually a credentials or host issue. Full error text tells you which:
