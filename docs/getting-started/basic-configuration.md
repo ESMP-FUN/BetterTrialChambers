@@ -1,4 +1,4 @@
-# ⚙️ Basic Configuration
+# Basic Configuration
 
 You've installed the plugin and created your first chamber. Now let's tune the basics to match your server's playstyle. This is a quick-start guide—for deep dives, check the full [config.yml reference](../configuration/config.yml.md).
 
@@ -12,7 +12,7 @@ After editing, run `/tcp reload` to apply changes (no restart needed for most se
 
 ---
 
-## 🎯 The Three Settings You'll Change First
+## The Three Settings You'll Change First
 
 ### 1. Reset Interval
 
@@ -156,7 +156,7 @@ protection:
 
 ---
 
-## 🎁 Tweaking Loot
+## Tweaking Loot
 
 Your loot tables live in `loot.yml`, not `config.yml`. Here's a quick example:
 
@@ -189,7 +189,7 @@ For detailed loot customization, see the [loot.yml reference](../configuration/l
 
 ---
 
-## ⚡ Performance Tuning
+## Performance Tuning
 
 If you have large chambers or many players, tune these:
 
@@ -216,7 +216,7 @@ Watch for lag. Adjust `blocks-per-tick` and test again.
 
 ---
 
-## 🔔 Reset Warnings
+## Reset Warnings
 
 Players inside chambers get warnings before resets:
 
@@ -254,7 +254,7 @@ reset-warning-times: []
 
 ---
 
-## 🎨 Visual & Sound Settings
+## Visual & Sound Settings
 
 Make vaults more noticeable with particles and sounds:
 
@@ -294,7 +294,7 @@ See [Spigot's Particle enum](https://hub.spigotmc.org/javadocs/spigot/org/bukkit
 
 ---
 
-## 📊 Statistics Settings
+## Statistics Settings
 
 Track player activity and leaderboards:
 
@@ -324,7 +324,7 @@ leaderboard-update-interval: 1800  # 30 minutes instead of 1 hour
 
 ---
 
-## 🗄️ Database Settings
+## Database Settings
 
 **SQLite (default, recommended for single servers):**
 ```yaml
@@ -361,7 +361,7 @@ database:
 
 ---
 
-## 🎮 Quick Config Templates
+## Quick Config Templates
 
 ### Casual Survival Server
 
@@ -478,7 +478,7 @@ statistics:
 
 ---
 
-## 🔄 Applying Your Changes
+## Applying Your Changes
 
 1. **Edit** `plugins/TrialChamberPro/config.yml`
 2. **Save** the file
@@ -496,7 +496,7 @@ Most settings apply immediately. Exceptions:
 
 ---
 
-## ❓ Common Questions
+## Common Questions
 
 **"Do I need to restart after editing config?"**
 Usually no—`/tcp reload` works for most settings. Only database changes require a restart.
@@ -515,7 +515,7 @@ Increase `blocks-per-tick` gradually (500 → 750 → 1000) and test for lag. Al
 
 ---
 
-## 🎯 Next Steps
+## Next Steps
 
 Now that you've configured the basics, dive deeper:
 
@@ -553,7 +553,7 @@ Deep dive into how resets work and advanced scheduling.
 
 ---
 
-## 💡 Pro Tips
+## Pro Tips
 
 <div data-gb-custom-block data-tag="hint" data-style="success">
 

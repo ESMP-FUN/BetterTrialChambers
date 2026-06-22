@@ -368,6 +368,11 @@ metrics:
 
 # Debug mode
 debug:
+  # Logs detailed decisions to the console — including WHY a protection action was or wasn't
+  # taken (block-break, PvP, teleport-into-chamber, walk-in entry gate, AdvancedEnchantments).
+  # If a toggle "isn't working", turn this on and watch the log: the most common cause is the
+  # player being exempt via a bypass permission — and OPs have every tcp.bypass.* by default,
+  # so test with a non-OP account (or negate the permission). Noisy; leave off in production.
   verbose-logging: false
   # When true, skip the startup check that compares your messages.yml against
   # the JAR-bundled defaults. Leave this false unless the warning is noisy and
