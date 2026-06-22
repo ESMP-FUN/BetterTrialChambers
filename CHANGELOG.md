@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [1.5.20] - 2026-06-22
+## [1.5.21] - 2026-06-22
+### Fixed
+- **AdvancedEnchantments enchants could still break into a chamber from outside.** The `protection.block-advanced-enchantments` guard only checked the **player's own** location, so a player standing just outside a chamber and mining *into* it — Blast Mining the wall, or an AoE break reaching across the boundary — wasn't stopped. AE's `EnchantActivateEvent` exposes no block, so TCP now also checks the block the player is looking at (plus a small blast margin) against chamber bounds via `getIntersectingChamber`, closing the outside-in route. Standing inside a chamber is blocked as before, and `tcp.bypass.protection` / the allowlist still apply.
+
+## [1.5.20] - 2026-06-21
 ### Added
 - **Chamber entry control** — two opt-in protection toggles for gating who can get into a chamber:
   - **`protection.prevent-teleport-into-chamber`** cancels teleporting *into* a chamber from outside — `/tpa`, `/tpahere`, `/home`, `/warp`, `/tp`, ender pearls, chorus fruit, anything. It hooks the teleport itself (`PlayerTeleportEvent`), so it catches every method rather than specific commands, and players can't `/tpa` past the intended entrance.
@@ -1443,6 +1447,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.5.21]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.20...v1.5.21
 [1.5.20]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.19...v1.5.20
 [1.5.19]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.18...v1.5.19
 [1.5.18]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.17...v1.5.18
