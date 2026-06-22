@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.5.22] - 2026-06-22
+### Added
+- **Bulk snapshot backfill — `/tcp snapshot create all` and `/tcp snapshot missing`.** Chambers registered with `global.auto-snapshot-on-register` turned off have no snapshot and **can't be reset** until one is captured, and there was no way to fix a backlog short of running `create` on each chamber by hand. `create all` now snapshots every chamber that's missing one (add `force` to re-capture *all* chambers), running them **sequentially with a 20-tick gap after each capture finishes** — a capture is a single heavy main-thread pass over the whole chamber, so the stagger keeps TPS healthy across a 60+ backlog — and reporting progress every 10. `missing` lists the snapshot-less chambers 10 per page, each with a clickable `[Create]` (plus a `[Create all]` header button); the periodic "chambers have no snapshot" reminder's `[list]` link now points here too.
+
 ## [1.5.21] - 2026-06-22
 ### Added
 - **`debug.verbose-logging` now explains protection decisions.** With it on, the console logs *why* a block-break, PvP, teleport-into-chamber, walk-in entry, or AdvancedEnchantments action was or wasn't taken — including the bypass-permission exemptions (`tcp.bypass.entry` / `tcp.bypass.protection`, which OPs hold by default). This makes "I enabled the toggle but it doesn't work" self-diagnosable: the usual answer is testing as an OP. See the new troubleshooting entry.
@@ -1451,6 +1455,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.5.22]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.21...v1.5.22
 [1.5.21]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.20...v1.5.21
 [1.5.20]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.19...v1.5.20
 [1.5.19]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.18...v1.5.19
