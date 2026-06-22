@@ -66,23 +66,36 @@ object AdvancedEnchantmentsHook {
             if (!plugin.config.getBoolean("protection.block-advanced-enchantments", false)) return
 
             val player = Refl.call(event, "getFirstEntity") as? Player ?: return
-            if (player.hasPermission("tcp.bypass.protection")) return
 
             val enchant = (Refl.call(event, "getEnchant") as? String
                 ?: Refl.call(event, "getEnchantment") as? String)?.lowercase()
             if (enchant != null) {
                 val allow = plugin.config.getStringList("protection.advanced-enchantments-allowlist")
                     .map { it.lowercase() }
-                if (enchant in allow) return
+                if (enchant in allow) {
+                    dbg(plugin, "enchant '$enchant' allowed for ${player.name}: in advanced-enchantments-allowlist")
+                    return
+                }
             }
 
             if (!affectsChamber(plugin, player)) return
 
+            if (player.hasPermission("tcp.bypass.protection")) {
+                dbg(plugin, "enchant '${enchant ?: "?"}' allowed for ${player.name}: has tcp.bypass.protection (note: OPs have this by default)")
+                return
+            }
+
             (event as? Cancellable)?.isCancelled = true
+            dbg(plugin, "BLOCKED enchant '${enchant ?: "?"}' for ${player.name}: activation affects a chamber")
             notify(plugin, player)
         } catch (_: Throwable) {
             // Fail open: never break AE or spam the console over a reflection surprise.
         }
+    }
+
+    /** Logs a diagnostic line only when `debug.verbose-logging` is on. */
+    private fun dbg(plugin: TrialChamberPro, message: String) {
+        if (plugin.config.getBoolean("debug.verbose-logging", false)) plugin.logger.info("[AE] $message")
     }
 
     /**
