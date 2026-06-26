@@ -141,6 +141,12 @@ Run this command in-game:
 
 You should see a list of commands. If you do, congrats! You're ready to create your first chamber.
 
+<div data-gb-custom-block data-tag="hint" data-style="success">
+
+**New in 1.6.0:** run [`/tcp setup`](../reference/commands.md) for a friendly, opt-in tour of the main settings — one at a time, with plain-English explanations and **Enable / Skip / Disable** for each. Nothing is forced, and it's a great way to find useful options (like auto-discovery) that ship turned off.
+
+</div>
+
 ## Updating
 
 Updating is just as easy:

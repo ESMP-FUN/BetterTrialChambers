@@ -57,6 +57,16 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 ---
 
+#### `tcp.admin.setup`
+**Description:** Use the guided settings tour
+**Default:** Operators only
+**Allows:**
+- `/tcp setup` / `/tcp setup continue` - Walk through the main settings (also gates the op-join setup reminder)
+
+**Use this for:** Anyone you trust to change plugin settings
+
+---
+
 #### `tcp.admin.generate`
 **Description:** Register chambers
 **Default:** Operators only

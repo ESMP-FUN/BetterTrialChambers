@@ -16,6 +16,7 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | Command | Description | Permission |
 |---------|-------------|------------|
 | `/tcp help` | Show command list | None |
+| `/tcp setup` | Guided, opt-in tour of the main settings (Dialog UI, or clickable chat on older servers) | `tcp.admin.setup` |
 | `/tcp menu [chamber]` | Open admin GUI (with a chamber name: jump straight to that chamber's detail view) | `tcp.admin.menu` |
 | `/tcp generate <value\|coords\|wand\|blocks>` | Register chamber from saved var, coords, WE wand, or by block amount | `tcp.admin.generate` |
 | `/tcp scan <chamber>` | Scan for vaults/spawners | `tcp.admin.scan` |
@@ -73,6 +74,34 @@ Shows a list of all available commands.
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
 Only shows commands you have permission to use!
+
+</div>
+
+---
+
+### `/tcp setup`
+
+A friendly, **opt-in** tour of the major settings — built for operators who install the plugin and never open a YAML file. It walks the main options **one at a time**, each with a plain-English explanation, its current state, and **Enable / Skip / Disable** buttons (plus **← Prev**, **Pause Setup** and **Stop Setup**). Nothing is forced and no default is changed; you only apply what you choose.
+
+On Paper **1.21.7+** the tour renders in the native **Dialog** UI. On older or non-Paper servers it falls back automatically to a **clickable-chat** version with exactly the same content — no configuration needed.
+
+**Usage:**
+```
+/tcp setup           # start (or restart) the tour
+/tcp setup continue  # resume a tour you paused
+```
+
+**Permission:** `tcp.admin.setup` (OP by default)
+
+**Good to know:**
+- Settings that ship **off** but are worth a look (auto-discovery, auto-snapshot, …) lead the tour.
+- A few steps show a **CPU impact** badge (`tiny` / `little` / `medium` / `high`) so you know the cost at a glance.
+- Choice steps (like how often chambers reset) show the **current value** as a real duration, and let you pick a preset or point you to `config.yml` for a custom value.
+- A gentle reminder appears for ops who haven't run setup yet — at most once a week, three times — and stops for good once you've taken the tour.
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
+The reminder can be turned off with `setup.reminder.enabled: false` in `config.yml`. Running the tour is always optional — TCP works fine on its defaults.
 
 </div>
 

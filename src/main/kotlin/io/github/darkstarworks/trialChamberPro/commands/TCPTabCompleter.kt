@@ -15,8 +15,9 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
         "help", "reload", "generate", "paste", "scan", "setexit",
         "snapshot", "list", "info", "delete", "vault", "key",
         "stats", "leaderboard", "lb", "top", "reset", "menu", "loot", "mobs", "give",
-        "pause", "resume", "dungeon", "container", "claims", "debug"
+        "pause", "resume", "dungeon", "container", "claims", "setup", "debug"
     )
+    private val setupActions = listOf("start", "continue")
 
     private val claimsActions = listOf("scan")
     private val debugActions = listOf("schema")
@@ -46,6 +47,7 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                 // Second argument - depends on subcommand
                 when (args[0].lowercase()) {
                     "snapshot" -> snapshotActions.filter { it.startsWith(args[1].lowercase()) }
+                    "setup" -> setupActions.filter { it.startsWith(args[1].lowercase()) }
                     "generate" -> listOf("value", "coords", "wand", "blocks").filter { it.startsWith(args[1].lowercase()) }
                     "paste" -> {
                         // Schematic names
