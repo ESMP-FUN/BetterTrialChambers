@@ -348,6 +348,16 @@ discovery:
     on-join: true                  # Ping an admin individually when they log in
     interval-minutes: 30           # Periodic console summary + admin chat ping (0 disables periodic only)
 
+# The opt-in `/tcp setup` settings tour (v1.6.0). Walks operators through the major
+# options one at a time in a friendly Dialog UI (with a clickable-chat fallback on
+# older/non-Paper servers). Nothing is ever forced — run it on demand with `/tcp setup`.
+setup:
+  reminder:
+    # Gently remind admins (with tcp.admin.setup) on join that the tour exists, IF they have
+    # never run it. At most once a week and at most 3 times ever; running /tcp setup once
+    # silences it forever. Set false to never show the reminder.
+    enabled: true
+
 # Per-player chamber container loot (v1.5.7, opt-in). When enabled, every
 # player who opens a chest / trapped chest / barrel inside a registered
 # chamber gets their OWN copy of its contents (Lootr-style) — the second

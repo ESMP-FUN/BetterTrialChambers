@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.6.0] - 2026-06-26
+### Added
+- **`/tcp setup` — an opt-in, guided settings tour.** TCP ships conservative defaults (auto-discovery and auto-snapshot are off, among others) and most operators never open a YAML file, so genuinely useful settings go unnoticed. `/tcp setup` walks the major settings **one at a time** — each with a plain-English explanation, its current state, and **Enable / Skip / Disable** buttons, plus **← Prev**, **Pause Setup** and **Stop Setup**. Nothing is ever forced and no default is changed. On Paper 1.21.7+ it renders in the native **Dialog** UI; on older or non-Paper servers it falls back automatically to a **clickable-chat** tour with the same content. Includes preset pickers (e.g. how often chambers reset, shown with the current value as a real duration), a clear **CPU-impact** badge on the few settings that warrant one, and a gentle op-join reminder — at most weekly, three times — that stops for good once you run the tour (with a single follow-up nudge if you start but don't finish). Permission: `tcp.admin.setup` (OP).
+
+### Changed
+- Paper API target raised to **1.21.7** for the Dialog API used by `/tcp setup`. The plugin's `api-version` stays `1.21`, so it still loads on **1.21.1+** — the Dialog code is gated behind a runtime class-presence check and degrades to the clickable-chat tour wherever the Dialog API isn't available.
+
 ## [1.5.22] - 2026-06-22
 ### Added
 - **Bulk snapshot backfill — `/tcp snapshot create all` and `/tcp snapshot missing`.** Chambers registered with `global.auto-snapshot-on-register` turned off have no snapshot and **can't be reset** until one is captured, and there was no way to fix a backlog short of running `create` on each chamber by hand. `create all` now snapshots every chamber that's missing one (add `force` to re-capture *all* chambers), running them **sequentially with a 20-tick gap after each capture finishes** — a capture is a single heavy main-thread pass over the whole chamber, so the stagger keeps TPS healthy across a 60+ backlog — and reporting progress every 10. `missing` lists the snapshot-less chambers 10 per page, each with a clickable `[Create]` (plus a `[Create all]` header button); the periodic "chambers have no snapshot" reminder's `[list]` link now points here too.
@@ -1454,6 +1461,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.6.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.22...v1.6.0
 [1.5.22]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.21...v1.5.22
 [1.5.21]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.20...v1.5.21
 [1.5.20]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.19...v1.5.20
