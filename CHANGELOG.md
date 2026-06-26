@@ -219,6 +219,10 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - **`global.max-concurrent-resets`** / **`global.reset-stagger-seconds`** — concurrency throttle so a batch of simultaneously-due chambers don't all reset at the same instant.
 - **`global.suppress-trial-spawner-spam`** (default `true`) — mute the vanilla `Trial Spawner ... has no detected players` console line.
 
+<details>
+
+<summary><strong>📦 Older releases (v1.4.7 and earlier)</strong> — click to expand</summary>
+
 ## [1.4.7] - 2026-05-19
 ### Added
 - **Per-chamber reset broadcast toggle.** Each chamber now has a `Reset Broadcast` toggle in the Chamber Settings GUI (slot 6, row 3). When disabled, the server-wide "chamber X has reset" message is suppressed for that chamber only. A new `global.reset-complete-alert` config option (default `true`) acts as a master override — setting it to `false` silences broadcasts for every chamber regardless of their individual setting, and the GUI toggle displays a gray "Disabled by global config" indicator instead of an on/off switch so admins immediately know why per-chamber control is unavailable.
@@ -1460,6 +1464,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Automatic reset scheduler with warnings
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
+
+</details>
 
 [1.6.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.22...v1.6.0
 [1.5.22]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.21...v1.5.22
