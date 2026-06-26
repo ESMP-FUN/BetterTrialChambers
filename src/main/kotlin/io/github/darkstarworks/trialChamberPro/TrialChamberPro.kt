@@ -126,6 +126,10 @@ class TrialChamberPro : JavaPlugin() {
     private lateinit var pasteConfirmListener: PasteConfirmListener
     private lateinit var snapshotReminderService: io.github.darkstarworks.trialChamberPro.managers.SnapshotReminderService
 
+    /** Engine behind the opt-in `/tcp setup` settings tour. Created before the command executor. */
+    lateinit var setupController: io.github.darkstarworks.trialChamberPro.setup.SetupController
+        private set
+
     // Update checker
     private lateinit var updateChecker: UpdateChecker
 
@@ -207,6 +211,16 @@ class TrialChamberPro : JavaPlugin() {
         // bug report where `<missing: gui.loot-table-list.table-name-normal>` reached the
         // GUI because the deployed messages.yml was an older copy.
         io.github.darkstarworks.trialChamberPro.config.MessagesSchemaValidator.validate(this)
+
+        // Setup tour: create the controller before the command executor (SetupCommand needs it),
+        // and register the gentle op-join reminder. Both are config-driven and side-effect-free
+        // at startup.
+        setupController = io.github.darkstarworks.trialChamberPro.setup.SetupController(
+            this, io.github.darkstarworks.trialChamberPro.setup.SetupState(dataFolder)
+        )
+        server.pluginManager.registerEvents(
+            io.github.darkstarworks.trialChamberPro.setup.SetupReminderService(this, setupController.state), this
+        )
 
         // Register command executor and tab completer immediately to avoid early "/tcp [args]" usage messages
         val tcpCommand = TCPCommand(this)

@@ -10,6 +10,7 @@
 
 ### Recently Added
 
+- **A guided setup tour** — run `/tcp setup` for a friendly, one-setting-at-a-time walkthrough of the main options (**Enable / Skip / Disable**, nothing forced). Native Dialog UI on Paper 1.21.7+, with an automatic clickable-chat fallback on older servers.
 - **The whole chamber is now per-player** — vaults *and* chests / barrels / dispensers / droppers each hand every player their own Lootr-style copy that resets with the chamber (decorated pots refill too).
 - **Your chambers can't be claimed or blast-mined** — blocks **Residence / Lands / GriefPrevention** claims from overlapping a chamber, and stops **AdvancedEnchantments** enchants (Blast Mining, etc.) from breaking into one. `/tcp claims scan` hunts down existing conflicts.
 - **Vaults, expanded** — native **Vault economy rewards** in loot tables, working **time-based cooldowns**, **key-to-reopen** vaults, and opt-in floating **✔ / ✘ hologram feedback**.
@@ -180,6 +181,7 @@ Prefer not to use auto-discovery? Classic workflow still works:
 
 | Command | Description |
 |---------|-------------|
+| `/tcp setup` | Guided, opt-in settings tour (native Dialog UI, or clickable chat on older servers) |
 | `/tcp menu [chamber]` | Open the admin GUI (does everything); with a name, jump straight to that chamber |
 | `/tcp list [page\|current]` | Interactive chamber list — click to copy names or open the GUI |
 | `/tcp generate wand <name>` | Register chamber from WorldEdit selection |
