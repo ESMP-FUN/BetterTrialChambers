@@ -1,9 +1,8 @@
 <black>.
+<aqua>[1.6.0] <gray>- <white>2026-06-26
+<lime>+ <white>NEW: <green>Guided setup tour — run <yellow>/tcp setup<green> for a friendly, one-setting-at-a-time walkthrough of the main options (<yellow>Enable / Skip / Disable<green>, nothing forced). Uses the native Dialog UI on 1.21.7+, with a clickable-chat fallback on older servers.
 <aqua>[1.5.22] <gray>- <white>2026-06-22
 <lime>+ <white>NEW: <green>Backfill missing snapshots in one go — <yellow>/tcp snapshot create all<green> snapshots every chamber that's missing one (staggered, 20 ticks between each, so TPS holds), and <yellow>/tcp snapshot missing<green> lists them with clickable <yellow>[Create]<green> buttons.
 <aqua>[1.5.21] <gray>- <white>2026-06-22
 <lime>+ <white>FIX: <green>AdvancedEnchantments enchants (e.g. <yellow>Blast Mining<green>) could still break into a chamber when mined from <yellow>outside<green> the wall — TCP now checks the targeted block, not just the player's position, so the outside-in route is closed. (<yellow>protection.block-advanced-enchantments<green> must be on.)
-<aqua>[1.5.20] <gray>- <white>2026-06-21
-<lime>+ <white>NEW: <green>Chamber entry control — stop players teleporting INTO chambers (<yellow>/tpa<green>, <yellow>/home<green>, ender pearls…) and/or gate walk-in entry by rank (<yellow>tcp.bypass.entry<green>). Two opt-in <yellow>protection<green> toggles, both off by default.
-<lime>+ <white>FIX: <green><yellow>/tcp info<green> no longer shows raw <yellow>&<green>colour codes — the integration/feature status lines now format correctly (was broken by <yellow>§<green> section signs, most visible with a translated prefix).
 <black>.

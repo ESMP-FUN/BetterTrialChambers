@@ -986,6 +986,18 @@ Turn this on only after your chambers are registered — containers inside chamb
 
 ---
 
+## Setup Tour
+
+```yaml
+setup:
+  reminder:
+    enabled: true
+```
+
+*(Added in 1.6.0.)* Controls the opt-in [`/tcp setup`](../reference/commands.md) tour's gentle reminder. When `enabled`, an operator who hasn't run the tour yet gets a one-line nudge on join — **at most once a week, three times total** — which stops permanently the moment they run `/tcp setup` (with a single follow-up if they start but don't finish). Set to `false` to never show it. The tour itself is always available on demand regardless of this setting; TCP runs perfectly on its defaults without ever opening it.
+
+---
+
 ## Metrics
 
 ```yaml
