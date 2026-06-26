@@ -13,7 +13,7 @@ plugins {
 }
 
 group = "io.github.darkstarworks"
-version = "1.5.22"
+version = "1.6.0"
 
 repositories {
     mavenCentral()
@@ -32,7 +32,9 @@ repositories {
 }
 
 dependencies {
-    // Paper API
+    // Paper API — 26.x track (the `-mc26` build). Carries the same Dialog API as 1.21.7+
+    // (used by `/tcp setup`); plugin.yml's api-version '26.1' keeps this jar to 26.x servers,
+    // while the master build targets 1.21.7 + api-version '1.21'.
     compileOnly("io.papermc.paper:paper-api:26.1.2.build.+")
 
     // Log4j core (bundled by the server at runtime) — for the console log filter

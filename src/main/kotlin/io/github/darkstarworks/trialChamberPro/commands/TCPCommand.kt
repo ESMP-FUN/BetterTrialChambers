@@ -27,6 +27,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
     private val giveHandler = GiveCommand(plugin)
     private val dungeonHandler = io.github.darkstarworks.trialChamberPro.commands.handlers.DungeonCommand(plugin)
     private val containerHandler = io.github.darkstarworks.trialChamberPro.commands.handlers.ContainerCommand(plugin)
+    private val setupHandler = io.github.darkstarworks.trialChamberPro.commands.handlers.SetupCommand(plugin, plugin.setupController)
 
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
         if (args.isEmpty()) {
@@ -66,6 +67,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             "resume" -> handleResume(sender, args)
             "container", "containers" -> containerHandler.execute(sender, args)
             "claims" -> handleClaims(sender, args)
+            "setup" -> setupHandler.execute(sender, args)
             "debug" -> handleDebug(sender, args)
             else -> sender.sendMessage(plugin.getMessageComponent("unknown-command"))
         }
@@ -105,6 +107,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         sender.sendMessage(plugin.getMessageComponent("help-stats"))
         sender.sendMessage(plugin.getMessageComponent("help-leaderboard"))
         // Admin
+        sender.sendRichMessage("<yellow>/tcp setup <gray>- Friendly tour of the main settings (opt-in; Enable/Skip/Disable each)")
         sender.sendMessage(plugin.getMessageComponent("help-menu"))
         sender.sendRichMessage("<yellow>/tcp container <list|materialize|reset|clearcopies|tp|edit> <chamber> <gray>- Manage per-player container loot")
         sender.sendRichMessage("<yellow>/tcp claims scan <gray>- Find chambers overlapping land-claim plugin claims")

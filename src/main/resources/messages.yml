@@ -1477,3 +1477,112 @@ gui:
     summary-lore:
       - "&7K/D Ratio: &f{kd}"
       - "&7Avg Vaults per Chamber: &f{avg}"
+
+
+# ── /tcp setup — the opt-in settings tour (v1.6.0) ───────────────────────────
+# Step titles + descriptions are mostly plain English (the tour adds structure/colour);
+# inline MiniMessage is used for emphasis (Enabled/Disabled, Recommended) and the one
+# command reference. Each desc line is a complete thought so the Dialog wraps it cleanly.
+# CPU-impact badges and the "Currently" line are added by the renderer, not here.
+setup:
+  intro:
+    - "<gold><bold>Welcome to TrialChamberPro setup!</bold>"
+    - "<gray>We'll go through the main settings one at a time. For each one, read what it does, then choose <green>Enable</green>, <gray>Skip</gray>, or <red>Disable</red>. Nothing is forced — you can pause or stop at any point."
+  complete:
+    - "<green><bold>All done!</bold>"
+    - "<gray>You've been through the main settings. Re-run <yellow>/tcp setup</yellow> anytime, or fine-tune everything in <color:#e8d3a0>config.yml</color>."
+    - "<dark_gray>Tip: a few changes take effect on the next chamber reset or /tcp reload."
+  reminder: "<yellow>New to TrialChamberPro? Take a quick, friendly tour of the main settings — nothing is forced. <click:run_command:'/tcp setup'><hover:show_text:'<gray>Opens the setup tour'><green><bold>[Start /tcp setup]</bold></green></hover></click>"
+  reminder-resume: "<yellow>You started the setup tour but didn't finish. <click:run_command:'/tcp setup continue'><hover:show_text:'<gray>Pick up where you left off'><green><bold>[Resume setup]</bold></green></hover></click>"
+  paused: "<yellow>Setup paused. <click:run_command:'/tcp setup continue'><hover:show_text:'<gray>Pick up where you left off'><gold>[Resume]</gold></hover></click>"
+  stopped: "<gray>Setup stopped. Restart at any time using <click:run_command:'/tcp setup'><hover:show_text:'<gray>Start the tour again'><yellow>/tcp setup</yellow></hover></click>."
+  steps:
+    discovery:
+      title: "Auto-discover Trial Chambers?"
+      desc:
+        - "Finds naturally-generated Trial Chambers by itself as players explore, so you don't have to register each one by hand."
+        - "Perfect for survival servers where chambers turn up all over the map."
+        - "<green>Recommended</green> — without it, you have to register every chamber yourself, by hand."
+    auto-snapshot:
+      title: "Snapshot discovered chambers?"
+      desc:
+        - "When a chamber is auto-discovered, it saves a backup of it right away.<newline>A chamber needs a backup before it can reset, so this makes new chambers reset-ready instantly."
+        - "<green>Recommended</green> — Works best paired with Auto-discover (previous step)."
+    drop-loot:
+      title: "Drop vault loot on the ground?"
+      desc:
+        - "Vaults pop their loot onto the floor, like vanilla. Only the player who opened the vault can pick it up, and only for a few seconds."
+        - "<green>Enabled</green> = loot drops on the ground."
+        - "<red>Disabled</red> = loot goes straight into the player's inventory."
+    reset-confirm:
+      title: "Confirm before chambers reset?"
+      desc:
+        - "Holds chambers that are due for a reset in a queue and waits for an admin to approve them with;<newline><color:#e8d3a0>/tcp reset confirm</color><newline>Handy if you want a human to OK big resets."
+        - "<green>Enabled</green> = resets wait for approval."
+        - "<red>Disabled</red> = chambers reset automatically when their timer is up."
+    fawe:
+      title: "Use FastAsyncWorldEdit for faster resets?"
+      desc:
+        - "If the FastAsyncWorldEdit plugin is installed, it rebuilds chambers much faster during a reset, with far less lag on large ones."
+        - "<green>Enabled</green> = use FAWE for resets (needs the FAWE plugin)."
+        - "<red>Disabled</red> = use the built-in block placer."
+    reset-interval:
+      title: "How often should chambers reset?"
+      desc:
+        - "How long after a chamber is cleared should the chamber be reset for the next group?"
+        - "Pick a preset below. Or if none of these options match your preference, you can customise it in <color:#e8d3a0>config.yml</color> — Choosing Never will require you to reset every chamber manually."
+      options:
+        "off": "Never"
+        "6h": "Every 6 hours"
+        "12h": "Every 12 hours"
+        "1d": "Every day"
+        "2d": "Every 2 days"
+        "7d": "Every week"
+    per-player-loot:
+      title: "Give each player their own vault loot?"
+      desc:
+        - "Every player gets their own vault loot and cooldown, so the second person into a chamber doesn't find empty vaults. The fair, multiplayer-friendly option."
+        - "<green>Enabled</green> = each player loots their own copy."
+        - "<red>Disabled</red> = vanilla shared vaults."
+    clear-items:
+      title: "Tidy up dropped items on reset?"
+      desc:
+        - "Sweeps away items lying on the floor when a chamber resets, keeping it clean between runs."
+    remove-mobs:
+      title: "Clear leftover mobs on reset?"
+      desc:
+        - "Removes mobs still wandering from the last run when a chamber resets, so old mobs don't pile up."
+    reset-spawners:
+      title: "Reset trial spawners?"
+      desc:
+        - "Re-arms trial spawners on reset so they drop their keys and run their waves again."
+        - "<green>Recommended</green> — without it, spawners may stop giving rewards on later runs."
+    reset-cooldowns:
+      title: "Reset vault cooldowns?"
+      desc:
+        - "Clears each player's vault lock when a chamber resets, so they can loot it again."
+        - "<green>Recommended</green> for chambers you want to be repeatable."
+    waves:
+      title: "Track spawner wave progress?"
+      desc:
+        - "Tracks the waves of mobs each trial spawner sends. Having this <green>Enabled</green> is required for the wave boss bar and chamber-cleared rewards to work."
+    boss-bar:
+      title: "Show the wave progress boss bar?"
+      desc:
+        - "Shows a boss bar with live wave progress while players fight a trial spawner — a nice bit of feedback during the fight."
+    spectator:
+      title: "Let players spectate after death?"
+      desc:
+        - "Lets players who die in a chamber spectate their teammates instead of being kicked out, keeping the group together until the run ends."
+    statistics:
+      title: "Track player statistics?"
+      desc:
+        - "Tracks stats like vaults opened, mobs killed and time spent, which power the leaderboards."
+        - "<green>Enabled</green> = stats are recorded."
+        - "<red>Disabled</red> = no stats are stored."
+    luck:
+      title: "Let Luck affect loot?"
+      desc:
+        - "Lets the Luck potion effect nudge loot toward better rolls — a small reward for players who buff up before looting."
+        - "<green>Enabled</green> = Luck improves loot."
+        - "<red>Disabled</red> = Luck is ignored for loot."
