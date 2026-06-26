@@ -37,7 +37,11 @@ permissions:
       tcp.admin.loot: true
       tcp.admin.containers: true
       tcp.admin.mobs: true
+      tcp.admin.setup: true
       tcp.give: true
+  tcp.admin.setup:
+    description: Run the /tcp setup settings tour and receive its reminder
+    default: op
   tcp.admin.scan:
     description: Scan for chambers
     default: op

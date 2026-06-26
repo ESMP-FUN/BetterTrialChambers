@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "io.github.darkstarworks"
-version = "1.5.22"
+version = "1.6.0"
 
 repositories {
     mavenCentral()
@@ -30,8 +30,10 @@ repositories {
 }
 
 dependencies {
-    // Paper API
-    compileOnly("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
+    // Paper API — 1.21.7 for the Dialog API (added 1.21.6/.7) used by `/tcp setup`.
+    // api-version stays '1.21'; the Dialog code is runtime-gated behind a class-presence
+    // check so older/non-Paper servers fall back to the clickable-chat tour.
+    compileOnly("io.papermc.paper:paper-api:1.21.7-R0.1-SNAPSHOT")
 
     // Log4j core (bundled by the server at runtime) — for the console log filter
     // that mutes vanilla trial-spawner spam.
@@ -89,7 +91,7 @@ tasks {
         // Configure the Minecraft version for our task.
         // This is the only required configuration besides applying the plugin.
         // Your plugin's jar (or shadowJar if present) will be used automatically.
-        minecraftVersion("1.21")
+        minecraftVersion("1.21.7")
     }
 }
 
