@@ -1,6 +1,14 @@
-# 🎯 Your First Chamber
+# 🛠️ Manual Chamber Setup
 
-Time to turn that dusty Trial Chamber into a repeatable endgame experience! This guide walks you through registering and configuring your first chamber.
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
+**Most servers don't need this page.** If your world has naturally-generated Trial Chambers (the default on normal worlds), the easy path is **[Quick Start](quick-start.md)** — `/tcp setup` turns on auto-discovery and TCP manages every chamber for you, automatically.
+
+This page is for the few servers with **no natural chambers** — superflat / one-block worlds, custom world generation, or `generate-structures: false`. There, you register a chamber by hand, which is what this guide covers.
+
+</div>
+
+Time to turn that dusty Trial Chamber into a repeatable endgame experience! This guide walks you through registering and configuring a chamber manually.
 
 ## 🗺️ Step 1: Find a Trial Chamber
 
@@ -228,31 +236,31 @@ Here's everything in one place:
 
 ## 🎯 What's Next?
 
-You've got a working chamber! Now let's make it awesome:
+You've got a working chamber! Now make it yours:
 
-<div data-gb-custom-block data-tag="content-ref" data-url="../guides/custom-loot.md">
+<div data-gb-custom-block data-tag="content-ref" data-url="../configuration/loot.yml.md">
 
-[custom-loot.md](../guides/custom-loot.md)
-
-</div>
-
-Learn how to replace boring vanilla loot with custom rewards, economy integration, and more!
-
-<div data-gb-custom-block data-tag="content-ref" data-url="../guides/automatic-resets.md">
-
-[automatic-resets.md](../guides/automatic-resets.md)
+[loot.yml.md](../configuration/loot.yml.md)
 
 </div>
 
-Configure reset schedules, warnings, and player handling.
+Replace vanilla loot with custom rewards, economy payouts, command rewards, and more.
 
-<div data-gb-custom-block data-tag="content-ref" data-url="../guides/per-player-vaults.md">
+<div data-gb-custom-block data-tag="content-ref" data-url="basic-configuration.md">
 
-[per-player-vaults.md](../guides/per-player-vaults.md)
+[basic-configuration.md](basic-configuration.md)
 
 </div>
 
-Understand how per-player loot works and configure cooldowns.
+Configure reset schedules, warnings, protection, and the settings most servers tweak.
+
+<div data-gb-custom-block data-tag="content-ref" data-url="../configuration/config.yml.md">
+
+[config.yml.md](../configuration/config.yml.md)
+
+</div>
+
+The full config reference — including per-player vaults and cooldowns.
 
 ---
 
