@@ -1679,13 +1679,13 @@ Now that you've mastered loot configuration, check out:
 
 Customize all player-facing messages to match your server's style.
 
-<div data-gb-custom-block data-tag="content-ref" data-url="../guides/custom-loot.md">
+<div data-gb-custom-block data-tag="content-ref" data-url="config.yml.md">
 
-[custom-loot.md](../guides/custom-loot.md)
+[config.yml.md](config.yml.md)
 
 </div>
 
-Hands-on guide to creating themed loot tables with examples.
+The full config reference — reset timing, protection, vault cooldowns, and more.
 
 ---
 
