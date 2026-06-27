@@ -139,11 +139,11 @@ Run this command in-game:
 /tcp help
 ```
 
-You should see a list of commands. If you do, congrats! You're ready to create your first chamber.
+You should see a list of commands. If you do — congrats, you're installed!
 
 <div data-gb-custom-block data-tag="hint" data-style="success">
 
-**New in 1.6.0:** run [`/tcp setup`](../reference/commands.md) for a friendly, opt-in tour of the main settings — one at a time, with plain-English explanations and **Enable / Skip / Disable** for each. Nothing is forced, and it's a great way to find useful options (like auto-discovery) that ship turned off.
+**Next, head to [Quick Start](quick-start.md).** Run `/tcp setup` and turn on auto-discovery + snapshots, and TCP will find and manage every natural Trial Chamber on your server automatically. For most servers, that's the entire setup.
 
 </div>
 

@@ -41,13 +41,15 @@ TrialChamberPro fixes all of that: every player gets their own loot roll, chambe
 
 [installation.md](getting-started/installation.md) -> Install the JAR and get the server running. Two minutes.
 
-[your-first-chamber.md](getting-started/your-first-chamber.md) -> Manually register and configure a chamber. Recommended if you want fine control over specific chambers.
+[quick-start.md](getting-started/quick-start.md) -> **Start here.** Run `/tcp setup`, turn on auto-discovery, and TCP manages every natural Trial Chamber for you — no per-chamber work.
 
 [basic-configuration.md](getting-started/basic-configuration.md) -> Walk through the config settings most servers actually tweak.
 
 [config.yml.md](configuration/config.yml.md) -> Full `config.yml` reference. Includes the auto-discovery plug-and-play setup.
 
 [loot.yml.md](configuration/loot.yml.md) -> Everything about loot tables — pools, custom items, command rewards.
+
+[your-first-chamber.md](getting-started/your-first-chamber.md) -> No natural chambers (superflat / one-block / custom worldgen)? Register a chamber by hand.
 
 [troubleshooting.md](troubleshooting.md) -> Something not working? Most issues have a known cause. Check here first.
 
