@@ -1,4 +1,4 @@
-# ⚙️ config.yml
+# config.yml
 
 Your `config.yml` is the control panel for TrialChamberPro. It's where you decide how chambers behave, when they reset, and how much protection you want. Let's break it down section by section.
 

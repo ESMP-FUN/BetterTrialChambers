@@ -1,4 +1,4 @@
-# 🛠️ Manual Chamber Setup
+# Manual Chamber Setup
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
@@ -10,7 +10,7 @@ This page is for the few servers with **no natural chambers** — superflat / on
 
 Time to turn that dusty Trial Chamber into a repeatable endgame experience! This guide walks you through registering and configuring a chamber manually.
 
-## 🗺️ Step 1: Find a Trial Chamber
+## Step 1: Find a Trial Chamber
 
 First things first—you need a Trial Chamber to manage. Got one already? Great! Need to find one?
 
@@ -26,7 +26,7 @@ Teleport to it and explore until you find the main vault room. You'll want to re
 
 </div>
 
-## 📐 Step 2: Select the Chamber
+## Step 2: Select the Chamber
 
 TrialChamberPro needs to know which blocks belong to your chamber. The easiest way? **WorldEdit**.
 
@@ -59,7 +59,7 @@ Example:
 
 That's painful. Get WorldEdit. Moving on!
 
-## ✅ Step 3: Register the Chamber
+## Step 3: Register the Chamber
 
 With your selection made, register the existing Trial Chamber with the plugin:
 
@@ -86,7 +86,7 @@ You'll see:
 
 </div>
 
-## 🔍 Step 4: Scan for Vaults and Spawners
+## Step 4: Scan for Vaults and Spawners
 
 Now we tell the plugin to find all the vaults, spawners, and decorated pots:
 
@@ -112,7 +112,7 @@ You'll get a summary:
 
 </div>
 
-## 📸 Step 5: Create a Snapshot
+## Step 5: Create a Snapshot
 
 Here's where the magic happens. TrialChamberPro needs a "snapshot" of your chamber in its pristine state:
 
@@ -138,7 +138,7 @@ This might take 5-30 seconds depending on chamber size. You'll see:
 
 </div>
 
-## 🚪 Step 6: Set an Exit Point
+## Step 6: Set an Exit Point
 
 When the chamber resets, players inside need somewhere to go. Stand where you want them to teleport and run:
 
@@ -154,7 +154,7 @@ This saves your exact position (including look direction). Usually, you'll want 
 
 </div>
 
-## 🎉 Step 7: Test It Out!
+## Step 7: Test It Out!
 
 Your chamber is now managed! Let's verify everything works:
 
@@ -186,7 +186,7 @@ This forces an immediate reset. You should:
 
 </div>
 
-## ⚙️ Step 8: Configure Reset Schedule (Optional)
+## Step 8: Configure Reset Schedule (Optional)
 
 By default, chambers reset every 48 hours. Want to change that for this specific chamber?
 
@@ -207,7 +207,7 @@ Or override it per-chamber from the GUI: `/tcp menu` → pick the chamber → **
 - Manual only: `0` (disable automatic resets — use `/tcp reset` or the GUI button)
 - Custom: Use an [online converter](https://www.timecalculator.net/) to get seconds
 
-## 📚 Quick Reference
+## Quick Reference
 
 Here's everything in one place:
 
@@ -234,7 +234,7 @@ Here's everything in one place:
 /tcp reset MyChamber
 ```
 
-## 🎯 What's Next?
+## What's Next?
 
 You've got a working chamber! Now make it yours:
 
@@ -264,7 +264,7 @@ The full config reference — including per-player vaults and cooldowns.
 
 ---
 
-## 💡 Pro Tips
+## Pro Tips
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
@@ -284,7 +284,7 @@ The full config reference — including per-player vaults and cooldowns.
 
 </div>
 
-## ❓ Common Issues
+## Common Issues
 
 **"No WorldEdit selection found"**
 You didn't make a selection. Use `//wand` and select both corners first.

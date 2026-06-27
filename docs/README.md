@@ -1,4 +1,4 @@
-# 🏠 Welcome
+# Welcome
 
 Transform Minecraft's Trial Chambers from single-use dungeons into renewable, multiplayer-ready content. Automatic resets, per-player vault loot, custom rewards, griefing protection — and it works on every natural chamber in your world without any setup per-chamber.
 

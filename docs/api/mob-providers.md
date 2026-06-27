@@ -1,4 +1,4 @@
-# 🧟 Custom Mob Providers (Developer Guide)
+# Custom Mob Providers (Developer Guide)
 
 This page is for plugin developers who want to register a new mob source with TrialChamberPro. If you're a server admin looking to *use* an existing provider (MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens), see [Custom Mobs](../configuration/custom-mobs.md) instead.
 

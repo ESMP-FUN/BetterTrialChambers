@@ -22,7 +22,7 @@ layout:
     visible: true
 ---
 
-# 🚀 Quick Start
+# Quick Start
 
 TrialChamberPro can find and manage every natural Trial Chamber on your server **automatically**. No WorldEdit, no commands per chamber, nothing to repeat for each one. Run one guided tour, flip two switches, and you're done.
 
@@ -81,4 +81,4 @@ A few servers have **no naturally-generated Trial Chambers at all** — superfla
 [your-first-chamber.md](your-first-chamber.md)
 {% endcontent-ref %}
 
-For everyone else — you're already finished. 🎉
+For everyone else — you're already finished.

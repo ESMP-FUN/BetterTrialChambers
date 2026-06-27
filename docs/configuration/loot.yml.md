@@ -1,4 +1,4 @@
-# 🎲 loot.yml
+# loot.yml
 
 Time to get creative! The `loot.yml` file is where you customize what players get from vaults. Want to rain diamonds? Give economy rewards? Drop custom items from other plugins? This is your playground.
 
@@ -138,10 +138,10 @@ Vanilla Minecraft vaults use **3 separate pools**:
 
 **Benefits:**
 
-* ✅ **More predictable loot** - Players always get common items + chance at rare/unique
-* ✅ **Better progression** - Separate rare items from common items
-* ✅ **Matches vanilla** - Feels like the real Trial Chambers
-* ✅ **Flexible design** - Can have pools with `min-rolls: 0` for bonus items
+* **More predictable loot** - Players always get common items + chance at rare/unique
+* **Better progression** - Separate rare items from common items
+* **Matches vanilla** - Feels like the real Trial Chambers
+* **Flexible design** - Can have pools with `min-rolls: 0` for bonus items
 
 ### Multi-Pool Example
 
@@ -962,7 +962,7 @@ loot-tables:
         display-name: "&6+1000 Coins"
 ```
 
-See the full [💰 COMMAND Rewards](loot.yml.md#-command-rewards-economy--permissions) section below for complete documentation and examples.
+See the full [COMMAND Rewards](loot.yml.md#-command-rewards-economy--permissions) section below for complete documentation and examples.
 
 {% hint style="danger" %}
 **`type: COMMAND` inside `weighted-items` is NOT valid** and will log an error. Always use the `command-rewards` list instead.
@@ -1696,4 +1696,4 @@ The full config reference — reset timing, protection, vault cooldowns, and mor
 **Backup before experimenting!** Copy `loot.yml` before making drastic changes. Easy to restore if you mess up the YAML formatting.
 {% endhint %}
 
-Happy looting! ⚔️
+Happy looting!

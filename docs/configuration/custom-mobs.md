@@ -1,4 +1,4 @@
-# 🧟 Custom Mobs
+# Custom Mobs
 
 **Added in v1.3.0.**
 

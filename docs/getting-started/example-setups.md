@@ -1,4 +1,4 @@
-# 🧪 Example Setups
+# Example Setups
 
 TrialChamberPro is a big plugin with ten-plus subsystems (resets, snapshots, protection, statistics, leaderboards, spawner waves, spectator mode, custom mob providers, …). You don't have to use all of them — most are designed to be turned off cleanly, and the ones you keep stay on independently.
 
