@@ -1,4 +1,4 @@
-# 📡 Events
+# Events
 
 TrialChamberPro fires Bukkit events at the key points in its lifecycle so other plugins can hook in without forking. All events live under `io.github.darkstarworks.trialChamberPro.api.events` and follow the standard Bukkit `Event` / `Cancellable` contracts — register a listener with `@EventHandler` and you're done.
 

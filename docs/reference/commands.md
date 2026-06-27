@@ -1,4 +1,4 @@
-# 📝 Commands
+# Commands
 
 All commands start with `/tcp` (short for TrialChamberPro). Most require specific permissions—check the [Permissions](permissions.md) page for details.
 
@@ -607,7 +607,7 @@ Permanently deletes a chamber and all associated data.
 ```
 
 {% hint style="danger" %}
-**⚠️ PERMANENT ACTION!** This deletes:
+** PERMANENT ACTION!** This deletes:
 
 * Chamber boundaries and settings
 * All vault data

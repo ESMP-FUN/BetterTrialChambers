@@ -1,4 +1,4 @@
-# 🔢 PlaceholderAPI
+# PlaceholderAPI
 
 TrialChamberPro ships a [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/) expansion so you can show chamber stats, leaderboards, and live state on scoreboards, tab lists, holograms, chat formats, and anywhere else PlaceholderAPI is read.
 

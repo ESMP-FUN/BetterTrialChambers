@@ -1,4 +1,4 @@
-# ⚙️ Basic Configuration
+# Basic Configuration
 
 You've installed the plugin and created your first chamber. Now let's tune the basics to match your server's playstyle. This is a quick-start guide—for deep dives, check the full [config.yml reference](../configuration/config.yml.md).
 
@@ -569,4 +569,4 @@ Change all player-facing messages to match your server's style.
 **Join the discussion!** Check [GitHub Issues](https://github.com/darkstarworks/TrialChamberPro/issues) for community config tips and common setups.
 {% endhint %}
 
-Happy configuring! ⚙️
+Happy configuring!
