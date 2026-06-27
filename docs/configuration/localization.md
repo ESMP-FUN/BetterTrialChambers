@@ -1,18 +1,16 @@
-# Localization
+# 🌐 Localization
 
 Every user-visible string in TrialChamberPro lives in `plugins/TrialChamberPro/messages.yml` and can be overridden — including the entire admin GUI as of v1.3.0. This page covers how to translate, the key naming conventions, and the placeholder syntax.
 
-<div data-gb-custom-block data-tag="hint" data-style="info">
-
+{% hint style="info" %}
 **TL;DR**: edit `messages.yml`, run `/tcp reload`, and you're done. The plugin never overwrites this file once it exists, so your translations survive plugin updates.
-
-</div>
+{% endhint %}
 
 ## File location and reload
 
-- **Path:** `plugins/TrialChamberPro/messages.yml`
-- **Generated on first run** — copy from the bundled defaults, then never touched again.
-- **Reload after editing:** `/tcp reload` rereads `config.yml`, `loot.yml`, and `messages.yml` together. No restart required.
+* **Path:** `plugins/TrialChamberPro/messages.yml`
+* **Generated on first run** — copy from the bundled defaults, then never touched again.
+* **Reload after editing:** `/tcp reload` rereads `config.yml`, `loot.yml`, and `messages.yml` together. No restart required.
 
 ## Top-level structure
 
@@ -45,17 +43,15 @@ gui:
 
 Use the legacy ampersand format (`&a`, `&l`, `&r`, etc.) — it's converted at runtime to Adventure components. Standard codes:
 
-- `&0`–`&9`, `&a`–`&f` — colors
-- `&l` bold, `&n` underline, `&o` italic, `&m` strikethrough, `&k` obfuscated
-- `&r` reset all formatting
+* `&0`–`&9`, `&a`–`&f` — colors
+* `&l` bold, `&n` underline, `&o` italic, `&m` strikethrough, `&k` obfuscated
+* `&r` reset all formatting
 
-Section-sign (`§`) escapes also work but ampersand is preferred for editability. Hex colors (`&#RRGGBB`) are *not* currently supported — open an issue if you need them.
+Section-sign (`§`) escapes also work but ampersand is preferred for editability. Hex colors (`&#RRGGBB`) are _not_ currently supported — open an issue if you need them.
 
-<div data-gb-custom-block data-tag="hint" data-style="info">
-
+{% hint style="info" %}
 GUI item names default to **non-italic** even though Minecraft normally italicizes renamed items. This is intentional — every `gui.*` key passes through `TextDecoration.ITALIC=false` so admin tools look clean. If you actually want italic, prepend `&o` to the value.
-
-</div>
+{% endhint %}
 
 ## Placeholders
 
@@ -75,15 +71,15 @@ plugin.getMessage("chamber-created",
 
 The placeholders available for each key are listed inline next to the key in the bundled `messages.yml`. Unknown placeholders are left as literal `{token}` text rather than throwing — useful for spotting typos.
 
-### Translatable `{type}` labels *(1.5.19+)*
+### Translatable `{type}` labels _(1.5.19+)_
 
 Some placeholder **values** used to be hardcoded English. The `{type}` label is now itself looked up from messages.yml, so "Normal"/"Ominous"/etc. translate everywhere they appear:
 
-| Key | Default | Used in |
-| --- | --- | --- |
-| `vault-type-normal` / `vault-type-ominous` | `Normal` / `Ominous` | vault messages (open / locked / reopen) **and** `/tcp key give` |
-| `wave-type-normal` / `wave-type-ominous` | `Trial` / `Ominous` | the "{type} Spawner wave complete!" message |
-| `wave-boss-type-normal` / `wave-boss-type-ominous` | `Trial Spawner` / `Ominous Trial` | the spawner-wave boss-bar progress line |
+| Key                                                | Default                           | Used in                                                         |
+| -------------------------------------------------- | --------------------------------- | --------------------------------------------------------------- |
+| `vault-type-normal` / `vault-type-ominous`         | `Normal` / `Ominous`              | vault messages (open / locked / reopen) **and** `/tcp key give` |
+| `wave-type-normal` / `wave-type-ominous`           | `Trial` / `Ominous`               | the "{type} Spawner wave complete!" message                     |
+| `wave-boss-type-normal` / `wave-boss-type-ominous` | `Trial Spawner` / `Ominous Trial` | the spawner-wave boss-bar progress line                         |
 
 Translate these once and every `{type}` in those messages follows.
 
@@ -106,25 +102,25 @@ Each entry becomes one lore line. Blank entries (`""`) render as visual separato
 
 All GUI strings live under a single nested `gui:` tree, organized one sub-section per view:
 
-| Section | Owns |
-|---|---|
-| `gui.common` | Back/close/prev/next buttons, destination labels, toggle templates |
-| `gui.main-menu` | Main hub |
-| `gui.chamber-list` / `gui.chamber-detail` / `gui.chamber-settings` | Chamber browse + manage |
-| `gui.vault-management` | Vault cooldown management |
-| `gui.custom-mob` | Per-chamber mob provider config |
-| `gui.loot-table-list` / `gui.pool-selector` / `gui.loot-editor` / `gui.amount-editor` | Loot editing flow |
-| `gui.stats-menu` / `gui.leaderboard` / `gui.player-stats` | Statistics views |
-| `gui.global-settings` / `gui.protection-menu` | Toggle screens (reachable directly from the main menu) |
-| `gui.help-menu` | In-GUI command reference |
+| Section                                                                               | Owns                                                               |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `gui.common`                                                                          | Back/close/prev/next buttons, destination labels, toggle templates |
+| `gui.main-menu`                                                                       | Main hub                                                           |
+| `gui.chamber-list` / `gui.chamber-detail` / `gui.chamber-settings`                    | Chamber browse + manage                                            |
+| `gui.vault-management`                                                                | Vault cooldown management                                          |
+| `gui.custom-mob`                                                                      | Per-chamber mob provider config                                    |
+| `gui.loot-table-list` / `gui.pool-selector` / `gui.loot-editor` / `gui.amount-editor` | Loot editing flow                                                  |
+| `gui.stats-menu` / `gui.leaderboard` / `gui.player-stats`                             | Statistics views                                                   |
+| `gui.global-settings` / `gui.protection-menu`                                         | Toggle screens (reachable directly from the main menu)             |
+| `gui.help-menu`                                                                       | In-GUI command reference                                           |
 
 Within a section, key suffixes follow a consistent pattern:
 
-- `<thing>-name` — item display name (single string)
-- `<thing>-lore` — item lore (list of strings)
-- `<thing>-lore-<state>` — state-dependent lore (e.g. `protection-lore-enabled` / `protection-lore-disabled`)
-- `empty-name` / `empty-lore` — placeholder when a list/grid view has zero entries
-- `title` — `ChestGui` title
+* `<thing>-name` — item display name (single string)
+* `<thing>-lore` — item lore (list of strings)
+* `<thing>-lore-<state>` — state-dependent lore (e.g. `protection-lore-enabled` / `protection-lore-disabled`)
+* `empty-name` / `empty-lore` — placeholder when a list/grid view has zero entries
+* `title` — `ChestGui` title
 
 Keys under `gui.*` automatically skip the chat prefix — the GUI doesn't want `[TCP]` prepended to every item name.
 
@@ -165,11 +161,12 @@ Translate the templates once, translate per-toggle labels/descs, and the result 
 ## What's translatable
 
 Everything user-visible:
-- ✅ Chat messages, command output, error messages
-- ✅ Boss bar text on trial spawner waves
-- ✅ Every name, lore line, and button label in the admin GUI
-- ✅ `/tcp help` and `/tcp info` output
-- ✅ Tab-completer suggestions are not translated (those are internal command tokens, not display text)
+
+* ✅ Chat messages, command output, error messages
+* ✅ Boss bar text on trial spawner waves
+* ✅ Every name, lore line, and button label in the admin GUI
+* ✅ `/tcp help` and `/tcp info` output
+* ✅ Tab-completer suggestions are not translated (those are internal command tokens, not display text)
 
 Logger output (server console) is intentionally English — those messages are read by server admins and bug reports, not players, and consistency makes triage easier.
 
