@@ -99,7 +99,9 @@ How long before chambers automatically reset. This is the default for ALL chambe
 * Twice daily: `43200`
 * Weekly: `604800`
 
+{% hint style="info" %}
 **Disable automatic resets:** Set to `0` to disable automatic resets entirely. Chambers will only reset when manually triggered via `/tcp reset <chamber>` or the GUI.
+{% endhint %}
 
 </details>
 
