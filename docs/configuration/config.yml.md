@@ -84,7 +84,9 @@ global:
   auto-snapshot-on-register: true
 ```
 
-### `default-reset-interval`
+<details>
+
+<summary><code>default-reset-interval</code></summary>
 
 **Default:** `172800` (48 hours) **Unit:** Seconds
 
@@ -97,11 +99,13 @@ How long before chambers automatically reset. This is the default for ALL chambe
 * Twice daily: `43200`
 * Weekly: `604800`
 
-{% hint style="info" %}
 **Disable automatic resets:** Set to `0` to disable automatic resets entirely. Chambers will only reset when manually triggered via `/tcp reset <chamber>` or the GUI.
-{% endhint %}
 
-### `reset-warning-times`
+</details>
+
+<details>
+
+<summary><code>reset-warning-times</code></summary>
 
 **Default:** `[300, 60, 30]` **Unit:** Seconds before reset
 
@@ -113,13 +117,21 @@ Remove entries to reduce spam:
 reset-warning-times: [60] # Only warn 1 minute before
 ```
 
-### `teleport-players-on-reset`
+</details>
+
+<details>
+
+<summary><code>teleport-players-on-reset</code></summary>
 
 **Default:** `true`
 
 Kick players out when the chamber resets? If `false`, players stay inside (probably not what you want—spawners respawn, blocks reset, they might suffocate).
 
-### `teleport-location`
+</details>
+
+<details>
+
+<summary><code>teleport-location</code></summary>
 
 **Options:** `EXIT_POINT`, `OUTSIDE_BOUNDS`, `WORLD_SPAWN` **Default:** `EXIT_POINT`
 
@@ -129,13 +141,21 @@ Where players go when kicked out:
 * **OUTSIDE\_BOUNDS:** Just outside the chamber boundary
 * **WORLD\_SPAWN:** Server spawn point
 
-### `async-block-placement`
+</details>
+
+<details>
+
+<summary><code>async-block-placement</code></summary>
 
 **Default:** `true`
 
 Place blocks asynchronously during resets? Keeps the server smooth during big chamber resets. Only turn this off if you're having issues.
 
-### `blocks-per-tick`
+</details>
+
+<details>
+
+<summary><code>blocks-per-tick</code></summary>
 
 **Default:** `500`
 
@@ -146,13 +166,21 @@ Adjust based on your server hardware:
 * Beefy dedicated server: `1000+`
 * Shared hosting: `250-500`
 
-### `auto-snapshot-on-register`
+</details>
+
+<details>
+
+<summary><code>auto-snapshot-on-register</code></summary>
 
 **Default:** `true`
 
 Automatically create a snapshot when registering a new chamber? Super convenient, but uses disk space. You can disable this if you want manual control.
 
-### `spawner-cooldown-minutes`
+</details>
+
+<details>
+
+<summary><code>spawner-cooldown-minutes</code></summary>
 
 **Default:** `-1` (vanilla behavior) **Unit:** Minutes
 
@@ -166,19 +194,19 @@ Control how long trial spawners stay in cooldown after being completed. This aff
 * `0` = No cooldown (spawners reactivate immediately when players approach)
 * `1-60` = Custom cooldown in minutes
 
-{% hint style="info" %}
 **Use Cases:**
 
 * **Quick farming:** Set to `0` for instant reactivation—great for mob farms or high-activity servers
 * **Balanced gameplay:** Set to `5-15` minutes for faster resets than vanilla
 * **Vanilla experience:** Keep at `-1` for authentic Trial Chamber timing
-{% endhint %}
 
-{% hint style="success" %}
 **Per-Chamber Override:** You can set different cooldowns for individual chambers via the GUI (Chamber Settings → Spawner Cooldown) or database. Per-chamber settings override this global value.
-{% endhint %}
 
-### `wild-spawner-cooldown-minutes`
+</details>
+
+<details>
+
+<summary><code>wild-spawner-cooldown-minutes</code></summary>
 
 **Default:** `-1` (vanilla behavior) **Unit:** Minutes
 
@@ -192,17 +220,15 @@ Control cooldown for trial spawners **outside** of registered chambers (wild/unr
 * `0` = No cooldown (spawners reactivate immediately)
 * `1-60` = Custom cooldown in minutes
 
-{% hint style="info" %}
 **Use Cases:**
 
 * **Server-wide fast farming:** Set to `0` for all wild spawners to reactivate instantly
 * **Consistent experience:** Match wild spawner behavior to your chamber settings
 * **Vanilla purists:** Keep at `-1` to leave unregistered chambers untouched
-{% endhint %}
 
-{% hint style="warning" %}
 **Bonus Feature:** When this setting is enabled (not -1), spawner wave tracking (boss bars) will also work in wild Trial Chambers, giving players progress feedback even in unregistered chambers!
-{% endhint %}
+
+</details>
 
 ***
 
@@ -219,10 +245,37 @@ global:
   suppress-trial-spawner-spam: true  # mute vanilla "Trial Spawner ... has no detected players"
 ```
 
-* **`max-concurrent-resets`** / **`reset-stagger-seconds`** — stop a wave of due chambers from all restoring at once and cratering TPS. Confirmed/queued resets respect these too.
-* **`reset-require-confirmation`** — when `true`, a chamber that becomes due is **not** reset automatically; it's queued and online admins are notified. List with `/tcp reset pending`, fire with `/tcp reset confirm <chamber|all>` (they then run staggered).
-* **`use-fawe`** — when `true` and FastAsyncWorldEdit is installed, **scheduled** resets place blocks through one FAWE EditSession to smooth out lag on large chambers. **Paper-only** (ignored on Folia); manual `/tcp reset` keeps the batched path so WorldEdit `//undo` still works; falls back automatically if FAWE is missing.
-* **`suppress-trial-spawner-spam`** — mutes the vanilla console line `Trial Spawner at BlockPos{...} has no detected players`. New occurrences are prevented by the reset fixes; this hides the line for chambers still broken until their next reset.
+<details>
+
+<summary><code>max-concurrent-resets</code> / <code>reset-stagger-seconds</code></summary>
+
+Stop a wave of due chambers from all restoring at once and cratering TPS. Confirmed/queued resets respect these too.
+
+</details>
+
+<details>
+
+<summary><code>reset-require-confirmation</code></summary>
+
+When `true`, a chamber that becomes due is **not** reset automatically; it's queued and online admins are notified. List with `/tcp reset pending`, fire with `/tcp reset confirm <chamber|all>` (they then run staggered).
+
+</details>
+
+<details>
+
+<summary><code>use-fawe</code></summary>
+
+When `true` and FastAsyncWorldEdit is installed, **scheduled** resets place blocks through one FAWE EditSession to smooth out lag on large chambers. **Paper-only** (ignored on Folia); manual `/tcp reset` keeps the batched path so WorldEdit `//undo` still works; falls back automatically if FAWE is missing.
+
+</details>
+
+<details>
+
+<summary><code>suppress-trial-spawner-spam</code></summary>
+
+Mutes the vanilla console line `Trial Spawner at BlockPos{...} has no detected players`. New occurrences are prevented by the reset fixes; this hides the line for chambers still broken until their next reset.
+
+</details>
 
 ***
 
