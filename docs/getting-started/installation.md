@@ -1,4 +1,4 @@
-# ⚡ Installation
+# Installation
 
 Getting TrialChamberPro up and running is easier than finding diamonds at Y=11. Let's do this!
 

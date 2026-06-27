@@ -1,4 +1,4 @@
-# 🌐 Localization
+# Localization
 
 Every user-visible string in TrialChamberPro lives in `plugins/TrialChamberPro/messages.yml` and can be overridden — including the entire admin GUI as of v1.3.0. This page covers how to translate, the key naming conventions, and the placeholder syntax.
 
@@ -162,11 +162,11 @@ Translate the templates once, translate per-toggle labels/descs, and the result 
 
 Everything user-visible:
 
-* ✅ Chat messages, command output, error messages
-* ✅ Boss bar text on trial spawner waves
-* ✅ Every name, lore line, and button label in the admin GUI
-* ✅ `/tcp help` and `/tcp info` output
-* ✅ Tab-completer suggestions are not translated (those are internal command tokens, not display text)
+* Chat messages, command output, error messages
+* Boss bar text on trial spawner waves
+* Every name, lore line, and button label in the admin GUI
+* `/tcp help` and `/tcp info` output
+* Tab-completer suggestions are not translated (those are internal command tokens, not display text)
 
 Logger output (server console) is intentionally English — those messages are read by server admins and bug reports, not players, and consistency makes triage easier.
 
