@@ -14,7 +14,7 @@ Hop in-game as an operator and run:
 
 This opens a friendly, **opt-in** walkthrough of TCP's main settings — one at a time, in plain English, with **Enable / Skip / Disable** for each. Nothing is forced, and you can pause or stop at any point. On Paper 1.21.7+ it's a clean dialog UI; on older servers it's a clickable-chat version with the same content.
 
-<!-- SCREENSHOT: the /tcp setup welcome + first step (Auto-discover Trial Chambers) -->
+<!-- SCREENSHOT HERE → the /tcp setup dialog on step 1/16 ("Auto-discover Trial Chambers?"). Suggested caption: "The /tcp setup tour — one setting at a time, with Enable / Skip / Disable. Nothing is forced." -->
 
 ## 2. Turn on the two that matter most
 
@@ -22,8 +22,6 @@ As the tour walks you through the settings, **Enable** these two — they're wha
 
 - **Auto-discover Trial Chambers** — TCP finds naturally-generated chambers by itself as players explore, and registers each one for you. This is the magic.
 - **Snapshot discovered chambers** — automatically saves a backup of each chamber the moment it's found, so it's reset-ready instantly (a chamber needs a snapshot before it can reset).
-
-<!-- SCREENSHOT: the Auto-discover step with the [Enable] button -->
 
 <div data-gb-custom-block data-tag="hint" data-style="success">
 
@@ -54,6 +52,8 @@ Want to tune loot, reset timing, or protection? Head to **[Basic Configuration](
 **Re-run it anytime.** `/tcp setup` is always available, and a gentle reminder nudges operators who haven't run it yet. Prefer doing it by hand? Every setting lives in `config.yml` too — the tour just makes the good options easy to find.
 
 </div>
+
+<!-- SCREENSHOT HERE → the op-join reminder chat line with the green [Start /tcp setup] button. Suggested caption: "The op-join nudge — friendly, capped at a few times, and gone for good once you've run setup." -->
 
 ## No natural chambers on your server?
 
