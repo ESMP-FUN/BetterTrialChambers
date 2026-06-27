@@ -4,10 +4,11 @@
 
 * [🏠 Welcome](README.md)
 * [⚡ Installation](getting-started/installation.md)
-* [🎯 Your First Chamber](getting-started/your-first-chamber.md)
+* [🚀 Quick Start](getting-started/quick-start.md)
 * [⚙️ Basic Configuration](getting-started/basic-configuration.md)
 * [🧪 Example Setups](getting-started/example-setups.md)
 * [🔢 PlaceholderAPI](getting-started/placeholders.md)
+* [🛠️ Manual Chamber Setup](getting-started/your-first-chamber.md)
 
 ## Configuration
 
