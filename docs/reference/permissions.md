@@ -1,35 +1,38 @@
-# Permissions Reference
+# 🔐 Permissions
 
 TrialChamberPro uses a hierarchical permission system. Grant broad access with wildcards or fine-tune with specific permissions.
 
-<div data-gb-custom-block data-tag="hint" data-style="info">
-
+{% hint style="info" %}
 **Permission Plugin Required:** Use LuckPerms, PermissionsEx, or any Bukkit-compatible permissions plugin.
 
 **Default OP Permissions:** All `tcp.admin.*` permissions default to operators. Players get `tcp.stats` and `tcp.leaderboard` by default.
+{% endhint %}
 
-</div>
-
----
+***
 
 ## Quick Setup
 
 ### Full Admin Access
+
 ```yaml
 permissions:
   - tcp.admin.*
 ```
+
 Grants ALL admin permissions (add, scan, reset, manage keys, etc.)
 
 ### Player Access (View Stats Only)
+
 ```yaml
 permissions:
   - tcp.stats
   - tcp.leaderboard
 ```
+
 Players can view their own stats and leaderboards. **This is default!**
 
 ### Moderator Access (Manage Chambers, No Config)
+
 ```yaml
 permissions:
   - tcp.admin.reset
@@ -37,377 +40,371 @@ permissions:
   - tcp.admin.vault
   - tcp.admin.stats
 ```
+
 Can reset chambers, manage keys/vaults, view player stats, but can't modify chamber structure or reload config.
 
----
+***
 
 ## Complete Permission List
 
 ### Admin Permissions
 
 #### `tcp.admin.*`
-**Description:** All admin permissions (wildcard)
-**Default:** Operators only
-**Grants access to:**
-- All commands listed below
-- Complete control over chambers
-- Configuration management
+
+**Description:** All admin permissions (wildcard) **Default:** Operators only **Grants access to:**
+
+* All commands listed below
+* Complete control over chambers
+* Configuration management
 
 **Use this for:** Server owners, head admins
 
----
+***
 
 #### `tcp.admin.setup`
-**Description:** Use the guided settings tour
-**Default:** Operators only
-**Allows:**
-- `/tcp setup` / `/tcp setup continue` - Walk through the main settings (also gates the op-join setup reminder)
+
+**Description:** Use the guided settings tour **Default:** Operators only **Allows:**
+
+* `/tcp setup` / `/tcp setup continue` - Walk through the main settings (also gates the op-join setup reminder)
 
 **Use this for:** Anyone you trust to change plugin settings
 
----
+***
 
 #### `tcp.admin.generate`
-**Description:** Register chambers
-**Default:** Operators only
-**Allows:**
-- `/tcp generate <mode> <args>` - Register chambers from WorldEdit selection, coordinates, or blocks
-- `/tcp dungeon …` - Procedural dungeon assembly (also `tcp.admin.generate`)
+
+**Description:** Register chambers **Default:** Operators only **Allows:**
+
+* `/tcp generate <mode> <args>` - Register chambers from WorldEdit selection, coordinates, or blocks
+* `/tcp dungeon …` - Procedural dungeon assembly (also `tcp.admin.generate`)
 
 **Use this for:** Staff who register chamber infrastructure
 
----
+***
 
 #### `tcp.admin.create`
-**Description:** Delete chambers and set exit points
-**Default:** Operators only
-**Allows:**
-- `/tcp delete <chamber>` - Delete a chamber and its data
-- `/tcp setexit <chamber>` - Set a chamber's exit location
 
-**Use this for:** Staff who manage chamber lifecycle. *(Note: `/tcp delete` and `/tcp setexit` require this node, **not** `tcp.admin.generate`.)*
+**Description:** Delete chambers and set exit points **Default:** Operators only **Allows:**
 
----
+* `/tcp delete <chamber>` - Delete a chamber and its data
+* `/tcp setexit <chamber>` - Set a chamber's exit location
+
+**Use this for:** Staff who manage chamber lifecycle. _(Note: `/tcp delete` and `/tcp setexit` require this node, **not**_ _`tcp.admin.generate`.)_
+
+***
 
 #### `tcp.admin.scan`
-**Description:** Scan chambers for vaults and spawners
-**Default:** Operators only
-**Allows:**
-- `/tcp scan <chamber>` - Detect vaults/spawners
+
+**Description:** Scan chambers for vaults and spawners **Default:** Operators only **Allows:**
+
+* `/tcp scan <chamber>` - Detect vaults/spawners
 
 **Use this for:** Staff who set up chambers (usually paired with `tcp.admin.create`)
 
----
+***
 
 #### `tcp.admin.snapshot`
-**Description:** Manage chamber snapshots
-**Default:** Operators only
-**Allows:**
-- `/tcp snapshot create <chamber>` - Create snapshots
-- `/tcp snapshot restore <chamber>` - Restore from snapshots
+
+**Description:** Manage chamber snapshots **Default:** Operators only **Allows:**
+
+* `/tcp snapshot create <chamber>` - Create snapshots
+* `/tcp snapshot restore <chamber>` - Restore from snapshots
 
 **Use this for:** Staff who maintain chambers and handle resets
 
----
+***
 
 #### `tcp.admin.reset`
-**Description:** Force chamber resets
-**Default:** Operators only
-**Allows:**
-- `/tcp reset <chamber>` - Immediately reset a chamber
+
+**Description:** Force chamber resets **Default:** Operators only **Allows:**
+
+* `/tcp reset <chamber>` - Immediately reset a chamber
 
 **Use this for:** Moderators who manage events and handle player issues
 
----
+***
 
 #### `tcp.admin.key`
-**Description:** Manage trial keys
-**Default:** Operators only
-**Allows:**
-- `/tcp key give <player> <amount> [type]` - Give keys to players
-- `/tcp key check <player>` - Check player's key count
+
+**Description:** Manage trial keys **Default:** Operators only **Allows:**
+
+* `/tcp key give <player> <amount> [type]` - Give keys to players
+* `/tcp key check <player>` - Check player's key count
 
 **Use this for:** Staff who run events or compensate players
 
----
+***
 
 #### `tcp.admin.vault`
-**Description:** Manage vault cooldowns
-**Default:** Operators only
-**Allows:**
-- `/tcp vault reset <chamber> <player> [type]` - Reset vault cooldowns
+
+**Description:** Manage vault cooldowns **Default:** Operators only **Allows:**
+
+* `/tcp vault reset <chamber> <player> [type]` - Reset vault cooldowns
 
 **Use this for:** Staff who handle player support and bug compensation
 
----
+***
 
 #### `tcp.admin.reload`
-**Description:** Reload plugin configuration
-**Default:** Operators only
-**Allows:**
-- `/tcp reload` - Reload config files
+
+**Description:** Reload plugin configuration **Default:** Operators only **Allows:**
+
+* `/tcp reload` - Reload config files
 
 **Use this for:** Admins who tune configuration
 
----
+***
 
 #### `tcp.admin.mobs`
-**Description:** Configure per-chamber custom mob providers *(1.3.0+)*
-**Default:** Operators only
-**Allows:**
-- `/tcp mobs providers` - List registered providers and availability
-- `/tcp mobs <chamber> provider <id|vanilla|none>` - Set the provider for a chamber
-- `/tcp mobs <chamber> add normal|ominous <mobId>` - Add a mob id to the chamber's pool
-- `/tcp mobs <chamber> remove normal|ominous <mobId>` - Remove a mob id
-- `/tcp mobs <chamber> list` - Show the chamber's current config
+
+**Description:** Configure per-chamber custom mob providers _(1.3.0+)_ **Default:** Operators only **Allows:**
+
+* `/tcp mobs providers` - List registered providers and availability
+* `/tcp mobs <chamber> provider <id|vanilla|none>` - Set the provider for a chamber
+* `/tcp mobs <chamber> add normal|ominous <mobId>` - Add a mob id to the chamber's pool
+* `/tcp mobs <chamber> remove normal|ominous <mobId>` - Remove a mob id
+* `/tcp mobs <chamber> list` - Show the chamber's current config
 
 **Use this for:** Admins who manage MythicMobs / EliteMobs / EcoMobs / LevelledMobs / InfernalMobs / Citizens integrations on their chambers. See [Custom Mobs](../configuration/custom-mobs.md) for the per-provider mob-id format.
 
----
+***
 
 #### `tcp.admin.loot`
-**Description:** Manage per-chamber loot tables
-**Default:** Operators only
-**Allows:**
-- `/tcp loot set <chamber> <normal|ominous> <table>` - Override a chamber's loot table
-- `/tcp loot clear <chamber> [normal|ominous|all]` - Remove a per-chamber override
-- `/tcp loot audit` - List pre-1.5.0 loot entries that lost their NBT
+
+**Description:** Manage per-chamber loot tables **Default:** Operators only **Allows:**
+
+* `/tcp loot set <chamber> <normal|ominous> <table>` - Override a chamber's loot table
+* `/tcp loot clear <chamber> [normal|ominous|all]` - Remove a per-chamber override
+* `/tcp loot audit` - List pre-1.5.0 loot entries that lost their NBT
 
 **Use this for:** Admins curating per-chamber loot.
 
----
+***
 
 #### `tcp.admin.containers`
-**Description:** Manage per-player container loot templates *(1.5.7+, reworked 1.5.9)*
-**Default:** Operators only
-**Allows:**
-- **Sneak-click** a chamber chest/barrel/dispenser to edit the shared loot **template** (the contents every player's first-open copy is cloned from)
-- `/tcp container <list|materialize|reset|clearcopies|tp|edit> <chamber>` - manage templates from the CLI
-- The chamber GUI's **Container Loot** view
+
+**Description:** Manage per-player container loot templates _(1.5.7+, reworked 1.5.9)_ **Default:** Operators only **Allows:**
+
+* **Sneak-click** a chamber chest/barrel/dispenser to edit the shared loot **template** (the contents every player's first-open copy is cloned from)
+* `/tcp container <list|materialize|reset|clearcopies|tp|edit> <chamber>` - manage templates from the CLI
+* The chamber GUI's **Container Loot** view
 
 Only relevant when `chests.per-player-loot` is enabled. A normal (non-sneak) click still gives staff their own per-player copy like any player.
 
----
+***
 
 #### `tcp.give`
-**Description:** Hand out preconfigured trial-spawner items *(1.3.1+)*
-**Default:** Operators only
-**Allows:**
-- `/tcp give <preset> [player] [amount]` - Receive (or send) a `trial_spawner` item with `block_entity_data` baked in from a named preset
+
+**Description:** Hand out preconfigured trial-spawner items _(1.3.1+)_ **Default:** Operators only **Allows:**
+
+* `/tcp give <preset> [player] [amount]` - Receive (or send) a `trial_spawner` item with `block_entity_data` baked in from a named preset
 
 **Use this for:** Admins who deploy custom trial-spawner pools defined in datapacks. See [spawner\_presets.yml](../configuration/spawner-presets.yml.md) for the preset file format.
 
----
+***
 
 #### `tcp.admin.pause`
-**Description:** Pause and resume chambers *(1.4.3+)*
-**Default:** Operators only
-**Allows:**
-- `/tcp pause <chamber>` - Suspend all active chamber behavior while preserving the DB record
-- `/tcp resume <chamber>` - Restore a paused chamber to normal operation
+
+**Description:** Pause and resume chambers _(1.4.3+)_ **Default:** Operators only **Allows:**
+
+* `/tcp pause <chamber>` - Suspend all active chamber behavior while preserving the DB record
+* `/tcp resume <chamber>` - Restore a paused chamber to normal operation
 
 **Use this for:** Admins managing chambers on hardcore/anarchy servers where griefing protection is intentionally off. Pausing freezes the chamber's record without deleting any data.
 
----
+***
 
 #### `tcp.admin.menu`
-**Description:** Open the in-game admin GUI
-**Default:** Operators only
-**Allows:**
-- `/tcp menu` - Open the full admin GUI (chambers, loot editing, stats, settings)
+
+**Description:** Open the in-game admin GUI **Default:** Operators only **Allows:**
+
+* `/tcp menu` - Open the full admin GUI (chambers, loot editing, stats, settings)
 
 **Use this for:** Staff who manage chambers through the GUI instead of commands. Note that GUI actions still respect the underlying feature permissions.
 
----
+***
 
 #### `tcp.admin.stats`
-**Description:** View other players' statistics
-**Default:** Operators only
-**Allows:**
-- `/tcp stats <player>` - View any player's stats
+
+**Description:** View other players' statistics **Default:** Operators only **Allows:**
+
+* `/tcp stats <player>` - View any player's stats
 
 **Use this for:** Staff who monitor player activity
 
----
+***
 
 #### `tcp.admin`
-**Description:** View chamber information
-**Default:** Operators only
-**Allows:**
-- `/tcp list` - List all chambers
-- `/tcp info <chamber>` - View chamber details
+
+**Description:** View chamber information **Default:** Operators only **Allows:**
+
+* `/tcp list` - List all chambers
+* `/tcp info <chamber>` - View chamber details
 
 **Use this for:** Read-only access to chamber data
 
-<div data-gb-custom-block data-tag="hint" data-style="info">
-
+{% hint style="info" %}
 **Note:** `tcp.admin` is NOT a wildcard. Use `tcp.admin.*` for all admin permissions.
+{% endhint %}
 
-</div>
-
----
+***
 
 ### Player Permissions
 
 #### `tcp.stats`
-**Description:** View own statistics
-**Default:** **All players** (true)
-**Allows:**
-- `/tcp stats` - View your own stats
+
+**Description:** View own statistics **Default:** **All players** (true) **Allows:**
+
+* `/tcp stats` - View your own stats
 
 **Typical usage:** Default permission for all players
 
----
+***
 
 #### `tcp.leaderboard`
-**Description:** View leaderboards
-**Default:** **All players** (true)
-**Allows:**
-- `/tcp leaderboard <type>` - View top players
-- `/tcp lb <type>` - Alias
-- `/tcp top <type>` - Alias
+
+**Description:** View leaderboards **Default:** **All players** (true) **Allows:**
+
+* `/tcp leaderboard <type>` - View top players
+* `/tcp lb <type>` - Alias
+* `/tcp top <type>` - Alias
 
 **Typical usage:** Default permission for all players
 
----
+***
 
 #### `tcp.spectate`
-**Description:** Use spectator mode after death in chambers
-**Default:** **All players** (true)
-**Allows:**
-- Spectate a chamber after dying inside it
-- Type "spectate" in chat to accept spectator mode offer
-- Type "exit" to leave spectator mode
+
+**Description:** Use spectator mode after death in chambers **Default:** **All players** (true) **Allows:**
+
+* Spectate a chamber after dying inside it
+* Type "spectate" in chat to accept spectator mode offer
+* Type "exit" to leave spectator mode
 
 **Effect:**
-- Switched to GameMode.SPECTATOR on acceptance
-- Teleported to chamber center
-- Confined to chamber boundaries (with configurable buffer)
-- Restored to previous game mode on exit
+
+* Switched to GameMode.SPECTATOR on acceptance
+* Teleported to chamber center
+* Confined to chamber boundaries (with configurable buffer)
+* Restored to previous game mode on exit
 
 **Typical usage:** Default permission for all players (enhances multiplayer experience)
 
-<div data-gb-custom-block data-tag="hint" data-style="info">
-
+{% hint style="info" %}
 **Spectator Mode Feature:** When a player dies in a chamber, they're offered the chance to spectate instead of immediately respawning. This lets them watch teammates complete the challenge.
+{% endhint %}
 
-</div>
-
----
+***
 
 ### Bypass Permissions
 
 #### `tcp.bypass.cooldown`
-**Description:** Bypass vault cooldowns
-**Default:** Operators only
-**Effect:**
-- Open vaults regardless of personal cooldown
-- No waiting period between loot
+
+**Description:** Bypass vault cooldowns **Default:** Operators only **Effect:**
+
+* Open vaults regardless of personal cooldown
+* No waiting period between loot
 
 **Use this for:**
-- VIP ranks (be careful with balance!)
-- Staff testing chambers
-- Special event participants
 
-<div data-gb-custom-block data-tag="hint" data-style="warning">
+* VIP ranks (be careful with balance!)
+* Staff testing chambers
+* Special event participants
 
+{% hint style="warning" %}
 **Balance Warning:** Giving this to regular players removes cooldown mechanics entirely. Consider carefully!
+{% endhint %}
 
-</div>
-
----
+***
 
 #### `tcp.bypass.protection`
-**Description:** Bypass chamber protection
-**Default:** Operators only
-**Effect:**
-- Break blocks in protected chambers
-- Place blocks in protected chambers
-- Access protected containers
+
+**Description:** Bypass chamber protection **Default:** Operators only **Effect:**
+
+* Break blocks in protected chambers
+* Place blocks in protected chambers
+* Access protected containers
 
 **Use this for:**
-- Staff building/modifying chambers
-- WorldEdit operations inside chambers
 
-<div data-gb-custom-block data-tag="hint" data-style="danger">
+* Staff building/modifying chambers
+* WorldEdit operations inside chambers
 
+{% hint style="danger" %}
 **DO NOT give to regular players!** This allows complete modification of protected chambers.
+{% endhint %}
 
-</div>
-
----
+***
 
 #### `tcp.bypass.vaultplace`
-**Description:** Place VAULT blocks outside registered chambers *(1.5.7+)*
-**Default:** Operators only
-**Effect:**
-- Exempt from `protection.block-wild-vault-placement`
-- Needed for creative builds using vault blocks and for setting up out-of-chamber crates (e.g. TCP-VaultCrates)
 
----
+**Description:** Place VAULT blocks outside registered chambers _(1.5.7+)_ **Default:** Operators only **Effect:**
+
+* Exempt from `protection.block-wild-vault-placement`
+* Needed for creative builds using vault blocks and for setting up out-of-chamber crates (e.g. TCP-VaultCrates)
+
+***
 
 #### `tcp.bypass.droplock`
-**Description:** Bypass owner-only pickup on dropped vault loot *(1.2.28+)*
-**Default:** Operators only
-**Effect:**
-- Pick up another player's vault loot drops during the owner-only grace window (`vaults.drop-loot-owner-grace-seconds`)
-- Only relevant when `vaults.drop-loot-at-vault: true`
+
+**Description:** Bypass owner-only pickup on dropped vault loot _(1.2.28+)_ **Default:** Operators only **Effect:**
+
+* Pick up another player's vault loot drops during the owner-only grace window (`vaults.drop-loot-owner-grace-seconds`)
+* Only relevant when `vaults.drop-loot-at-vault: true`
 
 **Use this for:** Staff cleaning up dropped items or investigating loot disputes.
 
----
+***
 
 #### `tcp.bypass.residence` / `tcp.bypass.lands` / `tcp.bypass.griefprevention`
-**Description:** Create or expand a land claim that overlaps a registered Trial Chamber, with the matching plugin *(1.5.15+)*
-**Default:** Operators only
-**Effect:**
-- Exempt from the corresponding `protection.<plugin>-integration` claim shield
-- Each permission is scoped to one plugin (Residence / Lands / GriefPrevention), so you can allow staff to claim near chambers with one plugin without affecting the others
+
+**Description:** Create or expand a land claim that overlaps a registered Trial Chamber, with the matching plugin _(1.5.15+)_ **Default:** Operators only **Effect:**
+
+* Exempt from the corresponding `protection.<plugin>-integration` claim shield
+* Each permission is scoped to one plugin (Residence / Lands / GriefPrevention), so you can allow staff to claim near chambers with one plugin without affecting the others
 
 **Use this for:** Trusted staff who legitimately need to claim land that touches a chamber.
 
-<div data-gb-custom-block data-tag="hint" data-style="warning">
-
+{% hint style="warning" %}
 Giving this to regular players defeats the owner-only drop protection — they can snatch other players' vault loot.
-
-</div>
+{% endhint %}
 
 #### `tcp.bypass.entry`
-**Description:** Enter chambers when entry/teleport restrictions are on *(1.5.20+)*
-**Default:** Operators only
-**Effect:**
-- Exempt from `protection.prevent-teleport-into-chamber` (can teleport into chambers via `/tpa`, `/home`, ender pearls, etc.)
-- Exempt from `protection.prevent-entry-without-permission` (can walk into rank-gated chambers)
-- Both restrictions are off by default; this permission only matters when you enable one
+
+**Description:** Enter chambers when entry/teleport restrictions are on _(1.5.20+)_ **Default:** Operators only **Effect:**
+
+* Exempt from `protection.prevent-teleport-into-chamber` (can teleport into chambers via `/tpa`, `/home`, ender pearls, etc.)
+* Exempt from `protection.prevent-entry-without-permission` (can walk into rank-gated chambers)
+* Both restrictions are off by default; this permission only matters when you enable one
 
 **Use this for:** Granting a rank access to chambers when you've made them teleport-locked or rank-restricted — e.g. give `tcp.bypass.entry` to a `vip` group so only VIPs can enter a premium dungeon.
 
----
+***
 
 ### Notification Permissions
 
 #### `tcp.discovery.notify`
-**Description:** Receive broadcast when auto-discovery registers a new chamber *(1.2.25+)*
-**Default:** Operators only
-**Effect:**
-- Get a chat message whenever `discovery.enabled: true` causes a natural chamber to be auto-registered
-- Shows the chamber's auto-generated name and center coordinates
+
+**Description:** Receive broadcast when auto-discovery registers a new chamber _(1.2.25+)_ **Default:** Operators only **Effect:**
+
+* Get a chat message whenever `discovery.enabled: true` causes a natural chamber to be auto-registered
+* Shows the chamber's auto-generated name and center coordinates
 
 **Use this for:**
-- Admins monitoring auto-discovery rollout on existing worlds
-- Catching false-positive registrations early so you can fine-tune `discovery.*` thresholds
 
-<div data-gb-custom-block data-tag="hint" data-style="info">
+* Admins monitoring auto-discovery rollout on existing worlds
+* Catching false-positive registrations early so you can fine-tune `discovery.*` thresholds
 
+{% hint style="info" %}
 Only fires when `discovery.notify-ops: true` (the default) in config.yml. You can also see every registration in the server log if `debug.verbose-logging: true`.
+{% endhint %}
 
-</div>
-
----
+***
 
 ## Permission Groups Examples
 
 ### Example 1: Player Rank
+
 ```yaml
 group: default
 permissions:
@@ -417,9 +414,10 @@ permissions:
 
 Players can view stats and compete on leaderboards. This is the default!
 
----
+***
 
 ### Example 2: VIP Rank
+
 ```yaml
 group: vip
 permissions:
@@ -430,9 +428,10 @@ permissions:
 
 VIPs get instant vault access (no cooldowns). **Balance carefully!**
 
----
+***
 
 ### Example 3: Helper/Moderator Rank
+
 ```yaml
 group: helper
 permissions:
@@ -444,20 +443,23 @@ permissions:
 ```
 
 Helpers can:
-- View chamber info
-- View player stats
-- Give keys to players
-- Reset vault cooldowns (for bug compensation)
-- Force chamber resets
+
+* View chamber info
+* View player stats
+* Give keys to players
+* Reset vault cooldowns (for bug compensation)
+* Force chamber resets
 
 **Cannot:**
-- Create/delete chambers
-- Modify configuration
-- Create snapshots
 
----
+* Create/delete chambers
+* Modify configuration
+* Create snapshots
+
+***
 
 ### Example 4: Builder Rank
+
 ```yaml
 group: builder
 permissions:
@@ -469,18 +471,21 @@ permissions:
 ```
 
 Builders can:
-- Register and delete chambers
-- Scan for vaults/spawners
-- Create/restore snapshots
-- Build inside protected chambers
+
+* Register and delete chambers
+* Scan for vaults/spawners
+* Create/restore snapshots
+* Build inside protected chambers
 
 **Cannot:**
-- Manage keys or vaults
-- Reload configuration
 
----
+* Manage keys or vaults
+* Reload configuration
+
+***
 
 ### Example 5: Admin Rank
+
 ```yaml
 group: admin
 permissions:
@@ -489,16 +494,18 @@ permissions:
 
 Full access to everything. Simple!
 
----
+***
 
 ## LuckPerms Examples
 
 ### Grant Full Admin Access
+
 ```
 /lp user Steve permission set tcp.admin.*
 ```
 
 ### Grant Moderator Access
+
 ```
 /lp user Alex permission set tcp.admin.reset
 /lp user Alex permission set tcp.admin.key
@@ -507,6 +514,7 @@ Full access to everything. Simple!
 ```
 
 ### Create a VIP Group (No Cooldowns)
+
 ```
 /lp creategroup vip
 /lp group vip permission set tcp.bypass.cooldown true
@@ -514,6 +522,7 @@ Full access to everything. Simple!
 ```
 
 ### Create a Builder Group
+
 ```
 /lp creategroup builder
 /lp group builder permission set tcp.admin.generate
@@ -524,17 +533,19 @@ Full access to everything. Simple!
 ```
 
 ### Grant Temporary Admin Access (24 hours)
+
 ```
 /lp user Diana permission settemp tcp.admin.* true 24h
 ```
 
----
+***
 
 ## Per-World Permissions
 
 Want staff to manage chambers only in certain worlds?
 
 ### LuckPerms Example
+
 ```
 /lp user Steve permission set tcp.admin.create true world=world_nether
 /lp user Steve permission set tcp.admin.scan true world=world_nether
@@ -542,7 +553,7 @@ Want staff to manage chambers only in certain worlds?
 
 Steve can only create/scan chambers in the nether.
 
----
+***
 
 ## Permission Hierarchy
 
@@ -580,11 +591,12 @@ tcp.bypass.griefprevention (Claim chambers with GriefPrevention)
 tcp.discovery.notify       (Auto-discovery notifications)
 ```
 
----
+***
 
 ## Common Setups
 
 ### Survival Server
+
 ```yaml
 default:
   - tcp.stats
@@ -607,9 +619,10 @@ admin:
 
 **Philosophy:** Keep VIPs balanced, give mods tools to help players, admins control everything.
 
----
+***
 
 ### Creative/Building Server
+
 ```yaml
 default:
   - tcp.stats
@@ -627,9 +640,10 @@ admin:
 
 **Philosophy:** Let builders register chambers freely, admins handle config/keys.
 
----
+***
 
 ### Event/Minigame Server
+
 ```yaml
 default:
   - tcp.stats
@@ -649,96 +663,83 @@ admin:
 
 **Philosophy:** Event participants get faster loot, hosts can reset chambers and give rewards.
 
----
+***
 
 ## FAQ
 
-**"Do I need `tcp.admin` for `tcp.admin.create`?"**
-No! Specific permissions (like `tcp.admin.create`) work independently. `tcp.admin` only grants access to `/tcp list` and `/tcp info`.
+**"Do I need `tcp.admin` for `tcp.admin.create`?"** No! Specific permissions (like `tcp.admin.create`) work independently. `tcp.admin` only grants access to `/tcp list` and `/tcp info`.
 
 **"What's the difference between `tcp.admin` and `tcp.admin.*`?"**
-- `tcp.admin` = View chambers (`/tcp list`, `/tcp info`)
-- `tcp.admin.*` = ALL admin permissions (wildcard)
 
-**"Can I use negative permissions to remove specific access?"**
-Yes! With LuckPerms or similar plugins:
+* `tcp.admin` = View chambers (`/tcp list`, `/tcp info`)
+* `tcp.admin.*` = ALL admin permissions (wildcard)
+
+**"Can I use negative permissions to remove specific access?"** Yes! With LuckPerms or similar plugins:
+
 ```
 /lp user Steve permission set tcp.admin.* true
 /lp user Steve permission set tcp.admin.reload false
 ```
+
 Steve gets all admin perms EXCEPT reload.
 
-**"Does `tcp.bypass.cooldown` work retroactively?"**
-Yes! If a player has this permission, they can open vaults immediately regardless of existing cooldowns.
+**"Does `tcp.bypass.cooldown` work retroactively?"** Yes! If a player has this permission, they can open vaults immediately regardless of existing cooldowns.
 
-**"Can I give permissions temporarily?"**
-Yes, with LuckPerms:
+**"Can I give permissions temporarily?"** Yes, with LuckPerms:
+
 ```
 /lp user Steve permission settemp tcp.admin.* true 1d
 ```
 
-**"Do these permissions work with permission inheritance?"**
-Yes! If a group has `tcp.admin.*`, all members inherit all child permissions automatically.
+**"Do these permissions work with permission inheritance?"** Yes! If a group has `tcp.admin.*`, all members inherit all child permissions automatically.
 
----
+***
 
 ## Related Pages
 
-<div data-gb-custom-block data-tag="content-ref" data-url="commands.md">
-
+{% content-ref url="commands.md" %}
 [commands.md](commands.md)
-
-</div>
+{% endcontent-ref %}
 
 See which commands require which permissions.
 
-<div data-gb-custom-block data-tag="content-ref" data-url="../configuration/config.yml.md">
-
+{% content-ref url="../configuration/config.yml.md" %}
 [config.yml.md](../configuration/config.yml.md)
-
-</div>
+{% endcontent-ref %}
 
 Protection settings and their interaction with bypass permissions.
 
----
+***
 
 ## Security Best Practices
 
-<div data-gb-custom-block data-tag="hint" data-style="success">
-
+{% hint style="success" %}
 **Use the least privilege principle:** Only grant permissions users actually need. Don't give `tcp.admin.*` to everyone.
+{% endhint %}
 
-</div>
-
-<div data-gb-custom-block data-tag="hint" data-style="warning">
-
+{% hint style="warning" %}
 **Be careful with bypass permissions:** `tcp.bypass.cooldown` removes progression. `tcp.bypass.protection` allows chamber destruction.
+{% endhint %}
 
-</div>
-
-<div data-gb-custom-block data-tag="hint" data-style="info">
-
+{% hint style="info" %}
 **Separate builder and admin permissions:** Builders need `tcp.admin.create` + `tcp.bypass.protection`. They don't need `tcp.admin.reload` or key management.
+{% endhint %}
 
-</div>
-
-<div data-gb-custom-block data-tag="hint" data-style="danger">
-
+{% hint style="danger" %}
 **Never give regular players `tcp.bypass.protection`** unless you want them modifying chambers freely!
+{% endhint %}
 
-</div>
-
----
+***
 
 ## Quick Permission Cheat Sheet
 
-| Role | Permissions | Why |
-|------|-------------|-----|
-| **Player** | `tcp.stats`, `tcp.leaderboard`, `tcp.spectate` | View stats, compete, spectate |
-| **VIP** | Same + `tcp.bypass.cooldown` | Faster loot (optional) |
-| **Helper** | `tcp.admin.key`, `tcp.admin.vault`, `tcp.admin.reset` | Help players, manage events |
-| **Mod** | Helper + `tcp.admin.stats` | Monitor players |
-| **Builder** | `tcp.admin.generate`, `tcp.admin.scan`, `tcp.admin.snapshot`, `tcp.bypass.protection` | Register chambers |
-| **Admin** | `tcp.admin.*` | Full control |
+| Role        | Permissions                                                                           | Why                           |
+| ----------- | ------------------------------------------------------------------------------------- | ----------------------------- |
+| **Player**  | `tcp.stats`, `tcp.leaderboard`, `tcp.spectate`                                        | View stats, compete, spectate |
+| **VIP**     | Same + `tcp.bypass.cooldown`                                                          | Faster loot (optional)        |
+| **Helper**  | `tcp.admin.key`, `tcp.admin.vault`, `tcp.admin.reset`                                 | Help players, manage events   |
+| **Mod**     | Helper + `tcp.admin.stats`                                                            | Monitor players               |
+| **Builder** | `tcp.admin.generate`, `tcp.admin.scan`, `tcp.admin.snapshot`, `tcp.bypass.protection` | Register chambers             |
+| **Admin**   | `tcp.admin.*`                                                                         | Full control                  |
 
 Use this as a starting point and adjust to your server's needs!
