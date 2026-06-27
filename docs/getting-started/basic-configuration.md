@@ -543,14 +543,6 @@ Customize what players get from vaults.
 
 Change all player-facing messages to match your server's style.
 
-<div data-gb-custom-block data-tag="content-ref" data-url="../guides/automatic-resets.md">
-
-[automatic-resets.md](../guides/automatic-resets.md)
-
-</div>
-
-Deep dive into how resets work and advanced scheduling.
-
 ---
 
 ## Pro Tips
