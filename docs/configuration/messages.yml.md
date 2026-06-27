@@ -973,17 +973,17 @@ TrialChamberPro only uses the messages defined here. For custom messages, you'd 
 
 You've completed the configuration trilogy! 🎉
 
-Check out the guides for hands-on usage:
+Where to go next:
 
-<div data-gb-custom-block data-tag="content-ref" data-url="../guides/custom-loot.md">
+<div data-gb-custom-block data-tag="content-ref" data-url="loot.yml.md">
 
-[custom-loot.md](../guides/custom-loot.md)
+[loot.yml.md](loot.yml.md)
 
 </div>
 
-<div data-gb-custom-block data-tag="content-ref" data-url="../guides/automatic-resets.md">
+<div data-gb-custom-block data-tag="content-ref" data-url="config.yml.md">
 
-[automatic-resets.md](../guides/automatic-resets.md)
+[config.yml.md](config.yml.md)
 
 </div>
 
