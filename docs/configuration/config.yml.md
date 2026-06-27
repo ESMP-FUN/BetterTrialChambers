@@ -1412,7 +1412,9 @@ Debug mode generates TONS of console output. Don't leave it on in production!
 
 ## Quick Configs for Common Setups
 
-### Casual Survival Server
+<details>
+
+<summary>Casual Survival Server</summary>
 
 ```yaml
 global:
@@ -1424,7 +1426,11 @@ protection:
   allow-pvp: false  # No PvP
 ```
 
-### Competitive/PvP Server
+</details>
+
+<details>
+
+<summary>Competitive/PvP Server</summary>
 
 ```yaml
 global:
@@ -1437,7 +1443,11 @@ protection:
   prevent-block-place: true
 ```
 
-### High-Activity Server
+</details>
+
+<details>
+
+<summary>High-Activity Server</summary>
 
 ```yaml
 global:
@@ -1450,7 +1460,11 @@ performance:
   cache-duration-seconds: 600  # Longer cache
 ```
 
-### Roleplay/Lore Server
+</details>
+
+<details>
+
+<summary>Roleplay/Lore Server</summary>
 
 ```yaml
 global:
@@ -1460,6 +1474,8 @@ vaults:
   show-cooldown-particles: false  # Less immersion-breaking
   play-sound-on-open: false
 ```
+
+</details>
 
 ***
 
