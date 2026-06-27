@@ -1,4 +1,4 @@
-# 🏗️ dungeon.yml
+# dungeon.yml
 
 Controls **procedural dungeon generation** — assembling chambers on demand from modular room pieces you build yourself. See the [`/tcp dungeon` command](../reference/commands.md) for the full workflow.
 

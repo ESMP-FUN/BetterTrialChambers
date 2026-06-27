@@ -1,4 +1,4 @@
-# 🔐 Permissions
+# Permissions
 
 TrialChamberPro uses a hierarchical permission system. Grant broad access with wildcards or fine-tune with specific permissions.
 

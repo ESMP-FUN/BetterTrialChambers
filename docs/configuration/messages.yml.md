@@ -1,4 +1,4 @@
-# 💬 messages.yml
+# messages.yml
 
 Want your plugin to match your server's vibe? The `messages.yml` file lets you customize every single message players see. Whether you're running a serious roleplay server or a meme-filled chaos realm, you've got full control.
 
@@ -109,7 +109,7 @@ Prepended to most messages. Keep it short!
 **Examples:**
 
 * Minimalist: `"&8[&6TCP&8] "`
-* Fancy: `"&8[&6⚔ &eTrialChamber&6 ⚔&8] "`
+* Fancy: `"&8[&6 &eTrialChamber&6 &8] "`
 * Roleplay: `"&7[&5Ancient Chamber&7] "`
 * No prefix: `""` (empty string)
 
@@ -1001,7 +1001,7 @@ All messages update immediately. No restart needed!
 
 ## What's Next?
 
-You've completed the configuration trilogy! 🎉
+You've completed the configuration trilogy!
 
 Where to go next:
 
@@ -1017,4 +1017,4 @@ Where to go next:
 [commands.md](../reference/commands.md)
 {% endcontent-ref %}
 
-Now go make those messages uniquely yours! ✨
+Now go make those messages uniquely yours!
