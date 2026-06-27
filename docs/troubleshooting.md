@@ -59,7 +59,7 @@ Restart once. Walk or fly around your world — chambers register themselves as 
 
 Full details: [Auto-Discovery config →](configuration/config.yml.md#auto-discovery-of-natural-trial-chambers)
 
-If you prefer manual control (e.g. you want custom names or only specific chambers to use the plugin), the classic WorldEdit workflow still works: `/tcp generate wand MyChamber`. See [Your First Chamber](getting-started/your-first-chamber.md).
+If you prefer manual control (e.g. you want custom names or only specific chambers to use the plugin), the classic WorldEdit workflow still works: `/tcp generate wand MyChamber`. See [Manual Chamber Setup](getting-started/your-first-chamber.md).
 
 ---
 

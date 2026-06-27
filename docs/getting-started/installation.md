@@ -164,11 +164,11 @@ Updating is just as easy:
 
 ## What's Next?
 
-Now that you're installed, let's create your first managed chamber!
+Now that you're installed, get TCP running — for most servers it's a single command:
 
-<div data-gb-custom-block data-tag="content-ref" data-url="your-first-chamber.md">
+<div data-gb-custom-block data-tag="content-ref" data-url="quick-start.md">
 
-[your-first-chamber.md](your-first-chamber.md)
+[quick-start.md](quick-start.md)
 
 </div>
 
