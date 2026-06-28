@@ -23,40 +23,7 @@
 
 <br>
 
-📘 **Full documentation:** https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation — most questions are answered there, and every section below links to its own detailed page.
-
----
-
-## Premium Add-on Modules
-
-TrialChamberPro is, and always will be, **completely free**. But after a lot of requests from server owners wanting to push things further, we now offer optional premium modules for servers that need more.
-
-<br>
-
-### 🔷 TCP-WildSpawners
-Place TCP preset spawners **anywhere on your survival map** — no Trial Chamber required. Hand them out via shops, crates, or staff commands. Wherever a player puts one down, it summons your custom mobs. Includes an in-game GUI editor, per-preset griefing protection, holograms, mob tether, creative pick-block, and state-preserving mining so players can relocate a live spawner without losing cooldown progress.
-
-Requires TrialChamberPro v1.4.0+ (free).
-
-👉 **[esmp.fun/plugins](https://esmp.fun/plugins)** — purchase & download
-
-<br>
-
-### 🔶 TCP-VaultCrates
-The **first crate plugin that doesn't use chests.** Vanilla Trial Vaults are the only Minecraft block with built-in per-player loot state, two visual tiers (normal + ominous), a key mechanic, and a dramatic open animation that doesn't need a resource pack. TCP-VaultCrates lets you register vaults anywhere on your map as crates with configurable loot pools and per-tier keys. Hand keys out via shops, missions, or — when paired with TCP-WildSpawners — drop them from spawner mobs.
-
-Requires TrialChamberPro v1.4.0+ (free).
-
-👉 **[esmp.fun](https://esmp.fun/plugins)** — purchase & download
-
-<br>
-
-### 🔺 TCP-MythicTrials
-**Per-player chamber progression with Mythic difficulty tiers.** Every chamber clear bumps each participant's personal tier (T1–T20, then opt-in Mythic M1–M5): mobs scale in health, damage, speed, armor, gear and tactics — gear-adaptive AI, themed rooms, anti-heal, true damage — while rewards scale with them. In-chamber HUD, per-chamber leaderboards, seasons with seasonal loot, and full custom-mob-provider support. Built on TCP's `ChamberClearedEvent`, so it works on every registered chamber automatically.
-
-Requires TrialChamberPro v1.5.4+ (free).
-
-👉 **[esmp.fun](https://esmp.fun/plugins)** — pre-order & download
+**Full documentation:** https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation — most questions are answered there, and every section below links to its own detailed page.
 
 ---
 
@@ -100,6 +67,7 @@ Prefer manual control? You can still register chambers with WorldEdit (`/tcp gen
 ## Features
 
 ### Core Systems
+
 - **Auto-Discovery** — natural chambers register themselves on chunk load + startup sweep. [Docs →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/configuration#auto-discovery-of-natural-trial-chambers)
 - **Automatic Resets** — chambers restore on schedule with configurable warnings, or set interval to `0` for manual-only.
 - **Per-Player Vaults** — everyone gets their own loot with separate cooldowns, plus optional pay-keys-to-reopen.
@@ -109,9 +77,10 @@ Prefer manual control? You can still register chambers with WorldEdit (`/tcp gen
 - **Statistics & Leaderboards** — vaults opened, mobs killed, time spent. [Docs →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/placeholders)
 - **Admin GUI** — `/tcp menu` does everything. No YAML editing required — and `/tcp list` deep-links into it.
 
-<br>
+<details>
 
-### Advanced Loot
+<summary><strong>Advanced Loot</strong> — multi-pool tables, custom plugin items, command & vanilla-table rewards</summary>
+
 - **Multi-Pool Tables** — common / rare / unique pools like vanilla, fully configurable. [Docs →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/configuration/loot.yml)
 - **Per-Chamber Overrides** — assign a different loot table to any specific chamber.
 - **GUI Editing** — open `/tcp menu` → Loot Tables, click a table, and edit it. Changes save to `loot.yml` instantly.
@@ -133,22 +102,72 @@ Prefer manual control? You can still register chambers with WorldEdit (`/tcp gen
 - **Potion & Tipped Arrows** — full attribute support including Bad Omen III–V ominous bottles.
 - **LUCK Integration** — optional bonus rolls for players with the LUCK effect.
 
-<br>
+</details>
 
-### Multiplayer Enhancements
+<details>
+
+<summary><strong>Multiplayer Enhancements</strong> — wave tracking, spawner glow, spectator mode, PlaceholderAPI</summary>
+
 - **Spawner Wave Tracking** — boss bar shows wave progress as players fight. Hysteresis-based despawn means the bar disappears when you leave the area.
 - **Spawner Glow Outline** *(opt-in)* — active spawners glow through walls; `chamber-remaining` mode lights up every uncleared spawner so nobody hunts for the one they missed.
 - **Spectator Mode** — dead players can watch teammates complete the challenge, bounded to the chamber.
 - **PlaceholderAPI** — 20+ placeholders for scoreboards, holograms, tab lists.
 
-<br>
+</details>
 
-### Technical Excellence
+<details>
+
+<summary><strong>Technical Excellence</strong> — Folia-native, async architecture, dual database</summary>
+
 - **Folia Native** — full support for regionized multithreading.
 - **Paper / Purpur / Pufferfish** — works on all major Paper forks.
 - **Async Architecture** — Kotlin coroutines, zero main-thread blocking.
 - **Dual Database** — SQLite (default) or MySQL with connection pooling.
 - **WorldEdit / FAWE** — optional, used only if you want selection-based chamber creation.
+
+</details>
+
+---
+
+## Premium Add-on Modules
+
+TrialChamberPro is, and always will be, **completely free**. But after a lot of requests from server owners wanting to push things further, we now offer optional premium modules for servers that need more.
+
+<details>
+
+<summary><strong>TCP-WildSpawners</strong> — preset spawners anywhere on the map</summary>
+
+Place TCP preset spawners **anywhere on your survival map** — no Trial Chamber required. Hand them out via shops, crates, or staff commands. Wherever a player puts one down, it summons your custom mobs. Includes an in-game GUI editor, per-preset griefing protection, holograms, mob tether, creative pick-block, and state-preserving mining so players can relocate a live spawner without losing cooldown progress.
+
+Requires TrialChamberPro v1.4.0+ (free).
+
+**[esmp.fun/plugins](https://esmp.fun/plugins)** — purchase & download
+
+</details>
+
+<details>
+
+<summary><strong>TCP-VaultCrates</strong> — the first crate plugin that doesn't use chests</summary>
+
+Vanilla Trial Vaults are the only Minecraft block with built-in per-player loot state, two visual tiers (normal + ominous), a key mechanic, and a dramatic open animation that doesn't need a resource pack. TCP-VaultCrates lets you register vaults anywhere on your map as crates with configurable loot pools and per-tier keys. Hand keys out via shops, missions, or — when paired with TCP-WildSpawners — drop them from spawner mobs.
+
+Requires TrialChamberPro v1.4.0+ (free).
+
+**[esmp.fun/plugins](https://esmp.fun/plugins)** — purchase & download
+
+</details>
+
+<details>
+
+<summary><strong>TCP-MythicTrials</strong> — per-player chamber progression with Mythic difficulty tiers</summary>
+
+Every chamber clear bumps each participant's personal tier (T1–T20, then opt-in Mythic M1–M5): mobs scale in health, damage, speed, armor, gear and tactics — gear-adaptive AI, themed rooms, anti-heal, true damage — while rewards scale with them. In-chamber HUD, per-chamber leaderboards, seasons with seasonal loot, and full custom-mob-provider support. Built on TCP's `ChamberClearedEvent`, so it works on every registered chamber automatically.
+
+Requires TrialChamberPro v1.5.4+ (free).
+
+**[esmp.fun/plugins](https://esmp.fun/plugins)** — purchase & download
+
+</details>
 
 ---
 
@@ -158,11 +177,38 @@ Every user-facing string lives in `plugins/TrialChamberPro/messages.yml`. Want y
 
 Supports `&`-style color codes, `{placeholder}` substitution, and Adventure Components for boss bars.
 
-📘 [Full message reference →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/configuration/messages.yml)
+[Full message reference →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/configuration/messages.yml)
 
 ---
 
-## Quick Start (manual mode)
+## Requirements
+
+| Requirement | Version |
+|-------------|---------|
+| **Minecraft** | 1.21.1+ (use the `-mc26` JAR for 26.x) |
+| **Server** | Paper, Folia, Purpur, or Pufferfish |
+| **Java** | 21+ |
+
+<details>
+
+<summary><strong>Optional Dependencies</strong></summary>
+
+- **WorldEdit / FastAsyncWorldEdit** — selection-based chamber creation.
+- **WorldGuard** — additional region protection.
+- **PlaceholderAPI** — scoreboard / hologram placeholders.
+- **Vault** — economy command rewards.
+- **Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible** — custom items in loot tables.
+- **LuckPerms** — permission command rewards.
+
+</details>
+
+---
+
+## Quick Start & Reference
+
+<details>
+
+<summary><strong>Quick Start (manual mode)</strong> — the classic WorldEdit workflow</summary>
 
 Prefer not to use auto-discovery? Classic workflow still works:
 
@@ -175,9 +221,11 @@ Prefer not to use auto-discovery? Classic workflow still works:
 6. Done!
 ```
 
----
+</details>
 
-## Commands (at a glance)
+<details>
+
+<summary><strong>Commands</strong> — the ones you'll actually use</summary>
 
 | Command | Description |
 |---------|-------------|
@@ -193,11 +241,13 @@ Prefer not to use auto-discovery? Classic workflow still works:
 | `/tcp leaderboard <type>` | View top players |
 | `/tcp reload` | Reload config & loot tables |
 
-📘 [Full command reference →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/commands)
+[Full command reference →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/commands)
 
----
+</details>
 
-## Permissions (essentials)
+<details>
+
+<summary><strong>Permissions</strong> — the essentials</summary>
 
 | Permission | Description | Default |
 |------------|-------------|---------|
@@ -210,31 +260,13 @@ Prefer not to use auto-discovery? Classic workflow still works:
 
 > **Heads up:** `tcp.bypass.cooldown` is granted to OPs by default. If you're testing cooldowns as an OP, they'll appear broken — either test as a non-OP or explicitly negate the permission.
 
-📘 [Full permissions guide with rank examples →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/permissions)
+[Full permissions guide with rank examples →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/permissions)
 
----
+</details>
 
-## Requirements
+<details>
 
-| Requirement | Version |
-|-------------|---------|
-| **Minecraft** | 1.21.1+ (use `-mc26` JAR for 26.x) |
-| **Server** | Paper, Folia, Purpur, or Pufferfish |
-| **Java** | 21+ |
-
-<br>
-
-### Optional Dependencies
-- **WorldEdit / FastAsyncWorldEdit** — selection-based chamber creation.
-- **WorldGuard** — additional region protection.
-- **PlaceholderAPI** — scoreboard / hologram placeholders.
-- **Vault** — economy command rewards.
-- **Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible** — custom items in loot tables.
-- **LuckPerms** — permission command rewards.
-
----
-
-## Essential Configuration
+<summary><strong>Essential Configuration</strong> — the three settings most servers tweak</summary>
 
 Sensible defaults work out of the box. The three settings most servers actually tweak:
 
@@ -255,15 +287,19 @@ discovery:
   auto-snapshot: true              # Allow auto-discovered chambers to restore on reset.
 ```
 
-📘 [Full config.yml reference →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/configuration) · [loot.yml reference →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/configuration/loot.yml)
+[Full config.yml reference →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/configuration) · [loot.yml reference →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/configuration/loot.yml)
 
----
+</details>
 
-## PlaceholderAPI (summary)
+<details>
+
+<summary><strong>PlaceholderAPI</strong> — 30+ placeholders</summary>
 
 30+ placeholders for player stats (`%tcp_vaults_opened%`, `%tcp_mobs_killed%`, `%tcp_kdr%`, `%tcp_time_spent%`), current state (`%tcp_current_chamber%`, `%tcp_current_chamber_reset%`, `%tcp_chamber_count%`), leaderboard rank (`%tcp_leaderboard_vaults%`), and top-10 boards (`%tcp_top_vaults_1_name%` … `_value%` for vaults/chambers/time/mobs). Built-in caching (stats 30 s, leaderboards 60 s).
 
-📘 [Full placeholder list →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/placeholders)
+[Full placeholder list →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/placeholders)
+
+</details>
 
 ---
 
