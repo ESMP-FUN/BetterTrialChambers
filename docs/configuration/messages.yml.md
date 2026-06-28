@@ -9,7 +9,7 @@ After making changes, reload with `/tcp reload`
 {% endhint %}
 
 {% hint style="info" %}
-**Translating the admin GUI?** As of v1.3.0 every name, lore line, and button label across all 18 admin GUI views also lives here, under a nested `gui.*` section (\~330 keys). For the GUI-specific translation conventions — section layout, shared toggle templates, the `gui.common.*` reuse pattern — see the [Localization](localization.md) guide.
+**Translating the admin GUI?** As of v1.3.0 every name, lore line, and button label across all 18 admin GUI views also lives here, under a nested `gui.*` section (~330 keys). For the GUI-specific translation conventions — section layout, shared toggle templates, the `gui.common.*` reuse pattern — see the [Localization](localization.md) guide.
 {% endhint %}
 
 ***
@@ -92,7 +92,9 @@ Both formats work on the same line:
 
 ## Message Categories
 
-### General Messages
+<details>
+
+<summary><strong>General Messages</strong></summary>
 
 ```yaml
 prefix: "&8[&6TCP&8]&r "
@@ -113,9 +115,11 @@ Prepended to most messages. Keep it short!
 * Roleplay: `"&7[&5Ancient Chamber&7] "`
 * No prefix: `""` (empty string)
 
-***
+</details>
 
-### Chamber Management
+<details>
+
+<summary><strong>Chamber Management</strong></summary>
 
 ```yaml
 chamber-created: "&aChamber &e{chamber}&a created successfully!"
@@ -158,9 +162,11 @@ chamber-created: "&7The ancient chamber &e{chamber}&7 has been awakened..."
 chamber-deleted: "&7The chamber &e{chamber}&7 fades from memory..."
 ```
 
-***
+</details>
 
-### Scanning
+<details>
+
+<summary><strong>Scanning</strong></summary>
 
 ```yaml
 scan-started: "&aScanning chamber &e{chamber}&a..."
@@ -192,9 +198,11 @@ scan-started: "&7Exploring the depths of &e{chamber}&7..."
 scan-complete: "&aYou've mapped the chamber! Discovered &e{vaults} vaults&a, &e{spawners} monster cages&a, and &e{pots} ancient pots&a!"
 ```
 
-***
+</details>
 
-### Snapshots
+<details>
+
+<summary><strong>Snapshots</strong></summary>
 
 ```yaml
 snapshot-creating: "&aCreating snapshot for &e{chamber}&a..."
@@ -228,9 +236,11 @@ snapshot-creating: "&7Capturing the essence of &e{chamber}&7..."
 snapshot-created: "&aThe chamber's memory has been preserved. &7({blocks} blocks)"
 ```
 
-***
+</details>
 
-### Chamber Resets
+<details>
+
+<summary><strong>Chamber Resets</strong></summary>
 
 ```yaml
 chamber-reset-warning: "&eWarning: &7{chamber} will reset in &6{time}&7!"
@@ -269,9 +279,11 @@ chamber-reset-warning: "&7The magic sustaining &e{chamber}&7 weakens... &6{time}
 chamber-reset-complete: "&dThe chamber's ancient power has been renewed!"
 ```
 
-***
+</details>
 
-### Vaults
+<details>
+
+<summary><strong>Vaults</strong></summary>
 
 ```yaml
 vault-opened: "&aYou opened a {type} Vault!"
@@ -334,9 +346,11 @@ vault-opened: "&6[LOOT] &f{type} Vault opened!"
 vault-cooldown: "&e[COOLDOWN] &7{time} remaining"
 ```
 
-***
+</details>
 
-### Trial Keys
+<details>
+
+<summary><strong>Trial Keys</strong></summary>
 
 ```yaml
 key-given: "&aGave &e{amount}&a {type} Trial Key(s) to &e{player}&a."
@@ -352,9 +366,11 @@ key-check: "&e{player}&a has &e{normal}&a Normal Key(s) and &e{ominous}&a Ominou
 * `{normal}` - Normal key count
 * `{ominous}` - Ominous key count
 
-***
+</details>
 
-### Statistics
+<details>
+
+<summary><strong>Statistics</strong></summary>
 
 ```yaml
 stats-header: "&6=== Statistics for {player} ==="
@@ -393,9 +409,11 @@ stats-chambers: "  &e⚔ Chambers Beaten: &a{count}"
 stats-normal-vaults: "  &e🔓 Normal Vaults: &a{count}"
 ```
 
-***
+</details>
 
-### Leaderboards
+<details>
+
+<summary><strong>Leaderboards</strong></summary>
 
 ```yaml
 leaderboard-header: "&6=== Top Players - {stat} ==="
@@ -427,9 +445,11 @@ leaderboard-entry: "&e#{rank} &f{player}&7: &a{value}"
 # Could be: 🥇 #1, 🥈 #2, 🥉 #3 for top 3
 ```
 
-***
+</details>
 
-### Chamber Completion & Entry
+<details>
+
+<summary><strong>Chamber Completion &#x26; Entry</strong></summary>
 
 ```yaml
 chamber-completed: "&a✓ You have completed &e{chamber}&a!"
@@ -467,9 +487,11 @@ chamber-completed: "&d&l⚔ VICTORY! ⚔\n&fYou have conquered &5{chamber}&f!"
 player-died-in-chamber: "&c☠ &7{player} fell in &c{chamber}"
 ```
 
-***
+</details>
 
-### Protection
+<details>
+
+<summary><strong>Protection</strong></summary>
 
 ```yaml
 cannot-break-blocks: "&cYou cannot break blocks in a Trial Chamber!"
@@ -499,9 +521,11 @@ cannot-break-blocks: "&7An ancient magic prevents you from damaging the structur
 cannot-place-blocks: "&7The chamber's magic rejects your attempt to alter it."
 ```
 
-***
+</details>
 
-### Teleportation
+<details>
+
+<summary><strong>Teleportation</strong></summary>
 
 ```yaml
 teleported-to-chamber: "&aTeleported to chamber &e{chamber}&a."
@@ -528,9 +552,11 @@ teleported-to-chamber: "&7→ {chamber}"
 teleported-to-exit: "&7→ Exit"
 ```
 
-***
+</details>
 
-### Chamber Info
+<details>
+
+<summary><strong>Chamber Info</strong></summary>
 
 ```yaml
 info-header: "&6=== Chamber Info: {chamber} ==="
@@ -557,9 +583,11 @@ info-snapshot: "&eSnapshot: &f{status}"
 * `{count}` - Count of vaults/spawners
 * `{status}` - Snapshot status
 
-***
+</details>
 
-### Time Formatting
+<details>
+
+<summary><strong>Time Formatting</strong></summary>
 
 ```yaml
 time-days: "{days}d"
@@ -596,9 +624,11 @@ time-minutes: "{minutes}m"
 time-seconds: "{seconds}s"
 ```
 
-***
+</details>
 
-### System Messages
+<details>
+
+<summary><strong>System Messages</strong></summary>
 
 ```yaml
 plugin-starting-up: "&eTrialChamberPro is still starting up. Please try again in a moment..."
@@ -606,9 +636,11 @@ plugin-starting-up: "&eTrialChamberPro is still starting up. Please try again in
 
 Shown when commands are used before the plugin finishes async initialization.
 
-***
+</details>
 
-### Info Display Format
+<details>
+
+<summary><strong>Info Display Format</strong></summary>
 
 ```yaml
 # Used in /tcp info output
@@ -624,9 +656,11 @@ info-snapshot-not-created: "&cNot created"
 
 These are displayed as values in the chamber info command output.
 
-***
+</details>
 
-### Spawner Waves
+<details>
+
+<summary><strong>Spawner Waves</strong></summary>
 
 ```yaml
 spawner-wave-complete: "&a✓ {type} Spawner wave complete! &7Killed &e{killed}&7 mobs in &f{duration}"
@@ -662,9 +696,11 @@ spawner-wave-complete: "&a[WAVE COMPLETE] &7{killed} kills in &f{duration}"
 spawner-wave-boss-bar-progress: "{killed}/{total} eliminated"
 ```
 
-***
+</details>
 
-### Spectator Mode
+<details>
+
+<summary><strong>Spectator Mode</strong></summary>
 
 ```yaml
 spectate-offer: "&7You died in &e{chamber}&7. Would you like to spectate?"
@@ -700,9 +736,11 @@ spectate-started: "&d✦ &7Your spirit observes the trial of &e{chamber}&7..."
 spectate-exited: "&7Your spirit returns to the mortal plane."
 ```
 
-***
+</details>
 
-### GUI Action Messages
+<details>
+
+<summary><strong>GUI Action Messages</strong></summary>
 
 ```yaml
 # Chamber Operations
@@ -796,9 +834,11 @@ gui-chamber-reset-complete: "&d✦ &7The chamber &e{chamber}&7 has been renewed!
 gui-player-ejected: "&7An unseen force gently pushes you from the chamber..."
 ```
 
-***
+</details>
 
-### Help Messages
+<details>
+
+<summary><strong>Help Messages</strong></summary>
 
 ```yaml
 help-header: "&6=== TrialChamberPro Commands ==="
@@ -826,11 +866,15 @@ help-header: "&6╔════════════════════�
 help-generate: "&e/tcp generate wand <name>\n  &7Registers a chamber from your WorldEdit selection"
 ```
 
+</details>
+
 ***
 
 ## Complete Theme Examples
 
-### Minimalist Theme
+<details>
+
+<summary><strong>Minimalist Theme</strong></summary>
 
 ```yaml
 prefix: "&8[&6TCP&8] "
@@ -845,9 +889,11 @@ stats-header: "&7─── &6{player} &7───"
 
 **Vibe:** Clean, no-nonsense, modern.
 
-***
+</details>
 
-### Fantasy/Roleplay Theme
+<details>
+
+<summary><strong>Fantasy/Roleplay Theme</strong></summary>
 
 ```yaml
 prefix: "&7[&5Ancient Trials&7] "
@@ -863,9 +909,11 @@ stats-header: "&5╔════════════════════
 
 **Vibe:** Immersive, magical, story-driven.
 
-***
+</details>
 
-### Competitive/PvP Theme
+<details>
+
+<summary><strong>Competitive/PvP Theme</strong></summary>
 
 ```yaml
 prefix: "&c[&4PvP&c] "
@@ -881,9 +929,11 @@ leaderboard-header: "&4&l⚔ TOP FIGHTERS - {stat} ⚔"
 
 **Vibe:** Intense, competitive, action-focused.
 
-***
+</details>
 
-### Casual/Friendly Theme
+<details>
+
+<summary><strong>Casual/Friendly Theme</strong></summary>
 
 ```yaml
 prefix: "&b[Trial] "
@@ -897,6 +947,8 @@ cannot-break-blocks: "&cHey now! No breaking stuff in here 😊"
 ```
 
 **Vibe:** Friendly, approachable, lighthearted.
+
+</details>
 
 ***
 
