@@ -54,7 +54,9 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 
 ## Command Details
 
-### `/tcp help`
+<details>
+
+<summary><code>/tcp help</code></summary>
 
 Shows a list of all available commands.
 
@@ -76,9 +78,11 @@ Shows a list of all available commands.
 Only shows commands you have permission to use!
 {% endhint %}
 
-***
+</details>
 
-### `/tcp setup`
+<details>
+
+<summary><code>/tcp setup</code></summary>
 
 A friendly, **opt-in** tour of the major settings — built for operators who install the plugin and never open a YAML file. It walks the main options **one at a time**, each with a plain-English explanation, its current state, and **Enable / Skip / Disable** buttons (plus **← Prev**, **Pause Setup** and **Stop Setup**). Nothing is forced and no default is changed; you only apply what you choose.
 
@@ -104,9 +108,11 @@ On Paper **1.21.7+** the tour renders in the native **Dialog** UI. On older or n
 The reminder can be turned off with `setup.reminder.enabled: false` in `config.yml`. Running the tour is always optional — TCP works fine on its defaults.
 {% endhint %}
 
-***
+</details>
 
-### `/tcp menu [chamber]`
+<details>
+
+<summary><code>/tcp menu [chamber]</code></summary>
 
 Opens the admin GUI for managing all aspects of TrialChamberPro without command line. With a chamber name _(1.5.7+)_, jumps straight into that chamber's detail view — this is what the `[menu]` button on `/tcp list` lines uses.
 
@@ -167,9 +173,11 @@ The admin GUI provides 14 different views organized into categories:
 **No YAML editing required!** Most configuration can now be done entirely through the GUI.
 {% endhint %}
 
-***
+</details>
 
-### `/tcp generate <value|coords|wand|blocks>`
+<details>
+
+<summary><code>/tcp generate &lt;value|coords|wand|blocks&gt;</code></summary>
 
 Registers a chamber using either a saved WorldEdit variable (named region), your current WorldEdit selection, explicit coordinates, or by a desired block amount at your current facing.
 
@@ -204,9 +212,11 @@ Registers a chamber using either a saved WorldEdit variable (named region), your
 * WorldEdit must be installed for the `value` and `wand` operations
 * Auto-scans for vaults/spawners and creates snapshots based on config settings
 
-***
+</details>
 
-### `/tcp scan <chamber>`
+<details>
+
+<summary><code>/tcp scan &lt;chamber&gt;</code></summary>
 
 Scans a chamber to detect vaults, trial spawners, and decorated pots.
 
@@ -246,9 +256,11 @@ Scans a chamber to detect vaults, trial spawners, and decorated pots.
 **Re-scanning overwrites previous data!** If you modified your chamber and re-scan, old vault/spawner data is replaced.
 {% endhint %}
 
-***
+</details>
 
-### `/tcp setexit <chamber>`
+<details>
+
+<summary><code>/tcp setexit &lt;chamber&gt;</code></summary>
 
 Sets the exit location for a chamber. Players inside when the chamber resets will teleport here.
 
@@ -282,9 +294,11 @@ Stand where you want players to teleport (usually just outside the entrance), th
 * Face the direction you want players to look when teleported
 * Test it with `/tcp reset <chamber>` to see where players go
 
-***
+</details>
 
-### `/tcp snapshot <action> [chamber]`
+<details>
+
+<summary><code>/tcp snapshot &lt;action&gt; [chamber]</code></summary>
 
 Manage chamber snapshots (saved states for resets).
 
@@ -302,7 +316,7 @@ The chamber name is **optional on `create` / `update` / `restore`** _(1.5.5+; pr
 
 **Permission:** `tcp.admin.snapshot`
 
-#### `create all` / `missing` — Backfill missing snapshots _(1.5.22+)_
+**`create all` / `missing` — Backfill missing snapshots _(1.5.22+)_**
 
 If you registered chambers with `global.auto-snapshot-on-register` turned off, they have no snapshot and **can't be reset** until one is captured. These two commands fix a backlog without doing it one-by-one:
 
@@ -317,7 +331,7 @@ If you registered chambers with `global.auto-snapshot-on-register` turned off, t
 
 **Actions:**
 
-#### `create` - Create Snapshot
+**`create` - Create Snapshot**
 
 Scans the chamber and saves every block to a compressed snapshot file.
 
@@ -339,7 +353,7 @@ Scans the chamber and saves every block to a compressed snapshot file.
 **Update snapshots anytime!** Made changes to your chamber? Run `/tcp snapshot create` again to update.
 {% endhint %}
 
-#### `restore` - Restore Snapshot
+**`restore` - Restore Snapshot**
 
 Immediately resets the chamber from its snapshot (same as `/tcp reset`).
 
@@ -351,9 +365,11 @@ Immediately resets the chamber from its snapshot (same as `/tcp reset`).
 
 Useful for testing or forcing manual resets.
 
-***
+</details>
 
-### `/tcp dungeon <pos1|pos2|capture|generate|list|delete>`
+<details>
+
+<summary><code>/tcp dungeon &lt;pos1|pos2|capture|generate|list|delete&gt;</code></summary>
 
 Assembles chambers on demand from modular room pieces you build yourself. Configure in [dungeon.yml](../configuration/dungeon.yml.md).
 
@@ -370,7 +386,11 @@ Assembles chambers on demand from modular room pieces you build yourself. Config
 
 Rooms are matched on opposite-facing connectors across all four rotations, placed without overlap, and the result is snapshotted + registered like any other chamber (so resets, loot and protection all apply). `required-tags` in `dungeon.yml` guarantee e.g. one entrance and at least one vault.
 
-### `/tcp reset <chamber>`
+</details>
+
+<details>
+
+<summary><code>/tcp reset &lt;chamber&gt;</code></summary>
 
 Forces an immediate chamber reset.
 
@@ -411,9 +431,11 @@ Forces an immediate chamber reset.
 **Vault cooldowns:** When `reset-vault-cooldowns: true` in config.yml (default), vault cooldowns are cleared both in the database AND via Paper's native Vault API. This ensures players can truly loot vaults again after a reset.
 {% endhint %}
 
-***
+</details>
 
-### `/tcp list`
+<details>
+
+<summary><code>/tcp list</code></summary>
 
 Lists all registered chambers.
 
@@ -436,9 +458,11 @@ Lists all registered chambers.
 
 Shows chamber name, world, and total block count.
 
-***
+</details>
 
-### `/tcp info [chamber]`
+<details>
+
+<summary><code>/tcp info [chamber]</code></summary>
 
 Shows plugin information (when used without arguments) or detailed chamber information (when a chamber name is provided).
 
@@ -462,7 +486,7 @@ Shows plugin information (when used without arguments) or detailed chamber infor
 /tcp info MainChamber
 ```
 
-#### Plugin Info (no arguments)
+**Plugin Info (no arguments)**
 
 When used without arguments, shows plugin-wide information:
 
@@ -496,7 +520,7 @@ When used without arguments, shows plugin-wide information:
 * Integration status (WorldEdit, WorldGuard, PlaceholderAPI, Vault)
 * Feature status (Per-Player Loot, Spawner Waves, Spectator Mode, Statistics)
 
-#### Chamber Info (with argument)
+**Chamber Info (with argument)**
 
 When used with a chamber name, shows detailed chamber information:
 
@@ -523,9 +547,11 @@ When used with a chamber name, shows detailed chamber information:
 * Last reset time
 * Snapshot status
 
-***
+</details>
 
-### `/tcp pause <chamber>` / `/tcp resume <chamber>`
+<details>
+
+<summary><code>/tcp pause &lt;chamber&gt;</code> / <code>/tcp resume &lt;chamber&gt;</code></summary>
 
 Pause or resume a registered chamber.
 
@@ -558,9 +584,11 @@ Pause or resume a registered chamber.
 **Auto-pause:** Enable `protection.auto-pause-on-destruction: true` in config.yml to let the plugin pause chambers automatically once a configurable number of vaults or trial spawners are destroyed. See [config.yml](../configuration/config.yml.md) → Protection Settings.
 {% endhint %}
 
-***
+</details>
 
-### `/tcp container <action> <chamber> [#]`
+<details id="tcp-container-action-chamber">
+
+<summary><code>/tcp container &lt;action&gt; &lt;chamber&gt; [#]</code></summary>
 
 Manage per-player container loot ([`chests.per-player-loot`](../configuration/config.yml.md#per-player-chamber-container-loot)) templates for a chamber. CLI parity with the chamber GUI's **Container Loot** screen (`/tcp menu <chamber>` → Container Loot). _(Added in 1.5.9.)_
 
@@ -581,9 +609,11 @@ Manage per-player container loot ([`chests.per-player-loot`](../configuration/co
 /tcp container edit MainChamber 3
 ```
 
-***
+</details>
 
-### `/tcp delete <chamber>`
+<details id="tcp-delete-chamber">
+
+<summary><code>/tcp delete &lt;chamber&gt;</code></summary>
 
 Permanently deletes a chamber and all associated data.
 
@@ -618,9 +648,11 @@ Permanently deletes a chamber and all associated data.
 **Cannot be undone!**
 {% endhint %}
 
-***
+</details>
 
-### `/tcp vault reset <chamber> <player> [type]`
+<details>
+
+<summary><code>/tcp vault reset &lt;chamber&gt; &lt;player&gt; [type]</code></summary>
 
 Resets a player's vault cooldowns for a specific chamber.
 
@@ -667,9 +699,11 @@ Resets a player's vault cooldowns for a specific chamber.
 **v1.2.21+:** This command now properly clears Paper's native Vault `rewarded_players` list in addition to database tracking. This ensures players can truly loot vaults again immediately.
 {% endhint %}
 
-***
+</details>
 
-### `/tcp key give <player> <amount> [type]`
+<details>
+
+<summary><code>/tcp key give &lt;player&gt; &lt;amount&gt; [type]</code></summary>
 
 Gives trial keys to a player.
 
@@ -706,9 +740,11 @@ Gives trial keys to a player.
 **Player must be online!** Offline players can't receive items. The command will fail if the player isn't online.
 {% endhint %}
 
-***
+</details>
 
-### `/tcp key check <player>`
+<details>
+
+<summary><code>/tcp key check &lt;player&gt;</code></summary>
 
 Checks how many trial keys a player has.
 
@@ -738,9 +774,11 @@ Checks how many trial keys a player has.
 
 Counts ALL keys in the player's inventory (all slots combined).
 
-***
+</details>
 
-### `/tcp stats [player]`
+<details>
+
+<summary><code>/tcp stats [player]</code></summary>
 
 View player statistics for Trial Chamber activity.
 
@@ -792,9 +830,11 @@ View player statistics for Trial Chamber activity.
 * **Deaths** - Deaths inside managed chambers
 * **Time Spent** - Total time spent inside chambers
 
-***
+</details>
 
-### `/tcp leaderboard <type>`
+<details>
+
+<summary><code>/tcp leaderboard &lt;type&gt;</code></summary>
 
 View top players for a specific statistic.
 
@@ -848,9 +888,11 @@ View top players for a specific statistic.
 **Leaderboards are cached** to prevent database lag. They update on the interval specified in config, not in real-time.
 {% endhint %}
 
-***
+</details>
 
-### `/tcp claims scan`
+<details>
+
+<summary><code>/tcp claims scan</code></summary>
 
 Checks every registered chamber against existing claims from any installed land-claim plugin (**Residence**, **Lands**, **GriefPrevention**) and logs a warning to the console for each overlap. Use it to find chambers that were registered on top of — or had a claim made inside them before — the [claim integrations](../configuration/config.yml.md#residence-integration-lands-integration-griefprevention-integration) existed. _(Added in 1.5.15.)_
 
@@ -879,12 +921,14 @@ This also runs automatically on startup unless you set [`protection.claim-confli
 1. Note the chamber name, the location, and the claim owner from the log line.
 2. Decide which should win that space:
    * **Keep the chamber:** remove or resize the claim in the claim plugin (e.g. Residence `/res remove`, Lands `/unclaim`, GriefPrevention claim resize/abandon), then re-run `/tcp claims scan` to confirm it's clear.
-   * **Keep the claim:** [delete the chamber](commands.md#tcp-delete-chamber) (`/tcp delete <chamber>`) or move/re-register it elsewhere.
+   * **Keep the claim:** [delete the chamber](#tcp-delete-chamber) (`/tcp delete <chamber>`) or move/re-register it elsewhere.
 3. New claims can no longer be made into chambers, so once existing conflicts are cleared they won't reappear (except for players with the relevant `tcp.bypass.*` permission).
 
-***
+</details>
 
-### `/tcp reload`
+<details>
+
+<summary><code>/tcp reload</code></summary>
 
 Reloads the plugin configuration without restarting the server.
 
@@ -919,11 +963,15 @@ Reloads the plugin configuration without restarting the server.
 **Database changes require restart!** If you changed database settings in config.yml, you MUST restart the server, not just reload.
 {% endhint %}
 
+</details>
+
 ***
 
 ## Common Command Sequences
 
-### Registering an Existing Chamber (Full Process)
+<details>
+
+<summary><strong>Registering an Existing Chamber (Full Process)</strong></summary>
 
 ```bash
 # 1. Select chamber with WorldEdit
@@ -949,9 +997,11 @@ Reloads the plugin configuration without restarting the server.
 /tcp reset MyChamber
 ```
 
-***
+</details>
 
-### Managing Player Issues
+<details>
+
+<summary><strong>Managing Player Issues</strong></summary>
 
 ```bash
 # Player accidentally used all keys
@@ -967,9 +1017,11 @@ Reloads the plugin configuration without restarting the server.
 /tcp key check Steve
 ```
 
-***
+</details>
 
-### Event Setup
+<details>
+
+<summary><strong>Event Setup</strong></summary>
 
 ```bash
 # Give all online players keys for event
@@ -985,9 +1037,11 @@ Reloads the plugin configuration without restarting the server.
 /tcp reset EventChamber
 ```
 
-***
+</details>
 
-### Maintenance Tasks
+<details>
+
+<summary><strong>Maintenance Tasks</strong></summary>
 
 ```bash
 # List all chambers
@@ -1004,6 +1058,8 @@ Reloads the plugin configuration without restarting the server.
 # Reload config after edits
 /tcp reload
 ```
+
+</details>
 
 ***
 
