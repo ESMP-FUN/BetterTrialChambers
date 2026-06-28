@@ -1,12 +1,18 @@
 # Common Issues
 
-Most problems fall into one of the buckets below. Scan headings first — if you recognise the symptom, the fix is usually a few lines down.
+Most problems fall into one of the buckets below. Scan headings first — if you recognise the symptom, click it to expand the fix.
 
 If nothing here matches, jump to [Reporting Bugs](troubleshooting.md#reporting-bugs) or ask in [Discord](https://discord.gg/qwYcTpHsNC).
 
+{% hint style="info" %}
+**Looking for specific text?** Browser **Ctrl/⌘ + F won't find text inside collapsed sections** on this page. Use the documentation **search bar at the top of the page** ↗ (or press **Ctrl/⌘ + K**) instead — it searches the full text of every section, expanded or not.
+{% endhint %}
+
 ***
 
-## Vault cooldowns don't work — players open the same vault instantly
+<details>
+
+<summary><strong>Vault cooldowns don't work — players open the same vault instantly</strong></summary>
 
 **The likely cause:** you're testing as an OP.
 
@@ -24,9 +30,11 @@ Operators have **every** permission by default, including `tcp.bypass.cooldown`.
 
 **To confirm this is your issue:** set `debug.verbose-logging: true` in `config.yml`, `/tcp reload`, then open a vault. If the log shows `[Vault API] Player X has tcp.bypass.cooldown permission - SKIPPING cooldown check!` — that's it.
 
-***
+</details>
 
-## "Loot table not found" / vault opens but no loot drops
+<details>
+
+<summary><strong>"Loot table not found" / vault opens but no loot drops</strong></summary>
 
 **The likely cause:** TAB characters in your `loot.yml`.
 
@@ -42,9 +50,11 @@ YAML is strict about indentation. Mixing tabs and spaces — or using tabs at al
 
 Same rule applies to `config.yml` and `messages.yml`. If any of the three go quiet after an edit, tabs are the first suspect.
 
-***
+</details>
 
-## Do I need WorldEdit? Does this work without manually registering every chamber?
+<details>
+
+<summary><strong>Do I need WorldEdit? Does this work without manually registering every chamber?</strong></summary>
 
 **No, you don't need WorldEdit — and yes, it works automatically.**
 
@@ -62,9 +72,11 @@ Full details: [Auto-Discovery config →](configuration/config.yml.md#auto-disco
 
 If you prefer manual control (e.g. you want custom names or only specific chambers to use the plugin), the classic WorldEdit workflow still works: `/tcp generate wand MyChamber`. See [Manual Chamber Setup](getting-started/your-first-chamber.md).
 
-***
+</details>
 
-## Chamber resets don't restore broken blocks
+<details>
+
+<summary><strong>Chamber resets don't restore broken blocks</strong></summary>
 
 **The likely cause:** the chamber has no snapshot.
 
@@ -84,9 +96,11 @@ Set `discovery.auto-snapshot: true` in `config.yml` and `/tcp reload`. New chamb
 
 **Note:** `discovery.auto-snapshot` requires **1.5.6+** to actually work — older builds saved the snapshot file but never linked it to the chamber, so resets still reported "No snapshot found" even with the option enabled.
 
-***
+</details>
 
-## A reset deleted blocks around the chamber / the chamber came back broken
+<details>
+
+<summary><strong>A reset deleted blocks around the chamber / the chamber came back broken</strong></summary>
 
 **Fixed in 1.5.6 — update first.** On older versions, an auto-discovered chamber whose bounding box _grew_ after its snapshot was taken (discovery merges adjacent regions as their chunks load) could have its reset wipe everything inside the grown bounds while only restoring the old, smaller region. Since 1.5.6 the reset can never clear ground its snapshot doesn't cover, and merges automatically re-capture the snapshot.
 
@@ -100,17 +114,21 @@ That single command is the complete plugin-side fix — it removes the broken re
 
 Terrain that an affected reset already deleted **cannot be restored by the plugin** — the snapshot never contained those blocks. Restore that area from a world backup, or let it regenerate if it was untouched wilderness.
 
-***
+</details>
 
-## Boss bars don't go away when I leave a chamber
+<details>
+
+<summary><strong>Boss bars don't go away when I leave a chamber</strong></summary>
 
 **Fixed in 1.2.26.** Update to the latest version.
 
 If you're already on 1.2.26+ and still seeing this, check `spawner-waves.remove-distance` in `config.yml` — default is 32. Players outside this range get removed from the bar. If you've lowered it below `detection-radius`, the hysteresis breaks.
 
-***
+</details>
 
-## Server lags when chambers reset or snapshot
+<details>
+
+<summary><strong>Server lags when chambers reset or snapshot</strong></summary>
 
 Snapshot and restore operations scale with chamber size. A 100×50×100 chamber is 500,000 blocks — even streaming to disk, that's work.
 
@@ -130,9 +148,11 @@ Also: don't reset multiple large chambers at the same clock minute. Stagger thei
 
 **If you're on Folia,** confirm `performance.use-folialib: true`. The plugin detects Folia automatically, but this flag is required.
 
-***
+</details>
 
-## Cooldowns work for some players but not others
+<details>
+
+<summary><strong>Cooldowns work for some players but not others</strong></summary>
 
 Usually a permission inheritance problem. Check:
 
@@ -144,9 +164,11 @@ Usually a permission inheritance problem. Check:
 2. **Is the player in creative or spectator?** Creative players bypass cooldowns regardless of permissions (vanilla vault behaviour).
 3. **Did you recently clear vault data in the database?** If you wiped `player_vault_data` but not the native `rewarded_players` on the vault block (v1.2.21+ stores both), the native block state still remembers them. Use `/tcp vault reset <chamber> <player>` — it clears both.
 
-***
+</details>
 
-## A protection toggle isn't blocking anyone (entry / teleport / PvP / AdvancedEnchantments)
+<details>
+
+<summary><strong>A protection toggle isn't blocking anyone (entry / teleport / PvP / AdvancedEnchantments)</strong></summary>
 
 You enabled `prevent-teleport-into-chamber`, `prevent-entry-without-permission`, `allow-pvp: false`, or `block-advanced-enchantments`, but players (or you) still get through. Work down this list:
 
@@ -163,9 +185,11 @@ You enabled `prevent-teleport-into-chamber`, `prevent-entry-without-permission`,
 3. **Did the config actually apply?** Confirm the key is nested under `protection:` (not pasted as a flat `protection.prevent-teleport-into-chamber:` line) and that you ran `/tcp reload` after editing.
 4. **AdvancedEnchantments specifically:** the `[AE]` debug lines tell you if the enchant was allowlisted, bypassed, or blocked. If you see **no `[AE]` lines at all** when an enchant procs, check the startup log for `AdvancedEnchantments integration: ready` — if it's missing, AE isn't being detected. Also remember `block-advanced-enchantments` is for effect-based enchants; ordinary vein miners are handled by normal block protection instead. For mining a wall from _outside_, make sure `advanced-enchantments-block-radius` covers your blast size.
 
-***
+</details>
 
-## MySQL connection errors on startup
+<details>
+
+<summary><strong>MySQL connection errors on startup</strong></summary>
 
 Usually a credentials or host issue. Full error text tells you which:
 
@@ -178,9 +202,11 @@ Usually a credentials or host issue. Full error text tells you which:
 
 If you're not actually using MySQL and the plugin is still trying to connect to it, check `database.type: SQLITE` (case-sensitive).
 
-***
+</details>
 
-## Auto-discovery registered something that isn't a chamber
+<details>
+
+<summary><strong>Auto-discovery registered something that isn't a chamber</strong></summary>
 
 On worlds that existed before 1.21, players sometimes build structures out of tuff bricks or copper blocks. The auto-detector's structural predicate can match these.
 
@@ -203,9 +229,11 @@ Then bump `discovery.cooldown-seconds` higher if the same false region keeps re-
 
 If you're on an old world and the false-positive rate is high, it may be easier to leave `discovery.enabled: false` and register chambers manually — the trade-off is up to you.
 
-***
+</details>
 
-## Nexo / ItemsAdder / Oraxen items don't drop
+<details>
+
+<summary><strong>Nexo / ItemsAdder / Oraxen items don't drop</strong></summary>
 
 The `CUSTOM_ITEM` loot type uses reflection, so it's safe if the custom-item plugin isn't installed — but that also means the item silently skips if anything's off. Check:
 
@@ -223,16 +251,20 @@ Example that works:
   weight: 5
 ```
 
-***
+</details>
 
-## I changed messages.yml but nothing changed in-game
+<details>
+
+<summary><strong>I changed messages.yml but nothing changed in-game</strong></summary>
 
 1. Did you run `/tcp reload`? Config and message edits require a reload (or a restart).
 2. Is the key you edited the one actually being displayed? Some messages look similar. Search `messages.yml` for the exact text you see in-game.
-3. TAB characters? (See [Loot table not found](troubleshooting.md#loot-table-not-found--vault-opens-but-no-loot-drops) above — same rule.)
+3. TAB characters? (See the **"Loot table not found"** section above — same rule.)
 4. Are you sure it's not a boss bar? Boss bar messages are in `messages.yml` under keys containing `boss-bar` — they use MiniMessage tags, different from regular color codes.
 
 Full messages reference: [messages.yml →](configuration/messages.yml.md)
+
+</details>
 
 ***
 
