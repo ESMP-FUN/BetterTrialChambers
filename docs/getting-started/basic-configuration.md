@@ -381,7 +381,9 @@ database:
 
 ## Quick Config Templates
 
-### Casual Survival Server
+<details>
+
+<summary><strong>Casual Survival Server</strong></summary>
 
 ```yaml
 global:
@@ -407,9 +409,11 @@ statistics:
 
 **Philosophy:** Generous cooldowns, peaceful gameplay, daily resets.
 
-***
+</details>
 
-### Competitive/PvP Server
+<details>
+
+<summary><strong>Competitive/PvP Server</strong></summary>
 
 ```yaml
 global:
@@ -436,9 +440,11 @@ statistics:
 
 **Philosophy:** Frequent resets, PvP enabled, competitive stat tracking.
 
-***
+</details>
 
-### High-Activity Server
+<details>
+
+<summary><strong>High-Activity Server</strong></summary>
 
 ```yaml
 global:
@@ -465,9 +471,11 @@ performance:
 
 **Philosophy:** Fast resets, short cooldowns, optimized for many players.
 
-***
+</details>
 
-### Roleplay/Immersive Server
+<details>
+
+<summary><strong>Roleplay/Immersive Server</strong></summary>
 
 ```yaml
 global:
@@ -493,6 +501,8 @@ statistics:
 ```
 
 **Philosophy:** Scarce resources, minimal UI feedback, long cooldowns for meaningful loot.
+
+</details>
 
 ***
 
