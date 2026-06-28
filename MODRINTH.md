@@ -11,6 +11,14 @@
 ### Recently Added
 
 - **A guided setup tour** — run `/tcp setup` for a friendly, one-setting-at-a-time walkthrough of the main options (**Enable / Skip / Disable**, nothing forced). Native Dialog UI on Paper 1.21.7+, with an automatic clickable-chat fallback on older servers.
+
+  <img src="https://raw.githubusercontent.com/darkstarworks/TrialChamberPro/master/setup-chat.png" alt="The /tcp setup clickable-chat prompt in-game" width="600" />
+
+  <details>
+  <summary>See the native Dialog UI (Paper 1.21.7+)</summary>
+  <img src="https://raw.githubusercontent.com/darkstarworks/TrialChamberPro/master/setup-dialog.png" alt="The /tcp setup tour rendered as a native Dialog popup" width="320" />
+  </details>
+
 - **The whole chamber is now per-player** — vaults *and* chests / barrels / dispensers / droppers each hand every player their own Lootr-style copy that resets with the chamber (decorated pots refill too).
 - **Your chambers can't be claimed or blast-mined** — blocks **Residence / Lands / GriefPrevention** claims from overlapping a chamber, and stops **AdvancedEnchantments** enchants (Blast Mining, etc.) from breaking into one. `/tcp claims scan` hunts down existing conflicts.
 - **Vaults, expanded** — native **Vault economy rewards** in loot tables, working **time-based cooldowns**, **key-to-reopen** vaults, and opt-in floating **✔ / ✘ hologram feedback**.
@@ -24,6 +32,48 @@
 <br>
 
 **Full documentation:** https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation — most questions are answered there, and every section below links to its own detailed page.
+
+---
+
+## Premium Add-on Modules
+
+TrialChamberPro is, and always will be, **completely free**. But after a lot of requests from server owners wanting to push things further, we now offer optional premium modules for servers that need more.
+
+<details>
+
+<summary><strong>TCP-MythicTrials</strong> — per-player chamber progression with Mythic difficulty tiers</summary>
+
+Every chamber clear bumps each participant's personal tier (T1–T20, then opt-in Mythic M1–M5): mobs scale in health, damage, speed, armor, gear and tactics — gear-adaptive AI, themed rooms, anti-heal, true damage — while rewards scale with them. In-chamber HUD, per-chamber leaderboards, seasons with seasonal loot, and full custom-mob-provider support. Built on TCP's `ChamberClearedEvent`, so it works on every registered chamber automatically.
+
+Requires TrialChamberPro v1.5.4+ (free).
+
+**[esmp.fun/plugins](https://esmp.fun/plugins)** — purchase & download
+
+</details>
+
+<details>
+
+<summary><strong>TCP-WildSpawners</strong> — preset spawners anywhere on the map</summary>
+
+Place TCP preset spawners **anywhere on your survival map** — no Trial Chamber required. Hand them out via shops, crates, or staff commands. Wherever a player puts one down, it summons your custom mobs. Includes an in-game GUI editor, per-preset griefing protection, holograms, mob tether, creative pick-block, and state-preserving mining so players can relocate a live spawner without losing cooldown progress.
+
+Requires TrialChamberPro v1.4.0+ (free).
+
+**[esmp.fun/plugins](https://esmp.fun/plugins)** — purchase & download
+
+</details>
+
+<details>
+
+<summary><strong>TCP-VaultCrates</strong> — the first crate plugin that doesn't use chests</summary>
+
+Vanilla Trial Vaults are the only Minecraft block with built-in per-player loot state, two visual tiers (normal + ominous), a key mechanic, and a dramatic open animation that doesn't need a resource pack. TCP-VaultCrates lets you register vaults anywhere on your map as crates with configurable loot pools and per-tier keys. Hand keys out via shops, missions, or — when paired with TCP-WildSpawners — drop them from spawner mobs.
+
+Requires TrialChamberPro v1.4.0+ (free).
+
+**[esmp.fun/plugins](https://esmp.fun/plugins)** — purchase & download
+
+</details>
 
 ---
 
@@ -124,48 +174,6 @@ Prefer manual control? You can still register chambers with WorldEdit (`/tcp gen
 - **Async Architecture** — Kotlin coroutines, zero main-thread blocking.
 - **Dual Database** — SQLite (default) or MySQL with connection pooling.
 - **WorldEdit / FAWE** — optional, used only if you want selection-based chamber creation.
-
-</details>
-
----
-
-## Premium Add-on Modules
-
-TrialChamberPro is, and always will be, **completely free**. But after a lot of requests from server owners wanting to push things further, we now offer optional premium modules for servers that need more.
-
-<details>
-
-<summary><strong>TCP-WildSpawners</strong> — preset spawners anywhere on the map</summary>
-
-Place TCP preset spawners **anywhere on your survival map** — no Trial Chamber required. Hand them out via shops, crates, or staff commands. Wherever a player puts one down, it summons your custom mobs. Includes an in-game GUI editor, per-preset griefing protection, holograms, mob tether, creative pick-block, and state-preserving mining so players can relocate a live spawner without losing cooldown progress.
-
-Requires TrialChamberPro v1.4.0+ (free).
-
-**[esmp.fun/plugins](https://esmp.fun/plugins)** — purchase & download
-
-</details>
-
-<details>
-
-<summary><strong>TCP-VaultCrates</strong> — the first crate plugin that doesn't use chests</summary>
-
-Vanilla Trial Vaults are the only Minecraft block with built-in per-player loot state, two visual tiers (normal + ominous), a key mechanic, and a dramatic open animation that doesn't need a resource pack. TCP-VaultCrates lets you register vaults anywhere on your map as crates with configurable loot pools and per-tier keys. Hand keys out via shops, missions, or — when paired with TCP-WildSpawners — drop them from spawner mobs.
-
-Requires TrialChamberPro v1.4.0+ (free).
-
-**[esmp.fun/plugins](https://esmp.fun/plugins)** — purchase & download
-
-</details>
-
-<details>
-
-<summary><strong>TCP-MythicTrials</strong> — per-player chamber progression with Mythic difficulty tiers</summary>
-
-Every chamber clear bumps each participant's personal tier (T1–T20, then opt-in Mythic M1–M5): mobs scale in health, damage, speed, armor, gear and tactics — gear-adaptive AI, themed rooms, anti-heal, true damage — while rewards scale with them. In-chamber HUD, per-chamber leaderboards, seasons with seasonal loot, and full custom-mob-provider support. Built on TCP's `ChamberClearedEvent`, so it works on every registered chamber automatically.
-
-Requires TrialChamberPro v1.5.4+ (free).
-
-**[esmp.fun/plugins](https://esmp.fun/plugins)** — purchase & download
 
 </details>
 
