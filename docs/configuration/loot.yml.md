@@ -124,7 +124,7 @@ How many times to randomly pick from `weighted-items`. A random number between m
 
 ***
 
-## Multi-Pool Loot System (NEW!)
+## Multi-Pool Loot System
 
 **Like vanilla Trial Chambers**, you can now create multiple loot pools that each roll independently! This gives you much finer control over loot distribution.
 
@@ -229,7 +229,9 @@ loot:
 
 ## Item Types
 
-### Basic Items
+<details>
+
+<summary><strong>Basic Items</strong></summary>
 
 ```yaml
 - type: DIAMOND
@@ -264,7 +266,11 @@ Previously, GUI-added items only stored the material + amount, so an enchanted b
 For bulk authoring, the **Bulk add (drag items in)** button in the GUI opens a chest you can drag or shift-click any number of items into — on close, every item is captured the same way and added to the table at once.
 {% endhint %}
 
-### Items with Custom Names & Lore
+</details>
+
+<details>
+
+<summary><strong>Items with Custom Names &#x26; Lore</strong></summary>
 
 ```yaml
 - type: DIAMOND
@@ -285,7 +291,11 @@ Color codes supported! Use `&` for colors:
 * `&l` = Bold, `&o` = Italic, `&n` = Underline
 * `&m` = Strikethrough, `&k` = Magic
 
-### Enchanted Items
+</details>
+
+<details>
+
+<summary><strong>Enchanted Items</strong></summary>
 
 ```yaml
 - type: DIAMOND_SWORD
@@ -303,7 +313,11 @@ Enchantments use the format `ENCHANTMENT_NAME:LEVEL`.
 
 See [Spigot Enchantment enum](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/enchantments/Enchantment.html) for names.
 
-### Enchanted Books
+</details>
+
+<details>
+
+<summary><strong>Enchanted Books</strong></summary>
 
 ```yaml
 - type: ENCHANTED_BOOK
@@ -316,9 +330,11 @@ See [Spigot Enchantment enum](https://hub.spigotmc.org/javadocs/spigot/org/bukki
 
 Pro tip: Give ONLY enchanted books for specific enchants, not enchanted gear. Let players choose what to apply it to!
 
+</details>
+
 ***
 
-## Advanced Loot Features (NEW!)
+## Advanced Loot Features
 
 **Version 1.1.9+** brings vanilla-style loot customization with full Minecraft 1.21+ support! Create dynamic, randomized loot just like vanilla Trial Chambers.
 
@@ -428,7 +444,7 @@ Create potions with any effect level—perfect for ominous vault rewards!
   potion-level: 2
 ```
 
-### Ominous Potions (1.21+ Exclusive)
+### Ominous Potions
 
 **NEW IN 1.21!** Ominous potions are special bottles with extreme effect levels—only available from Trial Chambers in vanilla!
 
