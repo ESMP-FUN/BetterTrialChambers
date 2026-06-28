@@ -143,7 +143,9 @@ Vanilla Minecraft vaults use **3 separate pools**:
 * **Matches vanilla** - Feels like the real Trial Chambers
 * **Flexible design** - Can have pools with `min-rolls: 0` for bonus items
 
-### Multi-Pool Example
+<details>
+
+<summary><strong>Multi-Pool Example</strong></summary>
 
 ```yaml
 loot-tables:
@@ -199,6 +201,8 @@ loot-tables:
             amount-max: 1
             weight: 2.0
 ```
+
+</details>
 
 **How it works:**
 
@@ -354,7 +358,9 @@ Add potion effects to arrows with custom amplifier levels!
 
 **Available potion types:** `SPEED`, `SLOWNESS`, `STRENGTH`, `INSTANT_HEAL`, `INSTANT_DAMAGE`, `JUMP_BOOST`, `REGENERATION`, `RESISTANCE`, `FIRE_RESISTANCE`, `WATER_BREATHING`, `INVISIBILITY`, `NIGHT_VISION`, `WEAKNESS`, `POISON`, `WITHER`, `TURTLE_MASTER`, `SLOW_FALLING`
 
-**Examples:**
+<details>
+
+<summary><strong>Examples</strong></summary>
 
 ```yaml
 # Poison II arrows (great for combat)
@@ -384,7 +390,11 @@ Add potion effects to arrows with custom amplifier levels!
   name: "&2Long-Lasting Poison Arrow"
 ```
 
-**Custom Effect Duration:**
+</details>
+
+<details>
+
+<summary><strong>Custom Effect Duration</strong></summary>
 
 The `effect-duration` field lets you override how long potion effects last. When **not specified**, durations are **automatically calculated** from the potion type using vanilla Minecraft multipliers:
 
@@ -395,12 +405,18 @@ The `effect-duration` field lets you override how long potion effects last. When
 | LINGERING\_POTION | 25% of base potion             | 0.25×          |
 | TIPPED\_ARROW     | **1/8 of base potion**         | 0.125× (12.5%) |
 
-**Examples with auto-calculation:**
+</details>
+
+<details>
+
+<summary><strong>Examples with auto-calculation</strong></summary>
 
 * **Speed I Potion** (3:00 base) → **Tipped Arrow** = 22.5s (3:00 ÷ 8)
 * **Slowness I Potion** (1:30 base) → **Tipped Arrow** = 11.25s (1:30 ÷ 8)
 * **Regeneration I Potion** (0:45 base) → **Tipped Arrow** = 5.625s (0:45 ÷ 8)
 * **Poison I Potion** (0:45 base) → **Tipped Arrow** = 5.625s (0:45 ÷ 8)
+
+</details>
 
 **Manual override:** Specify `effect-duration: <ticks>` to use a custom duration instead of auto-calculation (20 ticks = 1 second)
 
@@ -424,7 +440,9 @@ Create potions with any effect level—perfect for ominous vault rewards!
 * `SPLASH_POTION` - Throwable (2:15 duration)
 * `LINGERING_POTION` - Creates cloud (45 second cloud)
 
-**Examples:**
+<details>
+
+<summary><strong>Examples</strong></summary>
 
 ```yaml
 # Healing II splash potion
@@ -443,6 +461,8 @@ Create potions with any effect level—perfect for ominous vault rewards!
   potion-type: REGENERATION
   potion-level: 2
 ```
+
+</details>
 
 ### Ominous Potions
 
@@ -464,7 +484,9 @@ Create potions with any effect level—perfect for ominous vault rewards!
 
 **Perfect for ominous vault loot!** These are the rarest potions in Minecraft.
 
-**Popular ominous potions:**
+<details>
+
+<summary><strong>Popular ominous potions</strong></summary>
 
 ```yaml
 # Ominous Strength IV (vanilla: only from ominous vaults)
@@ -489,6 +511,8 @@ Create potions with any effect level—perfect for ominous vault rewards!
   weight: 2.5
 ```
 
+</details>
+
 {% hint style="info" %}
 **Ominous Potion Note:** The `ominous-potion: true` flag is cosmetic in most 1.21 implementations. The real power is the high `potion-level` (3+ = Level IV+)!
 {% endhint %}
@@ -504,7 +528,9 @@ Create potions with any effect level—perfect for ominous vault rewards!
 * Randomly determined level: **III, IV, or V** only
 * Used to trigger Ominous Trials for better loot
 
-#### Creating Ominous Bottles
+<details>
+
+<summary><strong>Creating Ominous Bottles</strong></summary>
 
 Use the `custom-effect-type` field to specify custom potion effects like `BAD_OMEN`:
 
@@ -547,7 +573,11 @@ Use the `custom-effect-type` field to specify custom potion effects like `BAD_OM
     - "&7The ultimate Ominous Trial challenge!"
 ```
 
-#### Key Differences: `custom-effect-type` vs `potion-type`
+</details>
+
+<details>
+
+<summary><strong>Key Differences: <code>custom-effect-type</code> vs <code>potion-type</code></strong></summary>
 
 | Field                | Purpose                            | Examples                                             |
 | -------------------- | ---------------------------------- | ---------------------------------------------------- |
@@ -565,7 +595,11 @@ Use the `custom-effect-type` field to specify custom potion effects like `BAD_OM
 **Important:** In vanilla Minecraft, ominous bottles only come in levels **III, IV, and V**—never I or II. Match vanilla behavior by using `potion-level: 2` (III), `potion-level: 3` (IV), or `potion-level: 4` (V).
 {% endhint %}
 
-#### Other Custom Effect Types
+</details>
+
+<details>
+
+<summary><strong>Other Custom Effect Types</strong></summary>
 
 You can use `custom-effect-type` for other special effects:
 
@@ -592,6 +626,8 @@ You can use `custom-effect-type` for other special effects:
   name: "&eGlowing Splash Potion"
 ```
 
+</details>
+
 ### Enchantment Randomization
 
 Add dynamic enchantments with random levels—just like vanilla treasure loot!
@@ -613,7 +649,9 @@ Apply enchantments with random levels within a range:
 
 **Format:** `ENCHANTMENT:MIN_LEVEL:MAX_LEVEL`
 
-**Examples:**
+<details>
+
+<summary><strong>Examples</strong></summary>
 
 ```yaml
 # Pickaxe with random Efficiency and Fortune
@@ -635,6 +673,8 @@ Apply enchantments with random levels within a range:
     - "UNBREAKING:2:3"    # Unbreaking II-III
 ```
 
+</details>
+
 #### Random Enchantment Pool
 
 Pick **ONE** random enchantment from a pool—great for variety!
@@ -654,7 +694,9 @@ Pick **ONE** random enchantment from a pool—great for variety!
 
 **Perfect for enchanted books!** Each player gets a different random enchantment.
 
-**Examples:**
+<details>
+
+<summary><strong>Examples</strong></summary>
 
 ```yaml
 # Armor with ONE random protection type
@@ -678,9 +720,15 @@ Pick **ONE** random enchantment from a pool—great for variety!
     - "LOOTING:2:3"
 ```
 
+</details>
+
 #### Combining Enchantment Features
 
 You can mix fixed enchantments, ranges, and random pools!
+
+<details>
+
+<summary><strong>Example</strong></summary>
 
 ```yaml
 - type: DIAMOND_SWORD
@@ -699,6 +747,8 @@ You can mix fixed enchantments, ranges, and random pools!
     - "SWEEPING_EDGE:2:3"
     - "FIRE_ASPECT:1:2"
 ```
+
+</details>
 
 ### Variable Durability
 
@@ -725,7 +775,9 @@ Drop pre-damaged items with random wear—makes loot feel "used" and realistic!
 * Diamond sword max durability: 1561 (so 200-800 damage = 60-50% durability remaining)
 * Perfect for "treasure" items that feel discovered, not crafted
 
-**Examples:**
+<details>
+
+<summary><strong>Examples</strong></summary>
 
 ```yaml
 # Heavily worn pickaxe (still useful)
@@ -752,6 +804,8 @@ Drop pre-damaged items with random wear—makes loot feel "used" and realistic!
   name: "&bScratched Helmet"
 ```
 
+</details>
+
 {% hint style="warning" %}
 **Durability values are damage amounts!** Higher values = more damaged. Check the max durability for each material to calibrate your ranges.
 {% endhint %}
@@ -759,6 +813,10 @@ Drop pre-damaged items with random wear—makes loot feel "used" and realistic!
 ### Combining Everything
 
 You can mix **all** advanced features on a single item!
+
+<details>
+
+<summary><strong>Example</strong></summary>
 
 ```yaml
 - type: DIAMOND_SWORD
@@ -781,6 +839,8 @@ You can mix **all** advanced features on a single item!
   durability-max: 300
 ```
 
+</details>
+
 This creates an incredible loot item with:
 
 * Custom name and lore
@@ -797,7 +857,9 @@ This creates an incredible loot item with:
 
 **Weight determines probability.** Higher weight = more likely to be picked.
 
-### Example Breakdown
+<details>
+
+<summary><strong>Example Breakdown</strong></summary>
 
 ```yaml
 weighted-items:
@@ -815,6 +877,8 @@ weighted-items:
 * Emerald: 20/100 = **20%** chance per roll
 * Iron: 15/100 = **15%** chance per roll
 * Coal: 55/100 = **55%** chance per roll
+
+</details>
 
 {% hint style="info" %}
 **Weights don't need to add to 100!** That's just for easy mental math. They're all relative to each other.
@@ -1064,7 +1128,9 @@ weighted-items:
 
 ## Example Loot Tables
 
-### Beginner-Friendly Server
+<details>
+
+<summary><strong>Beginner-Friendly Server</strong></summary>
 
 ```yaml
 loot-tables:
@@ -1106,9 +1172,11 @@ loot-tables:
 
 Generous amounts, guaranteed golden apple, decent diamond rate. Great for keeping new players engaged!
 
-***
+</details>
 
-### Hardcore/Competitive Server
+<details>
+
+<summary><strong>Hardcore/Competitive Server</strong></summary>
 
 ```yaml
 loot-tables:
@@ -1147,9 +1215,11 @@ loot-tables:
 
 Stingy! Only 1-2 items, low amounts, rare diamonds. Makes every vault opening feel earned.
 
-***
+</details>
 
-### Economy-Focused Server
+<details>
+
+<summary><strong>Economy-Focused Server</strong></summary>
 
 ```yaml
 loot-tables:
@@ -1197,9 +1267,11 @@ loot-tables:
 
 Perfect for servers where money is the primary progression system.
 
-***
+</details>
 
-### Custom Items + Vanilla Mix
+<details>
+
+<summary><strong>Custom Items + Vanilla Mix</strong></summary>
 
 ```yaml
 loot-tables:
@@ -1240,11 +1312,17 @@ loot-tables:
 
 Best of all worlds—custom items, vanilla loot, and special perks.
 
+</details>
+
 ***
 
 ## Per-Chamber Loot Tables
 
 Want different chambers to drop different loot? You can create multiple tables!
+
+<details>
+
+<summary><strong>Example</strong></summary>
 
 ```yaml
 loot-tables:
@@ -1301,6 +1379,8 @@ loot-tables:
         enchantments:
           - "RIPTIDE:3"
 ```
+
+</details>
 
 Then assign the table to a specific chamber with `/tcp loot set <chamber> <normal|ominous> <table>`:
 
@@ -1415,7 +1495,9 @@ Command rewards run console commands with a **probability** (weight-based). They
 **Key Point:** Command rewards go in a separate `command-rewards` list, **NOT** in `weighted-items`!
 {% endhint %}
 
-### Basic Example
+<details>
+
+<summary><strong>Basic Example</strong></summary>
 
 ```yaml
 loot-tables:
@@ -1448,7 +1530,11 @@ When a player opens a vault:
 3. 10% chance to get a special permission
 4. Player sees message: "&6+1000 Coins" or "&5Special Permission Unlocked!"
 
-### Multi-Pool with Bonuses
+</details>
+
+<details>
+
+<summary><strong>Multi-Pool with Bonuses</strong></summary>
 
 Separate item drops from bonus rewards using pools:
 
@@ -1508,9 +1594,13 @@ Player opens vault:
   * 15% chance: 5000 coins + nether star
   * 5% chance: VIP rank + 10000 coins + elytra
 
+</details>
+
 ### Common Examples
 
-#### Economy Rewards (Vault Plugin)
+<details>
+
+<summary><strong>Economy Rewards (Vault Plugin)</strong></summary>
 
 ```yaml
 command-rewards:
@@ -1527,7 +1617,11 @@ command-rewards:
     display-name: "&c-500 Coins (Cursed Vault!)"
 ```
 
-#### Permissions (LuckPerms)
+</details>
+
+<details>
+
+<summary><strong>Permissions (LuckPerms)</strong></summary>
 
 ```yaml
 command-rewards:
@@ -1550,7 +1644,11 @@ command-rewards:
     display-name: "&a1-Hour Bonus Active!"
 ```
 
-#### Experience & Levels
+</details>
+
+<details>
+
+<summary><strong>Experience &#x26; Levels</strong></summary>
 
 ```yaml
 command-rewards:
@@ -1567,7 +1665,11 @@ command-rewards:
     display-name: "&a+10 Levels"
 ```
 
-#### Items (Vanilla)
+</details>
+
+<details>
+
+<summary><strong>Items (Vanilla)</strong></summary>
 
 ```yaml
 command-rewards:
@@ -1585,7 +1687,11 @@ command-rewards:
     display-name: "&5Flight Kit!"
 ```
 
-#### Titles & Messages
+</details>
+
+<details>
+
+<summary><strong>Titles &#x26; Messages</strong></summary>
 
 ```yaml
 command-rewards:
@@ -1597,7 +1703,11 @@ command-rewards:
     display-name: "&6&l★ JACKPOT ★"
 ```
 
-#### Combined Rewards
+</details>
+
+<details>
+
+<summary><strong>Combined Rewards</strong></summary>
 
 ```yaml
 command-rewards:
@@ -1612,6 +1722,8 @@ command-rewards:
       - "title {player} title {\"text\":\"LEGENDARY REWARD!\",\"color\":\"gold\",\"bold\":true}"
     display-name: "&6&l⚡ LEGENDARY REWARD PACKAGE ⚡"
 ```
+
+</details>
 
 ### Available Placeholders
 
