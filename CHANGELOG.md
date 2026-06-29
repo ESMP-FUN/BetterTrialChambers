@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
 ## [1.6.1] - 2026-06-28
+### Fixed
+- **Trial spawners weren't actually reset on a chamber reset.** Reset cleared each spawner's *tracked players* (so it would drop keys again) and set the cooldown *length*, but never cleared the spawner's **active cooldown end** — so a spawner that a player had already completed stayed stuck in its post-completion cooldown after the chamber reset and wouldn't re-activate. Reset now clears `cooldownEnd` (and the pending spawn timer) so spawners are genuinely ready again — or, when `reset.spawner-cooldown-minutes` is positive, schedules the cooldown to end that many minutes from the reset. (Affected every chamber; most visible on freshly force-reset chambers.)
+
 ### Fixed (GUI)
 - **"Reset Broadcast" toggle rendered raw `&` codes and a bracketed lore.** Its `messages.yml` value used `&`-codes in the name and a multi-line *list* for the lore, but `GuiComponents.toggleItem` wraps the name in the `gui.common.toggle-name-*` template and expects a single-line description — so the name double-processed into raw codes and the list stringified to `[line, line, …]`. The keys now follow the toggle contract (plain name, single-line lore); the helper supplies the colour, Status, and Click lines.
 
