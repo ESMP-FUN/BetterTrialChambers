@@ -68,7 +68,10 @@ class ChamberDetailView(
             handleSnapshotClick(ctx.player, ctx.event.isLeftClick, ctx.event.isShiftClick)
         })
 
-        // Row 4: pause toggle + container loot
+        // Row 4: rename + pause toggle + container loot
+        set(38, VcGuiItem.wrap(createRenameItem()) { ctx ->
+            handleRenameClick(ctx.player)
+        })
         set(40, VcGuiItem.wrap(createPauseToggleItem()) { ctx ->
             handlePauseToggleClick(ctx.player)
         })
@@ -84,6 +87,18 @@ class ChamberDetailView(
     }
 
     // ==================== Item Creators ====================
+
+    private fun createRenameItem(): ItemStack =
+        GuiComponents.infoItem(plugin, Material.NAME_TAG,
+            "gui.chamber-detail.rename-name", "gui.chamber-detail.rename-lore",
+            "name" to chamber.label())
+
+    private fun handleRenameClick(player: Player) {
+        io.github.darkstarworks.trialChamberPro.listeners.ChamberRenameInputListener
+            .awaitInput(player.uniqueId, chamber.id)
+        player.closeInventory()
+        player.sendMessage(plugin.getMessageComponent("gui-rename-input-prompt", "chamber" to chamber.name))
+    }
 
     private fun createChamberInfoItem(): ItemStack {
         val playersInside = chamber.getPlayersInside().size

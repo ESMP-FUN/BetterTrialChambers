@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.6.1] - 2026-06-29
+### Fixed
+- **Trial spawners weren't actually reset on a chamber reset.** Reset cleared each spawner's *tracked players* (so it would drop keys again) and set the cooldown *length*, but never cleared the spawner's **active cooldown end** — so a spawner that a player had already completed stayed stuck in its post-completion cooldown after the chamber reset and wouldn't re-activate. Reset now clears `cooldownEnd` (and the pending spawn timer) so spawners are genuinely ready again — or, when `reset.spawner-cooldown-minutes` is positive, schedules the cooldown to end that many minutes from the reset. (Affected every chamber; most visible on freshly force-reset chambers.)
+
+### Added
+- **Chamber display names.** Chambers can now carry a friendly display name, separate from their internal name (which stays the command/database key). Set one with **`/tcp rename <chamber> <name>`** (`none` clears it) or the new **Rename** button in the chamber GUI (`/tcp menu` → chamber → Rename, then type the name in chat). Display names appear in player-facing announcements (reset warnings, the new clear broadcast) and `/tcp info`, and are exposed on the chamber API so premium modules can use them. An optional **name pool** (`naming.name-pool`, on by default via `naming.auto-assign`) auto-assigns a random unused name to each newly registered or auto-discovered chamber.
+- **Chamber-cleared broadcast.** New opt-in server-wide announcement when a chamber is fully cleared in one run — "*{chamber} has been cleared by {players}!*" — using the display name and the participating players. Off by default (`global.broadcast-chamber-cleared`). Built on the existing `ChamberClearedEvent`.
+
+### Fixed
+- **"Reset Broadcast" toggle rendered raw `&` codes and a bracketed lore.** Its `messages.yml` value used `&`-codes in the name and a multi-line *list* for the lore, but `GuiComponents.toggleItem` wraps the name in the `gui.common.toggle-name-*` template and expects a single-line description — so the name double-processed into raw codes and the list stringified to `[line, line, …]`. The keys now follow the toggle contract (plain name, single-line lore); the helper supplies the colour, Status, and Click lines.
+- **Loot "Edit Amount" GUI: the Minimum buttons did nothing on most items.** The yellow adjust buttons clamped the minimum to the current maximum, so on a freshly-added item (which starts at min 1 / max 1) "Minimum +N" was capped at 1 and appeared dead — as did "Minimum −N" and "Maximum −N" at their floors. The min/max range is now kept coherent both ways: raising the minimum past the maximum carries the maximum up with it, and lowering the maximum below the minimum pulls the minimum down. Every button now responds.
+- **Wave mobs no longer fight each other.** A trial spawner's skeletons would clip other mobs with stray arrows, and the wave dissolved into mob-vs-mob brawls — skeleton 1v1s, the occasional 3v3 — that the player never had to touch. Worse than just looking silly: those self-kills still counted toward wave (and chamber) completion, so a wave could clear itself while the player stood there. Friendly fire and AI target-locking **strictly between two trial-spawner wave mobs** are now suppressed; player-vs-mob combat is untouched, and non-wave entities (wild animals, other plugins' mobs) are left alone. Toggle with `spawner-waves.prevent-infighting` (default `true`). Also keeps premium TCP-MythicTrials tier progression honest, since "clearing" a chamber once again means the players actually did the fighting.
+
 ## [1.6.0] - 2026-06-26
 ### Added
 - **`/tcp setup` — an opt-in, guided settings tour.** TCP ships conservative defaults (auto-discovery and auto-snapshot are off, among others) and most operators never open a YAML file, so genuinely useful settings go unnoticed. `/tcp setup` walks the major settings **one at a time** — each with a plain-English explanation, its current state, and **Enable / Skip / Disable** buttons, plus **← Prev**, **Pause Setup** and **Stop Setup**. Nothing is ever forced and no default is changed. On Paper 1.21.7+ it renders in the native **Dialog** UI; on older or non-Paper servers it falls back automatically to a **clickable-chat** tour with the same content. Includes preset pickers (e.g. how often chambers reset, shown with the current value as a real duration), a clear **CPU-impact** badge on the few settings that warrant one, and a gentle op-join reminder — at most weekly, three times — that stops for good once you run the tour (with a single follow-up nudge if you start but don't finish). Permission: `tcp.admin.setup` (OP).
@@ -218,6 +231,10 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - **`global.reset-require-confirmation`** (default `false`) — park due chambers in a queue and require an operator to release them via `/tcp reset confirm`.
 - **`global.max-concurrent-resets`** / **`global.reset-stagger-seconds`** — concurrency throttle so a batch of simultaneously-due chambers don't all reset at the same instant.
 - **`global.suppress-trial-spawner-spam`** (default `true`) — mute the vanilla `Trial Spawner ... has no detected players` console line.
+
+<details>
+
+<summary><strong>📦 Older releases (v1.4.7 and earlier)</strong> — click to expand</summary>
 
 ## [1.4.7] - 2026-05-19
 ### Added
@@ -1419,9 +1436,9 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ### Added
 - New /tcp generate command enhancements:
   - Support for saved WorldEdit variable regions via plugin-managed we-vars.yml.
-  - Subcommands: value save <name>, value list, value delete <name>.
-  - Generate from named var: /tcp generate value <varName> [chamberName].
-  - Coordinate mode: /tcp generate coords <x1,y1,z1-x2,y2,z2> [world] <chamberName>.
+  - Subcommands: value save `<name>`, value list, value delete `<name>`.
+  - Generate from named var: `/tcp generate value <varName> [chamberName]`.
+  - Coordinate mode: `/tcp generate coords <x1,y1,z1-x2,y2,z2> [world] <chamberName>`.
 - Tab completion for generate subcommands and saved names.
 
 ### Changed
@@ -1462,6 +1479,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.6.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.22...v1.6.0
 [1.5.22]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.21...v1.5.22
 [1.5.21]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.20...v1.5.21

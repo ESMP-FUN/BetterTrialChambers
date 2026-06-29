@@ -1,12 +1,10 @@
-# Event API
+# Events
 
 TrialChamberPro fires Bukkit events at the key points in its lifecycle so other plugins can hook in without forking. All events live under `io.github.darkstarworks.trialChamberPro.api.events` and follow the standard Bukkit `Event` / `Cancellable` contracts — register a listener with `@EventHandler` and you're done.
 
-<div data-gb-custom-block data-tag="hint" data-style="info">
-
+{% hint style="info" %}
 **Threading note**: every TrialChamberPro event reports `isAsynchronous() == !Bukkit.isPrimaryThread()` at construction. On Paper, vault and key-drop events fire from the main/region thread (sync); reset and discovery events fire from coroutine-IO threads (async). On Folia, all of them are dispatched as async events because Folia has no single primary thread. **Listeners that touch the Bukkit API must schedule themselves onto the appropriate region thread, not assume sync delivery.**
-
-</div>
+{% endhint %}
 
 ## Events
 
@@ -14,11 +12,11 @@ TrialChamberPro fires Bukkit events at the key points in its lifecycle so other 
 
 Fired immediately before a chamber begins resetting. Cancel to abort the reset entirely (useful for "don't reset while a player is mid-vault" or replacing the reset with a custom implementation).
 
-| Field | Type | Notes |
-|---|---|---|
-| `chamber` | `Chamber` | The chamber about to reset. |
-| `reason` | `Reason` | `SCHEDULED`, `MANUAL`, or `FORCED`. |
-| `triggeringPlayer` | `Player?` | Null for `SCHEDULED` resets. |
+| Field              | Type      | Notes                               |
+| ------------------ | --------- | ----------------------------------- |
+| `chamber`          | `Chamber` | The chamber about to reset.         |
+| `reason`           | `Reason`  | `SCHEDULED`, `MANUAL`, or `FORCED`. |
+| `triggeringPlayer` | `Player?` | Null for `SCHEDULED` resets.        |
 
 ```kotlin
 @EventHandler
@@ -34,23 +32,23 @@ fun onChamberReset(event: ChamberResetEvent) {
 
 Fired after a chamber has finished resetting. Useful for follow-up announcements, scoreboard updates, or webhook notifications.
 
-| Field | Type | Notes |
-|---|---|---|
-| `chamber` | `Chamber` | The chamber that just reset. |
-| `durationMs` | `Long` | Wall-clock duration of the reset. |
-| `blocksRestored` | `Int` | Blocks the snapshot apply touched. `0` if no snapshot. |
+| Field            | Type      | Notes                                                  |
+| ---------------- | --------- | ------------------------------------------------------ |
+| `chamber`        | `Chamber` | The chamber that just reset.                           |
+| `durationMs`     | `Long`    | Wall-clock duration of the reset.                      |
+| `blocksRestored` | `Int`     | Blocks the snapshot apply touched. `0` if no snapshot. |
 
 ### `VaultOpenedEvent` (not cancellable)
 
 Fired immediately after a player has successfully opened a vault — the loot has been generated and delivered, the key has been consumed.
 
-| Field | Type | Notes |
-|---|---|---|
-| `player` | `Player` | The player who opened the vault. |
-| `vault` | `VaultData` | Database row for the opened vault. |
-| `chamber` | `Chamber?` | Null in the pathological case of a deleted-while-open chamber. |
-| `lootTableName` | `String` | Effective loot table (chamber override resolved against vault default). |
-| `items` | `List<ItemStack>` | Snapshot clones — safe to inspect after the player's inventory mutates. |
+| Field           | Type              | Notes                                                                   |
+| --------------- | ----------------- | ----------------------------------------------------------------------- |
+| `player`        | `Player`          | The player who opened the vault.                                        |
+| `vault`         | `VaultData`       | Database row for the opened vault.                                      |
+| `chamber`       | `Chamber?`        | Null in the pathological case of a deleted-while-open chamber.          |
+| `lootTableName` | `String`          | Effective loot table (chamber override resolved against vault default). |
+| `items`         | `List<ItemStack>` | Snapshot clones — safe to inspect after the player's inventory mutates. |
 
 ```kotlin
 @EventHandler
@@ -64,23 +62,23 @@ fun onVaultOpen(event: VaultOpenedEvent) {
 
 Fired when a trial spawner finishes a wave (all spawned mobs killed). Fires for both registered chambers and wild spawners.
 
-| Field | Type | Notes |
-|---|---|---|
-| `spawnerLocation` | `Location` | Block-aligned location of the spawner. |
-| `chamber` | `Chamber?` | Null for wild spawners. |
-| `ominous` | `Boolean` | True if the wave was ominous-mode at start. |
-| `participants` | `Set<UUID>` | UUIDs credited as participants. |
-| `durationMs` | `Long` | Wall-clock duration of the wave. |
+| Field             | Type        | Notes                                       |
+| ----------------- | ----------- | ------------------------------------------- |
+| `spawnerLocation` | `Location`  | Block-aligned location of the spawner.      |
+| `chamber`         | `Chamber?`  | Null for wild spawners.                     |
+| `ominous`         | `Boolean`   | True if the wave was ominous-mode at start. |
+| `participants`    | `Set<UUID>` | UUIDs credited as participants.             |
+| `durationMs`      | `Long`      | Wall-clock duration of the wave.            |
 
 ### `ChamberClearedEvent` (not cancellable)
 
 Fired once per reset cycle when **every** trial spawner inside a registered chamber has completed a wave — i.e. the chamber was "cleared" in one continuous run, before the next auto- or manual reset. Tracking resets on every `ChamberResetEvent`, so a chamber cleared, reset, and cleared again fires twice. Wild spawners (outside any registered chamber) do not contribute, and paused chambers do not fire.
 
-| Field | Type | Notes |
-|---|---|---|
-| `chamber` | `Chamber` | The chamber that was cleared. |
-| `participants` | `Set<UUID>` | Cumulative participants unioned across every wave in the run. |
-| `durationMs` | `Long` | Wall-clock duration from first wave-start to last wave-complete. |
+| Field          | Type        | Notes                                                            |
+| -------------- | ----------- | ---------------------------------------------------------------- |
+| `chamber`      | `Chamber`   | The chamber that was cleared.                                    |
+| `participants` | `Set<UUID>` | Cumulative participants unioned across every wave in the run.    |
+| `durationMs`   | `Long`      | Wall-clock duration from first wave-start to last wave-complete. |
 
 ```kotlin
 @EventHandler
@@ -94,14 +92,14 @@ This is the signal the premium **Mythic Trials** module uses to bump each partic
 
 ### `ChamberEnteredEvent` / `ChamberExitedEvent` (not cancellable, may fire async)
 
-*Added in v1.5.4.* Fired when a player crosses into / out of the bounding box of a registered, non-paused chamber. Each entry fires exactly one `ChamberEnteredEvent` and is always balanced by exactly one `ChamberExitedEvent` — including on disconnect (`PlayerQuitEvent` fires the exit for any player still inside), so listeners that allocate per-player state on entry can release it reliably. A player moving directly between two chambers fires an exit for the old chamber then an entry for the new one.
+_Added in v1.5.4._ Fired when a player crosses into / out of the bounding box of a registered, non-paused chamber. Each entry fires exactly one `ChamberEnteredEvent` and is always balanced by exactly one `ChamberExitedEvent` — including on disconnect (`PlayerQuitEvent` fires the exit for any player still inside), so listeners that allocate per-player state on entry can release it reliably. A player moving directly between two chambers fires an exit for the old chamber then an entry for the new one.
 
-Both events fire **unconditionally** — unlike entry/exit messages and time tracking, they are *not* gated on the `statistics.*` config flags, so your integration can't be silently disabled by the server admin's stats preferences.
+Both events fire **unconditionally** — unlike entry/exit messages and time tracking, they are _not_ gated on the `statistics.*` config flags, so your integration can't be silently disabled by the server admin's stats preferences.
 
-| Field | Type | Notes |
-|---|---|---|
-| `player` | `Player` | Who crossed the boundary (on exit-via-quit, the player is about to go offline). |
-| `chamber` | `Chamber` | The chamber entered / exited. |
+| Field     | Type      | Notes                                                                           |
+| --------- | --------- | ------------------------------------------------------------------------------- |
+| `player`  | `Player`  | Who crossed the boundary (on exit-via-quit, the player is about to go offline). |
+| `chamber` | `Chamber` | The chamber entered / exited.                                                   |
 
 ```kotlin
 @EventHandler
@@ -113,25 +111,23 @@ fun onChamberEntered(event: ChamberEnteredEvent) {
 }
 ```
 
-<div data-gb-custom-block data-tag="hint" data-style="warning">
-
+{% hint style="warning" %}
 These events fire from a coroutine off the player's region thread. Don't call Bukkit API directly in the handler — schedule onto the entity's thread first (see example). This is the signal TCP-MythicTrials uses to drive its in-chamber HUD.
-
-</div>
+{% endhint %}
 
 ### `ChamberDiscoveredEvent` (cancellable)
 
 Fired by the auto-discovery system after a candidate chamber passes validation but **before** it is registered. Cancel to abort auto-registration (e.g. world-restricted whitelist, custom registration logic).
 
-| Field | Type | Notes |
-|---|---|---|
-| `world` | `World` | World the candidate is in. |
-| `suggestedName` | `String` | `auto_<world>_<x>_<z>`. |
-| `minCorner` | `Location` | Inclusive AABB min corner. |
-| `maxCorner` | `Location` | Inclusive AABB max corner. |
-| `vaultCount` | `Int` | Vault blocks counted inside the AABB. |
-| `spawnerCount` | `Int` | Trial spawner blocks counted inside the AABB. |
-| `method` | `Method` | `CHUNK_LOAD` or `STARTUP_SWEEP`. |
+| Field           | Type       | Notes                                         |
+| --------------- | ---------- | --------------------------------------------- |
+| `world`         | `World`    | World the candidate is in.                    |
+| `suggestedName` | `String`   | `auto_<world>_<x>_<z>`.                       |
+| `minCorner`     | `Location` | Inclusive AABB min corner.                    |
+| `maxCorner`     | `Location` | Inclusive AABB max corner.                    |
+| `vaultCount`    | `Int`      | Vault blocks counted inside the AABB.         |
+| `spawnerCount`  | `Int`      | Trial spawner blocks counted inside the AABB. |
+| `method`        | `Method`   | `CHUNK_LOAD` or `STARTUP_SWEEP`.              |
 
 ```kotlin
 @EventHandler
@@ -148,10 +144,10 @@ Fired after every statistic write reaches the database. Designed as the outbound
 
 Fires asynchronously on the IO dispatcher (writes happen off-thread). If your listener calls Bukkit API, schedule it back onto the main / region thread yourself.
 
-| Field | Type | Notes |
-|---|---|---|
-| `playerUuid` | `UUID` | The player whose stats changed. |
-| `reason` | `Reason` | Why the write happened — see enum below. |
+| Field        | Type     | Notes                                    |
+| ------------ | -------- | ---------------------------------------- |
+| `playerUuid` | `UUID`   | The player whose stats changed.          |
+| `reason`     | `Reason` | Why the write happened — see enum below. |
 
 `Reason` enum: `VAULT_OPENED`, `MOB_KILLED`, `PLAYER_DEATH`, `CHAMBER_TIME_FLUSH`, `CHAMBER_COMPLETED`, `BATCH_FLUSH`.
 
@@ -171,35 +167,35 @@ Fired immediately before the plugin drops a trial key for a wave participant. **
 
 Fires once per participant per wave completion (so a four-player wave produces four events). Cancel to suppress an individual key drop without affecting other participants.
 
-| Field | Type | Notes |
-|---|---|---|
-| `location` | `Location` | The drop location (centered on the spawner, slightly above). |
-| `keyType` | `Material` | `TRIAL_KEY` or `OMINOUS_TRIAL_KEY`. |
-| `ownerUuid` | `UUID` | The participant the key is being dropped for. |
+| Field       | Type       | Notes                                                        |
+| ----------- | ---------- | ------------------------------------------------------------ |
+| `location`  | `Location` | The drop location (centered on the spawner, slightly above). |
+| `keyType`   | `Material` | `TRIAL_KEY` or `OMINOUS_TRIAL_KEY`.                          |
+| `ownerUuid` | `UUID`     | The participant the key is being dropped for.                |
 
 ### `PreVaultOpenEvent` (cancellable)
 
 Fired just **before** a vault open is committed — after the cooldown/key checks pass but before loot is generated and the key consumed. Cancel to abort the open (the key is not consumed and the player gets no plugin message — a cancelling listener owns the feedback). A listener may also redirect the roll by setting `lootTableOverride` to a loot-table id. May fire async.
 
-| Field | Type | Notes |
-|---|---|---|
-| `player` | `Player` | The opener. |
-| `vault` | `VaultData` | The vault being opened. |
-| `chamber` | `Chamber?` | The owning chamber, or null. |
-| `vaultType` | `VaultType` | `NORMAL` or `OMINOUS`. |
+| Field               | Type                | Notes                                                      |
+| ------------------- | ------------------- | ---------------------------------------------------------- |
+| `player`            | `Player`            | The opener.                                                |
+| `vault`             | `VaultData`         | The vault being opened.                                    |
+| `chamber`           | `Chamber?`          | The owning chamber, or null.                               |
+| `vaultType`         | `VaultType`         | `NORMAL` or `OMINOUS`.                                     |
 | `lootTableOverride` | `String?` (mutable) | Set non-null to roll a different loot table for this open. |
 
 ### `ChamberMobSpawnedEvent` (not cancellable, may fire async)
 
 Fired right after a mob spawns from a trial spawner inside a registered chamber. **Not cancellable** — the entity already exists; remove or re-tag it in your handler if needed. The primary signal the premium MythicTrials module uses to scale mobs and tune the spawner.
 
-| Field | Type | Notes |
-|---|---|---|
-| `entity` | `Entity` | The freshly spawned mob. |
-| `spawnerLocation` | `Location` | The trial spawner that produced it. |
-| `chamber` | `Chamber?` | The owning chamber (null for wild spawners). |
-| `isOminous` | `Boolean` | Whether the spawner is ominous. |
-| `providerId` | `String` | The mob provider that supplied the mob (`vanilla`, `mythicmobs`, …). |
+| Field             | Type       | Notes                                                                |
+| ----------------- | ---------- | -------------------------------------------------------------------- |
+| `entity`          | `Entity`   | The freshly spawned mob.                                             |
+| `spawnerLocation` | `Location` | The trial spawner that produced it.                                  |
+| `chamber`         | `Chamber?` | The owning chamber (null for wild spawners).                         |
+| `isOminous`       | `Boolean`  | Whether the spawner is ominous.                                      |
+| `providerId`      | `String`   | The mob provider that supplied the mob (`vanilla`, `mythicmobs`, …). |
 
 ## Registering listeners
 
