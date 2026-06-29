@@ -61,8 +61,12 @@ class MobInfightingListener(private val plugin: TrialChamberPro) : Listener {
         if (plugin.spawnerWaveManager.isWaveMob(event.entity) &&
             plugin.spawnerWaveManager.isWaveMob(target)
         ) {
-            // Clear the target so the mob goes back to hunting players.
-            event.target = null
+            // Cancel rather than null the target. Per EntityTargetEvent's contract,
+            // cancelling makes the mob KEEP its original target, whereas setTarget(null)
+            // resets it to target-less (which would just let it re-acquire the wave mob
+            // next AI tick). Cancelling keeps a skeleton locked on the player it was
+            // already aiming at.
+            event.isCancelled = true
         }
     }
 }
