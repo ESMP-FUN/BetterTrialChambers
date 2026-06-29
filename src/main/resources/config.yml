@@ -65,21 +65,45 @@ naming:
   # are taken, new chambers fall back to their internal name until you add more or
   # rename manually. Add your own — these are just a starting set.
   name-pool:
-    - Valdora
+    - Bastion
     - Ashfall Hollow
+    - Solasta
     - The Gilded Vault
+    - Gloomhaven
     - Cinderkeep
+    - Citadel
     - Hollowreach
+    - Amalur
     - Mournstone
+    - Lumina
     - The Copper Crypt
+    - Fable
     - Ravenshold
+    - Anodyne
     - Duskbarrow
+    - Kena
     - Thorngate
+    - Alaloth
     - The Sunken Atrium
+    - Chrono
     - Emberforge
+    - Salt and Sanctuary
     - Greywarden
+    - Sundered Realm
     - The Tuff Bastion
+    - Tormentum
     - Vexspire
+    - Demeo
+    - Gauntlet
+    - Myst
+    - Quern
+    - Toren
+    - Vane
+    - Praey
+    - Pathless
+    - Colossus
+    - Noita
+    - Immortals
 
 # Generation settings
 generation:
