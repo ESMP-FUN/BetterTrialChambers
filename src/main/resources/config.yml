@@ -21,7 +21,7 @@ global:
   reset-complete-alert: true # Set to false to suppress the server-wide broadcast when any chamber finishes resetting
   # Server-wide broadcast when a chamber is fully cleared (every trial spawner in it
   # finished its wave in one run). Uses the chamber's display name + the players who
-  # took part — e.g. "Valdora has been cleared by Steve, Alex!". Off by default.
+  # took part — e.g. "Bastion has been cleared by Steve, Alex!". Off by default.
   # (Premium TCP-MythicTrials layers a richer "at difficulty N" version on top.)
   broadcast-chamber-cleared: false
   teleport-players-on-reset: true
@@ -65,21 +65,45 @@ naming:
   # are taken, new chambers fall back to their internal name until you add more or
   # rename manually. Add your own — these are just a starting set.
   name-pool:
-    - Valdora
+    - Bastion
     - Ashfall Hollow
+    - Solasta
     - The Gilded Vault
+    - Gloomhaven
     - Cinderkeep
+    - Citadel
     - Hollowreach
+    - Amalur
     - Mournstone
+    - Lumina
     - The Copper Crypt
+    - Fable
     - Ravenshold
+    - Anodyne
     - Duskbarrow
+    - Kena
     - Thorngate
+    - Alaloth
     - The Sunken Atrium
+    - Chrono
     - Emberforge
+    - Salt and Sanctuary
     - Greywarden
+    - Sundered Realm
     - The Tuff Bastion
+    - Tormentum
     - Vexspire
+    - Demeo
+    - Gauntlet
+    - Myst
+    - Quern
+    - Toren
+    - Vane
+    - Praey
+    - Pathless
+    - Colossus
+    - Noita
+    - Immortals
 
 # Generation settings
 generation:
