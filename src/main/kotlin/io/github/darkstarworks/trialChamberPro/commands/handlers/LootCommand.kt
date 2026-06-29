@@ -169,8 +169,8 @@ class LootCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
             }
 
             sender.sendMessage(plugin.getMessageComponent("loot-info-header", "chamber" to chamberName))
-            val normalTable = chamber.normalLootTable ?: plugin.getMessage("loot-info-default")
-            val ominousTable = chamber.ominousLootTable ?: plugin.getMessage("loot-info-default")
+            val normalTable = chamber.normalLootTable ?: plugin.rawMessage("loot-info-default")
+            val ominousTable = chamber.ominousLootTable ?: plugin.rawMessage("loot-info-default")
             sender.sendMessage(plugin.getMessageComponent("loot-info-normal", "table" to normalTable))
             sender.sendMessage(plugin.getMessageComponent("loot-info-ominous", "table" to ominousTable))
         }
