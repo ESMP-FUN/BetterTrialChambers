@@ -4,18 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [1.6.1] - 2026-06-28
+## [1.6.1] - 2026-06-29
 ### Fixed
 - **Trial spawners weren't actually reset on a chamber reset.** Reset cleared each spawner's *tracked players* (so it would drop keys again) and set the cooldown *length*, but never cleared the spawner's **active cooldown end** — so a spawner that a player had already completed stayed stuck in its post-completion cooldown after the chamber reset and wouldn't re-activate. Reset now clears `cooldownEnd` (and the pending spawn timer) so spawners are genuinely ready again — or, when `reset.spawner-cooldown-minutes` is positive, schedules the cooldown to end that many minutes from the reset. (Affected every chamber; most visible on freshly force-reset chambers.)
-
-### Fixed (GUI)
-- **"Reset Broadcast" toggle rendered raw `&` codes and a bracketed lore.** Its `messages.yml` value used `&`-codes in the name and a multi-line *list* for the lore, but `GuiComponents.toggleItem` wraps the name in the `gui.common.toggle-name-*` template and expects a single-line description — so the name double-processed into raw codes and the list stringified to `[line, line, …]`. The keys now follow the toggle contract (plain name, single-line lore); the helper supplies the colour, Status, and Click lines.
 
 ### Added
 - **Chamber display names.** Chambers can now carry a friendly display name, separate from their internal name (which stays the command/database key). Set one with **`/tcp rename <chamber> <name>`** (`none` clears it) or the new **Rename** button in the chamber GUI (`/tcp menu` → chamber → Rename, then type the name in chat). Display names appear in player-facing announcements (reset warnings, the new clear broadcast) and `/tcp info`, and are exposed on the chamber API so premium modules can use them. An optional **name pool** (`naming.name-pool`, on by default via `naming.auto-assign`) auto-assigns a random unused name to each newly registered or auto-discovered chamber.
 - **Chamber-cleared broadcast.** New opt-in server-wide announcement when a chamber is fully cleared in one run — "*{chamber} has been cleared by {players}!*" — using the display name and the participating players. Off by default (`global.broadcast-chamber-cleared`). Built on the existing `ChamberClearedEvent`.
 
 ### Fixed
+- **"Reset Broadcast" toggle rendered raw `&` codes and a bracketed lore.** Its `messages.yml` value used `&`-codes in the name and a multi-line *list* for the lore, but `GuiComponents.toggleItem` wraps the name in the `gui.common.toggle-name-*` template and expects a single-line description — so the name double-processed into raw codes and the list stringified to `[line, line, …]`. The keys now follow the toggle contract (plain name, single-line lore); the helper supplies the colour, Status, and Click lines.
 - **Loot "Edit Amount" GUI: the Minimum buttons did nothing on most items.** The yellow adjust buttons clamped the minimum to the current maximum, so on a freshly-added item (which starts at min 1 / max 1) "Minimum +N" was capped at 1 and appeared dead — as did "Minimum −N" and "Maximum −N" at their floors. The min/max range is now kept coherent both ways: raising the minimum past the maximum carries the maximum up with it, and lowering the maximum below the minimum pulls the minimum down. Every button now responds.
 - **Wave mobs no longer fight each other.** A trial spawner's skeletons would clip other mobs with stray arrows, and the wave dissolved into mob-vs-mob brawls — skeleton 1v1s, the occasional 3v3 — that the player never had to touch. Worse than just looking silly: those self-kills still counted toward wave (and chamber) completion, so a wave could clear itself while the player stood there. Friendly fire and AI target-locking **strictly between two trial-spawner wave mobs** are now suppressed; player-vs-mob combat is untouched, and non-wave entities (wild animals, other plugins' mobs) are left alone. Toggle with `spawner-waves.prevent-infighting` (default `true`). Also keeps premium TCP-MythicTrials tier progression honest, since "clearing" a chamber once again means the players actually did the fighting.
 
@@ -1437,9 +1435,9 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ### Added
 - New /tcp generate command enhancements:
   - Support for saved WorldEdit variable regions via plugin-managed we-vars.yml.
-  - Subcommands: value save <name>, value list, value delete <name>.
-  - Generate from named var: /tcp generate value <varName> [chamberName].
-  - Coordinate mode: /tcp generate coords <x1,y1,z1-x2,y2,z2> [world] <chamberName>.
+  - Subcommands: value save `<name>`, value list, value delete `<name>`.
+  - Generate from named var: `/tcp generate value <varName> [chamberName]`.
+  - Coordinate mode: `/tcp generate coords <x1,y1,z1-x2,y2,z2> [world] <chamberName>`.
 - Tab completion for generate subcommands and saved names.
 
 ### Changed
@@ -1480,8 +1478,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
-</details>
-
+[1.6.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.22...v1.6.0
 [1.5.22]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.21...v1.5.22
 [1.5.21]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.20...v1.5.21
