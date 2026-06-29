@@ -21,7 +21,7 @@ global:
   reset-complete-alert: true # Set to false to suppress the server-wide broadcast when any chamber finishes resetting
   # Server-wide broadcast when a chamber is fully cleared (every trial spawner in it
   # finished its wave in one run). Uses the chamber's display name + the players who
-  # took part — e.g. "Valdora has been cleared by Steve, Alex!". Off by default.
+  # took part — e.g. "Bastion has been cleared by Steve, Alex!". Off by default.
   # (Premium TCP-MythicTrials layers a richer "at difficulty N" version on top.)
   broadcast-chamber-cleared: false
   teleport-players-on-reset: true
