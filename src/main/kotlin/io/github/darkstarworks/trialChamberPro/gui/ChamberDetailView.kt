@@ -147,7 +147,7 @@ class ChamberDetailView(
         val normalOverride = chamber.normalLootTable
         val ominousOverride = chamber.ominousLootTable
         val hasOverrides = normalOverride != null || ominousOverride != null
-        val defaultTag = plugin.getMessage("gui.chamber-detail.overrides-default-tag")
+        val defaultTag = plugin.rawMessage("gui.chamber-detail.overrides-default-tag")
         return GuiComponents.infoItem(
             plugin, if (hasOverrides) Material.ENCHANTED_BOOK else Material.BOOK,
             "gui.chamber-detail.overrides-name", "gui.chamber-detail.overrides-lore",
@@ -159,7 +159,7 @@ class ChamberDetailView(
     private fun createSettingsItem(): ItemStack {
         val exitLoc = chamber.getExitLocation()
         val exitStr = exitLoc?.let { "${it.blockX}, ${it.blockY}, ${it.blockZ}" }
-            ?: plugin.getMessage("gui.chamber-detail.exit-not-set")
+            ?: plugin.rawMessage("gui.chamber-detail.exit-not-set")
         return GuiComponents.infoItem(
             plugin, Material.COMPARATOR,
             "gui.chamber-detail.settings-name", "gui.chamber-detail.settings-lore",
@@ -195,7 +195,7 @@ class ChamberDetailView(
     private fun createResetChamberItem(): ItemStack {
         val playersInside = chamber.getPlayersInside().size
         val lastReset = chamber.lastReset?.let { formatElapsedTime(System.currentTimeMillis() - it) }
-            ?: plugin.getMessage("gui.chamber-detail.last-reset-never")
+            ?: plugin.rawMessage("gui.chamber-detail.last-reset-never")
         return GuiComponents.infoItem(
             plugin, Material.CLOCK,
             "gui.chamber-detail.reset-name", "gui.chamber-detail.reset-lore",
@@ -207,7 +207,7 @@ class ChamberDetailView(
         val playersInside = chamber.getPlayersInside().size
         val exitLoc = chamber.getExitLocation()
         val exitStr = exitLoc?.let { "${it.blockX}, ${it.blockY}, ${it.blockZ}" }
-            ?: plugin.getMessage("gui.chamber-detail.exit-players-default")
+            ?: plugin.rawMessage("gui.chamber-detail.exit-players-default")
         return GuiComponents.infoItem(
             plugin, Material.OAK_DOOR,
             "gui.chamber-detail.exit-players-name", "gui.chamber-detail.exit-players-lore",
@@ -451,7 +451,7 @@ class ChamberDetailView(
     }
 
     private fun formatDuration(milliseconds: Long): String {
-        val nowToken = plugin.getMessage("gui.chamber-detail.duration-now")
+        val nowToken = plugin.rawMessage("gui.chamber-detail.duration-now")
         if (milliseconds <= 0) return nowToken
         val seconds = milliseconds / 1000
         val days = seconds / 86400
@@ -483,6 +483,6 @@ class ChamberDetailView(
             minutes > 0 -> minutes
             else -> seconds
         }
-        return plugin.getMessage(key, "n" to n)
+        return plugin.rawMessage(key, "n" to n)
     }
 }

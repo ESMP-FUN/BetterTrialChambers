@@ -874,6 +874,28 @@ class TrialChamberPro : JavaPlugin() {
         loadedMessages().getString(key, default) ?: default
 
     /**
+     * Raw messages.yml string with `{placeholder}` substitution applied, but **WITHOUT the chat
+     * prefix and WITHOUT parsing** to a Component or legacy section codes.
+     *
+     * This is the correct tool for a value that is itself substituted into **another** message's
+     * `{placeholder}` (e.g. the "exit" value injected into `info-exit: "Exit: {exit}"`, or a
+     * toggle's label injected into `toggle-name-enabled`). The OUTER [getMessage] /
+     * [getMessageComponent] / [getGuiText] then parses the combined string exactly once.
+     *
+     * **Do NOT use [getMessage] / [getMessageComponent] for nested sub-values** — those add the
+     * chat prefix and pre-render to legacy `§` section codes, which the outer parse (MiniMessage +
+     * `&` only) cannot re-read. The result is visible raw codes and an embedded "[TCP]" prefix in
+     * the middle of the line. This was a recurring bug class; [rawMessage] exists to kill it.
+     */
+    fun rawMessage(key: String, vararg replacements: Pair<String, Any?>): String {
+        var message = loadedMessages().getString(key, "<missing: $key>") ?: "<missing: $key>"
+        replacements.forEach { (placeholder, value) ->
+            message = message.replace("{$placeholder}", value?.toString() ?: "null")
+        }
+        return message
+    }
+
+    /**
      * Translatable "Normal" / "Ominous" label for the `{type}` placeholder — from the
      * `vault-type-normal` / `vault-type-ominous` message keys (English fallback). Used for vault
      * and trial-key types so the word can be localized everywhere it's shown.

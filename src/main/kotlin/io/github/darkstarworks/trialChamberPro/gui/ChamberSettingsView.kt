@@ -113,7 +113,7 @@ class ChamberSettingsView(
 
     private fun createResetIntervalItem(): ItemStack {
         val labelKey = RESET_INTERVALS.find { it.first == chamber.resetInterval }?.second
-        val value = labelKey?.let { plugin.getMessage(it) } ?: formatDuration(chamber.resetInterval * 1000)
+        val value = labelKey?.let { plugin.rawMessage(it) } ?: formatDuration(chamber.resetInterval * 1000)
         return GuiComponents.infoItem(plugin, Material.CLOCK,
             "gui.chamber-settings.reset-interval-name", "gui.chamber-settings.reset-interval-lore",
             "value" to value)
@@ -122,21 +122,21 @@ class ChamberSettingsView(
     private fun createExitLocationItem(): ItemStack {
         val exitLoc = chamber.getExitLocation()
         val value = exitLoc?.let { "${it.blockX}, ${it.blockY}, ${it.blockZ}" }
-            ?: plugin.getMessage("gui.chamber-settings.exit-not-set")
+            ?: plugin.rawMessage("gui.chamber-settings.exit-not-set")
         return GuiComponents.infoItem(plugin, Material.OAK_DOOR,
             "gui.chamber-settings.exit-name", "gui.chamber-settings.exit-lore",
             "value" to value)
     }
 
     private fun createNormalLootOverrideItem(): ItemStack {
-        val value = chamber.normalLootTable ?: plugin.getMessage("gui.chamber-settings.override-default")
+        val value = chamber.normalLootTable ?: plugin.rawMessage("gui.chamber-settings.override-default")
         return GuiComponents.infoItem(plugin, Material.GREEN_WOOL,
             "gui.chamber-settings.normal-override-name", "gui.chamber-settings.normal-override-lore",
             "value" to value)
     }
 
     private fun createOminousLootOverrideItem(): ItemStack {
-        val value = chamber.ominousLootTable ?: plugin.getMessage("gui.chamber-settings.override-default")
+        val value = chamber.ominousLootTable ?: plugin.rawMessage("gui.chamber-settings.override-default")
         return GuiComponents.infoItem(plugin, Material.PURPLE_WOOL,
             "gui.chamber-settings.ominous-override-name", "gui.chamber-settings.ominous-override-lore",
             "value" to value)
@@ -151,9 +151,9 @@ class ChamberSettingsView(
 
     private fun createSpawnerCooldownItem(): ItemStack {
         val labelKey = SPAWNER_COOLDOWNS.find { it.first == chamber.spawnerCooldownMinutes }?.second
-        val value = labelKey?.let { plugin.getMessage(it) }
+        val value = labelKey?.let { plugin.rawMessage(it) }
             ?: chamber.spawnerCooldownMinutes?.let { "${it}m" }
-            ?: plugin.getMessage("gui.chamber-settings.spawner-cd-global")
+            ?: plugin.rawMessage("gui.chamber-settings.spawner-cd-global")
         return GuiComponents.infoItem(plugin, Material.SPAWNER,
             "gui.chamber-settings.spawner-cd-name", "gui.chamber-settings.spawner-cd-lore",
             "value" to value)
@@ -178,7 +178,7 @@ class ChamberSettingsView(
             if (direction > 0) 0 else RESET_INTERVALS.lastIndex
         } else (currentIndex + direction).mod(RESET_INTERVALS.size)
         val (newInterval, newLabelKey) = RESET_INTERVALS[newIndex]
-        val newName = plugin.getMessage(newLabelKey)
+        val newName = plugin.rawMessage(newLabelKey)
 
         plugin.launchAsync {
             val success = plugin.chamberManager.updateResetInterval(chamber.id, newInterval)
@@ -263,7 +263,7 @@ class ChamberSettingsView(
             if (direction > 0) 0 else SPAWNER_COOLDOWNS.lastIndex
         } else (currentIndex + direction).mod(SPAWNER_COOLDOWNS.size)
         val (newCooldown, newLabelKey) = SPAWNER_COOLDOWNS[newIndex]
-        val newName = plugin.getMessage(newLabelKey)
+        val newName = plugin.rawMessage(newLabelKey)
 
         plugin.launchAsync {
             val success = plugin.chamberManager.updateSpawnerCooldown(chamber.id, newCooldown)
