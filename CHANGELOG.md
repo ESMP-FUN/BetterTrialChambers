@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
 ## [1.6.1] - 2026-06-28
+### Fixed (GUI)
+- **"Reset Broadcast" toggle rendered raw `&` codes and a bracketed lore.** Its `messages.yml` value used `&`-codes in the name and a multi-line *list* for the lore, but `GuiComponents.toggleItem` wraps the name in the `gui.common.toggle-name-*` template and expects a single-line description — so the name double-processed into raw codes and the list stringified to `[line, line, …]`. The keys now follow the toggle contract (plain name, single-line lore); the helper supplies the colour, Status, and Click lines.
+
 ### Added
 - **Chamber display names.** Chambers can now carry a friendly display name, separate from their internal name (which stays the command/database key). Set one with **`/tcp rename <chamber> <name>`** (`none` clears it) or the new **Rename** button in the chamber GUI (`/tcp menu` → chamber → Rename, then type the name in chat). Display names appear in player-facing announcements (reset warnings, the new clear broadcast) and `/tcp info`, and are exposed on the chamber API so premium modules can use them. An optional **name pool** (`naming.name-pool`, on by default via `naming.auto-assign`) auto-assigns a random unused name to each newly registered or auto-discovered chamber.
 - **Chamber-cleared broadcast.** New opt-in server-wide announcement when a chamber is fully cleared in one run — "*{chamber} has been cleared by {players}!*" — using the display name and the participating players. Off by default (`global.broadcast-chamber-cleared`). Built on the existing `ChamberClearedEvent`.
