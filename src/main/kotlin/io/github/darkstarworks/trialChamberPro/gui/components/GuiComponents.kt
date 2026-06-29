@@ -116,8 +116,11 @@ object GuiComponents {
         descKey: String
     ): ItemStack {
         val material = if (enabled) Material.LIME_WOOL else Material.RED_WOOL
-        val label = plugin.getMessage(labelKey)
-        val description = plugin.getMessage(descKey)
+        // rawMessage (not getMessage): label/description are nested into the toggle-name/lore
+        // templates' {label}/{description} placeholders and parsed once by getGuiText/getGuiLore.
+        // getMessage would pre-render them to legacy section codes that the outer parse can't read.
+        val label = plugin.rawMessage(labelKey)
+        val description = plugin.rawMessage(descKey)
         val nameKey = if (enabled) "gui.common.toggle-name-enabled" else "gui.common.toggle-name-disabled"
         val loreKey = if (enabled) "gui.common.toggle-lore-enabled" else "gui.common.toggle-lore-disabled"
         return ItemStack(material).apply {
@@ -156,7 +159,7 @@ object GuiComponents {
         destinationKey: String,
         onClick: (io.github.darkstarworks.trialChamberPro.gui.framework.ClickContext) -> Unit
     ): io.github.darkstarworks.trialChamberPro.gui.framework.VcGuiItem {
-        val destination = plugin.getMessage(destinationKey)
+        val destination = plugin.rawMessage(destinationKey)  // nested into back-button's {destination}
         val stack = ItemStack(Material.ARROW).apply {
             itemMeta = itemMeta?.apply {
                 displayName(plugin.getGuiText("gui.common.back-button", "destination" to destination))
