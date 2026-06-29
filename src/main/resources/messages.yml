@@ -1073,12 +1073,12 @@ gui:
     spawner-cd-15m: "15 minutes"
     spawner-cd-30m: "30 minutes"
     spawner-cd-1h: "1 hour"
-    broadcast-reset-name: "&e&lReset Broadcast"
-    broadcast-reset-lore:
-      - "&7Send a server-wide message when"
-      - "&7this chamber finishes resetting"
-      - ""
-      - "&eClick to toggle"
+    # NOTE: this is rendered via GuiComponents.toggleItem, which wraps the name in
+    # the gui.common.toggle-name-* template (&a&l/&c&l) and appends Status + Click
+    # lines from gui.common.toggle-lore-*. So the name must be PLAIN text and the
+    # lore a SINGLE-LINE string (a list or embedded &-codes here render raw).
+    broadcast-reset-name: "Reset Broadcast"
+    broadcast-reset-lore: "Send a server-wide message when this chamber finishes resetting"
     broadcast-reset-overridden-lore:
       - "&7Send a server-wide message when"
       - "&7this chamber finishes resetting"
