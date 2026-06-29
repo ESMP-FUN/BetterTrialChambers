@@ -389,6 +389,10 @@ class TrialChamberPro : JavaPlugin() {
                         this@TrialChamberPro
                     )
                     server.pluginManager.registerEvents(
+                        io.github.darkstarworks.trialChamberPro.listeners.MobInfightingListener(this@TrialChamberPro),
+                        this@TrialChamberPro
+                    )
+                    server.pluginManager.registerEvents(
                         SpectatorListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
