@@ -98,12 +98,15 @@ class ChamberManager(private val plugin: TrialChamberPro) {
 
         val createdAt = System.currentTimeMillis()
 
+        // v1.6.1: optionally assign a friendly display name from the configured pool.
+        val autoName = pickAutoDisplayName()
+
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
                     """
-                    INSERT INTO chambers (name, world, min_x, min_y, min_z, max_x, max_y, max_z, reset_interval, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO chambers (name, world, min_x, min_y, min_z, max_x, max_y, max_z, reset_interval, created_at, display_name)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """.trimIndent(),
                     java.sql.Statement.RETURN_GENERATED_KEYS
                 ).use { stmt ->
@@ -117,6 +120,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
                     stmt.setInt(8, maxZ)
                     stmt.setLong(9, resetInterval)
                     stmt.setLong(10, createdAt)
+                    stmt.setString(11, autoName)
 
                     stmt.executeUpdate()
 
@@ -134,7 +138,8 @@ class ChamberManager(private val plugin: TrialChamberPro) {
                             maxY = maxY,
                             maxZ = maxZ,
                             resetInterval = resetInterval,
-                            createdAt = createdAt
+                            createdAt = createdAt,
+                            displayName = autoName
                         )
 
                         // Cache the chamber
@@ -596,6 +601,10 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             rs.getBoolean("broadcast_reset_complete")
         } catch (_: Exception) { true }
 
+        val displayName = try {
+            rs.getString("display_name")
+        } catch (_: Exception) { null }
+
         return Chamber(
             id = rs.getInt("id"),
             name = rs.getString("name"),
@@ -622,7 +631,8 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             customMobIdsNormal = customNormal,
             customMobIdsOminous = customOminous,
             isPaused = isPaused,
-            broadcastResetComplete = broadcastResetComplete
+            broadcastResetComplete = broadcastResetComplete,
+            displayName = displayName
         )
     }
 
@@ -811,6 +821,54 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             plugin.logger.severe("Failed to set broadcast_reset_complete: ${e.message}")
             false
         }
+    }
+
+    /**
+     * Sets (or clears) a chamber's friendly display name (v1.6.1). Pass null/blank to
+     * clear it, reverting to the internal name. Refreshes the in-memory cache.
+     *
+     * @param chamberId The chamber ID
+     * @param displayName The new display name, or null/blank to clear
+     * @return True if the update was applied
+     */
+    suspend fun setDisplayName(chamberId: Int, displayName: String?): Boolean = withContext(Dispatchers.IO) {
+        val clean = displayName?.trim()?.takeIf { it.isNotEmpty() }
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement("UPDATE chambers SET display_name = ? WHERE id = ?").use { stmt ->
+                    stmt.setString(1, clean)
+                    stmt.setInt(2, chamberId)
+                    val updated = stmt.executeUpdate() > 0
+                    if (updated) {
+                        val chamber = chamberCache.values.find { it.id == chamberId }
+                        if (chamber != null) {
+                            val refreshed = loadChamberFromDb(chamber.name)
+                            if (refreshed != null) {
+                                chamberCache[chamber.name] = refreshed
+                                updateCacheExpiry(chamber.name)
+                            }
+                        }
+                    }
+                    updated
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.severe("Failed to set display_name: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Picks a random unused display name from the configured `naming.name-pool`, or null
+     * when auto-naming is disabled, the pool is empty, or every pool name is already taken.
+     * "Used" is compared case-insensitively against current chambers' display names.
+     */
+    private fun pickAutoDisplayName(): String? {
+        if (!plugin.config.getBoolean("naming.auto-assign", true)) return null
+        val pool = plugin.config.getStringList("naming.name-pool")
+        if (pool.isEmpty()) return null
+        val used = chamberCache.values.mapNotNull { it.displayName?.lowercase() }.toSet()
+        return pool.filter { it.lowercase() !in used }.randomOrNull()
     }
 
     /**
