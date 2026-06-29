@@ -65,6 +65,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             "give" -> giveHandler.execute(sender, args)
             "pause" -> handlePause(sender, args)
             "resume" -> handleResume(sender, args)
+            "rename" -> handleRename(sender, args)
             "container", "containers" -> containerHandler.execute(sender, args)
             "claims" -> handleClaims(sender, args)
             "setup" -> setupHandler.execute(sender, args)
@@ -96,6 +97,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         sender.sendMessage(plugin.getMessageComponent("help-reset"))
         sender.sendMessage(plugin.getMessageComponent("help-pause"))
         sender.sendMessage(plugin.getMessageComponent("help-resume"))
+        sender.sendMessage(plugin.getMessageComponent("help-rename"))
         sender.sendMessage(plugin.getMessageComponent("help-delete"))
         // Loot & mobs
         sender.sendMessage(plugin.getMessageComponent("help-loot"))
@@ -615,6 +617,9 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             }
 
             sender.sendMessage(plugin.getMessageComponent("info-header", "chamber" to chamber.name))
+            chamber.displayName?.let {
+                sender.sendMessage(plugin.getMessageComponent("info-display-name", "name" to it))
+            }
             sender.sendMessage(plugin.getMessageComponent("info-world", "world" to chamber.world))
             sender.sendMessage(plugin.getMessageComponent("info-bounds",
                 "minX" to chamber.minX, "minY" to chamber.minY, "minZ" to chamber.minZ,
@@ -782,6 +787,40 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 sender.sendMessage(plugin.getMessageComponent("chamber-resumed", "chamber" to chamberName))
             } else {
                 sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
+            }
+        }
+    }
+
+    private fun handleRename(sender: CommandSender, args: Array<out String>) {
+        if (!sender.hasPermission("tcp.admin.create")) {
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
+            return
+        }
+        if (args.size < 3) {
+            sender.sendMessage(plugin.getMessageComponent("usage-rename"))
+            return
+        }
+        val chamberName = args[1]
+        // Everything after the chamber name is the display name. "none" / "reset" / "-"
+        // clears it, reverting to the internal name.
+        val rest = args.drop(2).joinToString(" ").trim()
+        val newName = if (rest.equals("none", true) || rest.equals("reset", true) || rest == "-") null else rest
+        plugin.launchAsync {
+            val chamber = plugin.chamberManager.getChamber(chamberName)
+            if (chamber == null) {
+                sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
+                return@launchAsync
+            }
+            val success = plugin.chamberManager.setDisplayName(chamber.id, newName)
+            if (!success) {
+                sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
+                return@launchAsync
+            }
+            if (newName == null) {
+                sender.sendMessage(plugin.getMessageComponent("chamber-rename-cleared", "chamber" to chamberName))
+            } else {
+                sender.sendMessage(plugin.getMessageComponent("chamber-renamed",
+                    "chamber" to chamberName, "name" to newName))
             }
         }
     }

@@ -38,6 +38,9 @@ import java.io.File
  *   The record stays in the database for historical reference and can be resumed at any time.
  * @property broadcastResetComplete When true, the server-wide "chamber X has reset" broadcast is sent after
  *   each reset. Overridden to false by the global `global.reset-complete-alert: false` config flag.
+ * @property displayName Optional friendly name shown in player-facing announcements (reset/clear broadcasts,
+ *   `/tcp info`). The [name] remains the unique identifier used in commands and the database. Null/blank =
+ *   fall back to [name]. Use [label] to resolve the effective name.
  */
 data class Chamber(
     val id: Int,
@@ -65,8 +68,16 @@ data class Chamber(
     val customMobIdsNormal: List<String> = emptyList(),
     val customMobIdsOminous: List<String> = emptyList(),
     val isPaused: Boolean = false,
-    val broadcastResetComplete: Boolean = true
+    val broadcastResetComplete: Boolean = true,
+    val displayName: String? = null
 ) {
+    /**
+     * The effective player-facing name: the [displayName] if set (non-blank), otherwise
+     * the internal [name]. Use this everywhere a chamber is shown to players; use [name]
+     * for command lookups and database keys.
+     */
+    fun label(): String = displayName?.takeIf { it.isNotBlank() } ?: name
+
     /**
      * Gets the loot table override for a specific vault type.
      * Returns null if no override is set (use default).

@@ -1,4 +1,4 @@
-# 🌀 spawner\_presets.yml
+# spawner\_presets.yml
 
 **Added in v1.3.1.**
 
@@ -12,7 +12,7 @@ Named templates for `minecraft:trial_spawner` items. Each preset can be handed o
 
 ---
 
-## 📋 How it works
+## How it works
 
 1. You (or a datapack author) define mob configurations in a Minecraft datapack — see the [Trial Spawner wiki](https://minecraft.wiki/w/Trial_Spawner#Spawner_configuration) for the JSON format.
 2. You list named presets in `spawner_presets.yml`, each pointing at one of those datapack configs.
@@ -28,7 +28,7 @@ The plugin does **not** generate the datapack for you — that's the part Mojang
 
 ---
 
-## 🛠️ File structure
+## File structure
 
 ```yaml
 presets:
@@ -54,7 +54,7 @@ presets:
 
 ---
 
-## 🔧 Field reference
+## Field reference
 
 | Field | Type | Default | Description |
 |---|---|---|---|
@@ -85,7 +85,7 @@ At least one of `normal-config` or `ominous-config` must be set, or the preset i
 
 ---
 
-## 📝 Using the command
+## Using the command
 
 ```
 /tcp give <preset> [player] [amount]
@@ -111,7 +111,7 @@ If the player's inventory is full, overflow drops at their feet rather than vani
 
 ---
 
-## 🔄 Reloading
+## Reloading
 
 After editing `spawner_presets.yml`, run:
 
@@ -123,7 +123,7 @@ The preset map is hot-swapped atomically; in-flight `/tcp give` calls are not af
 
 ---
 
-## 💡 Tips
+## Tips
 
 - **Tab completion** lists every loaded preset id when you press `Tab` after `/tcp give`.
 - **Preset ids are case-insensitive** in lookups — `Super_Zombie`, `super_zombie`, and `SUPER_ZOMBIE` all resolve to the same preset.
@@ -132,7 +132,7 @@ The preset map is hot-swapped atomically; in-flight `/tcp give` calls are not af
 
 ---
 
-## ⚠️ Limitations
+## Limitations
 
 ### Custom Mob Providers do NOT apply to preset-spawned spawners
 
@@ -153,7 +153,7 @@ This is by design for the free tier. If your use case is deploying placeable tri
 
 ---
 
-## ❓ Troubleshooting
+## Troubleshooting
 
 **Placed a preset spawner outside a chamber and can't mine it back**
 As of v1.4.5, TCP-preset spawners placed outside any registered chamber can be retrieved using a **Silk Touch** tool. Without Silk Touch the break is blocked and a hint message appears. Mining without Silk Touch (no tool requirement) is available for wild-preset spawners managed by [TCP-WildSpawners](https://esmp.fun/).

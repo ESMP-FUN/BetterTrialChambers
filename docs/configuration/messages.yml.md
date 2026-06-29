@@ -1,32 +1,26 @@
-# messages.yml Reference
+# messages.yml
 
 Want your plugin to match your server's vibe? The `messages.yml` file lets you customize every single message players see. Whether you're running a serious roleplay server or a meme-filled chaos realm, you've got full control.
 
-<div data-gb-custom-block data-tag="hint" data-style="info">
-
+{% hint style="info" %}
 **Location:** `plugins/TrialChamberPro/messages.yml`
 
 After making changes, reload with `/tcp reload`
+{% endhint %}
 
-</div>
-
-<div data-gb-custom-block data-tag="hint" data-style="info">
-
+{% hint style="info" %}
 **Translating the admin GUI?** As of v1.3.0 every name, lore line, and button label across all 18 admin GUI views also lives here, under a nested `gui.*` section (~330 keys). For the GUI-specific translation conventions — section layout, shared toggle templates, the `gui.common.*` reuse pattern — see the [Localization](localization.md) guide.
+{% endhint %}
 
-</div>
-
----
+***
 
 ## Text formatting — MiniMessage and legacy `&` codes
 
 **Added in v1.4.0.** TCP now supports the modern [MiniMessage](https://docs.advntr.dev/minimessage/format.html) syntax in every message — alongside the original `&` colour codes. You can use either format, or freely mix both in the same line.
 
-<div data-gb-custom-block data-tag="hint" data-style="success">
-
+{% hint style="success" %}
 **Existing `messages.yml` files keep working unchanged.** Migrating an entry to MiniMessage is opt-in, line by line. Use whichever feels more natural — the parser handles both transparently.
-
-</div>
+{% endhint %}
 
 ### Legacy `&` codes (still supported)
 
@@ -86,23 +80,21 @@ Both formats work on the same line:
 "<#FF5500>Custom hex"                          # MM hex
 ```
 
-<div data-gb-custom-block data-tag="hint" data-style="info">
-
+{% hint style="info" %}
 **Where MiniMessage shines:** GUI item names and lore, boss bars, and chat messages all support **full MiniMessage fidelity** in v1.4.0+ — gradients, click events, and hover tooltips render correctly everywhere.
+{% endhint %}
 
-</div>
-
-<div data-gb-custom-block data-tag="hint" data-style="success">
-
+{% hint style="success" %}
 **Pro tip:** Use `&r` (or `<reset>`) to clear formatting before placeholders, so player names and chamber names don't inherit the previous colour. Example: `"&aWelcome &r&e{player}!"` resets to default before the yellow name.
+{% endhint %}
 
-</div>
-
----
+***
 
 ## Message Categories
 
-### General Messages
+<details>
+
+<summary><strong>General Messages</strong></summary>
 
 ```yaml
 prefix: "&8[&6TCP&8]&r "
@@ -113,17 +105,21 @@ unknown-command: "&cUnknown subcommand. Use /tcp help for help."
 ```
 
 #### `prefix`
+
 Prepended to most messages. Keep it short!
 
 **Examples:**
-- Minimalist: `"&8[&6TCP&8] "`
-- Fancy: `"&8[&6⚔ &eTrialChamber&6 ⚔&8] "`
-- Roleplay: `"&7[&5Ancient Chamber&7] "`
-- No prefix: `""` (empty string)
 
----
+* Minimalist: `"&8[&6TCP&8] "`
+* Fancy: `"&8[&6 &eTrialChamber&6 &8] "`
+* Roleplay: `"&7[&5Ancient Chamber&7] "`
+* No prefix: `""` (empty string)
 
-### Chamber Management
+</details>
+
+<details>
+
+<summary><strong>Chamber Management</strong></summary>
 
 ```yaml
 chamber-created: "&aChamber &e{chamber}&a created successfully!"
@@ -138,33 +134,39 @@ worldedit-not-found: "&cWorldEdit is not installed or enabled."
 ```
 
 **Placeholders:**
-- `{chamber}` - Chamber name
-- `{world}` - World name
-- `{volume}` - Total blocks in chamber
+
+* `{chamber}` - Chamber name
+* `{world}` - World name
+* `{volume}` - Total blocks in chamber
 
 **Customization ideas:**
 
 Minimalist:
+
 ```yaml
 chamber-created: "&a✓ Created {chamber}"
 chamber-deleted: "&c✗ Deleted {chamber}"
 ```
 
 Fancy:
+
 ```yaml
 chamber-created: "&8[&a✓&8] &fChamber &6{chamber} &fhas been &aregistered&f!"
 chamber-list-header: "&6&m          &r &6Registered Chambers &m          "
 ```
 
 Roleplay:
+
 ```yaml
 chamber-created: "&7The ancient chamber &e{chamber}&7 has been awakened..."
 chamber-deleted: "&7The chamber &e{chamber}&7 fades from memory..."
 ```
 
----
+</details>
 
-### Scanning
+<details>
+
+<summary><strong>Scanning</strong></summary>
 
 ```yaml
 scan-started: "&aScanning chamber &e{chamber}&a..."
@@ -173,29 +175,34 @@ scan-failed: "&cFailed to scan chamber: {error}"
 ```
 
 **Placeholders:**
-- `{chamber}` - Chamber name
-- `{vaults}` - Number of vaults found
-- `{spawners}` - Number of trial spawners found
-- `{pots}` - Number of decorated pots found
-- `{error}` - Error message (on failure)
+
+* `{chamber}` - Chamber name
+* `{vaults}` - Number of vaults found
+* `{spawners}` - Number of trial spawners found
+* `{pots}` - Number of decorated pots found
+* `{error}` - Error message (on failure)
 
 **Examples:**
 
 Tech-style:
+
 ```yaml
 scan-started: "&7[SYSTEM] Initiating scan of &f{chamber}&7..."
 scan-complete: "&a[SCAN COMPLETE] &7Detected: &f{vaults}x Vaults, {spawners}x Spawners, {pots}x Pots"
 ```
 
 Adventure-style:
+
 ```yaml
 scan-started: "&7Exploring the depths of &e{chamber}&7..."
 scan-complete: "&aYou've mapped the chamber! Discovered &e{vaults} vaults&a, &e{spawners} monster cages&a, and &e{pots} ancient pots&a!"
 ```
 
----
+</details>
 
-### Snapshots
+<details>
+
+<summary><strong>Snapshots</strong></summary>
 
 ```yaml
 snapshot-creating: "&aCreating snapshot for &e{chamber}&a..."
@@ -207,28 +214,33 @@ snapshot-failed: "&cSnapshot operation failed: {error}"
 ```
 
 **Placeholders:**
-- `{chamber}` - Chamber name
-- `{blocks}` - Block count
-- `{size}` - File size (e.g., "1.2 MB")
-- `{error}` - Error message
+
+* `{chamber}` - Chamber name
+* `{blocks}` - Block count
+* `{size}` - File size (e.g., "1.2 MB")
+* `{error}` - Error message
 
 **Examples:**
 
 Loading bar vibes:
+
 ```yaml
 snapshot-creating: "&7[&e▰▰▰▱▱▱&7] Creating snapshot of &f{chamber}&7..."
 snapshot-created: "&7[&a▰▰▰▰▰▰&7] &aSnapshot saved! &7({blocks} blocks, {size})"
 ```
 
 Immersive:
+
 ```yaml
 snapshot-creating: "&7Capturing the essence of &e{chamber}&7..."
 snapshot-created: "&aThe chamber's memory has been preserved. &7({blocks} blocks)"
 ```
 
----
+</details>
 
-### Chamber Resets
+<details>
+
+<summary><strong>Chamber Resets</strong></summary>
 
 ```yaml
 chamber-reset-warning: "&eWarning: &7{chamber} will reset in &6{time}&7!"
@@ -239,33 +251,39 @@ reset-failed: "&cFailed to reset chamber: {error}"
 ```
 
 **Placeholders:**
-- `{chamber}` - Chamber name
-- `{time}` - Time remaining (e.g., "5m 30s")
-- `{error}` - Error message
+
+* `{chamber}` - Chamber name
+* `{time}` - Time remaining (e.g., "5m 30s")
+* `{error}` - Error message
 
 **Examples:**
 
 Urgent/dramatic:
+
 ```yaml
 chamber-reset-warning: "&c&l⚠ WARNING ⚠ &e{chamber} &cresets in &4&l{time}&c!"
 chamber-reset-complete: "&6✦ &fThe chamber has been restored to its former glory!"
 ```
 
 Calm/informative:
+
 ```yaml
 chamber-reset-warning: "&7[Notice] &e{chamber}&7 will reset in &f{time}&7. Please finish up!"
 chamber-reset-complete: "&aReset complete. The chamber is ready for new challengers."
 ```
 
 Roleplay/lore:
+
 ```yaml
 chamber-reset-warning: "&7The magic sustaining &e{chamber}&7 weakens... &6{time}&7 until collapse!"
 chamber-reset-complete: "&dThe chamber's ancient power has been renewed!"
 ```
 
----
+</details>
 
-### Vaults
+<details>
+
+<summary><strong>Vaults</strong></summary>
 
 ```yaml
 vault-opened: "&aYou opened a {type} Vault!"
@@ -281,54 +299,58 @@ vault-error: "&cAn error occurred while opening the vault. Please try again."
 ```
 
 **Placeholders:**
-- `{type}` - Vault type: "Normal" or "Ominous"
-- `{time}` - Cooldown time remaining
-- `{player}` - Player name
-- `{required_type}` - Key type needed
+
+* `{type}` - Vault type: "Normal" or "Ominous"
+* `{time}` - Cooldown time remaining
+* `{player}` - Player name
+* `{required_type}` - Key type needed
 
 **New in v1.2.19:**
-- `vault-loot-table-missing` - Shown when the configured loot table doesn't exist (indicates configuration error)
-- `vault-no-loot-generated` - Shown when a loot table exists but generates no items (empty weighted-items or bad config)
+
+* `vault-loot-table-missing` - Shown when the configured loot table doesn't exist (indicates configuration error)
+* `vault-no-loot-generated` - Shown when a loot table exists but generates no items (empty weighted-items or bad config)
 
 **New in v1.2.21:**
-- `vault-locked` - Shown when a player has already opened a vault (permanent cooldown until reset)
-- `vault-error` - Shown when the vault block state can't be updated (rare edge case)
 
-<div data-gb-custom-block data-tag="hint" data-style="info">
+* `vault-locked` - Shown when a player has already opened a vault (permanent cooldown until reset)
+* `vault-error` - Shown when the vault block state can't be updated (rare edge case)
 
+{% hint style="info" %}
 **Note:** In v1.2.19+, if error messages appear, **keys are NOT consumed**. The player keeps their key so they can try again once the issue is resolved.
+{% endhint %}
 
-</div>
-
-<div data-gb-custom-block data-tag="hint" data-style="success">
-
+{% hint style="success" %}
 **v1.2.21+:** Vault cooldowns now use Paper's native API. The `vault-locked` message is shown for permanent cooldowns (vanilla behavior). This automatically resets when the chamber is restored from snapshot.
-
-</div>
+{% endhint %}
 
 **Examples:**
 
 Excited/rewarding:
+
 ```yaml
 vault-opened: "&a&l✓ UNLOCKED! &r&7You opened a {type} Vault!"
 vault-cooldown: "&7This {type} Vault has already been looted. Try again in &e{time}&7."
 ```
 
 Mystical:
+
 ```yaml
 vault-opened: "&dThe {type} Vault yields its treasures to you..."
 vault-cooldown: "&5The vault's magic has not yet regenerated. Return in &d{time}&5."
 ```
 
 Gameplay-focused:
+
 ```yaml
 vault-opened: "&6[LOOT] &f{type} Vault opened!"
 vault-cooldown: "&e[COOLDOWN] &7{time} remaining"
 ```
 
----
+</details>
 
-### Trial Keys
+<details>
+
+<summary><strong>Trial Keys</strong></summary>
 
 ```yaml
 key-given: "&aGave &e{amount}&a {type} Trial Key(s) to &e{player}&a."
@@ -337,15 +359,18 @@ key-check: "&e{player}&a has &e{normal}&a Normal Key(s) and &e{ominous}&a Ominou
 ```
 
 **Placeholders:**
-- `{amount}` - Number of keys
-- `{type}` - "Normal" or "Ominous"
-- `{player}` - Player name
-- `{normal}` - Normal key count
-- `{ominous}` - Ominous key count
 
----
+* `{amount}` - Number of keys
+* `{type}` - "Normal" or "Ominous"
+* `{player}` - Player name
+* `{normal}` - Normal key count
+* `{ominous}` - Ominous key count
 
-### Statistics
+</details>
+
+<details>
+
+<summary><strong>Statistics</strong></summary>
 
 ```yaml
 stats-header: "&6=== Statistics for {player} ==="
@@ -360,13 +385,15 @@ invalid-stat-type: "&cInvalid stat type. Use: chambers, normal, ominous, mobs, o
 ```
 
 **Placeholders:**
-- `{player}` - Player name
-- `{count}` - Stat count
-- `{time}` - Formatted time (e.g., "2h 15m")
+
+* `{player}` - Player name
+* `{count}` - Stat count
+* `{time}` - Formatted time (e.g., "2h 15m")
 
 **Customization:**
 
 Clean list:
+
 ```yaml
 stats-header: "&7───── &6Stats: {player} &7─────"
 stats-chambers: "&8▸ &7Chambers: &f{count}"
@@ -375,15 +402,18 @@ stats-ominous-vaults: "&8▸ &7Ominous Vaults: &f{count}"
 ```
 
 Game-style:
+
 ```yaml
 stats-header: "&6╔═══════════════════════╗\n&6║ &fStats: {player}\n&6╚═══════════════════════╝"
 stats-chambers: "  &e⚔ Chambers Beaten: &a{count}"
 stats-normal-vaults: "  &e🔓 Normal Vaults: &a{count}"
 ```
 
----
+</details>
 
-### Leaderboards
+<details>
+
+<summary><strong>Leaderboards</strong></summary>
 
 ```yaml
 leaderboard-header: "&6=== Top Players - {stat} ==="
@@ -392,29 +422,34 @@ leaderboard-empty: "&7No statistics recorded yet."
 ```
 
 **Placeholders:**
-- `{stat}` - Stat type (e.g., "Chambers Completed")
-- `{rank}` - Player's rank (1, 2, 3...)
-- `{player}` - Player name
-- `{value}` - Stat value
+
+* `{stat}` - Stat type (e.g., "Chambers Completed")
+* `{rank}` - Player's rank (1, 2, 3...)
+* `{player}` - Player name
+* `{value}` - Stat value
 
 **Examples:**
 
 Medal system:
+
 ```yaml
 leaderboard-header: "&6&l🏆 TOP PLAYERS - {stat} 🏆"
 leaderboard-entry: "&7{rank}. &f{player} &8- &e{value}"
 ```
 
 With actual medals for top 3 (requires creative formatting):
+
 ```yaml
 # For top 3, manually format with different entries if your plugin supports it
 leaderboard-entry: "&e#{rank} &f{player}&7: &a{value}"
 # Could be: 🥇 #1, 🥈 #2, 🥉 #3 for top 3
 ```
 
----
+</details>
 
-### Chamber Completion & Entry
+<details>
+
+<summary><strong>Chamber Completion &#x26; Entry</strong></summary>
 
 ```yaml
 chamber-completed: "&a✓ You have completed &e{chamber}&a!"
@@ -424,12 +459,14 @@ player-died-in-chamber: "&c{player} died in {chamber}"
 ```
 
 **Placeholders:**
-- `{chamber}` - Chamber name
-- `{player}` - Player name
+
+* `{chamber}` - Chamber name
+* `{player}` - Player name
 
 **Examples:**
 
 Achievement-style:
+
 ```yaml
 chamber-completed: "&6&l✦ ACHIEVEMENT ✦\n&fCompleted &e{chamber}&f!"
 chamber-entered: "&7➜ Entering &e{chamber}&7..."
@@ -437,20 +474,24 @@ chamber-exited: "&7← Leaving chamber"
 ```
 
 Subtle:
+
 ```yaml
 chamber-entered: "&8[&7{chamber}&8]"
 chamber-exited: ""
 ```
 
 Dramatic:
+
 ```yaml
 chamber-completed: "&d&l⚔ VICTORY! ⚔\n&fYou have conquered &5{chamber}&f!"
 player-died-in-chamber: "&c☠ &7{player} fell in &c{chamber}"
 ```
 
----
+</details>
 
-### Protection
+<details>
+
+<summary><strong>Protection</strong></summary>
 
 ```yaml
 cannot-break-blocks: "&cYou cannot break blocks in a Trial Chamber!"
@@ -461,25 +502,30 @@ cannot-access-container: "&cYou cannot access containers in a Trial Chamber!"
 **Customization:**
 
 Strict:
+
 ```yaml
 cannot-break-blocks: "&4[DENIED] &cBreaking blocks is not allowed here."
 ```
 
 Funny:
+
 ```yaml
 cannot-break-blocks: "&cHey! Stop that! This isn't your chamber to break."
 cannot-place-blocks: "&cNo block placing in the ancient ruins, thanks."
 ```
 
 Immersive:
+
 ```yaml
 cannot-break-blocks: "&7An ancient magic prevents you from damaging the structure."
 cannot-place-blocks: "&7The chamber's magic rejects your attempt to alter it."
 ```
 
----
+</details>
 
-### Teleportation
+<details>
+
+<summary><strong>Teleportation</strong></summary>
 
 ```yaml
 teleported-to-chamber: "&aTeleported to chamber &e{chamber}&a."
@@ -487,25 +533,30 @@ teleported-to-exit: "&aTeleported to exit of chamber &e{chamber}&a."
 ```
 
 **Placeholders:**
-- `{chamber}` - Chamber name
+
+* `{chamber}` - Chamber name
 
 **Examples:**
 
 Magical:
+
 ```yaml
 teleported-to-chamber: "&d✦ &fYou've been transported to &e{chamber}&f!"
 teleported-to-exit: "&7You've been whisked away to safety..."
 ```
 
 Simple:
+
 ```yaml
 teleported-to-chamber: "&7→ {chamber}"
 teleported-to-exit: "&7→ Exit"
 ```
 
----
+</details>
 
-### Chamber Info
+<details>
+
+<summary><strong>Chamber Info</strong></summary>
 
 ```yaml
 info-header: "&6=== Chamber Info: {chamber} ==="
@@ -521,19 +572,22 @@ info-snapshot: "&eSnapshot: &f{status}"
 ```
 
 **Placeholders:**
-- `{chamber}` - Chamber name
-- `{world}` - World name
-- `{minX}`, `{minY}`, `{minZ}`, `{maxX}`, `{maxY}`, `{maxZ}` - Coordinates
-- `{volume}` - Block count
-- `{exit}` - Exit location or "Not set"
-- `{interval}` - Reset interval (e.g., "48 hours")
-- `{time}` - Last reset time
-- `{count}` - Count of vaults/spawners
-- `{status}` - Snapshot status
 
----
+* `{chamber}` - Chamber name
+* `{world}` - World name
+* `{minX}`, `{minY}`, `{minZ}`, `{maxX}`, `{maxY}`, `{maxZ}` - Coordinates
+* `{volume}` - Block count
+* `{exit}` - Exit location or "Not set"
+* `{interval}` - Reset interval (e.g., "48 hours")
+* `{time}` - Last reset time
+* `{count}` - Count of vaults/spawners
+* `{status}` - Snapshot status
 
-### Time Formatting
+</details>
+
+<details>
+
+<summary><strong>Time Formatting</strong></summary>
 
 ```yaml
 time-days: "{days}d"
@@ -545,13 +599,15 @@ time-now: "Just now"
 ```
 
 **Placeholders:**
-- `{days}`, `{hours}`, `{minutes}`, `{seconds}` - Time values
+
+* `{days}`, `{hours}`, `{minutes}`, `{seconds}` - Time values
 
 Used for cooldowns, reset timers, etc. Combined like: `"2d 5h 30m"`
 
 **Examples:**
 
 Verbose:
+
 ```yaml
 time-days: "{days} days"
 time-hours: "{hours} hours"
@@ -560,6 +616,7 @@ time-seconds: "{seconds} seconds"
 ```
 
 Ultra-minimal:
+
 ```yaml
 time-days: "{days}d"
 time-hours: "{hours}h"
@@ -567,9 +624,11 @@ time-minutes: "{minutes}m"
 time-seconds: "{seconds}s"
 ```
 
----
+</details>
 
-### System Messages
+<details>
+
+<summary><strong>System Messages</strong></summary>
 
 ```yaml
 plugin-starting-up: "&eTrialChamberPro is still starting up. Please try again in a moment..."
@@ -577,9 +636,11 @@ plugin-starting-up: "&eTrialChamberPro is still starting up. Please try again in
 
 Shown when commands are used before the plugin finishes async initialization.
 
----
+</details>
 
-### Info Display Format
+<details>
+
+<summary><strong>Info Display Format</strong></summary>
 
 ```yaml
 # Used in /tcp info output
@@ -590,13 +651,16 @@ info-snapshot-not-created: "&cNot created"
 ```
 
 **Placeholders:**
-- `{x}`, `{y}`, `{z}` - Coordinates
+
+* `{x}`, `{y}`, `{z}` - Coordinates
 
 These are displayed as values in the chamber info command output.
 
----
+</details>
 
-### Spawner Waves
+<details>
+
+<summary><strong>Spawner Waves</strong></summary>
 
 ```yaml
 spawner-wave-complete: "&a✓ {type} Spawner wave complete! &7Killed &e{killed}&7 mobs in &f{duration}"
@@ -609,29 +673,34 @@ spawner-wave-boss-bar-progress: "{type} - {killed}/{total}"
 ```
 
 **Placeholders:**
-- `{type}` - Spawner type: "Trial" or "Ominous"
-- `{killed}` - Number of mobs killed
-- `{total}` - Total mobs expected
-- `{duration}` - Time to complete (e.g., "1m 30s")
-- `{wave}` - Wave number
+
+* `{type}` - Spawner type: "Trial" or "Ominous"
+* `{killed}` - Number of mobs killed
+* `{total}` - Total mobs expected
+* `{duration}` - Time to complete (e.g., "1m 30s")
+* `{wave}` - Wave number
 
 **Examples:**
 
 Celebratory:
+
 ```yaml
 spawner-wave-complete: "&6🎉 &e{type} Wave Cleared! &7{killed} mobs defeated in {duration}!"
 spawner-wave-boss-bar-complete: "✓ Victory!"
 ```
 
 Competitive:
+
 ```yaml
 spawner-wave-complete: "&a[WAVE COMPLETE] &7{killed} kills in &f{duration}"
 spawner-wave-boss-bar-progress: "{killed}/{total} eliminated"
 ```
 
----
+</details>
 
-### Spectator Mode
+<details>
+
+<summary><strong>Spectator Mode</strong></summary>
 
 ```yaml
 spectate-offer: "&7You died in &e{chamber}&7. Would you like to spectate?"
@@ -647,26 +716,31 @@ spectate-chamber-not-found: "&cThe chamber no longer exists."
 ```
 
 **Placeholders:**
-- `{chamber}` - Chamber name
+
+* `{chamber}` - Chamber name
 
 **Examples:**
 
 Encouraging:
+
 ```yaml
 spectate-offer: "&7Tough luck! Want to watch your teammates in &e{chamber}&7?"
 spectate-started: "&a👀 Spectating &e{chamber}&a - Cheer them on!"
 ```
 
 Roleplay:
+
 ```yaml
 spectate-offer: "&7Your spirit lingers near &e{chamber}&7... Watch from beyond?"
 spectate-started: "&d✦ &7Your spirit observes the trial of &e{chamber}&7..."
 spectate-exited: "&7Your spirit returns to the mortal plane."
 ```
 
----
+</details>
 
-### GUI Action Messages
+<details>
+
+<summary><strong>GUI Action Messages</strong></summary>
 
 ```yaml
 # Chamber Operations
@@ -730,20 +804,22 @@ gui-pool-create-coming-soon: "&7GUI pool creation coming soon!"
 ```
 
 **Placeholders:**
-- `{chamber}` - Chamber name
-- `{count}` - Number of players
-- `{seconds}` - Time in seconds
-- `{error}` - Error message
-- `{value}` - Setting value (e.g., "5 minutes", "Enabled")
-- `{type}` - Vault/loot type: "Normal" or "Ominous"
-- `{table}` - Loot table name
-- `{item}` - Item type name
-- `{pool}` - Pool name
-- `{setting}` - Setting name
+
+* `{chamber}` - Chamber name
+* `{count}` - Number of players
+* `{seconds}` - Time in seconds
+* `{error}` - Error message
+* `{value}` - Setting value (e.g., "5 minutes", "Enabled")
+* `{type}` - Vault/loot type: "Normal" or "Ominous"
+* `{table}` - Loot table name
+* `{item}` - Item type name
+* `{pool}` - Pool name
+* `{setting}` - Setting name
 
 **Customization:**
 
 Tech-style:
+
 ```yaml
 gui-forcing-reset: "&7[SYSTEM] Initiating reset of &f{chamber}&7..."
 gui-chamber-reset-complete: "&a[COMPLETE] &7Chamber &f{chamber}&7 restored"
@@ -751,15 +827,18 @@ gui-reset-scheduled: "&7[SCHEDULED] &f{chamber}&7 reset in &e{seconds}s"
 ```
 
 Immersive:
+
 ```yaml
 gui-forcing-reset: "&7The ancient magic begins to stir in &e{chamber}&7..."
 gui-chamber-reset-complete: "&d✦ &7The chamber &e{chamber}&7 has been renewed!"
 gui-player-ejected: "&7An unseen force gently pushes you from the chamber..."
 ```
 
----
+</details>
 
-### Help Messages
+<details>
+
+<summary><strong>Help Messages</strong></summary>
 
 ```yaml
 help-header: "&6=== TrialChamberPro Commands ==="
@@ -773,6 +852,7 @@ Customize the entire help menu to match your server's command style!
 **Examples:**
 
 Compact:
+
 ```yaml
 help-header: "&6Commands:"
 help-scan: "&e/tcp scan <chamber> &8▸ &7Scan for blocks"
@@ -780,16 +860,21 @@ help-generate: "&e/tcp generate <mode> &8▸ &7Register chamber"
 ```
 
 Detailed:
+
 ```yaml
 help-header: "&6╔════════════════════════════╗\n&6║ &fTrialChamberPro Commands\n&6╚════════════════════════════╝"
 help-generate: "&e/tcp generate wand <name>\n  &7Registers a chamber from your WorldEdit selection"
 ```
 
----
+</details>
+
+***
 
 ## Complete Theme Examples
 
-### Minimalist Theme
+<details>
+
+<summary><strong>Minimalist Theme</strong></summary>
 
 ```yaml
 prefix: "&8[&6TCP&8] "
@@ -804,9 +889,11 @@ stats-header: "&7─── &6{player} &7───"
 
 **Vibe:** Clean, no-nonsense, modern.
 
----
+</details>
 
-### Fantasy/Roleplay Theme
+<details>
+
+<summary><strong>Fantasy/Roleplay Theme</strong></summary>
 
 ```yaml
 prefix: "&7[&5Ancient Trials&7] "
@@ -822,9 +909,11 @@ stats-header: "&5╔════════════════════
 
 **Vibe:** Immersive, magical, story-driven.
 
----
+</details>
 
-### Competitive/PvP Theme
+<details>
+
+<summary><strong>Competitive/PvP Theme</strong></summary>
 
 ```yaml
 prefix: "&c[&4PvP&c] "
@@ -840,9 +929,11 @@ leaderboard-header: "&4&l⚔ TOP FIGHTERS - {stat} ⚔"
 
 **Vibe:** Intense, competitive, action-focused.
 
----
+</details>
 
-### Casual/Friendly Theme
+<details>
+
+<summary><strong>Casual/Friendly Theme</strong></summary>
 
 ```yaml
 prefix: "&b[Trial] "
@@ -857,7 +948,9 @@ cannot-break-blocks: "&cHey now! No breaking stuff in here 😊"
 
 **Vibe:** Friendly, approachable, lighthearted.
 
----
+</details>
+
+***
 
 ## Multi-Language Support
 
@@ -867,55 +960,51 @@ Want to support multiple languages? You can create separate message files!
 2. Translate all messages
 3. Use a language switcher plugin to change which file is loaded per-player
 
-<div data-gb-custom-block data-tag="hint" data-style="info">
-
+{% hint style="info" %}
 **Note:** TrialChamberPro doesn't have built-in per-player language switching (yet), but you can manually swap files and reload for server-wide language changes.
+{% endhint %}
 
-</div>
-
----
+***
 
 ## Pro Tips
 
-<div data-gb-custom-block data-tag="hint" data-style="success">
-
+{% hint style="success" %}
 **Test your messages!** Trigger each message in-game to see how it looks in chat. Some look great in the config but ugly in-game.
+{% endhint %}
 
-</div>
-
-<div data-gb-custom-block data-tag="hint" data-style="warning">
-
+{% hint style="warning" %}
 **Don't overdo colors.** Too many colors = eyesore. Stick to 2-3 main colors for consistency.
+{% endhint %}
 
-</div>
-
-<div data-gb-custom-block data-tag="hint" data-style="info">
-
+{% hint style="info" %}
 **Use prefixes wisely.** If you have a very long prefix, consider shortening it or removing it entirely for certain messages (like warnings).
+{% endhint %}
 
-</div>
-
----
+***
 
 ## Color Palette Ideas
 
 ### Earthy/Natural
-- Primary: `&a` (green), `&e` (yellow)
-- Accent: `&6` (gold), `&7` (gray)
+
+* Primary: `&a` (green), `&e` (yellow)
+* Accent: `&6` (gold), `&7` (gray)
 
 ### Mystical/Magical
-- Primary: `&d` (light purple), `&5` (dark purple)
-- Accent: `&b` (aqua), `&f` (white)
+
+* Primary: `&d` (light purple), `&5` (dark purple)
+* Accent: `&b` (aqua), `&f` (white)
 
 ### Tech/Modern
-- Primary: `&b` (cyan), `&f` (white)
-- Accent: `&7` (gray), `&8` (dark gray)
+
+* Primary: `&b` (cyan), `&f` (white)
+* Accent: `&7` (gray), `&8` (dark gray)
 
 ### Fire/Danger
-- Primary: `&c` (red), `&6` (gold)
-- Accent: `&4` (dark red), `&e` (yellow)
 
----
+* Primary: `&c` (red), `&6` (gold)
+* Accent: `&4` (dark red), `&e` (yellow)
+
+***
 
 ## Keeping messages.yml up-to-date after plugin upgrades
 
@@ -930,13 +1019,11 @@ What you'll see in console when keys are added:
 
 **Older behaviour (before 1.5.19):** the file was only written when absent, so upgraders' files were missing new keys and the plugin fell back to the literal text `<missing: key.name>` in chat / GUI / boss bars. A startup schema check (v1.4.1) warned about this; with the auto-merge it no longer triggers, but it remains as a backstop if a merge ever fails.
 
-<div data-gb-custom-block data-tag="hint" data-style="info">
-
+{% hint style="info" %}
 **Translating?** Your edits are safe across updates — the merge only **adds** missing keys, it never changes or removes your values. See [Localization](localization.md) for translating the new `{type}` labels (`vault-type-normal` / `vault-type-ominous`, `wave-type-*`, `wave-boss-type-*`) and other player-facing text.
+{% endhint %}
 
-</div>
-
----
+***
 
 ## Applying Changes
 
@@ -948,49 +1035,38 @@ After editing `messages.yml`:
 
 All messages update immediately. No restart needed!
 
----
+***
 
 ## Common Questions
 
-**"Can I remove the prefix from all messages?"**
-Yes! Set `prefix: ""` (empty string).
+**"Can I remove the prefix from all messages?"** Yes! Set `prefix: ""` (empty string).
 
-**"What if I want different prefixes for different message types?"**
-You'll need to manually add prefixes to individual messages instead of using the global prefix.
+**"What if I want different prefixes for different message types?"** You'll need to manually add prefixes to individual messages instead of using the global prefix.
 
-**"Can I use hex color codes?"**
-Not in the current version, but it's planned for a future update!
+**"Can I use hex color codes?"** Not in the current version, but it's planned for a future update!
 
-**"What if I mess up the YAML formatting?"**
-The plugin will fail to load messages and log errors. Always backup before editing!
+**"What if I mess up the YAML formatting?"** The plugin will fail to load messages and log errors. Always backup before editing!
 
-**"Can I add custom messages for my own plugins?"**
-TrialChamberPro only uses the messages defined here. For custom messages, you'd need to modify the plugin or request new placeholder support.
+**"Can I add custom messages for my own plugins?"** TrialChamberPro only uses the messages defined here. For custom messages, you'd need to modify the plugin or request new placeholder support.
 
----
+***
 
 ## What's Next?
 
-You've completed the configuration trilogy! 🎉
+You've completed the configuration trilogy!
 
-Check out the guides for hands-on usage:
+Where to go next:
 
-<div data-gb-custom-block data-tag="content-ref" data-url="../guides/custom-loot.md">
+{% content-ref url="loot.yml.md" %}
+[loot.yml.md](loot.yml.md)
+{% endcontent-ref %}
 
-[custom-loot.md](../guides/custom-loot.md)
+{% content-ref url="config.yml.md" %}
+[config.yml.md](config.yml.md)
+{% endcontent-ref %}
 
-</div>
-
-<div data-gb-custom-block data-tag="content-ref" data-url="../guides/automatic-resets.md">
-
-[automatic-resets.md](../guides/automatic-resets.md)
-
-</div>
-
-<div data-gb-custom-block data-tag="content-ref" data-url="../reference/commands.md">
-
+{% content-ref url="../reference/commands.md" %}
 [commands.md](../reference/commands.md)
+{% endcontent-ref %}
 
-</div>
-
-Now go make those messages uniquely yours! ✨
+Now go make those messages uniquely yours!

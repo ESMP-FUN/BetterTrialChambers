@@ -213,7 +213,7 @@ class ResetManager(private val plugin: TrialChamberPro) {
     private fun sendResetWarning(chamber: Chamber, secondsRemaining: Long) {
         val timeString = MessageUtil.formatTimeSeconds(secondsRemaining)
         val message = plugin.getMessageComponent("chamber-reset-warning",
-            "chamber" to chamber.name,
+            "chamber" to chamber.label(),
             "time" to timeString
         )
 
@@ -634,7 +634,7 @@ class ResetManager(private val plugin: TrialChamberPro) {
                                                 state.isOminous = false
                                             }
 
-                                            // Apply custom cooldown if configured
+                                            // Apply custom cooldown LENGTH (duration of future cooldowns) if configured
                                             // -1 = vanilla default (don't change)
                                             // 0 = no cooldown (immediate reactivation)
                                             // >0 = custom cooldown in minutes
@@ -646,6 +646,21 @@ class ResetManager(private val plugin: TrialChamberPro) {
                                                     plugin.logger.info("[SpawnerReset] Spawner at ${block.x},${block.y},${block.z}: " +
                                                         "cooldown $oldCooldown -> $cooldownTicks ticks (${cooldownMinutes}m)")
                                                 }
+                                            }
+
+                                            // Clear the LEFTOVER active cooldown + pending spawn timer so the spawner
+                                            // is actually READY after the reset. This is the real "reset" — clearing
+                                            // tracked players (above) alone leaves a just-completed spawner stuck in its
+                                            // post-completion cooldown (getCooldownEnd() still in the future), so it never
+                                            // re-activates. Per Paper, cooldownEnd == 0 means "not in cooldown". For a
+                                            // positive configured cooldown we instead end it `cooldownMinutes` from now.
+                                            // Guarded: setCooldownEnd/setNextSpawnAttempt are newer TrialSpawner API, so a
+                                            // very old Paper build degrades to the tracked-player clear rather than aborting.
+                                            runCatching {
+                                                state.nextSpawnAttempt = 0L
+                                                state.cooldownEnd = if (cooldownMinutes > 0)
+                                                    world.gameTime + cooldownMinutes.toLong() * 60 * 20
+                                                else 0L
                                             }
 
                                             // Commit changes

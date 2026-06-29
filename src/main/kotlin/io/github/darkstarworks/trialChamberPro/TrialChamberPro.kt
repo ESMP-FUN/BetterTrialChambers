@@ -389,6 +389,10 @@ class TrialChamberPro : JavaPlugin() {
                         this@TrialChamberPro
                     )
                     server.pluginManager.registerEvents(
+                        io.github.darkstarworks.trialChamberPro.listeners.MobInfightingListener(this@TrialChamberPro),
+                        this@TrialChamberPro
+                    )
+                    server.pluginManager.registerEvents(
                         SpectatorListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
@@ -417,6 +421,11 @@ class TrialChamberPro : JavaPlugin() {
                     // v1.3.0: one-shot chat input collector for CustomMobProviderView
                     server.pluginManager.registerEvents(
                         io.github.darkstarworks.trialChamberPro.listeners.MobIdInputListener(this@TrialChamberPro),
+                        this@TrialChamberPro
+                    )
+                    // v1.6.1: one-shot chat input collector for the chamber-detail rename button
+                    server.pluginManager.registerEvents(
+                        io.github.darkstarworks.trialChamberPro.listeners.ChamberRenameInputListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
                     // v1.3.0: drop GUI session cache entries on player quit

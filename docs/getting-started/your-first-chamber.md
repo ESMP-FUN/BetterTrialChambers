@@ -1,8 +1,16 @@
-# 🎯 Your First Chamber
+# Manual Chamber Setup
 
-Time to turn that dusty Trial Chamber into a repeatable endgame experience! This guide walks you through registering and configuring your first chamber.
+<div data-gb-custom-block data-tag="hint" data-style="info">
 
-## 🗺️ Step 1: Find a Trial Chamber
+**Most servers don't need this page.** If your world has naturally-generated Trial Chambers (the default on normal worlds), the easy path is **[Quick Start](quick-start.md)** — `/tcp setup` turns on auto-discovery and TCP manages every chamber for you, automatically.
+
+This page is for the few servers with **no natural chambers** — superflat / one-block worlds, custom world generation, or `generate-structures: false`. There, you register a chamber by hand, which is what this guide covers.
+
+</div>
+
+Time to turn that dusty Trial Chamber into a repeatable endgame experience! This guide walks you through registering and configuring a chamber manually.
+
+## Step 1: Find a Trial Chamber
 
 First things first—you need a Trial Chamber to manage. Got one already? Great! Need to find one?
 
@@ -18,7 +26,7 @@ Teleport to it and explore until you find the main vault room. You'll want to re
 
 </div>
 
-## 📐 Step 2: Select the Chamber
+## Step 2: Select the Chamber
 
 TrialChamberPro needs to know which blocks belong to your chamber. The easiest way? **WorldEdit**.
 
@@ -51,7 +59,7 @@ Example:
 
 That's painful. Get WorldEdit. Moving on!
 
-## ✅ Step 3: Register the Chamber
+## Step 3: Register the Chamber
 
 With your selection made, register the existing Trial Chamber with the plugin:
 
@@ -78,7 +86,7 @@ You'll see:
 
 </div>
 
-## 🔍 Step 4: Scan for Vaults and Spawners
+## Step 4: Scan for Vaults and Spawners
 
 Now we tell the plugin to find all the vaults, spawners, and decorated pots:
 
@@ -104,7 +112,7 @@ You'll get a summary:
 
 </div>
 
-## 📸 Step 5: Create a Snapshot
+## Step 5: Create a Snapshot
 
 Here's where the magic happens. TrialChamberPro needs a "snapshot" of your chamber in its pristine state:
 
@@ -130,7 +138,7 @@ This might take 5-30 seconds depending on chamber size. You'll see:
 
 </div>
 
-## 🚪 Step 6: Set an Exit Point
+## Step 6: Set an Exit Point
 
 When the chamber resets, players inside need somewhere to go. Stand where you want them to teleport and run:
 
@@ -146,7 +154,7 @@ This saves your exact position (including look direction). Usually, you'll want 
 
 </div>
 
-## 🎉 Step 7: Test It Out!
+## Step 7: Test It Out!
 
 Your chamber is now managed! Let's verify everything works:
 
@@ -178,7 +186,7 @@ This forces an immediate reset. You should:
 
 </div>
 
-## ⚙️ Step 8: Configure Reset Schedule (Optional)
+## Step 8: Configure Reset Schedule (Optional)
 
 By default, chambers reset every 48 hours. Want to change that for this specific chamber?
 
@@ -199,7 +207,7 @@ Or override it per-chamber from the GUI: `/tcp menu` → pick the chamber → **
 - Manual only: `0` (disable automatic resets — use `/tcp reset` or the GUI button)
 - Custom: Use an [online converter](https://www.timecalculator.net/) to get seconds
 
-## 📚 Quick Reference
+## Quick Reference
 
 Here's everything in one place:
 
@@ -226,37 +234,37 @@ Here's everything in one place:
 /tcp reset MyChamber
 ```
 
-## 🎯 What's Next?
+## What's Next?
 
-You've got a working chamber! Now let's make it awesome:
+You've got a working chamber! Now make it yours:
 
-<div data-gb-custom-block data-tag="content-ref" data-url="../guides/custom-loot.md">
+<div data-gb-custom-block data-tag="content-ref" data-url="../configuration/loot.yml.md">
 
-[custom-loot.md](../guides/custom-loot.md)
-
-</div>
-
-Learn how to replace boring vanilla loot with custom rewards, economy integration, and more!
-
-<div data-gb-custom-block data-tag="content-ref" data-url="../guides/automatic-resets.md">
-
-[automatic-resets.md](../guides/automatic-resets.md)
+[loot.yml.md](../configuration/loot.yml.md)
 
 </div>
 
-Configure reset schedules, warnings, and player handling.
+Replace vanilla loot with custom rewards, economy payouts, command rewards, and more.
 
-<div data-gb-custom-block data-tag="content-ref" data-url="../guides/per-player-vaults.md">
+<div data-gb-custom-block data-tag="content-ref" data-url="basic-configuration.md">
 
-[per-player-vaults.md](../guides/per-player-vaults.md)
+[basic-configuration.md](basic-configuration.md)
 
 </div>
 
-Understand how per-player loot works and configure cooldowns.
+Configure reset schedules, warnings, protection, and the settings most servers tweak.
+
+<div data-gb-custom-block data-tag="content-ref" data-url="../configuration/config.yml.md">
+
+[config.yml.md](../configuration/config.yml.md)
+
+</div>
+
+The full config reference — including per-player vaults and cooldowns.
 
 ---
 
-## 💡 Pro Tips
+## Pro Tips
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
@@ -276,7 +284,7 @@ Understand how per-player loot works and configure cooldowns.
 
 </div>
 
-## ❓ Common Issues
+## Common Issues
 
 **"No WorldEdit selection found"**
 You didn't make a selection. Use `//wand` and select both corners first.

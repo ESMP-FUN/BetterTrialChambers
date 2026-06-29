@@ -72,6 +72,9 @@ exit-not-set: "&cNo exit location set for chamber &e{chamber}&c."
 # Chamber resets
 chamber-reset-warning: "&eWarning: &7{chamber} will reset in &6{time}&7!"
 chamber-reset-complete: "&aThe chamber has been reset!"
+chamber-cleared-broadcast: "&6{chamber}&e has been cleared by &6{players}&e!"
+chamber-renamed: "&aChamber &e{chamber}&a is now shown as &6{name}&a."
+chamber-rename-cleared: "&aChamber &e{chamber}&a display name cleared (back to its internal name)."
 chamber-resetting: "&aResetting chamber &e{chamber}&a..."
 reset-success: "&aChamber &e{chamber}&a reset successfully!"
 reset-failed: "&cFailed to reset chamber: {error}"
@@ -151,6 +154,7 @@ teleported-to-exit: "&aTeleported to exit of chamber &e{chamber}&a."
 
 # Chamber info
 info-header: "&6=== Chamber Info: {chamber} ==="
+info-display-name: "&eDisplay Name: &f{name}"
 info-world: "&eWorld: &f{world}"
 info-bounds: "&eBounds: &f{minX},{minY},{minZ} to {maxX},{maxY},{maxZ}"
 info-volume: "&eVolume: &f{volume} blocks"
@@ -194,6 +198,7 @@ help-snapshot-missing: "&e/tcp snapshot missing &7- List chambers with no snapsh
 help-reset: "&e/tcp reset <chamber> &7- Force a chamber to reset right now"
 help-pause: "&e/tcp pause <chamber> &7- Pause a chamber (suspends all activity, preserves data)"
 help-resume: "&e/tcp resume <chamber> &7- Resume a paused chamber"
+help-rename: "&e/tcp rename <chamber> <name> &7- Set a chamber's display name (shown in announcements)"
 help-delete: "&e/tcp delete <chamber> &7- Unregister a chamber"
 help-loot: "&e/tcp loot <list|info|set|clear> ... &7- View or override per-chamber loot tables"
 help-mobs: "&e/tcp mobs <providers|<chamber> <list|provider|add|remove> ...> &7- Configure custom mob providers per chamber"
@@ -284,6 +289,7 @@ usage-info: "&cUsage: /tcp info <chamber>"
 usage-delete: "&cUsage: /tcp delete <chamber>"
 usage-pause: "&cUsage: /tcp pause <chamber>"
 usage-resume: "&cUsage: /tcp resume <chamber>"
+usage-rename: "&cUsage: /tcp rename <chamber> <display name>  &7(use 'none' to clear)"
 usage-generate-value-save: "&cUsage: /tcp generate value save <varName>"
 usage-generate-value-delete: "&cUsage: /tcp generate value delete <varName>"
 usage-generate-value: "&cUsage: /tcp generate value <varName> [chamberName]"
@@ -439,6 +445,10 @@ gui-provider-set: "&aProvider set to &e{id}&a."
 gui-provider-failed: "&cFailed to update provider."
 gui-mob-input-prompt: "&eType the {section} mob id in chat (or 'cancel')."
 gui-mob-input-cancelled: "&7Mob id input cancelled."
+gui-rename-input-prompt: "&eType a new display name for &6{chamber}&e in chat (or 'cancel')."
+gui-rename-input-cancelled: "&7Rename cancelled."
+gui-rename-input-set: "&aChamber display name set to &6{name}&a."
+gui-rename-input-failed: "&cFailed to rename chamber."
 gui-mob-input-no-chamber: "&cChamber no longer exists."
 gui-mob-input-duplicate: "&cMob id &e{id}&c is already in the list."
 gui-mob-input-added: "&aAdded &e{id}&a to {section} mobs."
@@ -837,6 +847,12 @@ gui:
 
   chamber-detail:
     title: "Chamber: {chamber}"
+    rename-name: "&b&lRename"
+    rename-lore:
+      - "&7Display name: &f{name}"
+      - ""
+      - "&eClick &7to set a friendly name"
+      - "&7shown in announcements."
     info-name: "&b&l{chamber}"
     info-lore:
       - "&7World: &f{world}"
@@ -1057,12 +1073,12 @@ gui:
     spawner-cd-15m: "15 minutes"
     spawner-cd-30m: "30 minutes"
     spawner-cd-1h: "1 hour"
-    broadcast-reset-name: "&e&lReset Broadcast"
-    broadcast-reset-lore:
-      - "&7Send a server-wide message when"
-      - "&7this chamber finishes resetting"
-      - ""
-      - "&eClick to toggle"
+    # NOTE: this is rendered via GuiComponents.toggleItem, which wraps the name in
+    # the gui.common.toggle-name-* template (&a&l/&c&l) and appends Status + Click
+    # lines from gui.common.toggle-lore-*. So the name must be PLAIN text and the
+    # lore a SINGLE-LINE string (a list or embedded &-codes here render raw).
+    broadcast-reset-name: "Reset Broadcast"
+    broadcast-reset-lore: "Send a server-wide message when this chamber finishes resetting"
     broadcast-reset-overridden-lore:
       - "&7Send a server-wide message when"
       - "&7this chamber finishes resetting"
