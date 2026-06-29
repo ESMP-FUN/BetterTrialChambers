@@ -210,7 +210,7 @@ class ResetManager(private val plugin: TrialChamberPro) {
     private fun sendResetWarning(chamber: Chamber, secondsRemaining: Long) {
         val timeString = MessageUtil.formatTimeSeconds(secondsRemaining)
         val message = plugin.getMessageComponent("chamber-reset-warning",
-            "chamber" to chamber.name,
+            "chamber" to chamber.label(),
             "time" to timeString
         )
 
