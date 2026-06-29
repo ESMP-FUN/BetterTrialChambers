@@ -6,6 +6,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [1.6.1] - 2026-06-28
 ### Fixed
+- **Loot "Edit Amount" GUI: the Minimum buttons did nothing on most items.** The yellow adjust buttons clamped the minimum to the current maximum, so on a freshly-added item (which starts at min 1 / max 1) "Minimum +N" was capped at 1 and appeared dead — as did "Minimum −N" and "Maximum −N" at their floors. The min/max range is now kept coherent both ways: raising the minimum past the maximum carries the maximum up with it, and lowering the maximum below the minimum pulls the minimum down. Every button now responds.
 - **Wave mobs no longer fight each other.** A trial spawner's skeletons would clip other mobs with stray arrows, and the wave dissolved into mob-vs-mob brawls — skeleton 1v1s, the occasional 3v3 — that the player never had to touch. Worse than just looking silly: those self-kills still counted toward wave (and chamber) completion, so a wave could clear itself while the player stood there. Friendly fire and AI target-locking **strictly between two trial-spawner wave mobs** are now suppressed; player-vs-mob combat is untouched, and non-wave entities (wild animals, other plugins' mobs) are left alone. Toggle with `spawner-waves.prevent-infighting` (default `true`). Also keeps premium TCP-MythicTrials tier progression honest, since "clearing" a chamber once again means the players actually did the fighting.
 
 ## [1.6.0] - 2026-06-26
