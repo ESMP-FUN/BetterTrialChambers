@@ -26,7 +26,7 @@ class MobsCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
         if (args[1].equals("providers", ignoreCase = true)) {
             sender.sendMessage(plugin.getMessageComponent("mobs-providers-header"))
             plugin.trialMobProviderRegistry.all().forEach { p ->
-                val status = plugin.getMessage(
+                val status = plugin.rawMessage(
                     if (p.isAvailable()) "mobs-status-available" else "mobs-status-unavailable"
                 )
                 sender.sendMessage(plugin.getMessageComponent(
@@ -58,10 +58,10 @@ class MobsCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
                     val provider = chamber.customMobProvider ?: "vanilla"
                     val normalList = chamber.customMobIdsNormal.takeIf { it.isNotEmpty() }
                         ?.joinToString(", ")
-                        ?: plugin.getMessage("mobs-list-empty")
+                        ?: plugin.rawMessage("mobs-list-empty")
                     val ominousList = chamber.customMobIdsOminous.takeIf { it.isNotEmpty() }
                         ?.joinToString(", ")
-                        ?: plugin.getMessage("mobs-list-falls-back")
+                        ?: plugin.rawMessage("mobs-list-falls-back")
                     sender.sendMessage(plugin.getMessageComponent(
                         "mobs-list-provider",
                         "chamber" to chamber.name,
@@ -83,8 +83,8 @@ class MobsCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
                     }
                     val ok = plugin.chamberManager.updateCustomMobProvider(chamber.id, provider)
                     sender.sendMessage(
-                        if (ok) plugin.getMessage("mobs-provider-set", "provider" to (provider ?: "vanilla"))
-                        else plugin.getMessage("mobs-provider-update-failed")
+                        if (ok) plugin.getMessageComponent("mobs-provider-set", "provider" to (provider ?: "vanilla"))
+                        else plugin.getMessageComponent("mobs-provider-update-failed")
                     )
                 }
                 "add", "remove" -> {

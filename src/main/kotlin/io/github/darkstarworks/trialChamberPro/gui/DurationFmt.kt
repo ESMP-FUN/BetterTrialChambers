@@ -11,7 +11,7 @@ import io.github.darkstarworks.trialChamberPro.TrialChamberPro
  */
 internal object DurationFmt {
     fun humanize(plugin: TrialChamberPro, durationMs: Long): String {
-        if (durationMs <= 0) return plugin.getMessage("gui.chamber-list.duration-due-now")
+        if (durationMs <= 0) return plugin.rawMessage("gui.chamber-list.duration-due-now")  // nested sub-value
         var seconds = durationMs / 1000
         val months = seconds / (30L * 24 * 3600); seconds %= (30L * 24 * 3600)
         val weeks = seconds / (7L * 24 * 3600);   seconds %= (7L * 24 * 3600)

@@ -88,8 +88,8 @@ class GlobalSettingsView(
         plugin.config.set(def.configPath, newValue)
         plugin.saveConfig()
 
-        val settingLabel = plugin.getMessage(def.labelKey)
-        val valueText = plugin.getMessage(
+        val settingLabel = plugin.rawMessage(def.labelKey)  // nested into setting-toggled
+        val valueText = plugin.rawMessage(
             if (newValue) "gui.common.setting-enabled" else "gui.common.setting-disabled"
         )
         player.sendMessage(plugin.getMessageComponent("gui.common.setting-toggled",
