@@ -105,18 +105,26 @@ class AmountEditorView(
             "gui.amount-editor.reset-name", "gui.amount-editor.reset-lore")
 
     private fun handleAdjustClick(amount: Int, left: Boolean, right: Boolean, shift: Boolean) {
+        var min = currentItem.amountMin
+        var max = currentItem.amountMax
         when {
-            shift && left -> currentItem = currentItem.copy(
-                amountMax = (currentItem.amountMax + amount).coerceIn(1, 64))
-            shift && right -> currentItem = currentItem.copy(
-                amountMax = (currentItem.amountMax - amount).coerceIn(currentItem.amountMin, 64))
-            left -> currentItem = currentItem.copy(
-                amountMin = (currentItem.amountMin + amount).coerceIn(1, currentItem.amountMax))
-            right -> currentItem = currentItem.copy(
-                amountMin = (currentItem.amountMin - amount).coerceIn(1, 64))
+            shift && left  -> max = (max + amount).coerceIn(1, 64)   // Maximum +N
+            shift && right -> max = (max - amount).coerceIn(1, 64)   // Maximum -N
+            left           -> min = (min + amount).coerceIn(1, 64)   // Minimum +N
+            right          -> min = (min - amount).coerceIn(1, 64)   // Minimum -N
         }
-        layout()
-        update()
+        // Keep the range coherent (1 <= min <= max <= 64). Previously "Minimum +N"
+        // was clamped to the current max, so on a freshly-added item (min=1, max=1)
+        // it silently did nothing. Now a Minimum bump carries the Maximum up with it,
+        // and a Maximum cut pulls the Minimum down — so every button visibly responds.
+        if (min > max) {
+            if (shift) min = max else max = min
+        }
+        if (min != currentItem.amountMin || max != currentItem.amountMax) {
+            currentItem = currentItem.copy(amountMin = min, amountMax = max)
+            layout()
+            update()
+        }
     }
 
     private fun handleResetClick(left: Boolean, right: Boolean) {
