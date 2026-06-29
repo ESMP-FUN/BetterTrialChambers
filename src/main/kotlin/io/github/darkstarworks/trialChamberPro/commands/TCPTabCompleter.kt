@@ -15,7 +15,7 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
         "help", "reload", "generate", "paste", "scan", "setexit",
         "snapshot", "list", "info", "delete", "vault", "key",
         "stats", "leaderboard", "lb", "top", "reset", "menu", "loot", "mobs", "give",
-        "pause", "resume", "dungeon", "container", "claims", "setup", "debug"
+        "pause", "resume", "rename", "dungeon", "container", "claims", "setup", "debug"
     )
     private val setupActions = listOf("start", "continue")
 
@@ -57,7 +57,7 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                             emptyList()
                         }
                     }
-                    "scan", "setexit", "info", "delete", "pause", "resume", "menu" -> {
+                    "scan", "setexit", "info", "delete", "pause", "resume", "rename", "menu" -> {
                         // Chamber names (menu: optional deep-link into the chamber's GUI)
                         getChamberNames().filter { it.startsWith(args[1].lowercase()) }
                     }

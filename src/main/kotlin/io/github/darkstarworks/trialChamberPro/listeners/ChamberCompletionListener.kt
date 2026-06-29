@@ -2,6 +2,7 @@ package io.github.darkstarworks.trialChamberPro.listeners
 
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.api.events.ChamberClearedEvent
+import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
@@ -46,5 +47,36 @@ class ChamberCompletionListener(private val plugin: TrialChamberPro) : Listener 
                 )
             }
         }
+    }
+
+    /**
+     * v1.6.1: optional server-wide "chamber cleared" announcement. Off by default
+     * (`global.broadcast-chamber-cleared`). Uses the chamber's friendly display name
+     * and the names of the players who took part. Paused chambers don't fire the
+     * event at all, so no guard is needed here.
+     *
+     * The event can fire on a region thread, so the broadcast is dispatched to the
+     * global region via the scheduler (Folia-safe), mirroring ResetManager's
+     * reset-complete broadcast.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    fun onChamberClearedBroadcast(event: ChamberClearedEvent) {
+        if (!plugin.config.getBoolean("global.broadcast-chamber-cleared", false)) return
+
+        val names = event.participants
+            .mapNotNull { uuid -> Bukkit.getPlayer(uuid)?.name ?: Bukkit.getOfflinePlayer(uuid).name }
+            .takeIf { it.isNotEmpty() }
+            ?: return
+        val playersText = names.joinToString(", ")
+        val chamberLabel = event.chamber.label()
+
+        plugin.scheduler.runTask(Runnable {
+            val message = plugin.getMessageComponent(
+                "chamber-cleared-broadcast",
+                "chamber" to chamberLabel,
+                "players" to playersText
+            )
+            Bukkit.getOnlinePlayers().forEach { it.sendMessage(message) }
+        })
     }
 }
