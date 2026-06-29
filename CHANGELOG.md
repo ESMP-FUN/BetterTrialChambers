@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.6.1] - 2026-06-28
+### Fixed
+- **Wave mobs no longer fight each other.** A trial spawner's skeletons would clip other mobs with stray arrows, and the wave dissolved into mob-vs-mob brawls — skeleton 1v1s, the occasional 3v3 — that the player never had to touch. Worse than just looking silly: those self-kills still counted toward wave (and chamber) completion, so a wave could clear itself while the player stood there. Friendly fire and AI target-locking **strictly between two trial-spawner wave mobs** are now suppressed; player-vs-mob combat is untouched, and non-wave entities (wild animals, other plugins' mobs) are left alone. Toggle with `spawner-waves.prevent-infighting` (default `true`). Also keeps premium TCP-MythicTrials tier progression honest, since "clearing" a chamber once again means the players actually did the fighting.
+
 ## [1.6.0] - 2026-06-26
 ### Added
 - **`/tcp setup` — an opt-in, guided settings tour.** TCP ships conservative defaults (auto-discovery and auto-snapshot are off, among others) and most operators never open a YAML file, so genuinely useful settings go unnoticed. `/tcp setup` walks the major settings **one at a time** — each with a plain-English explanation, its current state, and **Enable / Skip / Disable** buttons, plus **← Prev**, **Pause Setup** and **Stop Setup**. Nothing is ever forced and no default is changed. On Paper 1.21.7+ it renders in the native **Dialog** UI; on older or non-Paper servers it falls back automatically to a **clickable-chat** tour with the same content. Includes preset pickers (e.g. how often chambers reset, shown with the current value as a real duration), a clear **CPU-impact** badge on the few settings that warrant one, and a gentle op-join reminder — at most weekly, three times — that stops for good once you run the tour (with a single follow-up nudge if you start but don't finish). Permission: `tcp.admin.setup` (OP).

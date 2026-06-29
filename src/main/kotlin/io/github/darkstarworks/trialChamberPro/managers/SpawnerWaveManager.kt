@@ -228,6 +228,14 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
     }
 
     /**
+     * Whether [entity] is currently a tracked trial-spawner wave mob (vanilla or
+     * custom-provider). Used by [io.github.darkstarworks.trialChamberPro.listeners.MobInfightingListener]
+     * to suppress mob-vs-mob friendly fire between wave mobs (e.g. a skeleton's
+     * stray arrow aggroing the rest of the wave into a self-clearing brawl).
+     */
+    fun isWaveMob(entity: Entity): Boolean = mobToSpawner.containsKey(entity.uniqueId)
+
+    /**
      * Records a mob death and updates wave progress.
      */
     fun recordMobDeath(mob: Entity, killer: Player?): Boolean {

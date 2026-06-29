@@ -286,6 +286,12 @@ spawner-waves:
   remove-distance: 32
   award-stats: true             # Track wave kills in player statistics
   completion-message: true      # Send message when wave is complete
+  # Stop wave mobs from fighting EACH OTHER. In vanilla, a skeleton's stray arrow
+  # makes other mobs retaliate, so a wave can dissolve into mob-vs-mob brawls the
+  # player never has to touch — and those self-kills still complete the wave. When
+  # true, friendly fire and target-locking strictly between two trial-spawner wave
+  # mobs is suppressed (player-vs-mob combat is never affected). Default: true.
+  prevent-infighting: true
   # Glow outline on active trial spawners (v1.2.27, fixed v1.5.4)
   # When true, spawns an invisible shulker at each active spawner with the GLOWING effect
   # applied, producing a colored block outline that's visible through walls — helps players
