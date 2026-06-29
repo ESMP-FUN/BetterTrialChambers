@@ -600,20 +600,22 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             }
 
             val exitLoc = chamber.getExitLocation()
+            // rawMessage (not getMessage): these are nested into info-exit's {exit} placeholder,
+            // parsed once by the outer getMessageComponent below.
             val exitStr = if (exitLoc != null) {
-                plugin.getMessage("info-exit-location-set",
+                plugin.rawMessage("info-exit-location-set",
                     "x" to exitLoc.blockX,
                     "y" to exitLoc.blockY,
                     "z" to exitLoc.blockZ
                 )
             } else {
-                plugin.getMessage("info-exit-location-not-set")
+                plugin.rawMessage("info-exit-location-not-set")
             }
 
             val lastResetStr = if (chamber.lastReset != null) {
                 MessageUtil.formatRelativeTime(chamber.lastReset)
             } else {
-                plugin.getMessage("time-never")
+                plugin.rawMessage("time-never")
             }
 
             sender.sendMessage(plugin.getMessageComponent("info-header", "chamber" to chamber.name))
@@ -633,9 +635,9 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             sender.sendMessage(plugin.getMessageComponent("info-last-reset", "time" to lastResetStr))
 
             val snapshotStatus = if (chamber.snapshotFile != null) {
-                plugin.getMessage("info-snapshot-created")
+                plugin.rawMessage("info-snapshot-created")
             } else {
-                plugin.getMessage("info-snapshot-not-created")
+                plugin.rawMessage("info-snapshot-not-created")
             }
             sender.sendMessage(plugin.getMessageComponent("info-snapshot", "status" to snapshotStatus))
 
@@ -981,7 +983,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 }
 
                 sender.sendMessage(
-                    plugin.getMessage("leaderboard-entry",
+                    plugin.getMessageComponent("leaderboard-entry",
                         "rank" to (index + 1),
                         "player" to playerName,
                         "value" to displayValue
