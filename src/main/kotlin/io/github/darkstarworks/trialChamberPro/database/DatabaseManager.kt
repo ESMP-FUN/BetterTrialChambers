@@ -368,6 +368,14 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
                 } catch (_: SQLException) {
                     // Column already exists (or table not yet present on a fresh install)
                 }
+
+                // v1.6.1: optional per-chamber friendly display name (used in announcements)
+                try {
+                    stmt.execute("ALTER TABLE chambers ADD COLUMN display_name VARCHAR(64)")
+                    plugin.logger.info("Migration executed: Added display_name column")
+                } catch (_: SQLException) {
+                    // Column already exists
+                }
             }
         }
     }

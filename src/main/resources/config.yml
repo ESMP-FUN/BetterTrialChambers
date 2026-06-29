@@ -19,6 +19,11 @@ global:
   default-reset-interval: 172800
   reset-warning-times: [300, 60, 30] # Warnings in seconds before reset
   reset-complete-alert: true # Set to false to suppress the server-wide broadcast when any chamber finishes resetting
+  # Server-wide broadcast when a chamber is fully cleared (every trial spawner in it
+  # finished its wave in one run). Uses the chamber's display name + the players who
+  # took part — e.g. "Valdora has been cleared by Steve, Alex!". Off by default.
+  # (Premium TCP-MythicTrials layers a richer "at difficulty N" version on top.)
+  broadcast-chamber-cleared: false
   teleport-players-on-reset: true
   teleport-location: EXIT_POINT # EXIT_POINT, OUTSIDE_BOUNDS, or WORLD_SPAWN
   async-block-placement: true
@@ -46,6 +51,35 @@ global:
   # Folia (FAWE has no Folia support) and for manual /tcp reset (those keep the
   # batched restore so WorldEdit //undo still works). Falls back automatically.
   use-fawe: false
+
+# Chamber display names
+# Chambers have a unique internal name (used in commands) plus an optional friendly
+# DISPLAY name shown in player-facing announcements (reset/clear broadcasts, /tcp info).
+# Rename any chamber with /tcp rename <chamber> <name>, or via the chamber GUI.
+naming:
+  # Auto-assign a random unused display name from the pool below to each newly
+  # registered chamber (both manual /tcp generate and auto-discovered). The internal
+  # name is unchanged. Set false to leave new chambers nameless until renamed.
+  auto-assign: true
+  # The pool to draw from. A name already used by another chamber is skipped; when all
+  # are taken, new chambers fall back to their internal name until you add more or
+  # rename manually. Add your own — these are just a starting set.
+  name-pool:
+    - Valdora
+    - Ashfall Hollow
+    - The Gilded Vault
+    - Cinderkeep
+    - Hollowreach
+    - Mournstone
+    - The Copper Crypt
+    - Ravenshold
+    - Duskbarrow
+    - Thorngate
+    - The Sunken Atrium
+    - Emberforge
+    - Greywarden
+    - The Tuff Bastion
+    - Vexspire
 
 # Generation settings
 generation:
