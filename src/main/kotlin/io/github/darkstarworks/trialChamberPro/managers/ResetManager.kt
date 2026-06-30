@@ -354,6 +354,9 @@ class ResetManager(private val plugin: TrialChamberPro) {
 
             // v1.5.7: per-player container-loot copies reset with the chamber —
             // everyone gets fresh chest loot next cycle. No-op when unused.
+            // Untouched containers then roll the vanilla loot table fresh on next
+            // open (each player independently); OP overrides persist. No reset-time
+            // re-roll needed — freshness is inherent to the per-player model (v1.6.3).
             plugin.containerLootManager.clearChamber(chamber.id)
 
             // Send completion message if broadcasts are enabled globally and for this chamber
@@ -378,7 +381,12 @@ class ResetManager(private val plugin: TrialChamberPro) {
             // Don't swallow coroutine cancellation (e.g. plugin disable) as a "failure".
             plugin.logger.warning("Chamber reset for ${chamber.name} was cancelled before completing (likely shutdown or a pre-empting reset).")
             throw e
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            // Throwable, not Exception: a soft-dependency class compiled for a newer
+            // Java than the runtime throws LinkageError (UnsupportedClassVersionError),
+            // which an Exception catch misses — the reset would then die silently with
+            // no success/failure feedback. Report it and return false so callers can
+            // tell the operator. CancellationException is rethrown above.
             plugin.logger.severe("Failed to reset chamber ${chamber.name}: ${e.javaClass.simpleName}: ${e.message}")
             e.printStackTrace()
             false

@@ -45,11 +45,21 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
         plugin.logger.info("Starting block restoration: $totalBlocks blocks")
 
         // Try to set up WorldEdit integration if player provided and WorldEdit available
-        val weSession = if (initiatingPlayer != null && WorldEditUtil.isAvailable()) {
+        val weSession = if (initiatingPlayer != null && WorldEditSupport.isAvailable()) {
             try {
                 createWorldEditSession(initiatingPlayer, snapshot)
-            } catch (e: Exception) {
-                plugin.logger.warning("Failed to create WorldEdit session for undo support: ${e.message}")
+            } catch (e: Throwable) {
+                // Catch Throwable, not just Exception: a WorldEdit jar compiled for a
+                // newer Java than the server runtime throws UnsupportedClassVersionError
+                // (a LinkageError, not an Exception) the moment a WE class is touched.
+                // WorldEdit is only a soft dependency here (//undo integration), so a
+                // broken/incompatible install must degrade gracefully — never abort the
+                // reset. The undo hint is simply skipped.
+                plugin.logger.warning(
+                    "WorldEdit //undo integration unavailable (${e.javaClass.simpleName}: ${e.message}); " +
+                        "continuing reset without it. If this is an UnsupportedClassVersionError, your " +
+                        "WorldEdit build targets a newer Java than this server's runtime."
+                )
                 null
             }
         } else null
