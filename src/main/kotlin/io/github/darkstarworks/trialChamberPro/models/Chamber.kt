@@ -41,6 +41,9 @@ import java.io.File
  * @property displayName Optional friendly name shown in player-facing announcements (reset/clear broadcasts,
  *   `/tcp info`). The [name] remains the unique identifier used in commands and the database. Null/blank =
  *   fall back to [name]. Use [label] to resolve the effective name.
+ * @property boundsConfirmed True once a thorough, player-present expand pass (`/tcp scan add`, or the GUI
+ *   "Travel & Expand" action) has been run, confirming the bounds aren't clipped. The GUI hides its
+ *   one-time expand prompt once this is set. The best-effort auto-expand on discovery does NOT set it.
  */
 data class Chamber(
     val id: Int,
@@ -69,7 +72,8 @@ data class Chamber(
     val customMobIdsOminous: List<String> = emptyList(),
     val isPaused: Boolean = false,
     val broadcastResetComplete: Boolean = true,
-    val displayName: String? = null
+    val displayName: String? = null,
+    val boundsConfirmed: Boolean = false
 ) {
     /**
      * The effective player-facing name: the [displayName] if set (non-blank), otherwise
