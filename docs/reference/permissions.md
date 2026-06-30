@@ -209,13 +209,12 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 <summary><code>tcp.admin.containers</code></summary>
 
-**Description:** Manage per-player container loot templates _(1.5.7+, reworked 1.5.9)_ **Default:** Operators only **Allows:**
+**Description:** Manage per-player container loot _(1.5.7+, reworked 1.6.3)_ **Default:** Operators only **Allows:**
 
-* **Sneak-click** a chamber chest/barrel/dispenser to edit the shared loot **template** (the contents every player's first-open copy is cloned from)
-* `/tcp container <list|materialize|reset|clearcopies|tp|edit> <chamber>` - manage templates from the CLI
-* The chamber GUI's **Container Loot** view
+* The chamber GUI's **Container Loot** view — edit a container to create a loot **override** (every player then receives a copy of it), or revert it to vanilla per-player rolls
+* `/tcp container <list|materialize|edit|resetone|reset|clearcopies|tp> <chamber>` - the same management from the CLI
 
-Only relevant when `chests.per-player-loot` is enabled. A normal (non-sneak) click still gives staff their own per-player copy like any player.
+Only relevant when `chests.per-player-loot` is enabled. Editing is GUI/command-only — there is no in-world editing. Without an override, every player gets their own freshly-rolled loot.
 
 </details>
 
