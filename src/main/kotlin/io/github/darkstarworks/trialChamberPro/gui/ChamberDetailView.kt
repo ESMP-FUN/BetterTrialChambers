@@ -108,6 +108,7 @@ class ChamberDetailView(
         return GuiComponents.infoItem(
             plugin, Material.LODESTONE,
             "gui.chamber-detail.info-name", "gui.chamber-detail.info-lore",
+            "display" to chamber.label(),
             "chamber" to chamber.name,
             "world" to chamber.world,
             "minX" to chamber.minX, "minY" to chamber.minY, "minZ" to chamber.minZ,
@@ -301,15 +302,21 @@ class ChamberDetailView(
                 player.sendMessage(plugin.getMessageComponent("gui-forcing-reset", "chamber" to chamber.name))
                 plugin.launchAsync {
                     try {
-                        plugin.resetManager.resetChamber(
+                        val success = plugin.resetManager.resetChamber(
                             chamber, player,
                             io.github.darkstarworks.trialChamberPro.api.events.ChamberResetEvent.Reason.FORCED
                         )
                         plugin.scheduler.runAtEntity(player, Runnable {
-                            player.sendMessage(plugin.getMessageComponent("gui-chamber-reset-complete", "chamber" to chamber.name))
-                            player.closeInventory()
+                            if (success) {
+                                player.sendMessage(plugin.getMessageComponent("gui-chamber-reset-complete", "chamber" to chamber.name))
+                                player.closeInventory()
+                            } else {
+                                // Reset returned false (e.g. an error during restoration) —
+                                // don't claim success and leave the operator wondering.
+                                player.sendMessage(plugin.getMessageComponent("gui-reset-failed", "error" to "Check console for details"))
+                            }
                         })
-                    } catch (e: Exception) {
+                    } catch (e: Throwable) {
                         plugin.scheduler.runAtEntity(player, Runnable {
                             player.sendMessage(plugin.getMessageComponent("gui-reset-failed", "error" to (e.message ?: "Unknown error")))
                         })

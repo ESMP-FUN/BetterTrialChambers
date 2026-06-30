@@ -3,6 +3,7 @@ package io.github.darkstarworks.trialChamberPro.commands.handlers
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.utils.RegionUtil
 import io.github.darkstarworks.trialChamberPro.utils.WEVarStore
+import io.github.darkstarworks.trialChamberPro.utils.WorldEditSupport
 import io.github.darkstarworks.trialChamberPro.utils.WorldEditUtil
 import org.bukkit.Location
 import org.bukkit.command.CommandSender
@@ -59,7 +60,7 @@ class GenerateCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
             "value" -> {
                 when (args[2].lowercase()) {
                     "save" -> {
-                        if (!WorldEditUtil.isAvailable()) {
+                        if (!WorldEditSupport.isAvailable()) {
                             sender.sendMessage(plugin.getMessageComponent("worldedit-not-found"))
                             return
                         }
@@ -138,7 +139,7 @@ class GenerateCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
                 } else {
                     // Fallback: if player with WE selection, treat varName as chamber name (legacy behavior)
                     if (sender is Player) {
-                        if (!WorldEditUtil.isAvailable()) {
+                        if (!WorldEditSupport.isAvailable()) {
                             sender.sendMessage(plugin.getMessageComponent("worldedit-not-found"))
                             return
                         }
@@ -175,7 +176,7 @@ class GenerateCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
                     sender.sendMessage(plugin.getMessageComponent("player-only"))
                     return
                 }
-                if (!WorldEditUtil.isAvailable()) {
+                if (!WorldEditSupport.isAvailable()) {
                     sender.sendMessage(plugin.getMessageComponent("worldedit-not-found"))
                     return
                 }

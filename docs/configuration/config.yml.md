@@ -1191,6 +1191,8 @@ discovery:
   pending-retry-seconds: 30        # How long to keep a partial-load seed pending while adjacent chunks load
   merge-distance-blocks: 250       # Merge a new region into an existing chamber within this distance
   max-merged-volume: 1500000       # Hard cap on the post-merge bounding-box volume (blocks)
+  expand-on-discover: true         # Auto-run one expand pass after discovery to catch clipped sections
+  expand-delay-seconds: 10         # Delay before that pass (lets vault rows commit + nearby chunks load)
   snapshot-reminder:
     enabled: true
     on-join: true                  # Ping an admin individually when they log in
@@ -1283,6 +1285,18 @@ Since **1.5.6**, a merge automatically re-captures the chamber's snapshot whenev
 
 <details>
 
+<summary><code>expand-on-discover</code> / <code>expand-delay-seconds</code></summary>
+
+**Defaults:** `true` / `10` _(added in 1.6.3)_
+
+The flood-fill that detects a chamber can be clipped: it floods outward from one vault/spawner, and if neighbouring chunks were still loading at detection time (or the chamber is big enough to hit the flood's internal node cap), the bounding box stops short — leaving part of the chamber, and its chests/vaults/spawners, outside the registered region. With `expand-on-discover` on, the plugin automatically runs **one expand pass** `expand-delay-seconds` after registering a chamber: a multi-seed re-flood from all of its vaults (now that the rows are committed and nearby chunks have loaded) that grows the bounds to cover what the first pass missed, then re-scans and re-snapshots.
+
+It's **best-effort** — it can only read chunks that are loaded when it runs, so a wing nobody has visited yet may still be missed. Run [`/tcp scan add <chamber>`](../reference/commands.md#tcp-scan-chamber) while standing in the chamber to repair it on demand.
+
+</details>
+
+<details>
+
 <summary><code>snapshot-reminder</code></summary>
 
 **Defaults:** `enabled: true`, `on-join: true`, `interval-minutes: 30` _(added in 1.5.1)_
@@ -1312,25 +1326,27 @@ chests:
   per-player-loot: false
 ```
 
-_(Added in 1.5.7 — opt-in. Substantially fixed in 1.5.9.)_ Lootr-style container loot: when enabled, every player who opens a **chest, trapped chest, barrel, dispenser, or dropper** inside a registered chamber gets their **own private copy** of its contents. The second player into a chamber no longer finds gutted containers — together with per-player vaults, the entire chamber becomes per-player.
+_(Added in 1.5.7 — opt-in. Reworked in 1.6.3.)_ Lootr-style container loot: when enabled, every player who opens a **chest, trapped chest, barrel, dispenser, or dropper** that has a loot table inside a registered chamber gets their **own loot**. The second player into a chamber no longer finds gutted containers — together with per-player vaults, the entire chamber becomes per-player.
 
 How it behaves:
 
-* Each container has a shared **template** — the contents every player's first-open copy is cloned from. For a naturally-generated chamber the template is **materialized by rolling the container's vanilla loot table** the first time it's accessed (a trial-chamber container is empty until something rolls its loot table, which is why earlier versions showed empty copies).
-* Per-player copies persist across restarts (database) and **reset with the chamber**, so every cycle is fresh loot for everyone. The shared template, by contrast, **persists across resets** — so edits stick.
+* Each player who opens an untouched container gets their **own, independently-rolled** loot from its vanilla loot table — two players can get different items, exactly like vanilla generates per structure.
+* The container's loot table is **never consumed** (the real block is never opened, and the loot table is re-applied if anything tries to roll it). So every chamber **reset** clears per-player copies and the next open rolls **fresh** loot again — "vanilla, but repeatable."
 * Double chests share one copy (keyed by the left half). Dispensers/droppers use their 9 slots.
-* **Hopper automation is blocked** in/out of chamber containers while enabled — it would drain or pollute the shared template.
+* **Hopper automation is blocked** in/out of chamber containers while enabled — it would drain or pollute the source.
 * Containers **placed by players** inside a chamber keep vanilla behaviour (tagged at place time).
-* **Template editing:** admins with `tcp.admin.containers` (default op) **sneak-click** to open the shared template and edit it; changes affect every player's first-open loot and persist across resets. A normal click gives them their own copy like any player.
-* **Management:** the chamber GUI (`/tcp menu <chamber>` → **Container Loot**) and the [`/tcp container`](../reference/commands.md#tcp-container-action-chamber) command both let you list templates, **materialize all** containers at once (roll templates without opening each in-world), edit/teleport to a template, clear player copies, or reset templates.
 * Decorated pots are excluded by design: their loot is break-based and already renews via chamber resets.
 
-{% hint style="info" %}
-**Upgrading to 1.5.9:** container loot tables are now captured by snapshots (so breaking or resetting a container restores its loot). Re-run `/tcp snapshot create` on existing chambers so their containers are captured under the new format. Already-materialized templates persist regardless.
-{% endhint %}
+**Customising a container's loot (overrides).** Editing is done entirely from the GUI — there is no in-world editing. Open the chamber GUI (`/tcp menu <chamber>` → **Container Loot**), then:
+
+* **Scan Containers** lists every container in the chamber so you can pick one. Listing only — it does **not** freeze loot.
+* **Click a container to edit** its contents. Saving turns it into an **override**: every player then receives a copy of *that* loot (still per-player, and re-cloned fresh each reset), instead of a random roll. Overrides **persist across resets**.
+* **Revert to vanilla** with shift-left-click (or [`/tcp container resetone <chamber> <#>`](../reference/commands.md#tcp-container-action-chamber)) — the container goes back to random per-player rolls.
+
+Each container is labelled **Vanilla** (rolls fresh per player) or **Custom override** in the GUI. Toggle the whole feature on/off from the same screen, or via [`/tcp container`](../reference/commands.md#tcp-container-action-chamber) on the command line.
 
 {% hint style="warning" %}
-Turn this on only after your chambers are registered — containers inside chamber bounds that players were already using as storage will start serving per-player copies (their real contents stay safe in the block, but players can't withdraw them without an admin sneak-click). Player-placed containers _from before 1.5.7_ can't be distinguished from chamber loot containers.
+Turn this on only after your chambers are registered — containers inside chamber bounds that players were already using as storage will start serving per-player loot. Player-placed containers _from before 1.5.7_ can't be distinguished from chamber loot containers.
 {% endhint %}
 
 ***
