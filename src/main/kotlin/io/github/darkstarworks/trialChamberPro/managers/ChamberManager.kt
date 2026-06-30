@@ -605,6 +605,10 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             rs.getString("display_name")
         } catch (_: Exception) { null }
 
+        val boundsConfirmed = try {
+            rs.getBoolean("bounds_confirmed")
+        } catch (_: Exception) { false }
+
         return Chamber(
             id = rs.getInt("id"),
             name = rs.getString("name"),
@@ -632,7 +636,8 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             customMobIdsOminous = customOminous,
             isPaused = isPaused,
             broadcastResetComplete = broadcastResetComplete,
-            displayName = displayName
+            displayName = displayName,
+            boundsConfirmed = boundsConfirmed
         )
     }
 
@@ -819,6 +824,36 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             }
         } catch (e: Exception) {
             plugin.logger.severe("Failed to set broadcast_reset_complete: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Marks a chamber's bounds as confirmed (a thorough player-present expand pass ran).
+     * Hides the GUI's one-time "Travel & Expand" prompt. Refreshes the in-memory cache.
+     */
+    suspend fun setBoundsConfirmed(chamberId: Int, confirmed: Boolean): Boolean = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement("UPDATE chambers SET bounds_confirmed = ? WHERE id = ?").use { stmt ->
+                    stmt.setBoolean(1, confirmed)
+                    stmt.setInt(2, chamberId)
+                    val updated = stmt.executeUpdate() > 0
+                    if (updated) {
+                        val chamber = chamberCache.values.find { it.id == chamberId }
+                        if (chamber != null) {
+                            val refreshed = loadChamberFromDb(chamber.name)
+                            if (refreshed != null) {
+                                chamberCache[chamber.name] = refreshed
+                                updateCacheExpiry(chamber.name)
+                            }
+                        }
+                    }
+                    updated
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.severe("Failed to set bounds_confirmed: ${e.message}")
             false
         }
     }

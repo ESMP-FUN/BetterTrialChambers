@@ -219,7 +219,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
             if (isAdd) {
                 sender.sendMessage(plugin.getMessageComponent("scan-add-started", "chamber" to chamberName))
-                val r = plugin.chamberDiscoveryManager.expandExisting(chamber)
+                val r = plugin.chamberDiscoveryManager.expandExisting(chamber, markConfirmed = true)
                 if (r.grew) {
                     sender.sendMessage(plugin.getMessageComponent("scan-add-grown",
                         "chamber" to chamberName,
