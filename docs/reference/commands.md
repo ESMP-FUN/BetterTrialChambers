@@ -19,6 +19,7 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | `/tcp menu [chamber]`                                                            | Open admin GUI (with a chamber name: jump straight to that chamber's detail view)                                                                | `tcp.admin.menu`                |
 | `/tcp generate <value\|coords\|wand\|blocks>`                                    | Register chamber from saved var, coords, WE wand, or by block amount                                                                             | `tcp.admin.generate`            |
 | `/tcp scan <chamber>`                                                            | Scan for vaults/spawners                                                                                                                         | `tcp.admin.scan`                |
+| `/tcp scan add <chamber>`                                                        | Grow a chamber's bounds into sections discovery clipped, then re-scan                                                                            | `tcp.admin.scan`                |
 | `/tcp setexit <chamber>`                                                         | Set exit location                                                                                                                                | `tcp.admin.create`              |
 | `/tcp snapshot <create\|update\|restore> [chamber]`                              | Manage snapshots (omit the name to target the chamber you're standing in)                                                                        | `tcp.admin.snapshot`            |
 | `/tcp snapshot create all [force]`                                               | Backfill snapshots for all chambers missing one (staggered); `force` re-does all                                                                 | `tcp.admin.snapshot`            |
@@ -33,7 +34,7 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | `/tcp loot set <chamber> <normal\|ominous> <table>`                              | Override a chamber's loot table                                                                                                                  | `tcp.admin.loot`                |
 | `/tcp loot clear <chamber> [normal\|ominous\|all]`                               | Remove per-chamber loot override                                                                                                                 | `tcp.admin.loot`                |
 | `/tcp loot audit`                                                                | List pre-1.5.0 loot entries that lost their NBT                                                                                                  | `tcp.admin.loot`                |
-| `/tcp container <list\|materialize\|reset\|clearcopies\|tp\|edit> <chamber> [#]` | Manage per-player container loot templates                                                                                                       | `tcp.admin.containers`          |
+| `/tcp container <list\|materialize\|reset\|resetone\|clearcopies\|tp\|edit> <chamber> [#]` | Manage per-player container loot (list, edit overrides, revert to vanilla)                                                                | `tcp.admin.containers`          |
 | `/tcp mobs providers`                                                            | List registered mob providers and their availability                                                                                             | `tcp.admin.mobs`                |
 | `/tcp mobs <chamber> provider <id\|vanilla\|none>`                               | Set a chamber's custom mob provider                                                                                                              | `tcp.admin.mobs`                |
 | `/tcp mobs <chamber> add normal\|ominous <mobId>`                                | Add a mob id to a chamber's pool                                                                                                                 | `tcp.admin.mobs`                |
@@ -218,12 +219,13 @@ Registers a chamber using either a saved WorldEdit variable (named region), your
 
 <summary><code>/tcp scan &lt;chamber&gt;</code></summary>
 
-Scans a chamber to detect vaults, trial spawners, and decorated pots.
+Scans a chamber to detect vaults, trial spawners, and decorated pots within its **current bounds**.
 
 **Usage:**
 
 ```
 /tcp scan <chamber_name>
+/tcp scan add <chamber_name>
 ```
 
 **Permission:** `tcp.admin.scan`
@@ -231,12 +233,13 @@ Scans a chamber to detect vaults, trial spawners, and decorated pots.
 **Arguments:**
 
 * `<chamber_name>` - Name of the chamber to scan
+* `add` - Grow the chamber's bounds before scanning (see below)
 
 **Examples:**
 
 ```
 /tcp scan MainChamber
-/tcp scan NetherChamber1
+/tcp scan add auto_world_5503_1336
 ```
 
 **What it finds:**
@@ -251,6 +254,12 @@ Scans a chamber to detect vaults, trial spawners, and decorated pots.
 [TCP] Scanning chamber MainChamber...
 [TCP] Scanning complete! Found 8 vaults, 12 spawners, 24 decorated pots.
 ```
+
+**`/tcp scan add` — repair a clipped chamber** _(added in 1.6.3)_
+
+Auto-discovery floods outward from a vault/spawner. If neighbouring chunks were still loading when the chamber was first detected (or the chamber was big enough to hit the flood's node cap), the bounding box can be **clipped at a chunk boundary** — leaving part of the chamber, and its chests/vaults/spawners, outside the registered region. A plain `/tcp scan` only looks **inside the existing bounds**, so it can't recover the missing part.
+
+`/tcp scan add <chamber>` re-floods from the chamber's known vaults (now that chunks are loaded), **grows the bounds** to absorb the missed sections, then re-scans and re-snapshots — the same merge auto-discovery uses, just operator-triggered. **Stand inside the chamber** when you run it so the relevant chunks are loaded. New chambers also get one automatic expand pass on discovery (`discovery.expand-on-discover`), and the chamber GUI offers a one-time **Travel & Expand** button that teleports you there first. To reach a wing nobody has visited without travelling, enable `discovery.expand-force-load` (opt-in, Paper-only).
 
 {% hint style="warning" %}
 **Re-scanning overwrites previous data!** If you modified your chamber and re-scan, old vault/spawner data is replaced.
@@ -590,23 +599,27 @@ Pause or resume a registered chamber.
 
 <summary><code>/tcp container &lt;action&gt; &lt;chamber&gt; [#]</code></summary>
 
-Manage per-player container loot ([`chests.per-player-loot`](../configuration/config.yml.md#per-player-chamber-container-loot)) templates for a chamber. CLI parity with the chamber GUI's **Container Loot** screen (`/tcp menu <chamber>` → Container Loot). _(Added in 1.5.9.)_
+Manage per-player container loot ([`chests.per-player-loot`](../configuration/config.yml.md#per-player-chamber-container-loot)) for a chamber. CLI parity with the chamber GUI's **Container Loot** screen (`/tcp menu <chamber>` → Container Loot). _(Added in 1.5.9; reworked in 1.6.3.)_
+
+Untouched containers roll **fresh loot per player** on every open (and again after each reset). Editing a container creates an **override** that all players then receive a copy of; reverting drops the override. There is no in-world editing — use this command or the GUI.
 
 **Permission:** `tcp.admin.containers`
 
-| Action                  | Effect                                                                                                                                   |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `list <chamber>`        | Show whether per-player loot is on, plus template and player-copy counts, with each template's index + position.                         |
-| `materialize <chamber>` | Scan the chamber and roll a shared template for every container that doesn't have one yet (so you can edit loot before anyone opens it). |
-| `reset <chamber>`       | Delete all shared templates; each container re-materializes from its loot table on next access.                                          |
-| `clearcopies <chamber>` | Drop every player's private copies (they re-clone the template next open). Templates are kept.                                           |
-| `tp <chamber> <#>`      | Teleport to a template's container (index from `list`).                                                                                  |
-| `edit <chamber> <#>`    | Open a template's shared inventory to edit it — changes persist across resets.                                                           |
+| Action                    | Effect                                                                                                                            |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `list <chamber>`          | Show whether per-player loot is on, plus listed-container and player-copy counts, with each container's index + position.          |
+| `materialize <chamber>`   | Scan the chamber and **list** every container so you can edit it. Listing only — it does not freeze loot.                          |
+| `edit <chamber> <#>`      | Open a container to edit it; saving creates an **override** (every player gets a copy of it, re-cloned each reset).                |
+| `resetone <chamber> <#>`  | Revert one container to vanilla — it goes back to fresh per-player rolls.                                                          |
+| `reset <chamber>`         | Remove every container from the list, including overrides (containers re-list as they're opened or re-scanned).                    |
+| `clearcopies <chamber>`   | Drop every player's private copies (they roll fresh loot next open). Overrides are kept.                                          |
+| `tp <chamber> <#>`        | Teleport to a container (index from `list`).                                                                                       |
 
 ```
 /tcp container list MainChamber
 /tcp container materialize MainChamber
 /tcp container edit MainChamber 3
+/tcp container resetone MainChamber 3
 ```
 
 </details>

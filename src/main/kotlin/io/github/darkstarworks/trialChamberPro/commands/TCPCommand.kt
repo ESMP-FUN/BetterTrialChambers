@@ -90,6 +90,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         sender.sendMessage(plugin.getMessageComponent("help-paste"))
         // Manage
         sender.sendMessage(plugin.getMessageComponent("help-scan"))
+        sender.sendMessage(plugin.getMessageComponent("help-scan-add"))
         sender.sendMessage(plugin.getMessageComponent("help-setexit"))
         sender.sendMessage(plugin.getMessageComponent("help-snapshot"))
         sender.sendMessage(plugin.getMessageComponent("help-snapshot-bulk"))
@@ -197,12 +198,39 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             return
         }
 
-        val chamberName = args[1]
+        // `/tcp scan add <chamber>` — re-flood from the chamber's structural seeds
+        // and grow its bounds to absorb sections that auto-discovery missed (e.g.
+        // a wing whose chunks were unloaded when the chamber was first detected, so
+        // the flood-fill clipped at the chunk boundary). Mirrors the auto-discovery
+        // region merge, just operator-triggered.
+        val isAdd = args[1].equals("add", ignoreCase = true)
+        val chamberName = if (isAdd) args.getOrNull(2) else args[1]
+        if (chamberName == null) {
+            sender.sendMessage(plugin.getMessageComponent("usage-scan"))
+            return
+        }
 
         plugin.launchAsync {
             val chamber = plugin.chamberManager.getChamber(chamberName)
             if (chamber == null) {
                 sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
+                return@launchAsync
+            }
+
+            if (isAdd) {
+                sender.sendMessage(plugin.getMessageComponent("scan-add-started", "chamber" to chamberName))
+                val r = plugin.chamberDiscoveryManager.expandExisting(chamber, markConfirmed = true)
+                if (r.grew) {
+                    sender.sendMessage(plugin.getMessageComponent("scan-add-grown",
+                        "chamber" to chamberName,
+                        "added" to (r.newVolume - r.oldVolume),
+                        "vaults" to r.vaults,
+                        "spawners" to r.spawners
+                    ))
+                } else {
+                    sender.sendMessage(plugin.getMessageComponent("scan-add-none",
+                        "chamber" to chamberName, "reason" to r.reason))
+                }
                 return@launchAsync
             }
 

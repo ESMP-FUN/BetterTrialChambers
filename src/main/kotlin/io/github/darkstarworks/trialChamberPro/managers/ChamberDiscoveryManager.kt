@@ -317,6 +317,120 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
         markProcessed(key)
     }
 
+    /** Outcome of an operator-triggered [expandExisting] pass. */
+    data class ExpandResult(
+        val grew: Boolean,
+        val reason: String,
+        val oldVolume: Long,
+        val newVolume: Long,
+        val vaults: Int,
+        val spawners: Int
+    )
+
+    /**
+     * Operator-triggered re-discovery (`/tcp scan add`): re-runs the flood-fill
+     * from the chamber's known structural blocks (its registered vaults) with all
+     * chunks now loaded, and grows the chamber's AABB to cover any sections that
+     * the original auto-discovery clipped — typically a wing whose chunks were
+     * unloaded at detection time, so the flood stopped at the chunk boundary.
+     *
+     * Flooding from MULTIPLE spread-out vault seeds (and unioning the results)
+     * also works around the single-flood node cap, since each seed gets its own
+     * budget. Re-uses the same updateBounds → rescan → re-snapshot path as the
+     * auto-discovery region merge.
+     */
+    suspend fun expandExisting(
+        chamber: io.github.darkstarworks.trialChamberPro.models.Chamber,
+        forceLoad: Boolean = plugin.config.getBoolean("discovery.expand-force-load", false),
+        markConfirmed: Boolean = false
+    ): ExpandResult {
+        val oldVolume = (chamber.maxX - chamber.minX + 1).toLong() *
+                (chamber.maxY - chamber.minY + 1).toLong() *
+                (chamber.maxZ - chamber.minZ + 1).toLong()
+        val world = chamber.getWorld()
+            ?: return ExpandResult(false, "world '${chamber.world}' not loaded", oldVolume, oldVolume, 0, 0)
+
+        val seeds = plugin.vaultManager.getVaultsForChamber(chamber.id)
+        if (seeds.isEmpty()) {
+            return ExpandResult(false, "no registered vaults to flood from — run /tcp scan first", oldVolume, oldVolume, 0, 0)
+        }
+
+        // forceLoad pulls in unloaded chunks on demand so a never-visited wing can
+        // be reached — but it's Paper-only (off-region getChunkAt throws on Folia).
+        val effectiveForceLoad = forceLoad && !plugin.scheduler.isFolia
+
+        var minX = chamber.minX; var minY = chamber.minY; var minZ = chamber.minZ
+        var maxX = chamber.maxX; var maxY = chamber.maxY; var maxZ = chamber.maxZ
+
+        for (v in seeds) {
+            val r = floodOnRegion(world, v.x, v.y, v.z, effectiveForceLoad) ?: continue
+            // structuralCount <= 1 means the seed block itself was air/unreadable — skip.
+            if (r.structuralCount <= 1) continue
+            minX = minOf(minX, r.minX); minY = minOf(minY, r.minY); minZ = minOf(minZ, r.minZ)
+            maxX = maxOf(maxX, r.maxX); maxY = maxOf(maxY, r.maxY); maxZ = maxOf(maxZ, r.maxZ)
+        }
+
+        val newVolume = (maxX - minX + 1).toLong() *
+                (maxY - minY + 1).toLong() *
+                (maxZ - minZ + 1).toLong()
+
+        if (minX == chamber.minX && minY == chamber.minY && minZ == chamber.minZ &&
+            maxX == chamber.maxX && maxY == chamber.maxY && maxZ == chamber.maxZ
+        ) {
+            // A thorough pass that found nothing still confirms the bounds.
+            if (markConfirmed) plugin.chamberManager.setBoundsConfirmed(chamber.id, true)
+            return ExpandResult(false, "no additional sections found", oldVolume, oldVolume, 0, 0)
+        }
+
+        val maxMerged = plugin.config.getLong("discovery.max-merged-volume", 1_500_000L)
+        if (newVolume > maxMerged) {
+            return ExpandResult(false, "expansion would exceed max-merged-volume ($newVolume > $maxMerged)", oldVolume, newVolume, 0, 0)
+        }
+
+        if (!plugin.chamberManager.updateBounds(chamber.id, minX, minY, minZ, maxX, maxY, maxZ)) {
+            return ExpandResult(false, "updateBounds failed", oldVolume, newVolume, 0, 0)
+        }
+
+        val refreshed = plugin.chamberManager.getChamber(chamber.name)
+            ?: return ExpandResult(true, "bounds updated but re-fetch failed", oldVolume, newVolume, 0, 0)
+
+        val (vaults, spawners, _) = plugin.chamberManager.scanChamber(refreshed)
+
+        // A snapshot taken against the old, smaller bounds is now stale (and
+        // dangerous at reset time). Recapture when one existed or auto-snapshot
+        // is on — same policy as the auto-discovery merge.
+        val hadSnapshot = refreshed.snapshotFile != null
+        if (hadSnapshot || plugin.config.getBoolean("discovery.auto-snapshot", false)) {
+            try {
+                val file = plugin.snapshotManager.createSnapshot(refreshed)
+                if (!plugin.chamberManager.setSnapshotFile(refreshed.name, file.absolutePath)) {
+                    plugin.logger.warning("[Discovery] scan-add snapshot for '${refreshed.name}' captured but DB link failed — run /tcp snapshot create ${refreshed.name}.")
+                }
+            } catch (e: Exception) {
+                plugin.logger.warning("[Discovery] scan-add re-snapshot for '${refreshed.name}' failed: ${e.message}" +
+                    if (hadSnapshot) " — the existing snapshot is STALE; run /tcp snapshot create ${refreshed.name} before the next reset." else "")
+            }
+        }
+
+        if (markConfirmed) plugin.chamberManager.setBoundsConfirmed(chamber.id, true)
+        plugin.logger.info("[Discovery] scan-add grew '${chamber.name}' from $oldVolume to $newVolume blocks ($vaults vaults, $spawners spawners)")
+        return ExpandResult(true, "expanded", oldVolume, newVolume, vaults, spawners)
+    }
+
+    /** Runs [bfsCompute] on the region thread owning the seed and awaits the result. */
+    private suspend fun floodOnRegion(world: World, sx: Int, sy: Int, sz: Int, forceLoad: Boolean): BfsResult? =
+        kotlinx.coroutines.suspendCancellableCoroutine { cont ->
+            plugin.scheduler.runAtLocation(Location(world, sx + 0.5, sy + 0.5, sz + 0.5), Runnable {
+                val r = try {
+                    bfsCompute(world, sx, sy, sz, forceLoad)
+                } catch (e: Exception) {
+                    plugin.logger.warning("[Discovery] scan-add flood failed at $sx,$sy,$sz: ${e.message}")
+                    null
+                }
+                cont.resume(r) {}
+            })
+        }
+
     private suspend fun registerNew(
         world: World,
         name: String,
@@ -348,14 +462,20 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
             return
         }
 
-        plugin.logger.info("[Discovery] Registered chamber '$name' (${result.sizeX}x${result.sizeY}x${result.sizeZ}, ${result.vaultCount} vaults, ${result.spawnerCount} spawners)")
+        // Scan FIRST and report the authoritative counts. The BFS result
+        // undercounts (its 50k-node hard cap can be exhausted among the chamber's
+        // thousands of tuff/copper blocks before it reaches the recessed trial
+        // spawners), which produced the long-standing "0 spawners" notification.
+        val (scannedVaults, scannedSpawners, _) = plugin.chamberManager.scanChamber(chamber)
+
+        plugin.logger.info("[Discovery] Registered chamber '$name' (${result.sizeX}x${result.sizeY}x${result.sizeZ}, $scannedVaults vaults, $scannedSpawners spawners)")
 
         if (plugin.config.getBoolean("discovery.notify-ops", true)) {
             val msg = plugin.getMessageComponent(
                 "discovery-registered",
                 "name" to name,
-                "vaults" to result.vaultCount,
-                "spawners" to result.spawnerCount
+                "vaults" to scannedVaults,
+                "spawners" to scannedSpawners
             )
             plugin.scheduler.runTask(Runnable {
                 plugin.server.onlinePlayers
@@ -363,8 +483,6 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
                     .forEach { it.sendMessage(msg) }
             })
         }
-
-        plugin.chamberManager.scanChamber(chamber)
 
         if (plugin.config.getBoolean("discovery.auto-snapshot", false)) {
             try {
@@ -383,6 +501,29 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
         }
 
         markProcessed(key)
+
+        // Lazy-admin safety net: most operators will never run `/tcp scan add`, so
+        // automatically run one expand pass shortly after registering. The initial
+        // single-seed flood can clip a chamber (its node cap, or chunks that were
+        // unloaded at detection time); a delayed multi-seed re-flood from the now-
+        // committed vault rows — by which point nearby chunks have usually loaded —
+        // grows the bounds to cover what the first pass missed. Best-effort and
+        // gated by config; logs only (no second player notification).
+        if (plugin.config.getBoolean("discovery.expand-on-discover", true)) {
+            val delaySec = plugin.config.getLong("discovery.expand-delay-seconds", 10L).coerceAtLeast(2L)
+            plugin.launchAsync {
+                kotlinx.coroutines.delay(delaySec * 1000L)
+                val fresh = plugin.chamberManager.getChamber(name) ?: return@launchAsync
+                try {
+                    val r = expandExisting(fresh)
+                    if (r.grew) {
+                        plugin.logger.info("[Discovery] Auto-expand grew '$name' by ${r.newVolume - r.oldVolume} blocks (now ${r.vaults} vaults, ${r.spawners} spawners)")
+                    }
+                } catch (e: Exception) {
+                    plugin.logger.warning("[Discovery] Auto-expand for '$name' failed: ${e.message}")
+                }
+            }
+        }
     }
 
     private fun finalizeFailed(key: String, reason: String) {
@@ -423,7 +564,7 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
      * BFS flood-fill over connected structural blocks, capped by configured radii.
      * Must be called on the region thread owning the seed location.
      */
-    private fun bfsCompute(world: World, sx: Int, sy: Int, sz: Int): BfsResult {
+    private fun bfsCompute(world: World, sx: Int, sy: Int, sz: Int, forceLoad: Boolean = false): BfsResult {
         val maxRadiusXZ = plugin.config.getInt("discovery.max-radius-xz", 60)
         val maxRadiusY = plugin.config.getInt("discovery.max-radius-y", 45)
 
@@ -454,12 +595,19 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
             // Radius check from seed
             if (Math.abs(cx - sx) > maxRadiusXZ || Math.abs(cz - sz) > maxRadiusXZ || Math.abs(cy - sy) > maxRadiusY) continue
 
-            // Chunk must be loaded to safely read the block
+            // Chunk must be loaded to safely read the block. With forceLoad on
+            // (the opt-in `discovery.expand-force-load` path, Paper-only), pull it
+            // in on demand so a never-visited wing can still be reached; otherwise
+            // note the gap and skip (the caller may retry once chunks stream in).
             val chunkX = cx shr 4
             val chunkZ = cz shr 4
             if (!world.isChunkLoaded(chunkX, chunkZ)) {
-                hitUnloaded = true
-                continue
+                if (forceLoad) {
+                    world.getChunkAt(chunkX, chunkZ) // loads synchronously (generates only if absent on disk)
+                } else {
+                    hitUnloaded = true
+                    continue
+                }
             }
 
             val block = world.getBlockAt(cx, cy, cz)

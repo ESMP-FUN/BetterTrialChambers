@@ -13,6 +13,7 @@ import org.bukkit.entity.Player
  *   list <chamber>            — how many templates / player copies exist
  *   materialize <chamber>     — roll + store a template for every container
  *   reset <chamber>           — delete all templates (re-materialize on access)
+ *   resetone <chamber> <#>    — reset one template to vanilla (re-roll on access)
  *   clearcopies <chamber>     — drop every player's private copies
  *   tp <chamber> <#>          — teleport to a template (index from `list`)
  *   edit <chamber> <#>        — open a template to edit it
@@ -71,6 +72,22 @@ class ContainerCommand(private val plugin: TrialChamberPro) : SubcommandHandler 
                     val n = plugin.containerLootManager.clearChamber(chamber.id)
                     sender.sendRichMessage("<green>Cleared <yellow>$n</yellow> per-player container copy/copies — everyone re-clones the template next open.")
                 }
+                "resetone" -> {
+                    val idx = args.getOrNull(3)?.toIntOrNull()
+                    if (idx == null || idx < 1) {
+                        sender.sendRichMessage("<red>Usage: /tcp container resetone ${chamber.name} <#>  (index from /tcp container list)")
+                        return@launchAsync
+                    }
+                    val templates = plugin.containerLootManager.listTemplates(chamber.id)
+                    val target = templates.getOrNull(idx - 1)
+                    if (target == null) {
+                        sender.sendRichMessage("<red>No template #$idx — there are ${templates.size}.")
+                        return@launchAsync
+                    }
+                    val ok = plugin.containerLootManager.markVanilla(chamber.id, target.pos)
+                    if (ok) sender.sendRichMessage("<green>Reverted container #$idx to vanilla — it rolls fresh loot per player on each open.")
+                    else sender.sendRichMessage("<red>Couldn't revert container #$idx.")
+                }
                 "tp", "edit" -> {
                     val player = sender as? Player
                     if (player == null) {
@@ -107,6 +124,6 @@ class ContainerCommand(private val plugin: TrialChamberPro) : SubcommandHandler 
     }
 
     private fun usage(sender: CommandSender) {
-        sender.sendRichMessage("<gold>/tcp container</gold> <gray>— list | materialize | reset | clearcopies | tp <#> | edit <#> <white><chamber></white></gray>")
+        sender.sendRichMessage("<gold>/tcp container</gold> <gray>— list | materialize | reset | resetone <#> | clearcopies | tp <#> | edit <#> <white><chamber></white></gray>")
     }
 }
