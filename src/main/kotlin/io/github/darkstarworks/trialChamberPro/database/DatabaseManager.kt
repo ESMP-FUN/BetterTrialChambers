@@ -387,6 +387,15 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
                 } catch (_: SQLException) {
                     // Column already exists
                 }
+
+                // v1.6.3: marks a chamber whose bounds were confirmed via a thorough
+                // player-present expand pass (so the GUI hides its one-time expand prompt)
+                try {
+                    stmt.execute("ALTER TABLE chambers ADD COLUMN bounds_confirmed BOOLEAN NOT NULL DEFAULT 0")
+                    plugin.logger.info("Migration executed: Added bounds_confirmed column")
+                } catch (_: SQLException) {
+                    // Column already exists
+                }
             }
         }
     }

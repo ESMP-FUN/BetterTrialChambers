@@ -78,6 +78,12 @@ class ChamberDetailView(
         set(42, VcGuiItem.wrap(createContainerLootItem()) { ctx ->
             menu.openContainerLoot(ctx.player, chamber)
         })
+        // One-time prompt: offer to travel to the chamber and scan for sections
+        // auto-discovery may have clipped. Disappears once a thorough pass is run
+        // (here or via `/tcp scan add`).
+        if (!chamber.boundsConfirmed) {
+            set(44, VcGuiItem.wrap(createExpandItem()) { ctx -> handleExpandClick(ctx.player) })
+        }
 
         // Row 5: nav
         set(45, GuiComponents.backVcItem(plugin, "gui.common.dest-chambers") { ctx ->
@@ -98,6 +104,50 @@ class ChamberDetailView(
             .awaitInput(player.uniqueId, chamber.id)
         player.closeInventory()
         player.sendMessage(plugin.getMessageComponent("gui-rename-input-prompt", "chamber" to chamber.name))
+    }
+
+    private fun createExpandItem(): ItemStack =
+        GuiComponents.infoItem(plugin, Material.RECOVERY_COMPASS,
+            "gui.chamber-detail.expand-name", "gui.chamber-detail.expand-lore")
+
+    /**
+     * One-time "Travel & Expand". If the operator isn't standing in the chamber,
+     * the first click teleports them there (so its chunks load); standing inside,
+     * the click runs a thorough expand pass that grows the bounds into any clipped
+     * section, then marks the chamber confirmed (removing this button).
+     */
+    private fun handleExpandClick(player: Player) {
+        if (!player.hasPermission("tcp.admin.scan")) {
+            player.sendMessage(plugin.getMessageComponent("no-permission"))
+            return
+        }
+        val world = chamber.getWorld() ?: return
+        if (!chamber.contains(player.location)) {
+            val loc = org.bukkit.Location(
+                world,
+                ((chamber.minX + chamber.maxX) / 2) + 0.5,
+                ((chamber.minY + chamber.maxY) / 2) + 0.5,
+                ((chamber.minZ + chamber.maxZ) / 2) + 0.5
+            )
+            player.teleportAsync(loc)
+            player.sendMessage(plugin.getMessageComponent("gui-expand-teleported", "chamber" to chamber.label()))
+            return
+        }
+        player.sendMessage(plugin.getMessageComponent("gui-expand-running", "chamber" to chamber.label()))
+        plugin.launchAsync {
+            val r = plugin.chamberDiscoveryManager.expandExisting(chamber, markConfirmed = true)
+            val refreshed = plugin.chamberManager.getChamber(chamber.name) ?: chamber
+            plugin.scheduler.runAtEntity(player, Runnable {
+                if (r.grew) {
+                    player.sendMessage(plugin.getMessageComponent("gui-expand-grown",
+                        "chamber" to chamber.label(), "added" to (r.newVolume - r.oldVolume),
+                        "vaults" to r.vaults, "spawners" to r.spawners))
+                } else {
+                    player.sendMessage(plugin.getMessageComponent("gui-expand-none", "chamber" to chamber.label()))
+                }
+                menu.openChamberDetail(player, refreshed)
+            })
+        }
     }
 
     private fun createChamberInfoItem(): ItemStack {
