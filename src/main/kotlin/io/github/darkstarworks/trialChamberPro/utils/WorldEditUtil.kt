@@ -13,13 +13,11 @@ import org.bukkit.entity.Player
  */
 object WorldEditUtil {
 
-    /**
-     * Checks if WorldEdit is available.
-     */
-    fun isAvailable(): Boolean {
-        val pm = Bukkit.getPluginManager()
-        return pm.isPluginEnabled("WorldEdit") || pm.isPluginEnabled("FastAsyncWorldEdit")
-    }
+    // NOTE: the WorldEdit availability check lives in [WorldEditSupport], NOT here.
+    // This class imports WorldEdit types (e.g. IncompleteRegionException in catch
+    // clauses), so the JVM can only link it when WorldEdit is actually installed —
+    // calling any method here without WE present throws NoClassDefFoundError. Always
+    // gate calls into this class behind WorldEditSupport.isAvailable() first.
 
     /**
      * Gets a player's WorldEdit selection as two corner locations.
@@ -28,7 +26,7 @@ object WorldEditUtil {
      * @return Pair of corner locations, or null if no selection or error
      */
     fun getSelection(player: Player): Pair<Location, Location>? {
-        if (!isAvailable()) return null
+        if (!WorldEditSupport.isAvailable()) return null
 
         try {
             val actor = BukkitAdapter.adapt(player)
@@ -60,7 +58,7 @@ object WorldEditUtil {
      * Checks if a player has an active WorldEdit selection.
      */
     fun hasSelection(player: Player): Boolean {
-        if (!isAvailable()) return false
+        if (!WorldEditSupport.isAvailable()) return false
 
         try {
             val actor = BukkitAdapter.adapt(player)

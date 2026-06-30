@@ -161,8 +161,11 @@ object NBTUtil {
                 val table = NamespacedKey.fromString(key)?.let { Bukkit.getLootTable(it) }
                 if (table != null) {
                     container.inventory.clear()
-                    val seed = (data["seed"] as? String)?.toLongOrNull() ?: 0L
-                    lootable.setLootTable(table, seed)
+                    // Re-arm with seed 0 (vanilla's "no fixed seed") rather than the
+                    // captured worldgen seed. A fixed nonzero seed makes every reset
+                    // re-roll IDENTICAL loot; seed 0 tells vanilla to use a fresh
+                    // random source on next open — "vanilla, but repeatable". v1.6.3.
+                    lootable.setLootTable(table, 0L)
                 }
             } else {
                 val items = data["items"] as? String
@@ -301,8 +304,8 @@ object NBTUtil {
             if (lootable != null && key != null) {
                 val table = NamespacedKey.fromString(key)?.let { Bukkit.getLootTable(it) }
                 if (table != null) {
-                    val seed = (data["seed"] as? String)?.toLongOrNull() ?: 0L
-                    lootable.setLootTable(table, seed)
+                    // Seed 0 = fresh random roll each reset (see restoreContainer). v1.6.3.
+                    lootable.setLootTable(table, 0L)
                 }
             } else {
                 (data["item"] as? String)?.let { encoded ->

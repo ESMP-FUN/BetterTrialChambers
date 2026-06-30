@@ -38,29 +38,33 @@ import java.util.concurrent.ConcurrentHashMap
  * dispenser/dropper sees their own private copy of its contents, so the second
  * player into a chamber doesn't find gutted containers.
  *
- * How it works (v1.5.9 rework):
- *  - Each container has a shared **template** — the canonical contents every
- *    first-open copy is cloned from. The template is *materialized once* by
- *    rolling the block's vanilla loot table (`Lootable`/`LootTable`), because a
- *    naturally-generated trial-chamber container holds an UNROLLED loot table
- *    with an empty inventory until first opened — reading `inventory.contents`
- *    directly (the pre-1.5.9 behaviour) therefore yielded an empty copy for
- *    everyone. The template is stored in `container_template` and PERSISTS
- *    across chamber resets, so op edits stick.
- *  - Ops holding `tcp.admin.containers` **sneak-open** the shared template to
- *    edit it (changes affect every player's first-open loot, across resets); a
- *    normal click still gets their own per-player copy.
- *  - Per-player copies live in `player_container_loot` and reset with the
- *    chamber ([ContainerLootManager.clearChamber]).
- *  - Double chests are keyed by the left half so both halves share one 54-slot
- *    template/copy.
+ * How it works (v1.6.3 rework — UniqueLoot-style independent rolls):
+ *  - On open, the player gets THEIR contents: (1) their saved copy if any, else
+ *    (2) an OP **override** (a `container_template` row with `op_edited = 1`)
+ *    cloned fresh, else (3) a **fresh, independent roll** of the block's vanilla
+ *    loot table. Two players opening the same untouched container get different
+ *    loot — true Lootr behaviour.
+ *  - The block's loot table is NEVER consumed: the interact open is cancelled
+ *    and [onLootGenerate] re-applies the table if anything tries to roll it. So
+ *    after a reset clears per-player copies ([ContainerLootManager.clearChamber]),
+ *    the next open rolls fresh again — "vanilla, but repeatable".
+ *  - **No frozen auto-template.** `container_template` holds two kinds of row:
+ *    `op_edited = 0` registry entries (so the container lists in the management
+ *    GUI — they never affect loot) and `op_edited = 1` OP overrides (cloned to
+ *    every player, still per-player, re-cloned each reset).
+ *  - **Editing is GUI-only** (`/tcp menu` → chamber → Container Loot, or
+ *    `/tcp container edit`). Editing a container saves an override; shift-left /
+ *    `/tcp container resetone` reverts it to vanilla. The old in-world sneak-edit
+ *    is gone (it interfered with normal opening).
+ *  - Per-player copies live in `player_container_loot` and reset with the chamber.
+ *  - Double chests are keyed by the left half so both halves share one 54-slot copy.
  *  - Containers placed by players inside a chamber are PDC-tagged at place time
  *    and keep vanilla behaviour.
  *  - Hopper movement in/out of an eligible container is cancelled — automation
- *    would drain or pollute the shared source.
+ *    would drain or pollute the source.
  *
  * Container loot tables are also captured/restored by the snapshot system
- * (`NBTUtil`) so a broken or reset container comes back with its loot intact.
+ * (`NBTUtil`) so a broken or reset container comes back with its loot table intact.
  */
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class ContainerLootListener(private val plugin: TrialChamberPro) : Listener {
@@ -80,10 +84,10 @@ class ContainerLootListener(private val plugin: TrialChamberPro) : Listener {
     }
 
     /**
-     * Marks an op editing the shared template (saved back to container_template).
-     * [returnChamber] is non-null when the editor was opened from the management
-     * GUI/command — closing it reopens the Container Loot view (the "back" button
-     * a deposit-style inventory can't otherwise have). Null for in-world sneak edits.
+     * Marks an op editing a container's override (saved back to container_template
+     * with `op_edited = 1` via [onContainerClose]). [returnChamber] is set when the
+     * editor was opened from the management GUI/command — closing it reopens the
+     * Container Loot view (the "back" button a deposit-style inventory can't have).
      */
     class TemplateHolder(
         val chamberId: Int,
@@ -123,10 +127,8 @@ class ContainerLootListener(private val plugin: TrialChamberPro) : Listener {
         val container = state as? Container ?: return
         val player = event.player
 
-        // Sneak + admin permission = edit the shared template; otherwise the
-        // player gets their own private copy. Both cancel vanilla opening.
-        val isAdminEdit = player.isSneaking && player.hasPermission("tcp.admin.containers")
-
+        // Editing is GUI-only now (no in-world sneak-edit). Every open gets the
+        // player their own per-player copy.
         event.isCancelled = true
 
         val now = System.currentTimeMillis()
@@ -148,27 +150,77 @@ class ContainerLootListener(private val plugin: TrialChamberPro) : Listener {
         val keyMaterial = keyBlock.type
 
         plugin.launchAsync {
-            // Shared template, materialized (loot table rolled) on first access.
-            var template = plugin.containerLootManager.loadTemplate(chamber.id, pos)
-            if (template == null) {
-                template = materializeOnRegion(keyLoc, size)
-                plugin.containerLootManager.saveTemplate(chamber.id, pos, template, keyMaterial)
+            // Resolve THIS player's contents:
+            //  1. an already-saved copy (their loot until the chamber resets), else
+            //  2. an OP override (op_edited template) cloned fresh, else
+            //  3. a fresh independent roll of the container's vanilla loot table.
+            // The loot table is never consumed (block open is cancelled + the
+            // LootGenerateEvent guard re-applies it), so after a reset clears the
+            // copy, the next open rolls fresh again — "vanilla, but repeatable".
+            val existing = plugin.containerLootManager.loadContents(chamber.id, pos, player.uniqueId)
+            val contents = when {
+                existing != null -> existing
+                else -> plugin.containerLootManager.loadOverride(chamber.id, pos)
+                    ?: materializeOnRegion(keyLoc, size)
             }
 
-            if (isAdminEdit) {
-                openVirtual(
-                    player, TemplateHolder(chamber.id, pos), size,
-                    plugin.getGuiText("gui.container-loot.template-title"), template
-                )
-                player.sendMessage(plugin.getMessageComponent("container-template-open"))
-            } else {
-                val copy = plugin.containerLootManager.loadContents(chamber.id, pos, player.uniqueId) ?: template
-                openVirtual(
-                    player, CopyHolder(chamber.id, pos), size,
-                    plugin.getGuiText("gui.container-loot.title"), copy
-                )
+            // Ensure a registry row exists so the container shows up in the
+            // management GUI. op_edited = 0 (auto) — this row never freezes loot;
+            // it's a listing entry only. Skip if a row already exists so we never
+            // clobber an existing override's op_edited flag.
+            if (existing == null && !plugin.containerLootManager.hasTemplate(chamber.id, pos)) {
+                plugin.containerLootManager.saveTemplate(chamber.id, pos, contents, keyMaterial)
+            }
+
+            openVirtual(
+                player, CopyHolder(chamber.id, pos), size,
+                plugin.getGuiText("gui.container-loot.title"), contents
+            )
+        }
+    }
+
+    /**
+     * Bulletproofs the "loot table is never consumed" invariant: if anything
+     * vanilla-rolls a chamber container's loot table (a path that bypasses our
+     * cancelled interact open), cancel it and re-apply the table so the block
+     * keeps re-rolling forever. Mirrors UniqueLoot's approach.
+     *
+     * Only acts on REAL block containers inside a non-paused, non-player-placed
+     * chamber position — plugin rolls into virtual inventories (our own
+     * per-player materialize) have a null/non-block holder and pass straight
+     * through, so loot still generates for those.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onLootGenerate(event: org.bukkit.event.world.LootGenerateEvent) {
+        if (!enabled()) return
+        val holder = event.inventoryHolder
+        val block: Block = when (holder) {
+            is DoubleChest -> (holder.leftSide as? Chest)?.block ?: return
+            is BlockInventoryHolder -> holder.block
+            else -> return // virtual inventory (our materialize) or non-container — leave alone
+        }
+        if (block.type !in ELIGIBLE) return
+        val chamber = plugin.chamberManager.getCachedChamberAt(block.location) ?: return
+        if (chamber.isPaused) return
+        val state = block.state
+        if (state is TileState && state.persistentDataContainer.has(playerPlacedKey, PersistentDataType.BYTE)) return
+
+        val table = event.lootTable
+        event.isCancelled = true
+        // Re-apply the table so the block entity keeps it (a cancelled generate
+        // would otherwise leave it armed but this makes the intent explicit and
+        // covers holders that clear on generate).
+        fun reapply(h: InventoryHolder?) {
+            when (h) {
+                is DoubleChest -> { reapply(h.leftSide); reapply(h.rightSide) }
+                is org.bukkit.loot.Lootable -> {
+                    h.lootTable = table
+                    (h as? TileState)?.update(true, false)
+                }
+                else -> {}
             }
         }
+        reapply(holder)
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

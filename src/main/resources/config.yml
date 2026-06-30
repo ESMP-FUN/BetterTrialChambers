@@ -404,6 +404,16 @@ discovery:
   max-merged-volume: 1500000       # Hard cap on the post-merge bounding-box volume (blocks). Prevents pathological
                                    # daisy-chaining from swallowing huge regions into a single logical chamber.
 
+  # v1.6.3: After auto-registering a chamber, run one automatic "expand" pass a
+  # few seconds later — a multi-seed re-flood from the chamber's vaults that
+  # grows the bounds to cover sections the first detection clipped (its node cap,
+  # or chunks that were still loading at detection time). This is the automatic
+  # equivalent of `/tcp scan add`, so operators don't have to run it by hand on
+  # every chamber. Best-effort: it can only read chunks that are loaded when it
+  # runs, so a wing nobody has visited yet may still need a manual `/tcp scan add`.
+  expand-on-discover: true
+  expand-delay-seconds: 10         # Delay before the auto-expand pass (lets vault rows commit + nearby chunks load)
+
   # v1.5.1: Nag operators when discovered chambers are missing a snapshot.
   # Without a snapshot the chamber cannot be reset, so this is actionable.
   # Notifications go to anyone with `tcp.admin.snapshot`.
@@ -423,14 +433,21 @@ setup:
     enabled: true
 
 # Per-player chamber container loot (v1.5.7, opt-in). When enabled, every
-# player who opens a chest / trapped chest / barrel inside a registered
-# chamber gets their OWN copy of its contents (Lootr-style) — the second
-# player into a chamber no longer finds gutted chests. The real container is
-# never modified (it's the pristine template); per-player copies reset with
-# the chamber. Hopper automation against chamber containers is blocked while
-# enabled. Containers placed by players inside chambers keep vanilla
-# behaviour. Admins with tcp.admin.containers can SNEAK-click to open the
-# real container and edit the template.
+# player who opens a chest / trapped chest / barrel / dispenser / dropper that
+# has a loot table inside a registered chamber gets their OWN, freshly-rolled
+# copy of its loot (Lootr-style) — the second player into a chamber no longer
+# finds gutted chests, and each player's loot is rolled independently from the
+# vanilla loot pool. The real container's loot table is never consumed, so on
+# every chamber reset each player's next open rolls fresh again ("vanilla, but
+# repeatable"). Per-player copies reset with the chamber. Hopper automation
+# against chamber containers is blocked while enabled, and containers placed by
+# players inside chambers keep vanilla behaviour.
+#
+# Moderators customise a container's loot from the GUI: /tcp menu -> chamber ->
+# Container Loot -> click a container to edit. An edited container becomes an
+# OVERRIDE — every player gets a copy of that loot (still per-player, re-cloned
+# each reset). Shift-left-click in that GUI (or /tcp container resetone) reverts
+# it to vanilla random rolls. Editing is GUI-only (no in-world sneak-open).
 chests:
   per-player-loot: false
 

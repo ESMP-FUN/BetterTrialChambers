@@ -57,7 +57,11 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                             emptyList()
                         }
                     }
-                    "scan", "setexit", "info", "delete", "pause", "resume", "rename", "menu" -> {
+                    "scan" -> {
+                        // `add` (grow bounds into missed sections) + chamber names.
+                        (listOf("add") + getChamberNames()).filter { it.startsWith(args[1].lowercase()) }
+                    }
+                    "setexit", "info", "delete", "pause", "resume", "rename", "menu" -> {
                         // Chamber names (menu: optional deep-link into the chamber's GUI)
                         getChamberNames().filter { it.startsWith(args[1].lowercase()) }
                     }
@@ -102,6 +106,8 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                         else -> getChamberNames().filter { it.startsWith(args[2].lowercase()) }
                     }
                     "container", "containers" -> getChamberNames().filter { it.startsWith(args[2].lowercase()) }
+                    "scan" -> if (args[1].equals("add", ignoreCase = true))
+                        getChamberNames().filter { it.startsWith(args[2].lowercase()) } else emptyList()
                     "dungeon" -> {
                         if (args[1].equals("delete", ignoreCase = true)) {
                             try { plugin.roomTemplateManager.list().filter { it.startsWith(args[2], ignoreCase = true) } }
