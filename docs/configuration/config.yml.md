@@ -1193,6 +1193,7 @@ discovery:
   max-merged-volume: 1500000       # Hard cap on the post-merge bounding-box volume (blocks)
   expand-on-discover: true         # Auto-run one expand pass after discovery to catch clipped sections
   expand-delay-seconds: 10         # Delay before that pass (lets vault rows commit + nearby chunks load)
+  expand-force-load: false         # Opt-in: force-load unloaded chunks during expand (Paper-only; I/O spike)
   snapshot-reminder:
     enabled: true
     on-join: true                  # Ping an admin individually when they log in
@@ -1291,7 +1292,9 @@ Since **1.5.6**, a merge automatically re-captures the chamber's snapshot whenev
 
 The flood-fill that detects a chamber can be clipped: it floods outward from one vault/spawner, and if neighbouring chunks were still loading at detection time (or the chamber is big enough to hit the flood's internal node cap), the bounding box stops short — leaving part of the chamber, and its chests/vaults/spawners, outside the registered region. With `expand-on-discover` on, the plugin automatically runs **one expand pass** `expand-delay-seconds` after registering a chamber: a multi-seed re-flood from all of its vaults (now that the rows are committed and nearby chunks have loaded) that grows the bounds to cover what the first pass missed, then re-scans and re-snapshots.
 
-It's **best-effort** — it can only read chunks that are loaded when it runs, so a wing nobody has visited yet may still be missed. Run [`/tcp scan add <chamber>`](../reference/commands.md#tcp-scan-chamber) while standing in the chamber to repair it on demand.
+It's **best-effort** — it can only read chunks that are loaded when it runs, so a wing nobody has visited yet may still be missed. Repair on demand by standing in the chamber and running [`/tcp scan add <chamber>`](../reference/commands.md#tcp-scan-chamber), or use the chamber GUI's one-time **Travel & Expand** button (`/tcp menu <chamber>`), which teleports you there first then scans.
+
+Set **`expand-force-load: true`** _(opt-in, Paper-only)_ to let both the auto pass and `/tcp scan add` **force-load** unloaded chunks on demand, so they can reach a wing nobody has visited without anyone travelling there. Off by default — it trades a chunk-load I/O spike for completeness.
 
 </details>
 

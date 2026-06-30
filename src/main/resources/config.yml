@@ -413,6 +413,12 @@ discovery:
   # runs, so a wing nobody has visited yet may still need a manual `/tcp scan add`.
   expand-on-discover: true
   expand-delay-seconds: 10         # Delay before the auto-expand pass (lets vault rows commit + nearby chunks load)
+  # Opt-in: let expand passes (auto-expand AND /tcp scan add) FORCE-LOAD unloaded
+  # chunks on demand so they can reach a wing nobody has visited yet. Off by
+  # default — it trades a chunk-load I/O spike for completeness. Paper-only
+  # (skipped on Folia). Even with this off, standing in the chamber and running
+  # /tcp scan add (or the GUI's "Travel & Expand") works because you load the chunks.
+  expand-force-load: false
 
   # v1.5.1: Nag operators when discovered chambers are missing a snapshot.
   # Without a snapshot the chamber cannot be reset, so this is actionable.
