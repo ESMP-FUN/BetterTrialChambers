@@ -45,7 +45,11 @@ class ContainerLootView(
         val totalPages = maxOf(1, (templates.size + PER_PAGE - 1) / PER_PAGE)
         val pageClamped = page.coerceIn(0, totalPages - 1)
 
-        // Row 0: status + bulk actions
+        // Row 0: per-player-loot toggle + status + bulk actions
+        set(0, GuiComponents.toggleItem(plugin, enabled,
+            "gui.container-loot.toggle-name", "gui.container-loot.toggle-desc").let { item ->
+            VcGuiItem.wrap(item) { ctx -> togglePerPlayerLoot(ctx.player) }
+        })
         set(2, VcGuiItem.wrap(headerItem(enabled, templates.size, copies)))
         set(4, VcGuiItem.wrap(materializeItem()) { ctx -> doMaterialize(ctx.player) })
         set(6, VcGuiItem.wrap(clearCopiesItem(copies)) { ctx ->
@@ -59,7 +63,7 @@ class ContainerLootView(
         val start = pageClamped * PER_PAGE
         templates.drop(start).take(PER_PAGE).forEachIndexed { i, t ->
             set(9 + i, VcGuiItem.wrap(entryItem(t, start + i)) { ctx ->
-                handleEntry(ctx.player, t, ctx.event.isLeftClick, ctx.event.isRightClick)
+                handleEntry(ctx.player, t, ctx.event.isLeftClick, ctx.event.isRightClick, ctx.event.isShiftClick)
             })
         }
         if (templates.isEmpty()) {
@@ -115,17 +119,35 @@ class ContainerLootView(
         // Icon = the real container block (chest/barrel/dispenser/dropper) so ops
         // can spot the one they want at a glance instead of a wall of chests.
         val icon = if (row.material.isItem) row.material else Material.CHEST
+        // "Custom" = op-edited (persists across resets); "Vanilla roll" = auto
+        // (re-rolls fresh each reset). The shift-left reset line only matters for
+        // custom ones, so its lore key swaps with the status.
+        val statusKey = if (row.opEdited) "gui.container-loot.entry-status-custom"
+                        else "gui.container-loot.entry-status-vanilla"
         return GuiComponents.infoItem(plugin, icon,
             "gui.container-loot.entry-name", "gui.container-loot.entry-lore",
             "index" to (index + 1),
             "x" to row.pos.x, "y" to row.pos.y, "z" to row.pos.z,
-            "items" to items)
+            "items" to items,
+            "status" to (plugin.getMessageList(statusKey).firstOrNull() ?: ""))
     }
 
     // ==================== Actions ====================
 
-    private fun handleEntry(player: Player, row: ContainerLootManager.TemplateRow, left: Boolean, right: Boolean) {
+    private fun handleEntry(player: Player, row: ContainerLootManager.TemplateRow, left: Boolean, right: Boolean, shift: Boolean) {
         when {
+            // Shift-left = revert this container to vanilla: clear its override
+            // flag so it rolls fresh loot per player again (and after every reset).
+            // The registry row is kept so it stays listed here.
+            left && shift -> plugin.launchAsync {
+                val ok = plugin.containerLootManager.markVanilla(chamber.id, row.pos)
+                plugin.scheduler.runAtEntity(player, Runnable {
+                    player.sendMessage(plugin.getMessageComponent(
+                        if (ok) "container-template-reset" else "container-template-reset-none",
+                        "x" to row.pos.x, "y" to row.pos.y, "z" to row.pos.z))
+                    menu.openContainerLoot(player, chamber, page)
+                })
+            }
             right -> {
                 val world = chamber.getWorld() ?: return
                 val loc = Location(world, row.pos.x + 0.5, row.pos.y + 1.0, row.pos.z + 0.5)
@@ -139,6 +161,19 @@ class ContainerLootView(
                 plugin.containerLootListener.openTemplateEditor(player, chamber, row.pos)
             }
         }
+    }
+
+    private fun togglePerPlayerLoot(player: Player) {
+        val newValue = !plugin.config.getBoolean("chests.per-player-loot", false)
+        plugin.config.set("chests.per-player-loot", newValue)
+        plugin.saveConfig()
+        val settingLabel = plugin.rawMessage("gui.container-loot.toggle-name")
+        val valueText = plugin.rawMessage(
+            if (newValue) "gui.common.setting-enabled" else "gui.common.setting-disabled"
+        )
+        player.sendMessage(plugin.getMessageComponent("gui.common.setting-toggled",
+            "setting" to settingLabel, "value" to valueText))
+        menu.openContainerLoot(player, chamber, page)
     }
 
     private fun doMaterialize(player: Player) {

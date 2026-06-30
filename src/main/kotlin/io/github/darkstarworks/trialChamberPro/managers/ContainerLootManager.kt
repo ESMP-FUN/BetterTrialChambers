@@ -132,6 +132,62 @@ class ContainerLootManager(private val plugin: TrialChamberPro) {
     }
 
     /**
+     * Loads an OP OVERRIDE for a container (a template with `op_edited = 1`), or
+     * null when none exists. Unlike [loadTemplate] this ignores auto-registry
+     * rows (`op_edited = 0`), which are GUI listing entries only and must NOT
+     * freeze loot — untouched containers always roll fresh per player. v1.6.3.
+     */
+    suspend fun loadOverride(
+        chamberId: Int,
+        pos: ContainerPos
+    ): Array<ItemStack?>? = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement(
+                    "SELECT contents FROM container_template WHERE chamber_id = ? AND x = ? AND y = ? AND z = ? AND op_edited = 1"
+                ).use { stmt ->
+                    stmt.setInt(1, chamberId)
+                    stmt.setInt(2, pos.x)
+                    stmt.setInt(3, pos.y)
+                    stmt.setInt(4, pos.z)
+                    stmt.executeQuery().use { rs ->
+                        if (rs.next()) decodeContents(rs.getString("contents")) else null
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.warning("[ContainerLoot] Override load failed (${pos.x},${pos.y},${pos.z}): ${e.message}")
+            null
+        }
+    }
+
+    /**
+     * Reverts a container to vanilla: clears its override flag (`op_edited = 0`)
+     * so it rolls fresh loot per player again, while keeping the registry row so
+     * the container still appears in the management GUI. Returns true if a row
+     * was updated. v1.6.3.
+     */
+    suspend fun markVanilla(chamberId: Int, pos: ContainerPos): Boolean = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement(
+                    "UPDATE container_template SET op_edited = 0, updated_at = ? WHERE chamber_id = ? AND x = ? AND y = ? AND z = ?"
+                ).use { stmt ->
+                    stmt.setLong(1, System.currentTimeMillis())
+                    stmt.setInt(2, chamberId)
+                    stmt.setInt(3, pos.x)
+                    stmt.setInt(4, pos.y)
+                    stmt.setInt(5, pos.z)
+                    stmt.executeUpdate() > 0
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.warning("[ContainerLoot] markVanilla failed (${pos.x},${pos.y},${pos.z}): ${e.message}")
+            false
+        }
+    }
+
+    /**
      * Persists the shared template for a container (upsert). [material] is the
      * container's block type, stored so the management GUI can show each
      * template as its real container icon (v1.5.11). v1.5.9.
@@ -143,18 +199,22 @@ class ContainerLootManager(private val plugin: TrialChamberPro) {
         material: org.bukkit.Material
     ) = withContext(Dispatchers.IO) {
         val encoded = encodeContents(contents)
+        // A scan/registry save marks the row as NOT op-edited (op_edited = 0): it
+        // lists the container in the management GUI but never freezes loot —
+        // untouched containers roll fresh per player. An op edit goes through
+        // updateTemplateContents, which flips the flag to 1 (an override).
         val sql = if (plugin.databaseManager.databaseType == DatabaseManager.DatabaseType.MYSQL) {
             """
-            INSERT INTO container_template (chamber_id, x, y, z, contents, material, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE contents = VALUES(contents), material = VALUES(material), updated_at = VALUES(updated_at)
+            INSERT INTO container_template (chamber_id, x, y, z, contents, material, op_edited, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, 0, ?)
+            ON DUPLICATE KEY UPDATE contents = VALUES(contents), material = VALUES(material), op_edited = 0, updated_at = VALUES(updated_at)
             """.trimIndent()
         } else {
             """
-            INSERT INTO container_template (chamber_id, x, y, z, contents, material, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO container_template (chamber_id, x, y, z, contents, material, op_edited, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, 0, ?)
             ON CONFLICT(chamber_id, x, y, z)
-            DO UPDATE SET contents = excluded.contents, material = excluded.material, updated_at = excluded.updated_at
+            DO UPDATE SET contents = excluded.contents, material = excluded.material, op_edited = 0, updated_at = excluded.updated_at
             """.trimIndent()
         }
         try {
@@ -189,7 +249,9 @@ class ContainerLootManager(private val plugin: TrialChamberPro) {
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
-                    "UPDATE container_template SET contents = ?, updated_at = ? WHERE chamber_id = ? AND x = ? AND y = ? AND z = ?"
+                    // Flip op_edited = 1: this row is now an OP override, cloned to
+                    // players (loadOverride) and preserved across resets.
+                    "UPDATE container_template SET contents = ?, op_edited = 1, updated_at = ? WHERE chamber_id = ? AND x = ? AND y = ? AND z = ?"
                 ).use { stmt ->
                     stmt.setString(1, encoded)
                     stmt.setLong(2, System.currentTimeMillis())
@@ -205,11 +267,16 @@ class ContainerLootManager(private val plugin: TrialChamberPro) {
         }
     }
 
-    /** One stored template: its position, decoded contents, and container icon. */
+    /**
+     * One stored template: its position, decoded contents, container icon, and
+     * whether an op has edited it ([opEdited] — edited templates persist across
+     * resets; auto-rolled ones re-roll).
+     */
     data class TemplateRow(
         val pos: ContainerPos,
         val contents: Array<ItemStack?>,
-        val material: org.bukkit.Material
+        val material: org.bukkit.Material,
+        val opEdited: Boolean
     )
 
     /** Lists every materialized template for a chamber (for the GUI/command). */
@@ -218,7 +285,7 @@ class ContainerLootManager(private val plugin: TrialChamberPro) {
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
-                    "SELECT x, y, z, contents, material FROM container_template WHERE chamber_id = ? ORDER BY x, y, z"
+                    "SELECT x, y, z, contents, material, op_edited FROM container_template WHERE chamber_id = ? ORDER BY x, y, z"
                 ).use { stmt ->
                     stmt.setInt(1, chamberId)
                     stmt.executeQuery().use { rs ->
@@ -227,7 +294,7 @@ class ContainerLootManager(private val plugin: TrialChamberPro) {
                             val contents = decodeContents(rs.getString("contents")) ?: arrayOfNulls(0)
                             val material = runCatching { org.bukkit.Material.valueOf(rs.getString("material")) }
                                 .getOrDefault(org.bukkit.Material.CHEST)
-                            out.add(TemplateRow(pos, contents, material))
+                            out.add(TemplateRow(pos, contents, material, rs.getBoolean("op_edited")))
                         }
                     }
                 }

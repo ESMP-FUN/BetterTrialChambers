@@ -260,6 +260,7 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
                         z INT NOT NULL,
                         contents TEXT NOT NULL,
                         material VARCHAR(64) NOT NULL DEFAULT 'CHEST',
+                        op_edited BOOLEAN NOT NULL DEFAULT 0,
                         updated_at BIGINT NOT NULL,
                         PRIMARY KEY (chamber_id, x, y, z),
                         FOREIGN KEY (chamber_id) REFERENCES chambers(id) ON DELETE CASCADE
@@ -365,6 +366,16 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
                 try {
                     stmt.execute("ALTER TABLE container_template ADD COLUMN material VARCHAR(64) NOT NULL DEFAULT 'CHEST'")
                     plugin.logger.info("Migration executed: Added container_template.material column")
+                } catch (_: SQLException) {
+                    // Column already exists (or table not yet present on a fresh install)
+                }
+
+                // v1.6.3: distinguish auto-rolled container templates (re-roll
+                // each reset for vanilla-style fresh loot) from op-edited ones
+                // (persist across resets). See ContainerLootManager.
+                try {
+                    stmt.execute("ALTER TABLE container_template ADD COLUMN op_edited BOOLEAN NOT NULL DEFAULT 0")
+                    plugin.logger.info("Migration executed: Added container_template.op_edited column")
                 } catch (_: SQLException) {
                     // Column already exists (or table not yet present on a fresh install)
                 }
