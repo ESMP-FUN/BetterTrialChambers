@@ -22,7 +22,7 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
     private val claimsActions = listOf("scan")
     private val debugActions = listOf("schema")
 
-    private val dungeonActions = listOf("pos1", "pos2", "capture", "generate", "list", "delete")
+    private val dungeonActions = listOf("pos1", "pos2", "capture", "generate", "list", "delete", "import")
     private val containerActions = listOf("list", "materialize", "reset", "clearcopies", "tp", "edit")
 
     private val snapshotActions = listOf("create", "update", "restore", "missing")

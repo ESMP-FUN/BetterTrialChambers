@@ -579,46 +579,52 @@ class ResetManager(private val plugin: TrialChamberPro) {
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun resetTrialSpawners(chamber: Chamber, cooldownMinutesOverride: Int? = null) {
-        withTimeout(10000) {  // 10 second timeout for larger chambers
-            val chamberCenter = Location(
-                chamber.getWorld(),
-                (chamber.minX + chamber.maxX) / 2.0,
-                (chamber.minY + chamber.maxY) / 2.0,
-                (chamber.minZ + chamber.maxZ) / 2.0
-            )
+        val world = chamber.getWorld() ?: return
 
-            suspendCancellableCoroutine<Unit> { continuation ->
-                plugin.scheduler.runAtLocation(chamberCenter, Runnable {
-                    try {
-                        val world = chamber.getWorld() ?: run {
-                            continuation.resume(Unit) {}
-                            return@Runnable
-                        }
+        val resetOminous = plugin.config.getBoolean("reset.reset-ominous-spawners", true)
 
-                        var resetCount = 0
-                        val resetOminous = plugin.config.getBoolean("reset.reset-ominous-spawners", true)
+        // Get cooldown setting: per-chamber override > global config > vanilla default (-1)
+        // Sentinel -2 = "match chamber reset interval" (clamped to >= 0 minutes).
+        val rawCooldown = cooldownMinutesOverride
+            ?: chamber.spawnerCooldownMinutes
+            ?: plugin.config.getInt("reset.spawner-cooldown-minutes", -1)
+        val cooldownMinutes = if (rawCooldown == -2) {
+            (chamber.resetInterval / 60L).toInt().coerceAtLeast(0)
+        } else rawCooldown
 
-                        // Get cooldown setting: per-chamber override > global config > vanilla default (-1)
-                        // Sentinel -2 = "match chamber reset interval" (clamped to >= 0 minutes).
-                        val rawCooldown = cooldownMinutesOverride
-                            ?: chamber.spawnerCooldownMinutes
-                            ?: plugin.config.getInt("reset.spawner-cooldown-minutes", -1)
-                        val cooldownMinutes = if (rawCooldown == -2) {
-                            (chamber.resetInterval / 60L).toInt().coerceAtLeast(0)
-                        } else rawCooldown
+        val verboseLogging = plugin.config.getBoolean("debug.verbose-logging", false)
+        if (verboseLogging) {
+            plugin.logger.info("[SpawnerReset] Chamber: ${chamber.name}, cooldownMinutes: $cooldownMinutes " +
+                "(override: $cooldownMinutesOverride, perChamber: ${chamber.spawnerCooldownMinutes}, " +
+                "config: ${plugin.config.getInt("reset.spawner-cooldown-minutes", -1)})")
+        }
 
-                        val verboseLogging = plugin.config.getBoolean("debug.verbose-logging", false)
-                        if (verboseLogging) {
-                            plugin.logger.info("[SpawnerReset] Chamber: ${chamber.name}, cooldownMinutes: $cooldownMinutes " +
-                                "(override: $cooldownMinutesOverride, perChamber: ${chamber.spawnerCooldownMinutes}, " +
-                                "config: ${plugin.config.getInt("reset.spawner-cooldown-minutes", -1)})")
-                        }
+        // v1.7.0: scan in X-slice batches (one scheduled task each, 10s timeout PER BATCH)
+        // so a multi-million-block chamber can't freeze a tick or trip the old whole-scan
+        // timeout. Small chambers still complete in a single batch, as before.
+        val sizeY = chamber.maxY - chamber.minY + 1
+        val sizeZ = chamber.maxZ - chamber.minZ + 1
+        val sliceBlocks = maxOf(1, sizeY * sizeZ)
+        val slicesPerBatch = maxOf(1, ChamberManager.VOLUME_SCAN_BLOCKS_PER_BATCH / sliceBlocks)
+        val midY = (chamber.minY + chamber.maxY) / 2.0
+        val midZ = (chamber.minZ + chamber.maxZ) / 2.0
 
-                        // Scan chamber for trial spawners
-                        for (x in chamber.minX..chamber.maxX) {
-                            for (y in chamber.minY..chamber.maxY) {
-                                for (z in chamber.minZ..chamber.maxZ) {
-                                    val block = world.getBlockAt(x, y, z)
+        var resetCount = 0
+        var xStart = chamber.minX
+        while (xStart <= chamber.maxX) {
+            val xEnd = minOf(xStart + slicesPerBatch - 1, chamber.maxX)
+            val batchStartX = xStart
+            val batchCount = try {
+                withTimeout(10000) {
+                    suspendCancellableCoroutine<Int> { continuation ->
+                        plugin.scheduler.runAtLocation(Location(world, (batchStartX + xEnd) / 2.0, midY, midZ), Runnable {
+                            try {
+                                var batchResets = 0
+                                // Scan this slice for trial spawners
+                                for (x in batchStartX..xEnd) {
+                                    for (y in chamber.minY..chamber.maxY) {
+                                        for (z in chamber.minZ..chamber.maxZ) {
+                                            val block = world.getBlockAt(x, y, z)
                                     if (block.type == Material.TRIAL_SPAWNER) {
                                         val state = block.state
                                         if (state is org.bukkit.block.TrialSpawner) {
@@ -681,29 +687,35 @@ class ResetManager(private val plugin: TrialChamberPro) {
                                                 }
                                             }
 
-                                            resetCount++
+                                            batchResets++
                                         }
                                     }
                                 }
                             }
                         }
-
-                        if (resetCount > 0) {
-                            val cooldownInfo = when {
-                                cooldownMinutes < 0 -> "vanilla default"
-                                cooldownMinutes == 0 -> "no cooldown (0 ticks)"
-                                else -> "${cooldownMinutes}m cooldown (${cooldownMinutes * 60 * 20} ticks)"
+                                continuation.resume(batchResets) {}
+                            } catch (e: Exception) {
+                                plugin.logger.warning("Error resetting trial spawners: ${e.message}")
+                                continuation.resume(0) {}  // Don't fail the whole reset
                             }
-                            plugin.logger.info("Reset $resetCount trial spawners in chamber ${chamber.name} ($cooldownInfo)")
-                        }
-
-                        continuation.resume(Unit) {}
-                    } catch (e: Exception) {
-                        plugin.logger.warning("Error resetting trial spawners: ${e.message}")
-                        continuation.resume(Unit) {}  // Don't fail the whole reset
+                        })
                     }
-                })
+                }
+            } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
+                plugin.logger.warning("Trial-spawner reset batch timed out in chamber ${chamber.name} (x $batchStartX..$xEnd) — continuing")
+                0
             }
+            resetCount += batchCount
+            xStart = xEnd + 1
+        }
+
+        if (resetCount > 0) {
+            val cooldownInfo = when {
+                cooldownMinutes < 0 -> "vanilla default"
+                cooldownMinutes == 0 -> "no cooldown (0 ticks)"
+                else -> "${cooldownMinutes}m cooldown (${cooldownMinutes * 60 * 20} ticks)"
+            }
+            plugin.logger.info("Reset $resetCount trial spawners in chamber ${chamber.name} ($cooldownInfo)")
         }
     }
 

@@ -60,50 +60,67 @@ class SnapshotManager(private val plugin: TrialChamberPro) {
         val originY = chamber.minY
         val originZ = chamber.minZ
 
-        // MUST run on region thread to access block entities (vaults, spawners, etc.)
-        // Use location-based scheduling for Folia compatibility
-        val chamberCenter = Location(world, originX.toDouble(), originY.toDouble(), originZ.toDouble())
+        // v1.7.0: capture in X-slice batches, one scheduled task per batch, so snapshotting
+        // a multi-million-block chamber (structure-bounds discovery / imported dungeons)
+        // never stalls a tick. Small chambers still complete in one batch, as before.
+        // Batches run sequentially (each awaited), so the shared map is never touched
+        // concurrently. MUST run on the owning region thread to access block entities;
+        // each batch is scheduled at its own slice's location (Folia region correctness).
+        val sizeY = chamber.maxY - chamber.minY + 1
+        val sizeZ = chamber.maxZ - chamber.minZ + 1
+        val sliceBlocks = maxOf(1, sizeY * sizeZ)
+        val slicesPerBatch = maxOf(1, ChamberManager.VOLUME_SCAN_BLOCKS_PER_BATCH / sliceBlocks)
+        val midY = (chamber.minY + chamber.maxY) / 2.0
+        val midZ = (chamber.minZ + chamber.maxZ) / 2.0
 
-        kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
-            plugin.scheduler.runAtLocation(chamberCenter, Runnable {
-                try {
-                    // Iterate through all blocks in chamber bounds
-                    for (x in chamber.minX..chamber.maxX) {
-                        for (y in chamber.minY..chamber.maxY) {
-                            for (z in chamber.minZ..chamber.maxZ) {
-                                totalBlocks++
+        var xStart = chamber.minX
+        while (xStart <= chamber.maxX) {
+            val xEnd = minOf(xStart + slicesPerBatch - 1, chamber.maxX)
+            val batchStartX = xStart
+            val batchCounts: Pair<Int, Int> = kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
+                plugin.scheduler.runAtLocation(Location(world, (batchStartX + xEnd) / 2.0, midY, midZ), Runnable {
+                    try {
+                        var batchTotal = 0
+                        var batchCaptured = 0
+                        for (x in batchStartX..xEnd) {
+                            for (y in chamber.minY..chamber.maxY) {
+                                for (z in chamber.minZ..chamber.maxZ) {
+                                    batchTotal++
 
-                                val location = Location(world, x.toDouble(), y.toDouble(), z.toDouble())
-                                val block = location.block
+                                    val block = world.getBlockAt(x, y, z)
 
-                                // Skip air blocks to reduce file size (optional optimization)
-                                if (block.type == Material.AIR) {
-                                    continue
+                                    // Skip air blocks to reduce file size (optional optimization)
+                                    if (block.type == Material.AIR) {
+                                        continue
+                                    }
+
+                                    // Capture block data
+                                    val blockData = block.blockData.asString
+
+                                    // Capture tile entity data if applicable (MUST be on main thread)
+                                    val tileEntity = NBTUtil.captureTileEntity(block.state)
+
+                                    // Store with relative coordinates
+                                    val relativePos = Triple(
+                                        x - originX,
+                                        y - originY,
+                                        z - originZ
+                                    )
+
+                                    blocks[relativePos] = BlockSnapshot(blockData, tileEntity)
+                                    batchCaptured++
                                 }
-
-                                // Capture block data
-                                val blockData = block.blockData.asString
-
-                                // Capture tile entity data if applicable (MUST be on main thread)
-                                val tileEntity = NBTUtil.captureTileEntity(block.state)
-
-                                // Store with relative coordinates
-                                val relativePos = Triple(
-                                    x - originX,
-                                    y - originY,
-                                    z - originZ
-                                )
-
-                                blocks[relativePos] = BlockSnapshot(blockData, tileEntity)
-                                capturedBlocks++
                             }
                         }
+                        continuation.resume(batchTotal to batchCaptured) {}
+                    } catch (e: Exception) {
+                        continuation.resumeWith(Result.failure(e))
                     }
-                    continuation.resume(Unit) {}
-                } catch (e: Exception) {
-                    continuation.resumeWith(Result.failure(e))
-                }
-            })
+                })
+            }
+            totalBlocks += batchCounts.first
+            capturedBlocks += batchCounts.second
+            xStart = xEnd + 1
         }
 
         plugin.logger.info("Captured $capturedBlocks blocks (${totalBlocks - capturedBlocks} air blocks skipped)")

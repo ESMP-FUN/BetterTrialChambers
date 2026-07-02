@@ -19,6 +19,18 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class ChamberManager(private val plugin: TrialChamberPro) {
 
+    /** Prefixed table names (`database.table-prefix`, v1.7.0). */
+    private val tables get() = plugin.databaseManager.tables
+
+    companion object {
+        /**
+         * Per-scheduled-task block budget for full-volume iteration (scanChamber).
+         * ~750k blocks (the old generation cap) scanned in ~8 batches; a 15M-block
+         * structure-bounds chamber takes ~150 batches instead of one tick-freezing pass.
+         */
+        const val VOLUME_SCAN_BLOCKS_PER_BATCH = 100_000
+    }
+
     // In-memory destruction counters for auto-pause threshold tracking.
     // Keyed by chamber ID; reset on any pause-state transition.
     private val destructionCounters = java.util.concurrent.ConcurrentHashMap<Int, java.util.concurrent.atomic.AtomicInteger>()
@@ -105,7 +117,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
                     """
-                    INSERT INTO chambers (name, world, min_x, min_y, min_z, max_x, max_y, max_z, reset_interval, created_at, display_name)
+                    INSERT INTO ${tables.chambers} (name, world, min_x, min_y, min_z, max_x, max_y, max_z, reset_interval, created_at, display_name)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """.trimIndent(),
                     java.sql.Statement.RETURN_GENERATED_KEYS
@@ -155,7 +167,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             }
         } catch (e: Exception) {
             val msg = e.message ?: ""
-            if (msg.contains("UNIQUE constraint failed: chambers.name")) {
+            if (msg.contains("UNIQUE constraint failed: ${tables.chambers}.name")) {
                 plugin.logger.warning("[TCP] Duplicate chamber name '$name' - creation cancelled.")
                 return@withContext null
             }
@@ -193,7 +205,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
     suspend fun getChamberById(id: Int): Chamber? = withContext(Dispatchers.IO) {
         try {
             plugin.databaseManager.connection.use { conn ->
-                conn.prepareStatement("SELECT * FROM chambers WHERE id = ?").use { stmt ->
+                conn.prepareStatement("SELECT * FROM ${tables.chambers} WHERE id = ?").use { stmt ->
                     stmt.setInt(1, id)
                     val rs = stmt.executeQuery()
                     if (rs.next()) {
@@ -217,7 +229,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             val chambers = mutableListOf<Chamber>()
             plugin.databaseManager.connection.use { conn ->
                 conn.createStatement().use { stmt ->
-                    val rs = stmt.executeQuery("SELECT * FROM chambers ORDER BY created_at DESC")
+                    val rs = stmt.executeQuery("SELECT * FROM ${tables.chambers} ORDER BY created_at DESC")
                     while (rs.next()) {
                         chambers.add(parseChamber(rs))
                     }
@@ -261,7 +273,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
                     """
-                    UPDATE chambers
+                    UPDATE ${tables.chambers}
                     SET exit_x = ?, exit_y = ?, exit_z = ?, exit_yaw = ?, exit_pitch = ?
                     WHERE name = ?
                     """.trimIndent()
@@ -301,7 +313,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
     suspend fun setSnapshotFile(chamberName: String, filePath: String): Boolean = withContext(Dispatchers.IO) {
         try {
             plugin.databaseManager.connection.use { conn ->
-                conn.prepareStatement("UPDATE chambers SET snapshot_file = ? WHERE name = ?").use { stmt ->
+                conn.prepareStatement("UPDATE ${tables.chambers} SET snapshot_file = ? WHERE name = ?").use { stmt ->
                     stmt.setString(1, filePath)
                     stmt.setString(2, chamberName)
 
@@ -332,7 +344,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
     suspend fun updateLastReset(chamberId: Int, timestamp: Long): Boolean = withContext(Dispatchers.IO) {
         try {
             plugin.databaseManager.connection.use { conn ->
-                conn.prepareStatement("UPDATE chambers SET last_reset = ? WHERE id = ?").use { stmt ->
+                conn.prepareStatement("UPDATE ${tables.chambers} SET last_reset = ? WHERE id = ?").use { stmt ->
                     stmt.setLong(1, timestamp)
                     stmt.setInt(2, chamberId)
                     stmt.executeUpdate() > 0
@@ -350,7 +362,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
     suspend fun deleteChamber(name: String): Boolean = withContext(Dispatchers.IO) {
         try {
             plugin.databaseManager.connection.use { conn ->
-                conn.prepareStatement("DELETE FROM chambers WHERE name = ?").use { stmt ->
+                conn.prepareStatement("DELETE FROM ${tables.chambers} WHERE name = ?").use { stmt ->
                     stmt.setString(1, name)
                     val deleted = stmt.executeUpdate() > 0
 
@@ -384,66 +396,75 @@ class ChamberManager(private val plugin: TrialChamberPro) {
         // A re-scan implies the spawner set may have changed — drop the wave
         // manager's cached count/locations so ChamberClearedEvent re-counts.
         runCatching { plugin.spawnerWaveManager.invalidateChamberSpawnerCaches(chamber.id) }
-        // Use location-based scheduling for Folia compatibility
-        val chamberCenter = Location(
-            chamber.getWorld(),
-            (chamber.minX + chamber.maxX) / 2.0,
-            (chamber.minY + chamber.maxY) / 2.0,
-            (chamber.minZ + chamber.maxZ) / 2.0
-        )
 
-        return suspendCancellableCoroutine { continuation ->
-            plugin.scheduler.runAtLocation(chamberCenter, Runnable {
-                try {
-                    var vaultCount = 0
-                    var spawnerCount = 0
-                    var potCount = 0
+        val world = chamber.getWorld() ?: return Triple(0, 0, 0)
 
-                    val world = chamber.getWorld()
-                    if (world == null) {
-                        continuation.resume(Triple(0, 0, 0)) {}
-                        return@Runnable
-                    }
+        // v1.7.0: iterate in X-slice batches, one batch per scheduled task, so scanning a
+        // multi-million-block chamber (structure-bounds discovery / imported dungeons) never
+        // stalls a tick. Small chambers still complete in a single batch, exactly as before.
+        // Each batch is scheduled at its own slice's location (Folia region correctness).
+        val sizeY = chamber.maxY - chamber.minY + 1
+        val sizeZ = chamber.maxZ - chamber.minZ + 1
+        val sliceBlocks = maxOf(1, sizeY * sizeZ)
+        val slicesPerBatch = maxOf(1, VOLUME_SCAN_BLOCKS_PER_BATCH / sliceBlocks)
+        val midY = (chamber.minY + chamber.maxY) / 2.0
+        val midZ = (chamber.minZ + chamber.maxZ) / 2.0
 
-                    // Now on main thread - safe to access Bukkit API
-                    for (x in chamber.minX..chamber.maxX) {
-                        for (y in chamber.minY..chamber.maxY) {
-                            for (z in chamber.minZ..chamber.maxZ) {
-                                val block = world.getBlockAt(x, y, z)
+        var vaultCount = 0
+        var spawnerCount = 0
+        var potCount = 0
 
-                                when (block.type) {
-                                    Material.VAULT -> {
-                                        // Read block data on main thread, pass string to async
-                                        val blockDataString = block.blockData.asString
-                                        plugin.launchAsync {
-                                            saveVault(chamber.id, x, y, z, blockDataString)
+        var xStart = chamber.minX
+        while (xStart <= chamber.maxX) {
+            val xEnd = minOf(xStart + slicesPerBatch - 1, chamber.maxX)
+            val batchStartX = xStart
+            val batch: Triple<Int, Int, Int> = suspendCancellableCoroutine { continuation ->
+                plugin.scheduler.runAtLocation(Location(world, (batchStartX + xEnd) / 2.0, midY, midZ), Runnable {
+                    try {
+                        var v = 0; var s = 0; var p = 0
+                        // Now on the owning region thread - safe to access Bukkit API
+                        for (x in batchStartX..xEnd) {
+                            for (y in chamber.minY..chamber.maxY) {
+                                for (z in chamber.minZ..chamber.maxZ) {
+                                    val block = world.getBlockAt(x, y, z)
+
+                                    when (block.type) {
+                                        Material.VAULT -> {
+                                            // Read block data on main thread, pass string to async
+                                            val blockDataString = block.blockData.asString
+                                            plugin.launchAsync {
+                                                saveVault(chamber.id, x, y, z, blockDataString)
+                                            }
+                                            v++
                                         }
-                                        vaultCount++
-                                    }
-                                    Material.TRIAL_SPAWNER -> {
-                                        plugin.launchAsync {
-                                            saveSpawner(chamber.id, x, y, z)
+                                        Material.TRIAL_SPAWNER -> {
+                                            plugin.launchAsync {
+                                                saveSpawner(chamber.id, x, y, z)
+                                            }
+                                            s++
                                         }
-                                        spawnerCount++
-                                    }
-                                    Material.DECORATED_POT -> {
-                                        potCount++
-                                    }
-                                    else -> {
-                                        // No-op for other blocks
+                                        Material.DECORATED_POT -> p++
+                                        else -> {
+                                            // No-op for other blocks
+                                        }
                                     }
                                 }
                             }
                         }
+                        continuation.resume(Triple(v, s, p)) {}
+                    } catch (e: Exception) {
+                        continuation.resumeWith(Result.failure(e))
                     }
-
-                    plugin.logger.info("Scanned chamber ${chamber.name}: $vaultCount vaults, $spawnerCount spawners, $potCount pots")
-                    continuation.resume(Triple(vaultCount, spawnerCount, potCount)) {}
-                } catch (e: Exception) {
-                    continuation.resumeWith(Result.failure(e))
-                }
-            })
+                })
+            }
+            vaultCount += batch.first
+            spawnerCount += batch.second
+            potCount += batch.third
+            xStart = xEnd + 1
         }
+
+        plugin.logger.info("Scanned chamber ${chamber.name}: $vaultCount vaults, $spawnerCount spawners, $potCount pots")
+        return Triple(vaultCount, spawnerCount, potCount)
     }
 
     /**
@@ -470,7 +491,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
                     io.github.darkstarworks.trialChamberPro.database.DatabaseManager.DatabaseType.SQLITE
                 val sql = if (isSQLite) {
                     """
-                    INSERT INTO vaults (chamber_id, x, y, z, type, loot_table)
+                    INSERT INTO ${tables.vaults} (chamber_id, x, y, z, type, loot_table)
                     VALUES (?, ?, ?, ?, ?, ?)
                     ON CONFLICT(chamber_id, x, y, z, type)
                     DO UPDATE SET
@@ -478,7 +499,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
                     """.trimIndent()
                 } else {
                     """
-                    INSERT INTO vaults (chamber_id, x, y, z, type, loot_table)
+                    INSERT INTO ${tables.vaults} (chamber_id, x, y, z, type, loot_table)
                     VALUES (?, ?, ?, ?, ?, ?)
                     ON DUPLICATE KEY UPDATE
                         loot_table = VALUES(loot_table)
@@ -520,7 +541,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             plugin.databaseManager.connection.use { conn ->
                 // Check if spawner already exists
                 conn.prepareStatement(
-                    "SELECT id FROM spawners WHERE chamber_id = ? AND x = ? AND y = ? AND z = ?"
+                    "SELECT id FROM ${tables.spawners} WHERE chamber_id = ? AND x = ? AND y = ? AND z = ?"
                 ).use { stmt ->
                     stmt.setInt(1, chamberId)
                     stmt.setInt(2, x)
@@ -534,7 +555,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
 
                 // Insert new spawner
                 conn.prepareStatement(
-                    "INSERT INTO spawners (chamber_id, x, y, z, type) VALUES (?, ?, ?, ?, ?)"
+                    "INSERT INTO ${tables.spawners} (chamber_id, x, y, z, type) VALUES (?, ?, ?, ?, ?)"
                 ).use { stmt ->
                     stmt.setInt(1, chamberId)
                     stmt.setInt(2, x)
@@ -555,7 +576,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
     private suspend fun loadChamberFromDb(name: String): Chamber? = withContext(Dispatchers.IO) {
         try {
             plugin.databaseManager.connection.use { conn ->
-                conn.prepareStatement("SELECT * FROM chambers WHERE name = ?").use { stmt ->
+                conn.prepareStatement("SELECT * FROM ${tables.chambers} WHERE name = ?").use { stmt ->
                     stmt.setString(1, name)
                     val rs = stmt.executeQuery()
                     if (rs.next()) {
@@ -767,7 +788,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
     suspend fun setPaused(chamberId: Int, paused: Boolean): Boolean = withContext(Dispatchers.IO) {
         try {
             plugin.databaseManager.connection.use { conn ->
-                conn.prepareStatement("UPDATE chambers SET is_paused = ? WHERE id = ?").use { stmt ->
+                conn.prepareStatement("UPDATE ${tables.chambers} SET is_paused = ? WHERE id = ?").use { stmt ->
                     stmt.setBoolean(1, paused)
                     stmt.setInt(2, chamberId)
 
@@ -805,7 +826,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
     suspend fun setBroadcastResetComplete(chamberId: Int, broadcast: Boolean): Boolean = withContext(Dispatchers.IO) {
         try {
             plugin.databaseManager.connection.use { conn ->
-                conn.prepareStatement("UPDATE chambers SET broadcast_reset_complete = ? WHERE id = ?").use { stmt ->
+                conn.prepareStatement("UPDATE ${tables.chambers} SET broadcast_reset_complete = ? WHERE id = ?").use { stmt ->
                     stmt.setBoolean(1, broadcast)
                     stmt.setInt(2, chamberId)
                     val updated = stmt.executeUpdate() > 0
@@ -835,7 +856,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
     suspend fun setBoundsConfirmed(chamberId: Int, confirmed: Boolean): Boolean = withContext(Dispatchers.IO) {
         try {
             plugin.databaseManager.connection.use { conn ->
-                conn.prepareStatement("UPDATE chambers SET bounds_confirmed = ? WHERE id = ?").use { stmt ->
+                conn.prepareStatement("UPDATE ${tables.chambers} SET bounds_confirmed = ? WHERE id = ?").use { stmt ->
                     stmt.setBoolean(1, confirmed)
                     stmt.setInt(2, chamberId)
                     val updated = stmt.executeUpdate() > 0
@@ -870,7 +891,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
         val clean = displayName?.trim()?.takeIf { it.isNotEmpty() }
         try {
             plugin.databaseManager.connection.use { conn ->
-                conn.prepareStatement("UPDATE chambers SET display_name = ? WHERE id = ?").use { stmt ->
+                conn.prepareStatement("UPDATE ${tables.chambers} SET display_name = ? WHERE id = ?").use { stmt ->
                     stmt.setString(1, clean)
                     stmt.setInt(2, chamberId)
                     val updated = stmt.executeUpdate() > 0
@@ -922,7 +943,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             }
 
             plugin.databaseManager.connection.use { conn ->
-                conn.prepareStatement("UPDATE chambers SET $column = ? WHERE name = ?").use { stmt ->
+                conn.prepareStatement("UPDATE ${tables.chambers} SET $column = ? WHERE name = ?").use { stmt ->
                     if (tableName == null) {
                         stmt.setNull(1, java.sql.Types.VARCHAR)
                     } else {
@@ -976,7 +997,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
     suspend fun updateResetInterval(chamberId: Int, intervalSeconds: Long): Boolean = withContext(Dispatchers.IO) {
         try {
             plugin.databaseManager.connection.use { conn ->
-                conn.prepareStatement("UPDATE chambers SET reset_interval = ? WHERE id = ?").use { stmt ->
+                conn.prepareStatement("UPDATE ${tables.chambers} SET reset_interval = ? WHERE id = ?").use { stmt ->
                     stmt.setLong(1, intervalSeconds)
                     stmt.setInt(2, chamberId)
 
@@ -1017,7 +1038,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
-                    "UPDATE chambers SET exit_x = ?, exit_y = ?, exit_z = ?, exit_yaw = ?, exit_pitch = ? WHERE id = ?"
+                    "UPDATE ${tables.chambers} SET exit_x = ?, exit_y = ?, exit_z = ?, exit_yaw = ?, exit_pitch = ? WHERE id = ?"
                 ).use { stmt ->
                     stmt.setDouble(1, x)
                     stmt.setDouble(2, y)
@@ -1063,7 +1084,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
-                    "UPDATE chambers SET min_x = ?, min_y = ?, min_z = ?, max_x = ?, max_y = ?, max_z = ? WHERE id = ?"
+                    "UPDATE ${tables.chambers} SET min_x = ?, min_y = ?, min_z = ?, max_x = ?, max_y = ?, max_z = ? WHERE id = ?"
                 ).use { stmt ->
                     stmt.setInt(1, minX)
                     stmt.setInt(2, minY)
@@ -1107,7 +1128,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
     suspend fun updateSpawnerCooldown(chamberId: Int, cooldownMinutes: Int?): Boolean = withContext(Dispatchers.IO) {
         try {
             plugin.databaseManager.connection.use { conn ->
-                conn.prepareStatement("UPDATE chambers SET spawner_cooldown_minutes = ? WHERE id = ?").use { stmt ->
+                conn.prepareStatement("UPDATE ${tables.chambers} SET spawner_cooldown_minutes = ? WHERE id = ?").use { stmt ->
                     if (cooldownMinutes == null) {
                         stmt.setNull(1, java.sql.Types.INTEGER)
                     } else {
@@ -1167,7 +1188,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
                 if (normalIds != null) setClauses += "custom_mob_ids_normal = ?"
                 if (ominousIds != null) setClauses += "custom_mob_ids_ominous = ?"
 
-                val sql = "UPDATE chambers SET ${setClauses.joinToString(", ")} WHERE id = ?"
+                val sql = "UPDATE ${tables.chambers} SET ${setClauses.joinToString(", ")} WHERE id = ?"
                 conn.prepareStatement(sql).use { stmt ->
                     var idx = 1
                     if (normalizedProvider == null) stmt.setNull(idx++, java.sql.Types.VARCHAR)
