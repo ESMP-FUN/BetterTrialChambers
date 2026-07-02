@@ -45,6 +45,7 @@ database:
   username: root
   password: ""
   pool-size: 10
+  table-prefix: "tcp_"
 ```
 
 ### `type`
@@ -67,6 +68,14 @@ SQLite is perfect for single servers—no setup required, everything in one file
 | `username`  | Database user                                     |
 | `password`  | User's password                                   |
 | `pool-size` | Connection pool size (10 is fine for most setups) |
+
+### `table-prefix` (v1.7.0)
+
+**Default:** `tcp_` — letters, digits and underscores only, max 16 characters.
+
+Every TCP table name starts with this prefix (`tcp_chambers`, `tcp_vaults`, …), so TCP can share a database with other plugins without name collisions. You only need to change it if another plugin already uses `tcp_`-prefixed tables.
+
+Existing installs are migrated automatically the first time 1.7.0 starts: TCP renames its old unprefixed tables (`chambers` → `tcp_chambers`, etc.), keeping all data and foreign keys. A same-named table that belongs to another plugin is detected by its columns and left untouched. The migration is a one-time, idempotent rename — no action needed on your side.
 
 ***
 
@@ -466,6 +475,10 @@ protection:
   enabled: true
   prevent-block-break: true
   prevent-block-place: true
+  tunnel-breaking:
+    enabled: false
+    blocks: [TUFF_BRICKS, TUFF_BRICK_SLAB, TUFF_BRICK_STAIRS, TUFF_BRICK_WALL, CHISELED_TUFF, CHISELED_TUFF_BRICKS, POLISHED_TUFF, POLISHED_TUFF_SLAB, POLISHED_TUFF_STAIRS, POLISHED_TUFF_WALL]
+    shell-depth: 3
   prevent-container-access: false
   allow-pvp: true
   prevent-mob-griefing: true
@@ -501,6 +514,20 @@ Master toggle for chamber protection. Turn this off to rely entirely on WorldGua
 **Default:** `true`
 
 Stop players from breaking or placing blocks inside chambers. Prevents griefing and preserves your carefully-designed structures.
+
+</details>
+
+<details>
+
+<summary><code>tunnel-breaking</code> (v1.7.0)</summary>
+
+**Default:** `enabled: false`
+
+Solves the "how do players even get in?" problem. Naturally-generated Trial Chambers have no entrance — the only way in is to mine through the wall. With `prevent-block-break: true` players are locked out entirely; with it `false` they can farm the endlessly-restored tuff.
+
+When enabled, players may break the listed materials (default: the tuff-brick shell family) inside registered chambers, but the broken blocks **never drop items or XP** — so there's nothing to farm — and the tunnel is restored on the next chamber reset.
+
+`shell-depth` limits how far in from the chamber's outer boundary tunnelling works: `3` means only the outer 3-block shell (dig in, but can't strip-mine the interior — players digging deeper get the `tunnel-only-outer-wall` message). `0` allows the listed blocks to be broken anywhere in the chamber.
 
 </details>
 
@@ -1181,6 +1208,8 @@ On plugin enable, a startup sweep also scans every already-loaded Overworld chun
 ```yaml
 discovery:
   enabled: false                   # Master switch — opt-in
+  use-structure-bounds: true       # v1.7.0: use the game's exact structure bounds when available
+  structure-max-volume: 15000000   # Volume cap for structure-bounds discoveries (-1 = uncapped)
   max-radius-xz: 60                # BFS expansion cap on horizontal axes
   max-radius-y: 45                 # BFS expansion cap on vertical axis
   min-vaults-plus-spawners: 2      # Reject regions with fewer total vaults + spawners
@@ -1207,6 +1236,22 @@ discovery:
 **Default:** `false`
 
 Master switch. Off by default because it's a behaviour change — old worlds with player-built tuff/copper structures can look like chambers to the detector. Turn on if your world is freshly generated, or if you've verified the false-positive guards below are tight enough for your server.
+
+</details>
+
+<details>
+
+<summary><code>use-structure-bounds</code> / <code>structure-max-volume</code> (v1.7.0)</summary>
+
+**Defaults:** `true` / `15000000`
+
+When a seed block sits inside a naturally-generated `minecraft:trial_chambers` structure, discovery asks the game for the structure's **exact bounds** instead of flood-scanning blocks. This registers the chamber at its full, correct size in one pass — and, crucially, works for chambers enlarged by datapacks (e.g. "crazy chambers"-style packs) whose custom rooms use blocks the flood-fill doesn't recognise. Structure-bounds discoveries skip the size/depth validation gates and the auto-expand pass (the bounds are already exact), and are marked bounds-confirmed immediately.
+
+Player-built chambers aren't generated structures, so they still discover via the block scan below.
+
+`structure-max-volume` caps how large a structure-bounds discovery may be, since datapack chambers can be far bigger than vanilla ones (`-1` = uncapped). This replaces `generation.max-volume` for these discoveries only.
+
+**Performance with very large chambers:** scanning, snapshotting and spawner resets are batched across ticks (nothing freezes), but a multi-million-block chamber still takes real time — snapshot files get large, and block restoration runs at `global.blocks-per-tick` (500/tick ≈ 10,000 blocks/second, so a 3-million-block restore takes minutes). For big datapack chambers, raise `global.blocks-per-tick` and/or enable `global.use-fawe` (FastAsyncWorldEdit, Paper-only) for near-instant resets.
 
 </details>
 

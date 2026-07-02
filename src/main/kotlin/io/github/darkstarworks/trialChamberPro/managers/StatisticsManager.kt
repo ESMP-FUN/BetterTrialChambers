@@ -20,8 +20,8 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
     private val statsCache = ConcurrentHashMap<UUID, PlayerStats>()
     private val cacheExpiry = ConcurrentHashMap<UUID, Long>()
 
-    /** TCP's namespaced stats table (`tcp_player_stats`) — see [io.github.darkstarworks.trialChamberPro.database.DatabaseManager.STATS_TABLE]. */
-    private val statsTable = io.github.darkstarworks.trialChamberPro.database.DatabaseManager.STATS_TABLE
+    /** TCP's prefixed stats table (`database.table-prefix` + `player_stats`, default `tcp_player_stats`). */
+    private val statsTable get() = plugin.databaseManager.tables.playerStats
 
     // Per-player mutexes to prevent concurrent database loads for the same player
     private val loadingLocks = ConcurrentHashMap<UUID, Mutex>()

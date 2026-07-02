@@ -132,6 +132,26 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
     private fun attemptDiscovery(seed: PendingSeed, key: String) {
         // Runs on region thread owning the seed location.
         try {
+            // v1.7.0: prefer the game's own structure bounds when the seed sits inside a
+            // generated minecraft:trial_chambers structure. Exact, immune to the BFS's
+            // structural-block predicate — which datapack-enlarged chambers (custom .nbt
+            // rooms overriding the vanilla start_pool) routinely break. Player-built
+            // chambers aren't generated structures, so they fall through to the BFS.
+            if (plugin.config.getBoolean("discovery.use-structure-bounds", true)) {
+                val structResult = structureBoundsResult(seed.world, seed.blockX, seed.blockY, seed.blockZ)
+                if (structResult != null) {
+                    val maxVolume = plugin.config.getLong("discovery.structure-max-volume", 15_000_000L)
+                    val volume = structResult.sizeX.toLong() * structResult.sizeY.toLong() * structResult.sizeZ.toLong()
+                    if (maxVolume >= 0 && volume > maxVolume) {
+                        finalizeFailed(key, "structure bounds exceed structure-max-volume ($volume > $maxVolume)")
+                        return
+                    }
+                    plugin.logger.info("[Discovery] Using generated-structure bounds at ${seed.blockX},${seed.blockY},${seed.blockZ}: ${structResult.sizeX}x${structResult.sizeY}x${structResult.sizeZ}")
+                    registerChamber(seed.world, structResult, key, seed.method, boundsConfirmed = true)
+                    return
+                }
+            }
+
             val result = try {
                 bfsCompute(seed.world, seed.blockX, seed.blockY, seed.blockZ)
             } catch (e: Exception) {
@@ -166,11 +186,44 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
         }
     }
 
+    /**
+     * The exact bounds of the generated `minecraft:trial_chambers` structure containing the
+     * seed block, or null when the seed isn't inside one (player-built) or the API fails.
+     * Datapacks that enlarge chambers override the same structure key, so this matches
+     * those too. Must run on the region thread owning the seed.
+     */
+    private fun structureBoundsResult(world: World, x: Int, y: Int, z: Int): BfsResult? = try {
+        world.getStructures(x shr 4, z shr 4, org.bukkit.generator.structure.Structure.TRIAL_CHAMBERS)
+            // Paper passes vanilla's BLOCK-INCLUSIVE min/max through unchanged
+            // (CraftGeneratedStructure), but Bukkit's BoundingBox.contains() treats max as
+            // exclusive — a seed block exactly on the max face would miss. Compare inclusively.
+            .firstOrNull { gs ->
+                val b = gs.boundingBox
+                x >= b.minX && x <= b.maxX && y >= b.minY && y <= b.maxY && z >= b.minZ && z <= b.maxZ
+            }
+            ?.let { gs ->
+                val bb = gs.boundingBox
+                BfsResult(
+                    minX = bb.minX.toInt(), minY = bb.minY.toInt(), minZ = bb.minZ.toInt(),
+                    maxX = bb.maxX.toInt(), maxY = bb.maxY.toInt(), maxZ = bb.maxZ.toInt(),
+                    // Placeholder counts — the authoritative scanChamber pass in registerNew
+                    // reports real vault/spawner numbers. The seed block itself guarantees
+                    // the box isn't empty.
+                    vaultCount = 0, spawnerCount = 0, structuralCount = 1,
+                    hitUnloadedChunks = false
+                )
+            }
+    } catch (e: Exception) {
+        plugin.logger.warning("[Discovery] structure-bounds lookup failed at $x,$y,$z: ${e.message} — falling back to block scan")
+        null
+    }
+
     private fun registerChamber(
         world: World,
         result: BfsResult,
         key: String,
-        method: io.github.darkstarworks.trialChamberPro.api.events.ChamberDiscoveredEvent.Method
+        method: io.github.darkstarworks.trialChamberPro.api.events.ChamberDiscoveredEvent.Method,
+        boundsConfirmed: Boolean = false
     ) {
         val worldName = world.name
         val name = "auto_${worldName}_${result.centerX}_${result.centerZ}"
@@ -178,11 +231,17 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
         plugin.launchAsync {
             registrationMutex.withLock {
                 try {
-                    val nearby = findNearbyChamber(worldName, result)
+                    // Structure-bounds results are EXACT: only merge when the boxes actually
+                    // overlap (i.e. the same structure was re-seeded, or a BFS-registered
+                    // fragment of it exists). The 250-block proximity merge is for clipped
+                    // block-scan fragments and would wrongly glue two distinct neighbouring
+                    // structures into one chamber.
+                    val nearby = if (boundsConfirmed) findOverlappingChamber(worldName, result)
+                                 else findNearbyChamber(worldName, result)
                     if (nearby != null) {
-                        mergeIntoExisting(world, nearby, result, key, method)
+                        mergeIntoExisting(world, nearby, result, key, method, exactBounds = boundsConfirmed)
                     } else {
-                        registerNew(world, name, result, key, method)
+                        registerNew(world, name, result, key, method, boundsConfirmed)
                     }
                 } catch (e: Exception) {
                     plugin.logger.severe("[Discovery] Unexpected error during registration: ${e.message}")
@@ -215,6 +274,19 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
         }
     }
 
+    /** Registered chamber whose AABB actually overlaps/touches the result box (distance 0). */
+    private fun findOverlappingChamber(
+        worldName: String,
+        result: BfsResult
+    ): io.github.darkstarworks.trialChamberPro.models.Chamber? =
+        plugin.chamberManager.getCachedChambers().firstOrNull { c ->
+            c.world == worldName && aabbsWithin(
+                result.minX, result.minY, result.minZ, result.maxX, result.maxY, result.maxZ,
+                c.minX, c.minY, c.minZ, c.maxX, c.maxY, c.maxZ,
+                0
+            )
+        }
+
     /** Chebyshev edge-to-edge distance check between two AABBs. */
     private fun aabbsWithin(
         aMinX: Int, aMinY: Int, aMinZ: Int, aMaxX: Int, aMaxY: Int, aMaxZ: Int,
@@ -232,7 +304,8 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
         existing: io.github.darkstarworks.trialChamberPro.models.Chamber,
         result: BfsResult,
         key: String,
-        method: io.github.darkstarworks.trialChamberPro.api.events.ChamberDiscoveredEvent.Method
+        method: io.github.darkstarworks.trialChamberPro.api.events.ChamberDiscoveredEvent.Method,
+        exactBounds: Boolean = false
     ) {
         val newMinX = minOf(existing.minX, result.minX)
         val newMinY = minOf(existing.minY, result.minY)
@@ -241,21 +314,28 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
         val newMaxY = maxOf(existing.maxY, result.maxY)
         val newMaxZ = maxOf(existing.maxZ, result.maxZ)
 
-        // Cap the merged volume so a runaway BFS or pathological geometry can't
-        // swallow half the world into one logical chamber.
-        val newVolume = (newMaxX - newMinX + 1).toLong() *
-                (newMaxY - newMinY + 1).toLong() *
-                (newMaxZ - newMinZ + 1).toLong()
-        val maxMerged = plugin.config.getLong("discovery.max-merged-volume", 1_500_000L)
-        if (newVolume > maxMerged) {
-            finalizeFailed(key, "merge with '${existing.name}' would exceed max-merged-volume ($newVolume > $maxMerged) — leaving as separate region")
+        if (newMinX == existing.minX && newMinY == existing.minY && newMinZ == existing.minZ &&
+            newMaxX == existing.maxX && newMaxY == existing.maxY && newMaxZ == existing.maxZ) {
+            // Result fully contained in existing chamber — no work needed. Checked BEFORE the
+            // volume cap: a re-seed of an already-registered chamber larger than
+            // max-merged-volume (possible with v1.7.0 structure-bounds registrations) is a
+            // pure duplicate, not a merge, and must not log a cap failure every cooldown.
+            finalizeFailed(key, "region fully covered by existing chamber '${existing.name}'")
             return
         }
 
-        if (newMinX == existing.minX && newMinY == existing.minY && newMinZ == existing.minZ &&
-            newMaxX == existing.maxX && newMaxY == existing.maxY && newMaxZ == existing.maxZ) {
-            // Result fully contained in existing chamber — no work needed
-            finalizeFailed(key, "region fully covered by existing chamber '${existing.name}'")
+        // Cap the merged volume so a runaway BFS or pathological geometry can't
+        // swallow half the world into one logical chamber. When the incoming result is
+        // EXACT structure bounds (v1.7.0) — e.g. absorbing an old clipped block-scan
+        // fragment of the same structure — the relevant ceiling is structure-max-volume,
+        // not the (much smaller) BFS merge cap.
+        val newVolume = (newMaxX - newMinX + 1).toLong() *
+                (newMaxY - newMinY + 1).toLong() *
+                (newMaxZ - newMinZ + 1).toLong()
+        val maxMerged = if (exactBounds) plugin.config.getLong("discovery.structure-max-volume", 15_000_000L)
+                        else plugin.config.getLong("discovery.max-merged-volume", 1_500_000L)
+        if (maxMerged >= 0 && newVolume > maxMerged) {
+            finalizeFailed(key, "merge with '${existing.name}' would exceed the merge volume cap ($newVolume > $maxMerged) — leaving as separate region")
             return
         }
 
@@ -436,7 +516,8 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
         name: String,
         result: BfsResult,
         key: String,
-        method: io.github.darkstarworks.trialChamberPro.api.events.ChamberDiscoveredEvent.Method
+        method: io.github.darkstarworks.trialChamberPro.api.events.ChamberDiscoveredEvent.Method,
+        boundsConfirmed: Boolean = false
     ) {
         // Fire pre-registration event; listeners may abort.
         val corner1 = Location(world, result.minX.toDouble(), result.minY.toDouble(), result.minZ.toDouble())
@@ -501,6 +582,13 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
         }
 
         markProcessed(key)
+
+        // Structure-bounds discoveries (v1.7.0) are exact — mark confirmed and skip the
+        // auto-expand pass, which exists only to fix clipped block-scan results.
+        if (boundsConfirmed) {
+            plugin.chamberManager.setBoundsConfirmed(chamber.id, true)
+            return
+        }
 
         // Lazy-admin safety net: most operators will never run `/tcp scan add`, so
         // automatically run one expand pass shortly after registering. The initial

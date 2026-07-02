@@ -378,7 +378,7 @@ Useful for testing or forcing manual resets.
 
 <details>
 
-<summary><code>/tcp dungeon &lt;pos1|pos2|capture|generate|list|delete&gt;</code></summary>
+<summary><code>/tcp dungeon &lt;pos1|pos2|capture|generate|list|delete|import&gt;</code></summary>
 
 Assembles chambers on demand from modular room pieces you build yourself. Configure in [dungeon.yml](../configuration/dungeon.yml.md).
 
@@ -391,7 +391,10 @@ Assembles chambers on demand from modular room pieces you build yourself. Config
 /tcp dungeon generate <name> [seed]   # stitch a dungeon at your feet, registered as a chamber
 /tcp dungeon list                     # list saved room templates
 /tcp dungeon delete <id>              # delete a room template
+/tcp dungeon import <file|folder|zip> [tags…]  # v1.7.0: import vanilla .nbt structure templates
 ```
+
+**Importing (v1.7.0):** drop `.nbt` structure templates — or a whole datapack `.zip` (e.g. a "crazy chambers"-style pack) — into `plugins/TrialChamberPro/dungeon/import/` and import them as rooms; jigsaw blocks become connectors automatically. See [dungeon.yml](../configuration/dungeon.yml.md#importing-datapack-rooms-v170) for details and limits.
 
 Rooms are matched on opposite-facing connectors across all four rotations, placed without overlap, and the result is snapshotted + registered like any other chamber (so resets, loot and protection all apply). `required-tags` in `dungeon.yml` guarantee e.g. one entrance and at least one vault.
 
