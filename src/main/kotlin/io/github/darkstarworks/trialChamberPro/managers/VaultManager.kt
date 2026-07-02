@@ -20,6 +20,9 @@ import java.util.UUID
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class VaultManager(private val plugin: TrialChamberPro) {
 
+    /** Prefixed table names (`database.table-prefix`, v1.7.0). */
+    private val tables get() = plugin.databaseManager.tables
+
     data class VaultCounts(val normal: Int, val ominous: Int, val updatedAt: Long)
 
     private val countsCache = java.util.concurrent.ConcurrentHashMap<Int, VaultCounts>()
@@ -52,7 +55,7 @@ class VaultManager(private val plugin: TrialChamberPro) {
                 conn.prepareStatement(
                     """
                     SELECT type, COUNT(*) as count
-                    FROM vaults
+                    FROM ${tables.vaults}
                     WHERE chamber_id = ?
                     GROUP BY type
                     """.trimIndent()
@@ -112,7 +115,7 @@ class VaultManager(private val plugin: TrialChamberPro) {
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
-                    "UPDATE vaults SET loot_table = ? WHERE chamber_id = ? AND type = ?"
+                    "UPDATE ${tables.vaults} SET loot_table = ? WHERE chamber_id = ? AND type = ?"
                 ).use { stmt ->
                     stmt.setString(1, tableName)
                     stmt.setInt(2, chamberId)
@@ -136,7 +139,7 @@ class VaultManager(private val plugin: TrialChamberPro) {
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
-                    "SELECT * FROM vaults WHERE x = ? AND y = ? AND z = ? AND type = ?"
+                    "SELECT * FROM ${tables.vaults} WHERE x = ? AND y = ? AND z = ? AND type = ?"
                 ).use { stmt ->
                     stmt.setInt(1, location.blockX)
                     stmt.setInt(2, location.blockY)
@@ -167,7 +170,7 @@ class VaultManager(private val plugin: TrialChamberPro) {
         try {
             val vaults = mutableListOf<VaultData>()
             plugin.databaseManager.connection.use { conn ->
-                conn.prepareStatement("SELECT * FROM vaults WHERE chamber_id = ?").use { stmt ->
+                conn.prepareStatement("SELECT * FROM ${tables.vaults} WHERE chamber_id = ?").use { stmt ->
                     stmt.setInt(1, chamberId)
                     val rs = stmt.executeQuery()
                     while (rs.next()) {
@@ -193,7 +196,7 @@ class VaultManager(private val plugin: TrialChamberPro) {
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
-                    "SELECT last_opened FROM player_vaults WHERE player_uuid = ? AND vault_id = ?"
+                    "SELECT last_opened FROM ${tables.playerVaults} WHERE player_uuid = ? AND vault_id = ?"
                 ).use { stmt ->
                     stmt.setString(1, playerUuid.toString())
                     stmt.setInt(2, vaultId)
@@ -240,7 +243,7 @@ class VaultManager(private val plugin: TrialChamberPro) {
                     io.github.darkstarworks.trialChamberPro.database.DatabaseManager.DatabaseType.SQLITE
                 val sql = if (isSQLite) {
                     """
-                    INSERT INTO player_vaults (player_uuid, vault_id, last_opened, times_opened)
+                    INSERT INTO ${tables.playerVaults} (player_uuid, vault_id, last_opened, times_opened)
                     VALUES (?, ?, ?, 1)
                     ON CONFLICT(player_uuid, vault_id)
                     DO UPDATE SET
@@ -249,7 +252,7 @@ class VaultManager(private val plugin: TrialChamberPro) {
                     """.trimIndent()
                 } else {
                     """
-                    INSERT INTO player_vaults (player_uuid, vault_id, last_opened, times_opened)
+                    INSERT INTO ${tables.playerVaults} (player_uuid, vault_id, last_opened, times_opened)
                     VALUES (?, ?, ?, 1)
                     ON DUPLICATE KEY UPDATE
                         last_opened = VALUES(last_opened),
@@ -345,8 +348,8 @@ class VaultManager(private val plugin: TrialChamberPro) {
                 conn.prepareStatement(
                     """
                     SELECT v.type, COUNT(*) as count
-                    FROM player_vaults pv
-                    JOIN vaults v ON pv.vault_id = v.id
+                    FROM ${tables.playerVaults} pv
+                    JOIN ${tables.vaults} v ON pv.vault_id = v.id
                     WHERE pv.player_uuid = ? AND v.chamber_id = ?
                     GROUP BY v.type
                     """.trimIndent()
@@ -391,7 +394,7 @@ class VaultManager(private val plugin: TrialChamberPro) {
             try {
                 plugin.databaseManager.connection.use { conn ->
                     conn.prepareStatement(
-                        "DELETE FROM player_vaults WHERE player_uuid = ? AND vault_id = ?"
+                        "DELETE FROM ${tables.playerVaults} WHERE player_uuid = ? AND vault_id = ?"
                     ).use { stmt ->
                         stmt.setString(1, playerUuid.toString())
                         stmt.setInt(2, vaultId)
@@ -422,7 +425,7 @@ class VaultManager(private val plugin: TrialChamberPro) {
         val dbCount = withContext(Dispatchers.IO) {
             try {
                 plugin.databaseManager.connection.use { conn ->
-                    conn.prepareStatement("DELETE FROM player_vaults WHERE vault_id = ?").use { stmt ->
+                    conn.prepareStatement("DELETE FROM ${tables.playerVaults} WHERE vault_id = ?").use { stmt ->
                         stmt.setInt(1, vaultId)
                         stmt.executeUpdate()
                     }
@@ -450,7 +453,7 @@ class VaultManager(private val plugin: TrialChamberPro) {
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
-                    "SELECT times_opened FROM player_vaults WHERE player_uuid = ? AND vault_id = ?"
+                    "SELECT times_opened FROM ${tables.playerVaults} WHERE player_uuid = ? AND vault_id = ?"
                 ).use { stmt ->
                     stmt.setString(1, playerUuid.toString())
                     stmt.setInt(2, vaultId)
@@ -480,7 +483,7 @@ class VaultManager(private val plugin: TrialChamberPro) {
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
-                    "SELECT COUNT(*) as count FROM player_vaults WHERE player_uuid = ? AND vault_id = ?"
+                    "SELECT COUNT(*) as count FROM ${tables.playerVaults} WHERE player_uuid = ? AND vault_id = ?"
                 ).use { stmt ->
                     stmt.setString(1, playerUuid.toString())
                     stmt.setInt(2, vaultId)
@@ -509,7 +512,7 @@ class VaultManager(private val plugin: TrialChamberPro) {
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
-                    "SELECT COUNT(*) as count FROM player_vaults WHERE vault_id = ?"
+                    "SELECT COUNT(*) as count FROM ${tables.playerVaults} WHERE vault_id = ?"
                 ).use { stmt ->
                     stmt.setInt(1, vaultId)
                     val rs = stmt.executeQuery()
@@ -644,7 +647,7 @@ class VaultManager(private val plugin: TrialChamberPro) {
     private suspend fun getVaultById(vaultId: Int): VaultData? = withContext(Dispatchers.IO) {
         try {
             plugin.databaseManager.connection.use { conn ->
-                conn.prepareStatement("SELECT * FROM vaults WHERE id = ?").use { stmt ->
+                conn.prepareStatement("SELECT * FROM ${tables.vaults} WHERE id = ?").use { stmt ->
                     stmt.setInt(1, vaultId)
                     val rs = stmt.executeQuery()
                     if (rs.next()) {

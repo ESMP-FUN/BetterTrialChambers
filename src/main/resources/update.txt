@@ -1,8 +1,9 @@
 <black>.
+<aqua>[1.7.0] <gray>- <white>2026-07-02
+<lime>+ <white>NEW: <green>Tunnel-breaking — opt-in <yellow>protection.tunnel-breaking<green> lets players mine INTO a walled chamber through the tuff-brick shell (configurable blocks, <yellow>shell-depth<green> limit) with drops always suppressed, so nothing can be farmed; tunnels heal on the next reset.
+<lime>+ <white>NEW: <green>Import datapack rooms — <yellow>/tcp dungeon import <file|folder|zip><green> turns vanilla <yellow>.nbt<green> structure templates (e.g. "crazy chambers"-style packs) into dungeon rooms; jigsaws become door connectors automatically.
+<lime>+ <white>NEW: <green>Auto-discovery now uses the game's exact structure bounds (<yellow>discovery.use-structure-bounds<green>), so datapack-enlarged natural chambers register at full size in one pass; player-built chambers still use the block scan.
+<lime>+ <white>NEW: <green>Configurable database table prefix — all TCP tables are now <yellow>tcp_<green>-prefixed (<yellow>database.table-prefix<green>) to avoid collisions on shared databases; existing installs migrate automatically and safely on first start.
 <aqua>[1.6.0] <gray>- <white>2026-06-26
 <lime>+ <white>NEW: <green>Guided setup tour — run <yellow>/tcp setup<green> for a friendly, one-setting-at-a-time walkthrough of the main options (<yellow>Enable / Skip / Disable<green>, nothing forced). Uses the native Dialog UI on 1.21.7+, with a clickable-chat fallback on older servers.
-<aqua>[1.5.22] <gray>- <white>2026-06-22
-<lime>+ <white>NEW: <green>Backfill missing snapshots in one go — <yellow>/tcp snapshot create all<green> snapshots every chamber that's missing one (staggered, 20 ticks between each, so TPS holds), and <yellow>/tcp snapshot missing<green> lists them with clickable <yellow>[Create]<green> buttons.
-<aqua>[1.5.21] <gray>- <white>2026-06-22
-<lime>+ <white>FIX: <green>AdvancedEnchantments enchants (e.g. <yellow>Blast Mining<green>) could still break into a chamber when mined from <yellow>outside<green> the wall — TCP now checks the targeted block, not just the player's position, so the outside-in route is closed. (<yellow>protection.block-advanced-enchantments<green> must be on.)
 <black>.

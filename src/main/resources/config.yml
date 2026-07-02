@@ -10,6 +10,11 @@ database:
   username: root
   password: ""
   pool-size: 10
+  # Prefix for all TCP tables (letters/digits/underscore, max 16 chars). Change only if
+  # another plugin's tables collide with TCP's. Existing tables are auto-renamed on first
+  # start after changing this (or after upgrading to 1.7.0, which adopts the old
+  # unprefixed names under "tcp_").
+  table-prefix: "tcp_"
 
 # Global chamber settings
 global:
@@ -184,6 +189,28 @@ protection:
   enabled: true
   prevent-block-break: true
   prevent-block-place: true
+  # Let players mine INTO a walled chamber without letting them farm it (v1.7.0).
+  # When enabled, the blocks below can be broken inside a registered chamber but
+  # drop NOTHING (no items, no XP); everything else stays protected. Mined blocks
+  # come back on the next chamber reset (snapshot restore).
+  tunnel-breaking:
+    enabled: false
+    # Only these materials are breakable (default: tuff-brick family — the chamber shell).
+    blocks:
+      - TUFF_BRICKS
+      - TUFF_BRICK_SLAB
+      - TUFF_BRICK_STAIRS
+      - TUFF_BRICK_WALL
+      - CHISELED_TUFF
+      - CHISELED_TUFF_BRICKS
+      - POLISHED_TUFF
+      - POLISHED_TUFF_SLAB
+      - POLISHED_TUFF_STAIRS
+      - POLISHED_TUFF_WALL
+    # How deep (blocks from the chamber's outer boundary) tunnelling is allowed.
+    # 3 = only the outer 3-block shell (dig in, but can't strip-mine the interior).
+    # 0 = anywhere in the chamber.
+    shell-depth: 3
   prevent-container-access: false
   # How long (ms) to wait before re-showing a "can't break/place/access here" message to
   # the same player. Stops chat spam when one action affects many blocks at once — e.g. an
@@ -387,6 +414,13 @@ spectator-mode:
 # pre-1.21 builds that resemble chamber structural blocks.
 discovery:
   enabled: false                   # Master switch - opt-in
+  # Use the game's own structure bounds (exact) instead of block-scanning when a
+  # naturally-generated Trial Chamber is found (v1.7.0). Handles datapack-enlarged
+  # chambers whose custom rooms break the block scan. Player-built chambers still
+  # discover via the block scan.
+  use-structure-bounds: true
+  # Max volume for a structure-bounds discovery (datapack chambers can be huge). -1 = uncapped.
+  structure-max-volume: 15000000
   max-radius-xz: 60                # BFS expansion cap on horizontal axes
   max-radius-y: 45                 # BFS expansion cap on vertical axis
   min-vaults-plus-spawners: 2      # Reject AABBs with fewer total vaults + spawners

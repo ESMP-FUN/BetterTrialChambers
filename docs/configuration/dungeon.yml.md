@@ -8,6 +8,20 @@ Build each room in WorldEdit with **complete, solid walls**. At each spot a door
 
 Capture rooms with `/tcp dungeon pos1`, `/tcp dungeon pos2`, then `/tcp dungeon capture <id> [roles…]` (roles become tags, e.g. `entrance`, `vault`, `boss`). Generate with `/tcp dungeon generate <name> [seed]`.
 
+## Importing datapack rooms (v1.7.0)
+
+Instead of building rooms in-world, you can import vanilla `.nbt` structure templates — the format datapacks (e.g. "crazy chambers"-style packs) use for their custom jigsaw rooms. Drop a loose `.nbt` file, a folder of them, or a whole datapack `.zip` into `plugins/TrialChamberPro/dungeon/import/`, then run:
+
+```
+/tcp dungeon import <file|folder|zip> [tags…]
+```
+
+- A **`.nbt` file** imports one room (id = filename).
+- A **folder** imports every `.nbt` inside; the folder name becomes an extra tag.
+- A **datapack `.zip`** imports every `data/<namespace>/structure/**/*.nbt` entry; each room is auto-tagged with its immediate parent folder (e.g. `spawner`, `large`), so `start-tags` / `required-tags` can be mapped straight onto the pack's own folder names.
+
+Jigsaw blocks in the templates become door connectors exactly as with in-world capture. Limits to know about: rooms import **literally** (worldgen processor-list randomizers — random block swaps — are not applied), only the first palette is read, and vertical jigsaw connectors become walls (the stitcher joins rooms through horizontal doorways only). Tile-entity contents (vault/spawner configs, container items) import best-effort.
+
 ## Options
 
 ```yaml

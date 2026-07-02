@@ -135,6 +135,7 @@ player-died-in-chamber: "&c{player} died in {chamber}"
 # Protection
 cannot-break-blocks: "&cYou cannot break blocks in a Trial Chamber!"
 cannot-place-blocks: "&cYou cannot place blocks in a Trial Chamber!"
+tunnel-only-outer-wall: "&cYou can only tunnel through the outer wall of a Trial Chamber!"
 cannot-access-container: "&cYou cannot access containers in a Trial Chamber!"
 cannot-claim-in-chamber: "&cYou can't claim that area — it overlaps the Trial Chamber &e{chamber}&c."
 cannot-use-enchant-in-chamber: "&cThat enchantment is disabled inside Trial Chambers."

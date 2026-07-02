@@ -65,8 +65,63 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
         if (chamber.isPaused) return
         // Respect WorldGuard: defer to a region that grants this player build rights.
         if (deferToWorldGuard(location, player)) return
+
+        // v1.7.0 tunnel-breaking: opt-in mode letting players mine INTO a walled chamber
+        // through a configured block set (default: tuff-brick shell), with drops always
+        // suppressed so the renewable chamber can't be farmed. Mined blocks come back on
+        // the next snapshot reset.
+        when (tunnelBreakVerdict(chamber, event.block)) {
+            TunnelVerdict.ALLOW -> {
+                event.isDropItems = false
+                event.expToDrop = 0
+                return
+            }
+            TunnelVerdict.TOO_DEEP -> {
+                event.isCancelled = true
+                notifyBlocked(player, "tunnel-only-outer-wall")
+                return
+            }
+            TunnelVerdict.NOT_TUNNELABLE -> { /* fall through to the generic denial */ }
+        }
+
         event.isCancelled = true
         notifyBlocked(player, "cannot-break-blocks")
+    }
+
+    private enum class TunnelVerdict { ALLOW, TOO_DEEP, NOT_TUNNELABLE }
+
+    /**
+     * Memoized `protection.tunnel-breaking` settings. Invalidation is by config-object
+     * identity: `plugin.reloadConfig()` swaps the [org.bukkit.configuration.file.FileConfiguration]
+     * instance, so a reload naturally re-parses without needing a hook in the reload path.
+     */
+    private data class TunnelSettings(val enabled: Boolean, val blocks: java.util.EnumSet<Material>, val shellDepth: Int)
+    @Volatile private var tunnelCache: Pair<org.bukkit.configuration.file.FileConfiguration, TunnelSettings>? = null
+
+    private fun tunnelSettings(): TunnelSettings {
+        val config = plugin.config
+        tunnelCache?.let { (cfg, settings) -> if (cfg === config) return settings }
+        val enabled = config.getBoolean("protection.tunnel-breaking.enabled", false)
+        val blocks = java.util.EnumSet.noneOf(Material::class.java)
+        if (enabled) {
+            for (name in config.getStringList("protection.tunnel-breaking.blocks")) {
+                val mat = Material.matchMaterial(name.trim())
+                if (mat != null && mat.isBlock) blocks += mat
+                else plugin.logger.warning("[Protection] tunnel-breaking.blocks: unknown material '$name' — skipped")
+            }
+        }
+        val shellDepth = config.getInt("protection.tunnel-breaking.shell-depth", 3).coerceIn(0, 64)
+        val settings = TunnelSettings(enabled, blocks, shellDepth)
+        tunnelCache = config to settings
+        return settings
+    }
+
+    private fun tunnelBreakVerdict(chamber: io.github.darkstarworks.trialChamberPro.models.Chamber, block: org.bukkit.block.Block): TunnelVerdict {
+        val s = tunnelSettings()
+        if (!s.enabled || block.type !in s.blocks) return TunnelVerdict.NOT_TUNNELABLE
+        if (s.shellDepth == 0) return TunnelVerdict.ALLOW // 0 = anywhere in the chamber
+        return if (chamber.distanceToBoundary(block.x, block.y, block.z) < s.shellDepth) TunnelVerdict.ALLOW
+        else TunnelVerdict.TOO_DEEP
     }
 
     /**
