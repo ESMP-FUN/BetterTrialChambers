@@ -47,6 +47,38 @@ class ChamberTest {
         return l
     }
 
+    // ==================== distanceToBoundary (v1.7.0 tunnel-breaking) ====================
+
+    @Test
+    fun `distanceToBoundary is 0 on every face and corner`() {
+        val c = chamber(0, 64, 0, 30, 78, 30)
+        assertEquals(0, c.distanceToBoundary(0, 70, 15))   // min-X face
+        assertEquals(0, c.distanceToBoundary(30, 70, 15))  // max-X face
+        assertEquals(0, c.distanceToBoundary(15, 64, 15))  // floor
+        assertEquals(0, c.distanceToBoundary(15, 78, 15))  // ceiling
+        assertEquals(0, c.distanceToBoundary(0, 64, 0))    // corner
+    }
+
+    @Test
+    fun `distanceToBoundary counts inward from the nearest face`() {
+        val c = chamber(0, 64, 0, 30, 78, 30)
+        assertEquals(2, c.distanceToBoundary(2, 70, 15))
+        assertEquals(1, c.distanceToBoundary(15, 77, 15))
+        // dead centre: limited by the shallow Y axis (78-71 = 7)
+        assertEquals(7, c.distanceToBoundary(15, 71, 15))
+    }
+
+    @Test
+    fun `shell predicate matches plan semantics`() {
+        val c = chamber(0, 64, 0, 30, 78, 30)
+        val shellDepth = 3
+        fun inShell(x: Int, y: Int, z: Int) = c.distanceToBoundary(x, y, z) < shellDepth
+        assertTrue(inShell(0, 70, 15))   // on boundary
+        assertTrue(inShell(2, 70, 15))   // depth 2 < 3
+        assertFalse(inShell(3, 70, 15))  // depth 3 = too deep
+        assertFalse(inShell(15, 71, 15)) // interior
+    }
+
     // ==================== getVolume ====================
 
     @Test

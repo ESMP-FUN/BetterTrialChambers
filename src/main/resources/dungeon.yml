@@ -11,6 +11,11 @@
 #                    stand at the opposite corner → /tcp dungeon pos2
 #                    /tcp dungeon capture <id> [roles…]   (e.g. entrance, vault)
 #  Generate:         /tcp dungeon generate <name> [seed]
+#  Import (v1.7.0):  drop vanilla .nbt structure templates (or a whole datapack
+#                    .zip, e.g. "crazy chambers") into dungeon/import/, then
+#                    /tcp dungeon import <file|folder|zip> [tags…]
+#                    Rooms import literally (no worldgen processor randomizers);
+#                    only palette 0 is read; vertical jigsaws become walls.
 #  YAML needs SPACES, never TABs.
 # =============================================================================
 
