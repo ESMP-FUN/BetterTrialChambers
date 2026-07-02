@@ -136,7 +136,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                     if (cols.isEmpty()) {
                         sender.sendRichMessage("<red>$table<gray>: (missing table)")
                     } else {
-                        val flag = if (table == io.github.darkstarworks.trialChamberPro.database.DatabaseManager.STATS_TABLE && "player_uuid" !in cols) "<red>" else "<green>"
+                        val flag = if (table == plugin.databaseManager.tables.playerStats && "player_uuid" !in cols) "<red>" else "<green>"
                         sender.sendRichMessage("$flag$table<gray>: ${cols.joinToString(", ")}")
                     }
                 }

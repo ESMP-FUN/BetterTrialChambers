@@ -118,6 +118,14 @@ data class Chamber(
     }
 
     /**
+     * Minimum distance from a block position (assumed inside the chamber) to any face of
+     * this chamber's AABB. 0 = on the boundary shell itself. Used by the tunnel-breaking
+     * shell-depth check (v1.7.0).
+     */
+    fun distanceToBoundary(x: Int, y: Int, z: Int): Int =
+        minOf(x - minX, maxX - x, y - minY, maxY - y, z - minZ, maxZ - z)
+
+    /**
      * Checks if an axis-aligned box (inclusive block coords, in [worldName]) overlaps
      * this chamber's bounds. Corner order is normalized, so callers may pass the two
      * opposite corners in any order.
