@@ -49,7 +49,7 @@ class RoomTemplateManager(private val plugin: TrialChamberPro) {
                         val rel = Triple(x - minX, y - minY, z - minZ)
                         when {
                             block.type == Material.JIGSAW -> {
-                                val face = orientationToFace((block.blockData as? org.bukkit.block.data.type.Jigsaw)?.orientation)
+                                val face = JigsawUtil.orientationToFace((block.blockData as? org.bukkit.block.data.type.Jigsaw)?.orientation)
                                 val cap = sampleWall(block, face, wallFallback)
                                 blocks[rel] = BlockSnapshot(cap, null)
                                 if (face != null) {
@@ -70,10 +70,19 @@ class RoomTemplateManager(private val plugin: TrialChamberPro) {
         }
 
         val template = RoomTemplate(id, maxX - minX + 1, maxY - minY + 1, maxZ - minZ + 1, blocks, connectors, tags)
-        save(template)
-        cache[id] = template
+        register(template)
         plugin.logger.info("Captured room '$id': ${blocks.size} blocks, ${connectors.size} connectors, tags=$tags")
         return template
+    }
+
+    /**
+     * Persists a fully-built [template] to `dungeon/rooms/<id>.dat` and caches it.
+     * Shared tail of [capture]; also the entry point for `.nbt` structure import
+     * ([StructureImporter], v1.7.0).
+     */
+    suspend fun register(template: RoomTemplate) {
+        save(template)
+        cache[template.id] = template
     }
 
     fun load(id: String): RoomTemplate? {
@@ -105,30 +114,10 @@ class RoomTemplateManager(private val plugin: TrialChamberPro) {
 
     /** Sample a solid neighbour to fill a jigsaw cell so unconnected doors stay walls. */
     private fun sampleWall(block: org.bukkit.block.Block, facing: BlockFace?, fallback: String): String {
-        val faces = buildList {
-            if (facing != null) {
-                addAll(perpendicular(facing))
-                add(facing.oppositeFace)
-            }
-            add(BlockFace.UP); add(BlockFace.DOWN); add(BlockFace.NORTH); add(BlockFace.SOUTH); add(BlockFace.EAST); add(BlockFace.WEST)
-        }
-        for (f in faces) {
+        for (f in JigsawUtil.sampleOrder(facing)) {
             val n = block.getRelative(f)
             if (n.type != Material.AIR && n.type != Material.JIGSAW && n.type.isSolid) return n.blockData.asString
         }
         return fallback
-    }
-
-    private fun perpendicular(facing: BlockFace): List<BlockFace> = when (facing) {
-        BlockFace.EAST, BlockFace.WEST -> listOf(BlockFace.NORTH, BlockFace.SOUTH)
-        else -> listOf(BlockFace.EAST, BlockFace.WEST)
-    }
-
-    private fun orientationToFace(o: Orientation?): BlockFace? = when (o) {
-        Orientation.NORTH_UP -> BlockFace.NORTH
-        Orientation.EAST_UP -> BlockFace.EAST
-        Orientation.SOUTH_UP -> BlockFace.SOUTH
-        Orientation.WEST_UP -> BlockFace.WEST
-        else -> null // UP_*/DOWN_* = vertical front, unsupported in v1
     }
 }

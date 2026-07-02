@@ -1,6 +1,7 @@
 package io.github.darkstarworks.trialChamberPro.config
 
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
+import io.github.darkstarworks.trialChamberPro.database.TableNames
 
 /**
  * Startup config sanity check (added in v1.3.0).
@@ -52,7 +53,9 @@ object ConfigValidator {
         LongRule("discovery.max-radius-y", 0, null, 40),
         LongRule("discovery.max-center-y", -256, 320, 60),
         LongRule("discovery.cooldown-seconds", 0, null, 60),
-        LongRule("discovery.pending-retry-seconds", 0, null, 30)
+        LongRule("discovery.pending-retry-seconds", 0, null, 30),
+        LongRule("discovery.structure-max-volume", 1, null, 15_000_000, allowSentinel = -1),
+        LongRule("protection.tunnel-breaking.shell-depth", 0, 64, 3)
     )
 
     /**
@@ -61,6 +64,19 @@ object ConfigValidator {
     fun validate(plugin: TrialChamberPro): Int {
         val config = plugin.config
         var clamped = 0
+
+        // v1.7.0: database.table-prefix must be letters/digits/underscore, max 16 chars.
+        // DatabaseManager falls back to the default at runtime; warn here so the admin
+        // sees why their custom prefix isn't taking effect.
+        val rawPrefix = config.getString("database.table-prefix")
+        if (rawPrefix != null && !TableNames.isValid(rawPrefix)) {
+            plugin.logger.warning(
+                "[Config] 'database.table-prefix' = '$rawPrefix' is invalid " +
+                    "(letters/digits/underscore, max 16 chars); using '${TableNames.DEFAULT_PREFIX}'."
+            )
+            config.set("database.table-prefix", TableNames.DEFAULT_PREFIX)
+            clamped++
+        }
 
         for (rule in rules) {
             if (!config.contains(rule.key)) continue  // key absent → plugin default wins

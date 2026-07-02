@@ -19,11 +19,14 @@ import java.util.concurrent.ConcurrentHashMap
  *   generate <name> [seed] stitch a dungeon at your feet, register it as a chamber
  *   list                   list saved room templates
  *   delete <id>            delete a room template
+ *   import <file|folder|zip> [tags…]  import vanilla .nbt structure templates
+ *                          (from plugins/TrialChamberPro/dungeon/import/) as rooms
  */
 class DungeonCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
 
     private val pos1 = ConcurrentHashMap<UUID, Location>()
     private val pos2 = ConcurrentHashMap<UUID, Location>()
+    private val importer by lazy { io.github.darkstarworks.trialChamberPro.dungeon.StructureImporter(plugin) }
 
     override fun execute(sender: CommandSender, args: Array<out String>) {
         if (!sender.hasPermission("tcp.admin.generate")) {
@@ -41,6 +44,7 @@ class DungeonCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
             "generate" -> generate(sender, args)
             "list" -> list(sender)
             "delete" -> delete(sender, args)
+            "import" -> import(sender, args)
             else -> usage(sender)
         }
     }
@@ -117,8 +121,56 @@ class DungeonCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
         else sender.sendRichMessage("<red>No such room template: ${args[2]}")
     }
 
+    /**
+     * `/tcp dungeon import <file|folder|zip> [tags…]` — v1.7.0. Reads from
+     * `plugins/TrialChamberPro/dungeon/import/`. A loose `.nbt` imports one room; a folder
+     * imports every `.nbt` inside (folder name auto-tagged); a datapack `.zip` imports every
+     * `data/<ns>/structure(s)/**/*.nbt` entry (immediate parent folder auto-tagged).
+     */
+    private fun import(sender: CommandSender, args: Array<out String>) {
+        if (args.size < 3) return sender.sendRichMessage("<red>Usage: /tcp dungeon import <file|folder|zip> [tags…]")
+        val importDir = File(plugin.dataFolder, "dungeon/import").apply { mkdirs() }
+        // Resolve inside the import dir only (no path traversal).
+        val target = File(importDir, args[2]).canonicalFile
+        if (!target.path.startsWith(importDir.canonicalFile.path)) {
+            return sender.sendRichMessage("<red>Path must be inside dungeon/import/.")
+        }
+        if (!target.exists()) {
+            return sender.sendRichMessage("<red>Not found: dungeon/import/${args[2]} <gray>(drop .nbt files, folders or datapack .zips there)")
+        }
+        val tags = args.drop(3).map { it.lowercase() }.toSet()
+        val wallFallback = wallFallbackBlockData()
+        sender.sendRichMessage("<gray>Importing <yellow>${args[2]}</yellow>…")
+        plugin.launchAsync {
+            try {
+                val results = when {
+                    target.isDirectory -> importer.importFolder(target, tags, wallFallback)
+                    target.extension.equals("zip", true) -> importer.importZip(target, tags, wallFallback)
+                    target.extension.equals("nbt", true) -> listOf(importer.importFile(target, tags, wallFallback))
+                    else -> {
+                        sender.sendRichMessage("<red>Unsupported file type '${target.extension}' — use .nbt, a folder, or a .zip.")
+                        return@launchAsync
+                    }
+                }
+                if (results.isEmpty()) {
+                    sender.sendRichMessage("<red>No structure templates found in ${args[2]}.")
+                } else {
+                    val totalConnectors = results.sumOf { it.connectors }
+                    sender.sendRichMessage("<green>Imported <yellow>${results.size}</yellow> room(s), $totalConnectors connector(s) total. <gray>Rooms without connectors can't be stitched.")
+                    results.take(10).forEach { r ->
+                        sender.sendRichMessage("<gray> - <yellow>${r.id}</yellow>: ${r.blocks} blocks, ${r.connectors} connector(s), tags=${r.tags}")
+                    }
+                    if (results.size > 10) sender.sendRichMessage("<gray> … and ${results.size - 10} more (see /tcp dungeon list)")
+                    sender.sendRichMessage("<gray>Note: imported rooms are literal — worldgen processor randomizers aren't applied; vertical jigsaws are walls.")
+                }
+            } catch (e: Exception) {
+                sender.sendRichMessage("<red>Import failed: ${e.message}")
+            }
+        }
+    }
+
     private fun usage(sender: CommandSender) {
-        sender.sendRichMessage("<gold>/tcp dungeon</gold> <gray>— pos1 | pos2 | capture <id> [roles…] | generate <name> [seed] | list | delete <id></gray>")
+        sender.sendRichMessage("<gold>/tcp dungeon</gold> <gray>— pos1 | pos2 | capture <id> [roles…] | generate <name> [seed] | list | delete <id> | import <file|folder|zip> [tags…]</gray>")
     }
 
     private fun dungeonConfig(): YamlConfiguration {
