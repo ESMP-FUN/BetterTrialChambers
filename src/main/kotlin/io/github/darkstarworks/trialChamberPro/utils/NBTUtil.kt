@@ -34,6 +34,17 @@ object NBTUtil {
             is TrialSpawner -> captureTrialSpawner(state)
             is Vault -> captureVault(state)
             is DecoratedPot -> captureDecoratedPot(state)
+            // v1.7.2: decoration/utility tile entities — before this, only the four
+            // types above survived a reset; signs/heads/banners/etc. restored blank.
+            // Note: Lectern/Jukebox/ChiseledBookshelf are TileStateInventoryHolder but
+            // NOT org.bukkit.block.Container, so these branches don't shadow Container.
+            is org.bukkit.block.Sign -> captureSign(state)
+            is org.bukkit.block.Skull -> captureSkull(state)
+            is org.bukkit.block.Banner -> captureBanner(state)
+            is org.bukkit.block.Lectern -> captureLectern(state)
+            is org.bukkit.block.Jukebox -> captureJukebox(state)
+            is org.bukkit.block.ChiseledBookshelf -> captureChiseledBookshelf(state)
+            is org.bukkit.block.BrushableBlock -> captureBrushableBlock(state)
             is Container -> captureContainer(state)
             else -> null
         }
@@ -130,6 +141,242 @@ object NBTUtil {
         }
     }
 
+    // ==================== v1.7.2 decoration tile entities ====================
+    // Snapshot maps must hold only plain JDK-serializable values (String/Boolean/
+    // Int/List/Map) — snapshot files are Java-serialized. Components are stored as
+    // Gson-serialized JSON strings (lossless round-trip).
+
+    private val gson = net.kyori.adventure.text.serializer.gson.GsonComponentSerializer.gson()
+
+    /** Sign: both sides' lines (Component JSON), glow + dye color per side, waxed state. */
+    private fun captureSign(sign: org.bukkit.block.Sign): Map<String, Any> = try {
+        val map = mutableMapOf<String, Any>("type" to "SIGN", "waxed" to sign.isWaxed)
+        for (side in org.bukkit.block.sign.Side.entries) {
+            val s = sign.getSide(side)
+            map["${side.name}_lines"] = s.lines().map { gson.serialize(it) }
+            map["${side.name}_glowing"] = s.isGlowingText
+            s.color?.let { map["${side.name}_color"] = it.name }
+        }
+        map
+    } catch (_: Exception) {
+        mapOf("type" to "SIGN")
+    }
+
+    private fun restoreSign(sign: org.bukkit.block.Sign, data: Map<String, Any>): Boolean {
+        return try {
+            for (side in org.bukkit.block.sign.Side.entries) {
+                val s = sign.getSide(side)
+                @Suppress("UNCHECKED_CAST")
+                (data["${side.name}_lines"] as? List<String>)?.forEachIndexed { i, json ->
+                    runCatching { s.line(i, gson.deserialize(json)) }
+                }
+                (data["${side.name}_glowing"] as? Boolean)?.let { s.isGlowingText = it }
+                (data["${side.name}_color"] as? String)?.let { name ->
+                    runCatching { s.color = org.bukkit.DyeColor.valueOf(name) }
+                }
+            }
+            (data["waxed"] as? Boolean)?.let { sign.isWaxed = it }
+            sign.update(true, false)
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Skull: owner profile as plain fields (uuid/name + the `textures` property's
+     * value/signature) so player-head skins survive; profile objects themselves are
+     * not JDK-serializable. Restored via Paper's Bukkit.createProfile.
+     */
+    private fun captureSkull(skull: org.bukkit.block.Skull): Map<String, Any> = try {
+        val map = mutableMapOf<String, Any>("type" to "SKULL")
+        skull.playerProfile?.let { profile ->
+            profile.id?.let { map["uuid"] = it.toString() }
+            profile.name?.let { map["name"] = it }
+            profile.properties.firstOrNull { it.name == "textures" }?.let { prop ->
+                map["textureValue"] = prop.value
+                prop.signature?.let { map["textureSignature"] = it }
+            }
+        }
+        runCatching { skull.noteBlockSound?.let { map["noteBlockSound"] = it.toString() } }
+        map
+    } catch (_: Exception) {
+        mapOf("type" to "SKULL")
+    }
+
+    private fun restoreSkull(skull: org.bukkit.block.Skull, data: Map<String, Any>): Boolean {
+        return try {
+            val uuid = (data["uuid"] as? String)?.let { runCatching { java.util.UUID.fromString(it) }.getOrNull() }
+            val name = data["name"] as? String
+            if (uuid != null || name != null) {
+                val profile = Bukkit.createProfile(uuid, name)
+                (data["textureValue"] as? String)?.let { value ->
+                    profile.setProperty(
+                        com.destroystokyo.paper.profile.ProfileProperty(
+                            "textures", value, data["textureSignature"] as? String
+                        )
+                    )
+                }
+                skull.setPlayerProfile(profile)
+            }
+            (data["noteBlockSound"] as? String)?.let { key ->
+                runCatching { NamespacedKey.fromString(key)?.let { skull.noteBlockSound = it } }
+            }
+            skull.update(true, false)
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private val bannerPatternRegistry
+        get() = io.papermc.paper.registry.RegistryAccess.registryAccess()
+            .getRegistry(io.papermc.paper.registry.RegistryKey.BANNER_PATTERN)
+
+    /** Banner: patterns as "DYE_COLOR|namespace:key" strings (PatternType is registry-keyed). */
+    private fun captureBanner(banner: org.bukkit.block.Banner): Map<String, Any> = try {
+        mapOf(
+            "type" to "BANNER",
+            "patterns" to banner.patterns.mapNotNull { p ->
+                bannerPatternRegistry.getKey(p.pattern)?.let { key -> "${p.color.name}|$key" }
+            }
+        )
+    } catch (_: Exception) {
+        mapOf("type" to "BANNER")
+    }
+
+    private fun restoreBanner(banner: org.bukkit.block.Banner, data: Map<String, Any>): Boolean {
+        return try {
+            @Suppress("UNCHECKED_CAST")
+            val encoded = data["patterns"] as? List<String> ?: return false
+            val patterns = encoded.mapNotNull { entry ->
+                val split = entry.split('|', limit = 2)
+                if (split.size != 2) return@mapNotNull null
+                val color = runCatching { org.bukkit.DyeColor.valueOf(split[0]) }.getOrNull() ?: return@mapNotNull null
+                val patternType = NamespacedKey.fromString(split[1])
+                    ?.let { bannerPatternRegistry.get(it) } ?: return@mapNotNull null
+                org.bukkit.block.banner.Pattern(color, patternType)
+            }
+            banner.patterns = patterns
+            banner.update(true, false)
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /** Lectern: the held book + the open page. */
+    private fun captureLectern(lectern: org.bukkit.block.Lectern): Map<String, Any> = try {
+        val map = mutableMapOf<String, Any>("type" to "LECTERN", "page" to lectern.page)
+        lectern.inventory.getItem(0)?.takeUnless { it.type.isAir }?.let {
+            map["book"] = Base64.getEncoder().encodeToString(it.serializeAsBytes())
+        }
+        map
+    } catch (_: Exception) {
+        mapOf("type" to "LECTERN")
+    }
+
+    private fun restoreLectern(lectern: org.bukkit.block.Lectern, data: Map<String, Any>): Boolean {
+        return try {
+            (data["book"] as? String)?.let { encoded ->
+                lectern.inventory.setItem(0, ItemStack.deserializeBytes(Base64.getDecoder().decode(encoded)))
+            }
+            (data["page"] as? Int)?.let { runCatching { lectern.page = it } }
+            lectern.update(true, false)
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /** Jukebox: the inserted record. */
+    private fun captureJukebox(jukebox: org.bukkit.block.Jukebox): Map<String, Any> = try {
+        val map = mutableMapOf<String, Any>("type" to "JUKEBOX")
+        jukebox.record.takeUnless { it.type.isAir }?.let {
+            map["record"] = Base64.getEncoder().encodeToString(it.serializeAsBytes())
+        }
+        map
+    } catch (_: Exception) {
+        mapOf("type" to "JUKEBOX")
+    }
+
+    private fun restoreJukebox(jukebox: org.bukkit.block.Jukebox, data: Map<String, Any>): Boolean {
+        return try {
+            (data["record"] as? String)?.let { encoded ->
+                jukebox.setRecord(ItemStack.deserializeBytes(Base64.getDecoder().decode(encoded)))
+            }
+            jukebox.update(true, false)
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /** Chiseled bookshelf: its six book slots + last-interacted slot. */
+    private fun captureChiseledBookshelf(shelf: org.bukkit.block.ChiseledBookshelf): Map<String, Any> = try {
+        mapOf(
+            "type" to "CHISELED_BOOKSHELF",
+            "items" to encodeItems(shelf.inventory.contents),
+            "lastInteractedSlot" to shelf.lastInteractedSlot
+        )
+    } catch (_: Exception) {
+        mapOf("type" to "CHISELED_BOOKSHELF")
+    }
+
+    private fun restoreChiseledBookshelf(shelf: org.bukkit.block.ChiseledBookshelf, data: Map<String, Any>): Boolean {
+        return try {
+            (data["items"] as? String)?.let { encoded ->
+                val decoded = decodeItems(encoded)
+                val inv = shelf.inventory
+                for (i in 0 until minOf(inv.size, decoded.size)) inv.setItem(i, decoded[i])
+            }
+            (data["lastInteractedSlot"] as? Int)?.let { runCatching { shelf.lastInteractedSlot = it } }
+            shelf.update(true, false)
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Brushable block (suspicious sand/gravel): mirrors the container pattern —
+     * re-arm the unrolled loot table when present, else the literal buried item.
+     */
+    private fun captureBrushableBlock(brushable: org.bukkit.block.BrushableBlock): Map<String, Any> = try {
+        val table = brushable.lootTable
+        if (table != null) {
+            mapOf("type" to "BRUSHABLE", "lootTable" to table.key.toString(), "seed" to brushable.seed.toString())
+        } else {
+            val map = mutableMapOf<String, Any>("type" to "BRUSHABLE")
+            brushable.item?.takeUnless { it.type.isAir }?.let {
+                map["item"] = Base64.getEncoder().encodeToString(it.serializeAsBytes())
+            }
+            map
+        }
+    } catch (_: Exception) {
+        mapOf("type" to "BRUSHABLE")
+    }
+
+    private fun restoreBrushableBlock(brushable: org.bukkit.block.BrushableBlock, data: Map<String, Any>): Boolean {
+        return try {
+            val key = data["lootTable"] as? String
+            if (key != null) {
+                NamespacedKey.fromString(key)?.let { Bukkit.getLootTable(it) }?.let { table ->
+                    // Seed 0 = fresh random roll each reset (same policy as containers/pots).
+                    brushable.setLootTable(table, 0L)
+                }
+            } else {
+                (data["item"] as? String)?.let { encoded ->
+                    brushable.setItem(ItemStack.deserializeBytes(Base64.getDecoder().decode(encoded)))
+                }
+            }
+            brushable.update(true, false)
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     /**
      * Restores tile entity data to a block state.
      *
@@ -144,6 +391,13 @@ object NBTUtil {
             "TRIAL_SPAWNER" -> restoreTrialSpawner(state as? TrialSpawner ?: return false, data)
             "VAULT" -> restoreVault(state as? Vault ?: return false, data)
             "DECORATED_POT" -> restoreDecoratedPot(state as? DecoratedPot ?: return false, data)
+            "SIGN" -> restoreSign(state as? org.bukkit.block.Sign ?: return false, data)
+            "SKULL" -> restoreSkull(state as? org.bukkit.block.Skull ?: return false, data)
+            "BANNER" -> restoreBanner(state as? org.bukkit.block.Banner ?: return false, data)
+            "LECTERN" -> restoreLectern(state as? org.bukkit.block.Lectern ?: return false, data)
+            "JUKEBOX" -> restoreJukebox(state as? org.bukkit.block.Jukebox ?: return false, data)
+            "CHISELED_BOOKSHELF" -> restoreChiseledBookshelf(state as? org.bukkit.block.ChiseledBookshelf ?: return false, data)
+            "BRUSHABLE" -> restoreBrushableBlock(state as? org.bukkit.block.BrushableBlock ?: return false, data)
             "CONTAINER" -> restoreContainer(state as? Container ?: return false, data)
             else -> false
         }

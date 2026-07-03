@@ -361,6 +361,8 @@ class ChamberManager(private val plugin: TrialChamberPro) {
      */
     suspend fun deleteChamber(name: String): Boolean = withContext(Dispatchers.IO) {
         try {
+            // Resolve BEFORE the row is gone — the wave manager cleanup below needs it.
+            val chamberForCleanup = chamberCache[name]
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement("DELETE FROM ${tables.chambers} WHERE name = ?").use { stmt ->
                     stmt.setString(1, name)
@@ -373,6 +375,15 @@ class ChamberManager(private val plugin: TrialChamberPro) {
 
                         // Delete snapshot file
                         plugin.snapshotManager.deleteSnapshot(name)
+
+                        // v1.7.2: clear the wave manager's per-chamber state (active waves,
+                        // boss bars, cycle tracking, spawner caches). Previously these
+                        // leaked on deletion and went stale if a chamber id was reused.
+                        chamberForCleanup?.let { chamber ->
+                            runCatching { plugin.spawnerWaveManager.clearWavesInChamber(chamber) }
+                            runCatching { plugin.spawnerWaveManager.invalidateChamberSpawnerCaches(chamber.id) }
+                            runCatching { plugin.resetManager.cancelScheduledFor(chamber.id) }
+                        }
 
                         plugin.logger.info("Deleted chamber: $name")
                     }
@@ -805,6 +816,10 @@ class ChamberManager(private val plugin: TrialChamberPro) {
                         // Clear destruction counter on every pause-state transition so the
                         // count always starts from zero after a pause or a resume.
                         resetDestructionCounter(chamberId)
+                        // v1.7.2: pausing also cancels any scheduled reset countdown,
+                        // its warning messages, and a parked pending confirmation —
+                        // previously "resets in 30 seconds!" kept firing for paused chambers.
+                        if (paused) runCatching { plugin.resetManager.cancelScheduledFor(chamberId) }
                         plugin.logger.info("Chamber $chamberId ${if (paused) "paused" else "resumed"}")
                     }
                     updated
