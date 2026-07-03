@@ -129,10 +129,8 @@ Prepended to most messages. Keep it short!
 
 ```yaml
 chamber-created: "&aChamber &e{chamber}&a created successfully!"
-chamber-already-exists: "&cA chamber with that name already exists."
 chamber-not-found: "&cChamber &e{chamber}&c not found."
 chamber-deleted: "&aChamber &e{chamber}&a deleted successfully."
-chamber-list-header: "&6=== Registered Chambers ==="
 chamber-list-item: "&e{chamber} &7- &f{world} &7({volume} blocks)"
 chamber-list-empty: "&cNo chambers registered yet."
 no-selection: "&cYou must make a WorldEdit selection first."
@@ -158,7 +156,6 @@ Fancy:
 
 ```yaml
 chamber-created: "&8[&a✓&8] &fChamber &6{chamber} &fhas been &aregistered&f!"
-chamber-list-header: "&6&m          &r &6Registered Chambers &m          "
 ```
 
 Roleplay:
@@ -177,7 +174,6 @@ chamber-deleted: "&7The chamber &e{chamber}&7 fades from memory..."
 ```yaml
 scan-started: "&aScanning chamber &e{chamber}&a..."
 scan-complete: "&aScanning complete! Found &e{vaults}&a vaults, &e{spawners}&a spawners, &e{pots}&a decorated pots."
-scan-failed: "&cFailed to scan chamber: {error}"
 ```
 
 **Placeholders:**
@@ -215,7 +211,6 @@ snapshot-creating: "&aCreating snapshot for &e{chamber}&a..."
 snapshot-created: "&aSnapshot created successfully! (&e{blocks}&a blocks, &e{size}&a)"
 snapshot-restoring: "&aRestoring chamber &e{chamber}&a from snapshot..."
 snapshot-restored: "&aChamber restored successfully!"
-snapshot-not-found: "&cNo snapshot found for chamber &e{chamber}&c."
 snapshot-failed: "&cSnapshot operation failed: {error}"
 ```
 
@@ -458,7 +453,6 @@ leaderboard-entry: "&e#{rank} &f{player}&7: &a{value}"
 <summary><strong>Chamber Completion &#x26; Entry</strong></summary>
 
 ```yaml
-chamber-completed: "&a✓ You have completed &e{chamber}&a!"
 chamber-entered: "&7Entered chamber: &e{chamber}"
 chamber-exited: "&7Left chamber"
 player-died-in-chamber: "&c{player} died in {chamber}"
@@ -474,7 +468,6 @@ player-died-in-chamber: "&c{player} died in {chamber}"
 Achievement-style:
 
 ```yaml
-chamber-completed: "&6&l✦ ACHIEVEMENT ✦\n&fCompleted &e{chamber}&f!"
 chamber-entered: "&7➜ Entering &e{chamber}&7..."
 chamber-exited: "&7← Leaving chamber"
 ```
@@ -489,7 +482,6 @@ chamber-exited: ""
 Dramatic:
 
 ```yaml
-chamber-completed: "&d&l⚔ VICTORY! ⚔\n&fYou have conquered &5{chamber}&f!"
 player-died-in-chamber: "&c☠ &7{player} fell in &c{chamber}"
 ```
 
@@ -534,7 +526,6 @@ cannot-place-blocks: "&7The chamber's magic rejects your attempt to alter it."
 <summary><strong>Teleportation</strong></summary>
 
 ```yaml
-teleported-to-chamber: "&aTeleported to chamber &e{chamber}&a."
 teleported-to-exit: "&aTeleported to exit of chamber &e{chamber}&a."
 ```
 
@@ -547,14 +538,12 @@ teleported-to-exit: "&aTeleported to exit of chamber &e{chamber}&a."
 Magical:
 
 ```yaml
-teleported-to-chamber: "&d✦ &fYou've been transported to &e{chamber}&f!"
 teleported-to-exit: "&7You've been whisked away to safety..."
 ```
 
 Simple:
 
 ```yaml
-teleported-to-chamber: "&7→ {chamber}"
 teleported-to-exit: "&7→ Exit"
 ```
 
@@ -572,8 +561,6 @@ info-volume: "&eVolume: &f{volume} blocks"
 info-exit: "&eExit: &f{exit}"
 info-reset-interval: "&eReset Interval: &f{interval}"
 info-last-reset: "&eLast Reset: &f{time}"
-info-vaults: "&eVaults: &f{count}"
-info-spawners: "&eSpawners: &f{count}"
 info-snapshot: "&eSnapshot: &f{status}"
 ```
 
@@ -602,13 +589,15 @@ time-minutes: "{minutes}m"
 time-seconds: "{seconds}s"
 time-never: "Never"
 time-now: "Just now"
+time-ago: "{time} ago"
 ```
 
 **Placeholders:**
 
 * `{days}`, `{hours}`, `{minutes}`, `{seconds}` - Time values
+* `{time}` (in `time-ago`) - The already-formatted duration
 
-Used for cooldowns, reset timers, etc. Combined like: `"2d 5h 30m"`
+Used for cooldowns, reset warnings, `/tcp info`, stats and leaderboards. Non-zero units are joined with spaces, like `"2d 5h 30m"`; `time-ago` wraps that for relative timestamps ("5m ago") and `time-now` replaces durations under a minute. _As of 1.7.1 these keys are actually applied everywhere durations are shown (they previously existed but were unused)._
 
 **Examples:**
 
@@ -789,11 +778,6 @@ gui-loot-table-failed: "&cFailed to set loot table"
 gui-loot-table-cleared: "&a{type} loot table override cleared"
 gui-loot-clear-failed: "&cFailed to clear loot table override"
 
-# Settings Toggle
-gui-setting-toggled: "&a{setting}: {value}"
-gui-setting-enabled: "Enabled"
-gui-setting-disabled: "Disabled"
-
 # Loot Editor
 gui-hold-item-to-add: "&cHold an item to add!"
 gui-item-added-to-loot: "&aAdded {item} to loot table"
@@ -801,10 +785,6 @@ gui-loot-changes-saved: "&aLoot table changes saved!"
 gui-loot-pool-saved: "&aPool '{pool}' changes saved!"
 
 # Info Messages
-gui-loot-table-edit-hint-1: "&eTo edit loot table '{table}':"
-gui-loot-table-edit-hint-2: "&71. Go to Chambers and select a chamber"
-gui-loot-table-edit-hint-3: "&72. Click Normal/Ominous Loot to edit"
-gui-loot-table-edit-hint-4: "&73. Or edit loot.yml directly"
 gui-pool-create-hint: "&eTo add a new pool, edit loot.yml directly and /tcp reload"
 gui-pool-create-coming-soon: "&7GUI pool creation coming soon!"
 ```
@@ -820,7 +800,6 @@ gui-pool-create-coming-soon: "&7GUI pool creation coming soon!"
 * `{table}` - Loot table name
 * `{item}` - Item type name
 * `{pool}` - Pool name
-* `{setting}` - Setting name
 
 **Customization:**
 
@@ -889,7 +868,6 @@ chamber-deleted: "&c✗ Deleted {chamber}"
 vault-opened: "&a{type} vault unlocked"
 vault-cooldown: "&7Cooldown: &e{time}"
 chamber-reset-warning: "&e{chamber} &7resets in {time}"
-chamber-completed: "&a✓ {chamber} complete"
 stats-header: "&7─── &6{player} &7───"
 ```
 
@@ -909,7 +887,6 @@ vault-opened: "&dThe {type} Vault bestows its treasures upon you!"
 vault-cooldown: "&5The vault's magic has not yet recovered. Return in &d{time}&5."
 chamber-reset-warning: "&7The magic of &e{chamber}&7 wanes... &6{time}&7 until renewal!"
 chamber-reset-complete: "&d✦ The chamber's ancient power has been restored! ✦"
-chamber-completed: "&5⚔ &fYou have conquered &d{chamber}&f! ⚔"
 stats-header: "&5╔════════════════════════╗\n&5║ &fLegend of {player}\n&5╚════════════════════════╝"
 ```
 
@@ -927,7 +904,6 @@ chamber-created: "&c[NEW ARENA] &f{chamber} &cregistered"
 vault-opened: "&a[LOOTED] &f{type} Vault"
 vault-cooldown: "&e[ON COOLDOWN] &7{time} remaining"
 chamber-reset-warning: "&4⚠ ARENA RESET: &c{time}"
-chamber-completed: "&6[VICTORY] &e{chamber} &6conquered"
 player-died-in-chamber: "&c☠ {player} &7was slain in &c{chamber}"
 stats-header: "&4╔════════════════════╗\n&4║ &c{player} Stats\n&4╚════════════════════╝"
 leaderboard-header: "&4&l⚔ TOP FIGHTERS - {stat} ⚔"
@@ -947,7 +923,6 @@ chamber-created: "&aWoohoo! Chamber &e{chamber}&a is ready to go!"
 vault-opened: "&a🎉 You got loot from a {type} vault!"
 vault-cooldown: "&eOops! This vault is still cooling down. Try again in &6{time}&e!"
 chamber-reset-warning: "&eHeads up! &b{chamber}&e is resetting in &6{time}&e. Wrap it up!"
-chamber-completed: "&a✨ Nice job! You completed &e{chamber}&a!"
 stats-header: "&b=== How's {player} doing? ==="
 cannot-break-blocks: "&cHey now! No breaking stuff in here 😊"
 ```
