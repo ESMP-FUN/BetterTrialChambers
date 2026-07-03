@@ -18,8 +18,8 @@ import org.bukkit.entity.Player
  *   tp <chamber> <#>          — teleport to a template (index from `list`)
  *   edit <chamber> <#>        — open a template to edit it
  *
- * Gated on `tcp.admin.containers`. Admin-facing, so output is literal
- * MiniMessage (matching the other extracted handlers) rather than messages.yml.
+ * Gated on `tcp.admin.containers`. Output is localized via the
+ * `container-*` keys in messages.yml (v1.7.1).
  */
 class ContainerCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
 
@@ -34,7 +34,7 @@ class ContainerCommand(private val plugin: TrialChamberPro) : SubcommandHandler 
         }
         val action = args[1].lowercase()
         if (args.size < 3) {
-            sender.sendRichMessage("<red>Usage: /tcp container $action <chamber>")
+            sender.sendMessage(plugin.getMessageComponent("container-usage-action", "action" to action))
             return
         }
         val chamberName = args[2]
@@ -50,43 +50,49 @@ class ContainerCommand(private val plugin: TrialChamberPro) : SubcommandHandler 
                     val templates = plugin.containerLootManager.listTemplates(chamber.id)
                     val copies = plugin.containerLootManager.countPlayerCopies(chamber.id)
                     val enabled = plugin.config.getBoolean("chests.per-player-loot", false)
-                    sender.sendRichMessage("<gold>Container loot — <yellow>${chamber.name}</yellow></gold> <gray>(per-player-loot: ${if (enabled) "<green>on" else "<red>off"}<gray>)")
-                    sender.sendRichMessage("<gray>Templates: <yellow>${templates.size}</yellow>  ·  Player copies: <yellow>$copies</yellow>")
+                    // rawMessage: the on/off label is nested into the header's {state} placeholder.
+                    val state = plugin.rawMessage(if (enabled) "container-state-on" else "container-state-off")
+                    sender.sendMessage(plugin.getMessageComponent("container-list-page-header",
+                        "chamber" to chamber.name, "state" to state))
+                    sender.sendMessage(plugin.getMessageComponent("container-list-stats",
+                        "templates" to templates.size, "copies" to copies))
                     templates.take(20).forEachIndexed { i, t ->
                         val items = t.contents.count { it != null && !it.type.isAir }
-                        sender.sendRichMessage("<gray> #${i + 1} <white>${t.pos.x}, ${t.pos.y}, ${t.pos.z}</white> <dark_gray>— <yellow>$items<gray> item stack(s)")
+                        sender.sendMessage(plugin.getMessageComponent("container-list-item",
+                            "index" to (i + 1), "x" to t.pos.x, "y" to t.pos.y, "z" to t.pos.z, "items" to items))
                     }
-                    if (templates.size > 20) sender.sendRichMessage("<dark_gray>…and ${templates.size - 20} more.")
-                    if (templates.isEmpty()) sender.sendRichMessage("<gray>No templates yet — run <yellow>/tcp container materialize ${chamber.name}</yellow> or open a container in-world.")
+                    if (templates.size > 20) sender.sendMessage(plugin.getMessageComponent("container-list-more", "count" to (templates.size - 20)))
+                    if (templates.isEmpty()) sender.sendMessage(plugin.getMessageComponent("container-list-empty-hint", "chamber" to chamber.name))
                 }
                 "materialize" -> {
-                    sender.sendRichMessage("<gray>Scanning <yellow>${chamber.name}</yellow> for containers…")
+                    sender.sendMessage(plugin.getMessageComponent("container-materialize-start", "chamber" to chamber.name))
                     val created = plugin.containerLootListener.materializeChamber(chamber)
-                    sender.sendRichMessage("<green>Materialized <yellow>$created</yellow> new container template(s).")
+                    sender.sendMessage(plugin.getMessageComponent("container-materialize-done", "count" to created))
                 }
                 "reset", "cleartemplates" -> {
                     val n = plugin.containerLootManager.clearTemplates(chamber.id)
-                    sender.sendRichMessage("<green>Cleared <yellow>$n</yellow> template(s) — they re-materialize from each container's loot table on next access.")
+                    sender.sendMessage(plugin.getMessageComponent("container-cleared-templates", "count" to n))
                 }
                 "clearcopies" -> {
                     val n = plugin.containerLootManager.clearChamber(chamber.id)
-                    sender.sendRichMessage("<green>Cleared <yellow>$n</yellow> per-player container copy/copies — everyone re-clones the template next open.")
+                    sender.sendMessage(plugin.getMessageComponent("container-cleared-copies", "count" to n))
                 }
                 "resetone" -> {
                     val idx = args.getOrNull(3)?.toIntOrNull()
                     if (idx == null || idx < 1) {
-                        sender.sendRichMessage("<red>Usage: /tcp container resetone ${chamber.name} <#>  (index from /tcp container list)")
+                        sender.sendMessage(plugin.getMessageComponent("container-usage-index",
+                            "action" to "resetone", "chamber" to chamber.name))
                         return@launchAsync
                     }
                     val templates = plugin.containerLootManager.listTemplates(chamber.id)
                     val target = templates.getOrNull(idx - 1)
                     if (target == null) {
-                        sender.sendRichMessage("<red>No template #$idx — there are ${templates.size}.")
+                        sender.sendMessage(plugin.getMessageComponent("container-no-template", "index" to idx, "count" to templates.size))
                         return@launchAsync
                     }
                     val ok = plugin.containerLootManager.markVanilla(chamber.id, target.pos)
-                    if (ok) sender.sendRichMessage("<green>Reverted container #$idx to vanilla — it rolls fresh loot per player on each open.")
-                    else sender.sendRichMessage("<red>Couldn't revert container #$idx.")
+                    if (ok) sender.sendMessage(plugin.getMessageComponent("container-resetone-success", "index" to idx))
+                    else sender.sendMessage(plugin.getMessageComponent("container-resetone-failed", "index" to idx))
                 }
                 "tp", "edit" -> {
                     val player = sender as? Player
@@ -96,24 +102,26 @@ class ContainerCommand(private val plugin: TrialChamberPro) : SubcommandHandler 
                     }
                     val idx = args.getOrNull(3)?.toIntOrNull()
                     if (idx == null || idx < 1) {
-                        sender.sendRichMessage("<red>Usage: /tcp container $action ${chamber.name} <#>  (index from /tcp container list)")
+                        sender.sendMessage(plugin.getMessageComponent("container-usage-index",
+                            "action" to action, "chamber" to chamber.name))
                         return@launchAsync
                     }
                     val templates = plugin.containerLootManager.listTemplates(chamber.id)
                     val target = templates.getOrNull(idx - 1)
                     if (target == null) {
-                        sender.sendRichMessage("<red>No template #$idx — there are ${templates.size}.")
+                        sender.sendMessage(plugin.getMessageComponent("container-no-template", "index" to idx, "count" to templates.size))
                         return@launchAsync
                     }
                     if (action == "tp") {
                         val world = chamber.getWorld()
                         if (world == null) {
-                            sender.sendRichMessage("<red>Chamber world isn't loaded.")
+                            sender.sendMessage(plugin.getMessageComponent("container-world-not-loaded"))
                             return@launchAsync
                         }
                         val loc = Location(world, target.pos.x + 0.5, target.pos.y + 1.0, target.pos.z + 0.5)
                         player.teleportAsync(loc)
-                        sender.sendRichMessage("<green>Teleported to template #$idx (<yellow>${target.pos.x}, ${target.pos.y}, ${target.pos.z}</yellow>).")
+                        sender.sendMessage(plugin.getMessageComponent("container-teleported",
+                            "index" to idx, "x" to target.pos.x, "y" to target.pos.y, "z" to target.pos.z))
                     } else {
                         plugin.containerLootListener.openTemplateEditor(player, chamber, target.pos)
                     }
@@ -124,6 +132,6 @@ class ContainerCommand(private val plugin: TrialChamberPro) : SubcommandHandler 
     }
 
     private fun usage(sender: CommandSender) {
-        sender.sendRichMessage("<gold>/tcp container</gold> <gray>— list | materialize | reset | resetone <#> | clearcopies | tp <#> | edit <#> <white><chamber></white></gray>")
+        sender.sendMessage(plugin.getMessageComponent("container-usage"))
     }
 }

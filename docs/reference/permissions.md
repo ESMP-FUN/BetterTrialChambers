@@ -8,6 +8,12 @@ TrialChamberPro uses a hierarchical permission system. Grant broad access with w
 **Default OP Permissions:** All `tcp.admin.*` permissions default to operators. Players get `tcp.stats` and `tcp.leaderboard` by default.
 {% endhint %}
 
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
+**Fixed in 1.7.1:** Prior versions gated the entire `/tcp` command behind `tcp.admin`, so non-OP players could not use `/tcp stats` or `/tcp leaderboard` even though those default to everyone. As of 1.7.1 each subcommand checks its own permission, so the defaults documented on this page actually apply. Admins see no change; regular players gain access to the stats and leaderboard commands as intended.
+
+</div>
+
 ***
 
 ## Quick Setup
@@ -276,10 +282,12 @@ Only relevant when `chests.per-player-loot` is enabled. Editing is GUI/command-o
 * `/tcp list` - List all chambers
 * `/tcp info <chamber>` - View chamber details
 
+Also receives plugin update notifications on join.
+
 **Use this for:** Read-only access to chamber data
 
 {% hint style="info" %}
-**Note:** `tcp.admin` is NOT a wildcard. Use `tcp.admin.*` for all admin permissions.
+**Note:** `tcp.admin` is NOT a wildcard. Use `tcp.admin.*` for all admin permissions (since 1.7.1 the wildcard also grants `tcp.admin` itself).
 {% endhint %}
 
 </details>
@@ -674,9 +682,10 @@ tcp.admin.*                (wildcard — grants the children below)
   ├─ tcp.admin.loot        (Per-chamber loot tables)
   ├─ tcp.admin.containers  (Per-player container loot templates)
   ├─ tcp.admin.mobs        (Per-chamber custom mob providers)
+  ├─ tcp.admin             (View chambers, /tcp list + /tcp info)
   └─ tcp.give              (/tcp give spawner presets)
 
-tcp.admin                  (View chambers - NOT a wildcard!)
+tcp.admin                  (View chambers - NOT a wildcard, but granted by tcp.admin.*)
 
 tcp.stats                  (View own stats)
 tcp.leaderboard            (View leaderboards)

@@ -1,7 +1,6 @@
 package io.github.darkstarworks.trialChamberPro.gui.framework
 
 import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.bukkit.inventory.Inventory
@@ -27,11 +26,9 @@ import org.bukkit.inventory.Inventory
  * Each strategy provides an `applyTo(gui)` method that fills slots.
  *
  * @property rows 1..6, becomes a chest inventory of [rows] × 9 slots.
- * @property title Adventure [Component]. On Paper 1.21+ the title is
- *   serialized to legacy via [LegacyComponentSerializer] because
- *   `Bukkit.createInventory(holder, size, String)` is what's stable
- *   across the API revisions we target — we'll switch to the MenuType
- *   API if/when we drop 1.21.1 compat.
+ * @property title Adventure [Component], passed straight to Paper's
+ *   Component overload of `Bukkit.createInventory` (v1.7.1 — full
+ *   gradient/hover fidelity in titles, no legacy downgrade).
  * @property holder The session-state holder. Set up by the subclass
  *   constructor (concrete `BaseHolder` subclass with whatever fields).
  *   The framework attaches the inventory to it and back-references the
@@ -93,8 +90,7 @@ abstract class VcGui(
      * calling [open] on an already-open GUI reuses the inventory.
      */
     fun open(player: Player) {
-        val legacyTitle = LegacyComponentSerializer.legacySection().serialize(title)
-        val inv = Bukkit.createInventory(holder, rows * 9, legacyTitle)
+        val inv = Bukkit.createInventory(holder, rows * 9, title)
         holder.attach(inv)
         render(inv)
         player.openInventory(inv)

@@ -231,9 +231,9 @@ loot-tables:
 #    from the pool). Most server admins prefer this predictability.
 #  - Vanilla shield uses `set_damage` with fraction 0.5-1.0 → damage 0-168
 #    on a 336-max shield. Reproduced here as `durability-min: 0, max: 168`.
-#  - Vanilla ominous bottles use `set_ominous_bottle_amplifier` with a
-#    random amplifier range. Reproduced here as separate entries per Bad
-#    Omen level, with weights summing to vanilla's total weight.
+#  - Ominous bottles are the REAL `minecraft:ominous_bottle` item (v1.7.1+),
+#    with `potion-level-min`/`potion-level-max` matching vanilla's random
+#    `set_ominous_bottle_amplifier` range exactly (0-1 normal, 2-4 ominous).
 #
 # ---------- NORMAL VAULTS ----------
 #
@@ -368,20 +368,12 @@ loot-tables:
 #            amount-min: 1
 #            amount-max: 2
 #            weight: 3.0
-#          - type: POTION                # vanilla amplifier 0-1, total weight 2 → split
+#          - type: OMINOUS_BOTTLE        # real minecraft:ominous_bottle item
 #            amount-min: 1
 #            amount-max: 1
-#            weight: 1.0
-#            custom-effect-type: BAD_OMEN
-#            potion-level: 0             # Bad Omen I
-#            name: "&5&lOminous Bottle I"
-#          - type: POTION
-#            amount-min: 1
-#            amount-max: 1
-#            weight: 1.0
-#            custom-effect-type: BAD_OMEN
-#            potion-level: 1             # Bad Omen II
-#            name: "&5&lOminous Bottle II"
+#            weight: 2.0
+#            potion-level-min: 0         # Bad Omen I-II, rolled per drop (vanilla range)
+#            potion-level-max: 1
 #          - type: WIND_CHARGE
 #            amount-min: 4
 #            amount-max: 12
@@ -422,20 +414,12 @@ loot-tables:
 #            amount-min: 1
 #            amount-max: 2
 #            weight: 3.0
-#          - type: POTION
+#          - type: OMINOUS_BOTTLE        # real item; Bad Omen I-II rolled per drop
 #            amount-min: 1
 #            amount-max: 1
-#            weight: 1.0
-#            custom-effect-type: BAD_OMEN
-#            potion-level: 0
-#            name: "&5&lOminous Bottle I"
-#          - type: POTION
-#            amount-min: 1
-#            amount-max: 1
-#            weight: 1.0
-#            custom-effect-type: BAD_OMEN
-#            potion-level: 1
-#            name: "&5&lOminous Bottle II"
+#            weight: 2.0
+#            potion-level-min: 0
+#            potion-level-max: 1
 #          - type: WIND_CHARGE
 #            amount-min: 4
 #            amount-max: 12
@@ -570,27 +554,12 @@ loot-tables:
 #            amount-min: 2
 #            amount-max: 3
 #            weight: 2.0
-#          - type: POTION                # vanilla amp 2-4, total weight 1 → split III/IV/V
+#          - type: OMINOUS_BOTTLE        # real item; Bad Omen III-V rolled per drop (vanilla range)
 #            amount-min: 1
 #            amount-max: 1
-#            weight: 0.33
-#            custom-effect-type: BAD_OMEN
-#            potion-level: 2             # Bad Omen III
-#            name: "&5&lOminous Bottle III"
-#          - type: POTION
-#            amount-min: 1
-#            amount-max: 1
-#            weight: 0.33
-#            custom-effect-type: BAD_OMEN
-#            potion-level: 3             # Bad Omen IV
-#            name: "&5&lOminous Bottle IV"
-#          - type: POTION
-#            amount-min: 1
-#            amount-max: 1
-#            weight: 0.34
-#            custom-effect-type: BAD_OMEN
-#            potion-level: 4             # Bad Omen V (maximum)
-#            name: "&5&lOminous Bottle V"
+#            weight: 1.0
+#            potion-level-min: 2
+#            potion-level-max: 4
 #
 #      # Pool 2 — ominous-common table, 1-3 rolls.
 #      - name: common
@@ -615,27 +584,12 @@ loot-tables:
 #            amount-min: 2
 #            amount-max: 3
 #            weight: 2.0
-#          - type: POTION
+#          - type: OMINOUS_BOTTLE        # real item; Bad Omen III-V rolled per drop
 #            amount-min: 1
 #            amount-max: 1
-#            weight: 0.33
-#            custom-effect-type: BAD_OMEN
-#            potion-level: 2
-#            name: "&5&lOminous Bottle III"
-#          - type: POTION
-#            amount-min: 1
-#            amount-max: 1
-#            weight: 0.33
-#            custom-effect-type: BAD_OMEN
-#            potion-level: 3
-#            name: "&5&lOminous Bottle IV"
-#          - type: POTION
-#            amount-min: 1
-#            amount-max: 1
-#            weight: 0.34
-#            custom-effect-type: BAD_OMEN
-#            potion-level: 4
-#            name: "&5&lOminous Bottle V"
+#            weight: 1.0
+#            potion-level-min: 2
+#            potion-level-max: 4
 #
 #      # Pool 3 — vanilla 75% chance for 1 ultra-rare. Plugin gives ~50%
 #      # (slightly stingier than vanilla; bump weights to compensate).
@@ -724,63 +678,39 @@ loot-tables:
 #        potion-type: HARMING
 #        potion-level: 1      # Instant Damage II
 #
-# ====== OMINOUS POTIONS (1.21+) ======
-# Ominous potions are special 1.21 feature - very rare!
-#
-#      - type: POTION
-#        amount-min: 1
-#        amount-max: 1
-#        weight: 2.0
-#        potion-type: STRENGTH
-#        potion-level: 3      # Level IV!
-#        ominous-potion: true # Makes it an ominous bottle
-#        name: "&5&lOminous Strength"
-#        lore:
-#          - "&7A powerful ominous concoction"
-#          - "&7Only found in Trial Chambers"
-#
 # ====== OMINOUS BOTTLES (BAD OMEN) ======
-# Ominous Bottles are 1.21 items that give Bad Omen effect
-# Found only in ominous vaults, levels III-V (not I-II)
-# Used to trigger Ominous Trials
+# Ominous Bottles are the real minecraft:ominous_bottle item (v1.7.1+): they
+# give Bad Omen when drunk, triggering an Ominous Trial. They can ONLY hold
+# Bad Omen — that's a game rule, not a plugin limit. In vanilla, normal
+# vaults drop them at levels I-II and ominous vaults at III-V, with the
+# level rolled randomly per drop.
 #
-#      - type: POTION
-#        amount-min: 1
-#        amount-max: 1
-#        weight: 8.0
-#        custom-effect-type: BAD_OMEN  # Use custom effect types for special effects
-#        potion-level: 2               # 0=I, 1=II, 2=III, 3=IV, 4=V
-#        name: "&5&lOminous Bottle III"
-#        lore:
-#          - "&7Drink to receive Bad Omen III"
-#          - "&7Triggers an Ominous Trial"
-#
-#      - type: POTION
+#      # Fixed level:
+#      - type: OMINOUS_BOTTLE
 #        amount-min: 1
 #        amount-max: 1
 #        weight: 5.0
-#        custom-effect-type: BAD_OMEN
-#        potion-level: 3               # Bad Omen IV
-#        name: "&5&lOminous Bottle IV"
-#        lore:
-#          - "&7Drink to receive Bad Omen IV"
-#          - "&7A more challenging Ominous Trial!"
+#        potion-level: 2               # 0=I, 1=II, 2=III, 3=IV, 4=V
 #
-#      - type: POTION
+#      # Random level per drop (like vanilla — this is the ominous-vault range):
+#      - type: OMINOUS_BOTTLE
 #        amount-min: 1
 #        amount-max: 1
 #        weight: 2.0
-#        custom-effect-type: BAD_OMEN
-#        potion-level: 4               # Bad Omen V (maximum)
-#        name: "&5&lOminous Bottle V"
-#        lore:
-#          - "&7Drink to receive Bad Omen V"
-#          - "&7The ultimate Ominous Trial challenge!"
-#        effect-duration: 240000  # OPTIONAL: Override duration (240000 ticks = 200 min). For custom effects, default is 120000 ticks (100 min)
+#        potion-level-min: 2           # Bad Omen III…
+#        potion-level-max: 4           # …to V, rolled each time
 #
-# Note: custom-effect-type can be any PotionEffectType:
-# BAD_OMEN, HERO_OF_THE_VILLAGE, LUCK, UNLUCK, GLOWING, etc.
-# This is different from potion-type (which is for standard potions).
+# Note: custom names/lore work on ominous bottles too, but aren't needed —
+# the real item already displays as "Ominous Bottle" with its own texture.
+#
+# For OTHER special effects (HERO_OF_THE_VILLAGE, LUCK, GLOWING, etc.) use a
+# POTION with custom-effect-type — those have no dedicated item in the game:
+#
+#      - type: POTION
+#        weight: 2.0
+#        custom-effect-type: HERO_OF_THE_VILLAGE
+#        potion-level: 1
+#        name: "&6&lHero's Draught"
 #
 # effect-duration behavior:
 # - For potion-type items: Auto-calculates based on potion type (TIPPED_ARROW = 1/8 of potion duration)
