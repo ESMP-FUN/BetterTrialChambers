@@ -191,3 +191,45 @@ publishing {
         }
     }
 }
+
+// Auto-maintain the CHANGELOG "compare link" footer. At release time this inserts a line
+// like `[1.7.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.7.1...v1.7.2`
+// for the current `version`, placed newest-first above the previous release's link — the
+// step that used to be done by hand on every release. Idempotent: a no-op once the current
+// version's link is already present. Wired into `build` below so it runs on a version bump.
+val changelogRepoUrl = "https://github.com/darkstarworks/TrialChamberPro"
+val updateChangelogLink by tasks.registering {
+    group = "documentation"
+    description = "Ensure CHANGELOG.md has a compare-link footer for the current version."
+    doLast {
+        val changelog = rootProject.file("CHANGELOG.md")
+        if (!changelog.exists()) {
+            logger.warn("updateChangelogLink: CHANGELOG.md not found — skipping.")
+            return@doLast
+        }
+        val ver = version.toString()
+        val text = changelog.readText()
+        if (Regex("(?m)^\\[${Regex.escape(ver)}]:").containsMatchIn(text)) {
+            logger.lifecycle("updateChangelogLink: CHANGELOG already links v$ver — nothing to do.")
+            return@doLast
+        }
+        // The first existing footer link is the previous release, e.g. `[1.7.1]: .../compare/v1.7.0...v1.7.1`.
+        val prevLink = Regex(
+            "(?m)^\\[(\\d+\\.\\d+\\.\\d+)]:\\s*${Regex.escape(changelogRepoUrl)}/compare/v\\S+\\.\\.\\.v\\S+\\s*$"
+        ).find(text)
+        if (prevLink == null) {
+            logger.warn("updateChangelogLink: no existing compare-link footer found — leaving CHANGELOG untouched.")
+            return@doLast
+        }
+        val prevVer = prevLink.groupValues[1]
+        val nl = if (text.contains("\r\n")) "\r\n" else "\n"
+        val newLine = "[$ver]: $changelogRepoUrl/compare/v$prevVer...v$ver"
+        val at = prevLink.range.first
+        changelog.writeText(text.substring(0, at) + newLine + nl + text.substring(at))
+        logger.lifecycle("updateChangelogLink: added $newLine")
+    }
+}
+
+tasks.named("build") {
+    dependsOn(updateChangelogLink)
+}
