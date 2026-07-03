@@ -1,4 +1,11 @@
 <black>.
+<aqua>[1.7.2] <gray>- <white>2026-07-03
+<lime>+ <white>FIX: <green>Chamber resets no longer erase decorations — signs, player heads, banners, lecterns, jukeboxes, bookshelves and suspicious-block items now survive snapshots and resets (re-run <yellow>/tcp snapshot create<green> on decorated chambers).
+<lime>+ <white>FIX: <green>Vault keys are consumed from the slot that held them at click time — scrolling your hotbar mid-open can no longer eat the wrong item; key-to-reopen also validates the loot table before taking payment.
+<lime>+ <white>FIX: <green>Logging out or crashing while spectating no longer strands you in spectator mode — your gamemode and position are restored on quit or next join.
+<lime>+ <white>FIX: <green>Statistics increment atomically in the database — no more lost counts on shared-MySQL networks; plus Folia-safe vault loot ejection and chamber-deletion cleanup.
+<lime>+ <white>FIX: <green>Explosions from just OUTSIDE a chamber wall can no longer destroy blocks inside (per-block protection, now also covering bed/respawn-anchor explosions); pausing a chamber cancels an already-counting-down reset and its warnings.
+<lime>+ <white>FIX: <green>Teleports (<yellow>/tp<green>, <yellow>/home<green>, pearls) now count as chamber entry/exit for time tracking; open per-player container copies are saved on server stop; tab-completion no longer reveals chamber names to non-admins.
 <aqua>[1.7.1] <gray>- <white>2026-07-03
 <lime>+ <white>FIX: <green>Ominous Bottles from loot tables are now the REAL <yellow>minecraft:ominous_bottle<green> item (correct texture, stacks with vanilla drops) — use <yellow>type: OMINOUS_BOTTLE<green> with <yellow>potion-level<green> or the new <yellow>potion-level-min/max<green> random range, just like vanilla vaults.
 <lime>+ <white>FIX: <green>GUI loot edits no longer strip potion/enchant-range/durability/instrument fields from hand-written loot.yml entries (and no longer corrupt <yellow>VANILLA_TABLE<green> entries).

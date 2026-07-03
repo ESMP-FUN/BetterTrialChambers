@@ -281,7 +281,8 @@ class GenerateCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
             return false
         }
 
-        val maxVolume = plugin.config.getInt("generation.max-volume", 500000).coerceAtLeast(1)
+        // Default matches ConfigValidator + discovery (was 500000 here — drifted)
+        val maxVolume = plugin.config.getInt("generation.max-volume", 750000).coerceAtLeast(1)
         if (volume > maxVolume) {
             sender.sendMessage(plugin.getMessageComponent("error-region-too-large",
                 "maxVolume" to maxVolume, "volume" to volume))
@@ -348,18 +349,20 @@ class GenerateCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
         val dx = maxOf(MIN_XZ, ceil(kotlin.math.sqrt(requiredArea.toDouble())).toInt())
         var dz = maxOf(MIN_XZ, ceil(requiredArea.toDouble() / dx.toDouble()).toInt())
         var dy = MIN_Y
-        var volume = dx * dy * dz
+        // v1.7.2: compute in Long — dx*dy*dz as Int could overflow (and wrap negative,
+        // sneaking past the max-volume check) for absurd `blocks` amounts.
+        var volume = dx.toLong() * dy * dz
 
         while (volume < amount) {
             dz++
-            volume = dx * dy * dz
+            volume = dx.toLong() * dy * dz
             if (volume - amount > allowance && dy < 30) {
                 dy++
-                volume = dx * dy * dz
+                volume = dx.toLong() * dy * dz
             }
         }
 
-        return QuadrupleInt(dx, dy, dz, volume)
+        return QuadrupleInt(dx, dy, dz, volume.coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
     }
 
     private fun placeBoxFromPlayer(player: Player, dx: Int, dy: Int, dz: Int): Pair<Location, Location> {

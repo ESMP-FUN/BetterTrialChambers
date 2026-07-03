@@ -661,6 +661,10 @@ class TrialChamberPro : JavaPlugin() {
         if (::playerMovementListener.isInitialized) {
             playerMovementListener.shutdown()
         }
+        if (::containerLootListener.isInitialized) {
+            // v1.7.2: flush private container copies still open (see ContainerLootListener.shutdown)
+            containerLootListener.shutdown()
+        }
         if (::playerDeathListener.isInitialized) {
             playerDeathListener.shutdown()
         }

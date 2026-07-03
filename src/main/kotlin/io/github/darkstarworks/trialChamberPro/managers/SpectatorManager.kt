@@ -37,6 +37,63 @@ class SpectatorManager(private val plugin: TrialChamberPro) {
     // Players pending spectator confirmation
     private val pendingSpectate = ConcurrentHashMap<UUID, SpectatorData>()
 
+    // v1.7.2 crash-recovery layer: the previous gamemode/location are ALSO written
+    // to the player's PersistentDataContainer (persists in the player .dat across
+    // restarts). The in-memory map stays the live source of truth; the PDC keys
+    // exist only so a crash/restart mid-spectate doesn't strand the player in
+    // SPECTATOR forever. Cleared on every normal exit path.
+    private val prevGameModeKey = org.bukkit.NamespacedKey(plugin, "spectator_prev_gamemode")
+    private val prevLocationKey = org.bukkit.NamespacedKey(plugin, "spectator_prev_location")
+
+    private fun writeRecoveryData(player: Player, data: SpectatorData) {
+        val pdc = player.persistentDataContainer
+        pdc.set(prevGameModeKey, org.bukkit.persistence.PersistentDataType.STRING, data.previousGameMode.name)
+        val loc = data.previousLocation
+        pdc.set(
+            prevLocationKey, org.bukkit.persistence.PersistentDataType.STRING,
+            "${loc.world?.name};${loc.x};${loc.y};${loc.z};${loc.yaw};${loc.pitch}"
+        )
+    }
+
+    private fun clearRecoveryData(player: Player) {
+        val pdc = player.persistentDataContainer
+        pdc.remove(prevGameModeKey)
+        pdc.remove(prevLocationKey)
+    }
+
+    /**
+     * Restores a player who was mid-spectate when the server stopped (crash or
+     * restart): the PDC recovery keys survived but the in-memory state didn't.
+     * Called from the join listener on the player's entity thread. Only acts when
+     * the player is still in SPECTATOR (an admin may have fixed them manually);
+     * always clears the keys.
+     */
+    fun restoreCrashedSpectator(player: Player) {
+        val pdc = player.persistentDataContainer
+        val gameModeName = pdc.get(prevGameModeKey, org.bukkit.persistence.PersistentDataType.STRING) ?: return
+        val locationString = pdc.get(prevLocationKey, org.bukkit.persistence.PersistentDataType.STRING)
+        clearRecoveryData(player)
+
+        if (player.gameMode != GameMode.SPECTATOR) return
+        val restored = runCatching { GameMode.valueOf(gameModeName) }.getOrDefault(GameMode.SURVIVAL)
+        player.gameMode = restored
+
+        val location = locationString?.split(';')?.takeIf { it.size == 6 }?.let { parts ->
+            plugin.server.getWorld(parts[0])?.let { world ->
+                runCatching {
+                    Location(world, parts[1].toDouble(), parts[2].toDouble(), parts[3].toDouble(), parts[4].toFloat(), parts[5].toFloat())
+                }.getOrNull()
+            }
+        }
+        val exitMessage = plugin.getMessageComponent("spectate-exited")
+        if (location != null) {
+            player.teleportAsync(location).thenRun { player.sendMessage(exitMessage) }
+        } else {
+            player.sendMessage(exitMessage)
+        }
+        plugin.logger.info("[Spectator] Restored ${player.name} from an interrupted spectate session (server stopped mid-spectate).")
+    }
+
     /**
      * Offers spectator mode to a player who died in a chamber.
      * Returns true if the offer was made.
@@ -114,6 +171,10 @@ class SpectatorManager(private val plugin: TrialChamberPro) {
         plugin.scheduler.runAtEntity(player, Runnable {
             if (!player.isOnline) return@Runnable
 
+            // v1.7.2: persist recovery data BEFORE switching gamemode, so a crash
+            // at any later point can still restore the player.
+            writeRecoveryData(player, data)
+
             // Put player in spectator mode (must be on entity's thread)
             player.gameMode = GameMode.SPECTATOR
 
@@ -160,6 +221,7 @@ class SpectatorManager(private val plugin: TrialChamberPro) {
 
             // Restore game mode (must be on entity's thread)
             player.gameMode = data.previousGameMode
+            clearRecoveryData(player)
 
             // Teleport if requested, send message once complete (or immediately if no teleport)
             if (exitLocation != null) {
@@ -241,10 +303,22 @@ class SpectatorManager(private val plugin: TrialChamberPro) {
 
     /**
      * Cleans up when a player disconnects.
+     *
+     * v1.7.2: restores the previous gamemode/location synchronously — the quit
+     * event runs on the player's thread and the player entity is still valid.
+     * Previously the data was just dropped, so logging out while spectating
+     * left the player in SPECTATOR (at the chamber) on their next join.
      */
     fun handlePlayerQuit(player: Player) {
         pendingSpectate.remove(player.uniqueId)
-        spectators.remove(player.uniqueId)
+        val data = spectators.remove(player.uniqueId) ?: return
+        runCatching {
+            player.gameMode = data.previousGameMode
+            player.teleport(data.previousLocation)
+            clearRecoveryData(player)
+        }.onFailure {
+            plugin.logger.warning("[Spectator] Could not restore ${player.name} on quit: ${it.message} — join-time recovery will handle it.")
+        }
     }
 
     /**
