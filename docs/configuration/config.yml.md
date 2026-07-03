@@ -180,6 +180,26 @@ Automatically create a snapshot when registering a new chamber? Super convenient
 
 <details>
 
+<summary><code>reset-complete-alert</code></summary>
+
+**Default:** `true`
+
+Server-wide broadcast when any chamber finishes resetting (e.g. "Bastion has finished resetting!"). Set to `false` to suppress it globally. Can also be overridden per-chamber from the GUI (Chamber Settings), so you can keep the global broadcast off but re-enable it for one flagship chamber.
+
+</details>
+
+<details>
+
+<summary><code>broadcast-chamber-cleared</code></summary>
+
+**Default:** `false`
+
+Server-wide broadcast when a chamber is fully **cleared** — every trial spawner in it finished its wave in a single run. Uses the chamber's display name and the players who took part (e.g. "Bastion has been cleared by Steve, Alex!"). This is distinct from `reset-complete-alert`, which fires on *reset*, not clear. Off by default.
+
+</details>
+
+<details>
+
 <summary><code>spawner-cooldown-minutes</code></summary>
 
 **Default:** `-1` (vanilla behavior) **Unit:** Minutes
@@ -284,6 +304,65 @@ When `true` and FastAsyncWorldEdit is installed, **scheduled** resets place bloc
 Mutes the vanilla console line `Trial Spawner at BlockPos{...} has no detected players`. New occurrences are prevented by the reset fixes; this hides the line for chambers still broken until their next reset.
 
 </details>
+
+***
+
+## Chamber Display Names
+
+```yaml
+naming:
+  auto-assign: true
+  name-pool:
+    - Bastion
+    - Ashfall Hollow
+    - Solasta
+    # …
+```
+
+Every chamber has a unique **internal name** (used in commands) plus an optional friendly **display name** shown in player-facing announcements (reset/clear broadcasts, `/tcp info`). Rename any chamber with `/tcp rename <chamber> <name>` or via the chamber GUI.
+
+<details>
+
+<summary><code>auto-assign</code></summary>
+
+**Default:** `true`
+
+Auto-assign a random unused display name from `name-pool` to each newly registered chamber (both manual `/tcp generate` and auto-discovered). The internal name is unchanged. Set `false` to leave new chambers nameless until you rename them.
+
+</details>
+
+<details>
+
+<summary><code>name-pool</code></summary>
+
+The list of display names to draw from. A name already used by another chamber is skipped; when all are taken, new chambers fall back to their internal name until you add more or rename manually. The bundled list is just a starting set — add your own.
+
+</details>
+
+***
+
+## Generation Settings
+
+These settings control constraints when registering or generating chamber regions.
+
+```yaml
+generation:
+  # Maximum number of blocks allowed when generating/registering a chamber region
+  # Keep this manageable for your server hardware
+  max-volume: 750000
+  blocks:
+    # When using /tcp generate blocks <amount>, we may need to round up to reach
+    # minimum viable dimensions (31x15x31). This is the maximum number of extra
+    # blocks allowed beyond the requested amount.
+    rounding-allowance: 1000
+```
+
+Notes:
+
+* The plugin enforces a hard minimum region size of 31x15x31.
+* The `blocks` generator places the region in front of the player based on their facing.
+* If your requested amount is below minimum, it will be rounded up to that minimum.
+* If your requested amount is slightly above minimum or not factorizable cleanly, the plugin rounds up to form a solid box within the rounding allowance.
 
 ***
 
@@ -452,6 +531,26 @@ vaults:
 {% hint style="info" %}
 `ENTITY_PILLAGER_CELEBRATE` and `ENTITY_PILLAGER_AMBIENT` are _random-variant_ sound events — Minecraft picks one of the bundled `.ogg` clips each time, so an exact variant (e.g. "celebrate2") can't be pinned without a resource pack. Set `success` / `fail` to any value from [Spigot's Sound enum](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Sound.html) (or a `namespace:path` key) to use your own.
 {% endhint %}
+
+</details>
+
+<details>
+
+<summary><code>drop-loot-at-vault</code> · <code>drop-loot-owner-only</code> · <code>drop-loot-owner-grace-seconds</code></summary>
+
+```yaml
+vaults:
+  drop-loot-at-vault: false
+  drop-loot-owner-only: true
+  drop-loot-owner-grace-seconds: 30
+```
+
+**Vanilla-style loot ejection.** When `drop-loot-at-vault` is `true`, vault loot pops out of the vault block (like vanilla) instead of going straight into the opener's inventory. Command rewards and status-effect rewards (Bad Omen, etc.) still apply directly to the player — only itemized loot is dropped.
+
+* **`drop-loot-owner-only`** (default `true`) — only the player who opened the vault can pick up its dropped items.
+* **`drop-loot-owner-grace-seconds`** (default `30`) — how long owner-only enforcement lasts. After this window anyone can pick the items up, so they don't linger forever if the opener logs off. `0` = owner-locked until the item despawns naturally.
+
+Players with **`tcp.bypass.droplock`** (default: op) can always pick up dropped loot. `drop-loot-at-vault` is off by default; the direct-to-inventory flow is used when it's disabled.
 
 </details>
 
@@ -1075,6 +1174,16 @@ Send a chat message when a wave is complete showing kill count and duration.
 
 <details>
 
+<summary><code>prevent-infighting</code></summary>
+
+**Default:** `true`
+
+Stops wave mobs from fighting **each other**. In vanilla, a skeleton's stray arrow makes nearby mobs retaliate, so a wave can dissolve into mob-vs-mob brawls the player never has to touch — and those self-kills still count toward completing the wave. When `true`, friendly fire and target-locking strictly *between two trial-spawner wave mobs* is suppressed. Player-vs-mob combat is never affected.
+
+</details>
+
+<details>
+
 <summary><code>glow-active-spawners</code></summary>
 
 **Default:** `false` _(works correctly since 1.5.6 — see note below)_
@@ -1416,6 +1525,7 @@ _(Added in 1.5.7.)_ Anonymous aggregate usage metrics via [bStats](https://bstat
 ```yaml
 debug:
   verbose-logging: false
+  skip-messages-schema-check: false
 ```
 
 <details>
@@ -1458,6 +1568,16 @@ This helps verify that debug mode is actually loaded from your config file.
 {% hint style="warning" %}
 Debug mode generates TONS of console output. Don't leave it on in production!
 {% endhint %}
+
+</details>
+
+<details>
+
+<summary><code>skip-messages-schema-check</code></summary>
+
+**Default:** `false`
+
+On startup TCP compares your `messages.yml` against the JAR-bundled defaults and warns about any missing keys — because when keys are missing, GUI tooltips and chat messages render as literal `<missing: key.name>` text. Set this to `true` only if that warning is noisy and you have a deliberate reason to ignore it.
 
 </details>
 
@@ -1585,28 +1705,3 @@ Need help with something specific? Check out the other configuration pages!
 {% content-ref url="messages.yml.md" %}
 [messages.yml.md](messages.yml.md)
 {% endcontent-ref %}
-
-***
-
-## Generation Settings
-
-These settings control constraints when registering or generating chamber regions.
-
-```yaml
-generation:
-  # Maximum number of blocks allowed when generating/registering a chamber region
-  # Keep this manageable for your server hardware
-  max-volume: 750000
-  blocks:
-    # When using /tcp generate blocks <amount>, we may need to round up to reach
-    # minimum viable dimensions (31x15x31). This is the maximum number of extra
-    # blocks allowed beyond the requested amount.
-    rounding-allowance: 1000
-```
-
-Notes:
-
-* The plugin enforces a hard minimum region size of 31x15x31.
-* The `blocks` generator places the region in front of the player based on their facing.
-* If your requested amount is below minimum, it will be rounded up to that minimum.
-* If your requested amount is slightly above minimum or not factorizable cleanly, the plugin rounds up to form a solid box within the rounding allowance.

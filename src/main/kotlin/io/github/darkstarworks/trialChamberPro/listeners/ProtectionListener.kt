@@ -341,15 +341,29 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
         if (!plugin.config.getBoolean("protection.enabled", true)) return
         if (!plugin.config.getBoolean("protection.prevent-mob-griefing", true)) return
 
-        val location = event.location
+        // v1.7.2: filter per BLOCK, not by the explosion center's chamber. The old
+        // check resolved the chamber at the CENTER — a creeper/TNT detonating just
+        // outside the wall wasn't "in" any chamber, so its blast destroyed chamber
+        // blocks unprotected (same outside-in hole the AdvancedEnchantments check
+        // had before 1.5.21). Cache-only, sync-safe.
+        event.blockList().removeIf { block ->
+            plugin.chamberManager.getCachedChamberAt(block.location)?.takeIf { !it.isPaused } != null
+        }
+    }
 
-        // Use cache-only sync check first; if any cached non-paused chamber contains the
-        // explosion center, filter out blocks that would be affected inside its bounds.
-        val chamber = plugin.chamberManager.getCachedChamberAt(location)
-        if (chamber != null && !chamber.isPaused) {
-            event.blockList().removeIf { block ->
-                chamber.contains(block.location)
-            }
+    /**
+     * v1.7.2: block-sourced explosions (bed/respawn-anchor in the wrong dimension,
+     * exploding TNT minecart rails, etc.) fire BlockExplodeEvent, not
+     * EntityExplodeEvent — they previously bypassed chamber protection entirely.
+     * Same per-block filter as [onEntityExplode].
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onBlockExplode(event: org.bukkit.event.block.BlockExplodeEvent) {
+        if (!plugin.config.getBoolean("protection.enabled", true)) return
+        if (!plugin.config.getBoolean("protection.prevent-mob-griefing", true)) return
+
+        event.blockList().removeIf { block ->
+            plugin.chamberManager.getCachedChamberAt(block.location)?.takeIf { !it.isPaused } != null
         }
     }
 

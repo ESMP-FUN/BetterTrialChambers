@@ -157,8 +157,12 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
             // The timestamp check above handles expiration - removing explicitly causes
             // a race condition at the 5-second boundary where the remove() races with
             // new events checking the lock
+            // v1.7.2: remember which hotbar slot held the key at click time — the
+            // open flow is async and the player may scroll slots before delivery.
+            val keySlot = player.inventory.heldItemSlot
+
             listenerScope.launch(exceptionHandler) {
-                handleVaultOpen(player, block.location, vaultType)
+                handleVaultOpen(player, block.location, vaultType, keySlot)
             }
         }
     }
@@ -176,7 +180,8 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
     private suspend fun handleVaultOpen(
         player: org.bukkit.entity.Player,
         location: org.bukkit.Location,
-        vaultType: VaultType
+        vaultType: VaultType,
+        keySlot: Int
     ) {
         // Get vault data for the specific type (normal or ominous) - needed for loot table resolution
         val vaultData = plugin.vaultManager.getVault(location, vaultType)
@@ -190,7 +195,7 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
             if (plugin.config.getBoolean("debug.verbose-logging", false)) {
                 plugin.logger.info("[Vault API] Player ${player.name} has tcp.bypass.cooldown permission - SKIPPING cooldown check!")
             }
-            openVault(player, vaultData, vaultType, location)
+            openVault(player, vaultData, vaultType, location, keySlot)
             return
         }
 
@@ -241,7 +246,7 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
                 val (canOpen, remaining) = plugin.vaultManager.canOpenVault(player.uniqueId, vaultData)
                 if (canOpen) {
                     clearNativeRewardedFlag(location, player)
-                    openVault(player, vaultData, vaultType, location)
+                    openVault(player, vaultData, vaultType, location, keySlot)
                     return
                 }
                 cooldownRemainingMs = remaining
@@ -252,11 +257,23 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
             // alternative to waiting out the cooldown (or to a permanent lock).
             val reopenCost = plugin.config.getInt("vaults.reopen-cost-keys", 0)
             if (reopenCost > 0) {
+                // v1.7.2: validate the loot table BEFORE taking payment. tryPayReopenCost
+                // pre-consumes cost-1 keys; openVault refuses only the FINAL key on a
+                // missing table, so a config typo used to burn the pre-consumed keys.
+                val chamberForTable = plugin.chamberManager.getChamberById(vaultData.chamberId)
+                val tableForReopen = plugin.chamberManager.getEffectiveLootTable(
+                    chamberForTable, vaultType, vaultData.lootTable
+                )
+                if (plugin.lootManager.getTable(tableForReopen) == null) {
+                    plugin.logger.warning("Loot table '$tableForReopen' not found! Reopen payment will NOT be taken.")
+                    player.sendMessage(plugin.getMessageComponent("vault-loot-table-missing"))
+                    return
+                }
                 if (tryPayReopenCost(player, vaultType, reopenCost)) {
                     clearNativeRewardedFlag(location, player)
                     player.sendMessage(plugin.getMessageComponent("vault-reopened",
                         "cost" to reopenCost, "type" to plugin.vaultTypeDisplay(vaultType)))
-                    openVault(player, vaultData, vaultType, location)
+                    openVault(player, vaultData, vaultType, location, keySlot)
                     return
                 }
                 // Reopen offered but the player can't afford it — tell them the
@@ -287,7 +304,7 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
             showCooldownParticles(player, location, vaultType)
         } else {
             // Can open the vault - player hasn't been rewarded yet
-            openVault(player, vaultData, vaultType, location)
+            openVault(player, vaultData, vaultType, location, keySlot)
         }
     }
 
@@ -339,7 +356,8 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
         player: org.bukkit.entity.Player,
         vaultData: io.github.darkstarworks.trialChamberPro.models.VaultData,
         vaultType: VaultType,
-        location: Location
+        location: Location,
+        keySlot: Int
     ) {
         // Resolve the effective loot table (chamber override > vault default)
         val chamber = plugin.chamberManager.getChamberById(vaultData.chamberId)
@@ -486,13 +504,11 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
                     // Show success particles (sound handled by routeVaultFeedback above)
                     showSuccessParticles(player, player.location, vaultType)
 
-                    // Consume the trial key - ONLY if we got this far (loot was generated and given)
-                    val item = player.inventory.itemInMainHand
-                    if (item.amount > 1) {
-                        item.amount -= 1
-                    } else {
-                        player.inventory.setItemInMainHand(null)
-                    }
+                    // Consume the trial key - ONLY if we got this far (loot was generated
+                    // and given). v1.7.2: consume from where the key actually IS — the
+                    // click→delivery gap is async, and blindly decrementing itemInMainHand
+                    // ate whatever the player had scrolled to (sword, blocks, anything).
+                    consumeOneKey(player, keySlot, vaultType)
 
                     // Fire post-event for downstream consumers. Items are cloned so
                     // listeners can inspect the loot snapshot independently of the
@@ -654,9 +670,42 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
     }
 
     /**
+     * v1.7.2: helper for post-delivery key consumption. Prefers the hotbar slot
+     * held at click time; if the player scrolled away, finds any stack of the
+     * matching key material; consumes NOTHING (with a log line) when no key is
+     * found — loot was already delivered, so we fail in the player's favor
+     * rather than eat an unrelated item.
+     */
+    private fun consumeOneKey(player: org.bukkit.entity.Player, preferredSlot: Int, vaultType: VaultType) {
+        val keyMaterial = when (vaultType) {
+            VaultType.NORMAL -> Material.TRIAL_KEY
+            VaultType.OMINOUS -> Material.OMINOUS_TRIAL_KEY
+        }
+        val inv = player.inventory
+        val slot = if (inv.getItem(preferredSlot)?.type == keyMaterial) preferredSlot
+                   else inv.first(keyMaterial)
+        if (slot < 0) {
+            plugin.logger.warning("Vault opened by ${player.name} but no ${keyMaterial.name} found to consume (moved/dropped mid-open?) — key not charged.")
+            return
+        }
+        val stack = inv.getItem(slot) ?: return
+        if (stack.amount > 1) {
+            stack.amount -= 1
+        } else {
+            inv.setItem(slot, null)
+        }
+    }
+
+    /**
      * Ejects loot as dropped items at the vault block (vanilla-style), tagging
      * each with the owner UUID and a drop timestamp when owner-only pickup is
-     * enabled. Assumes caller is already on the correct region thread.
+     * enabled.
+     *
+     * v1.7.2: schedules the drops on the VAULT's region thread — the caller is
+     * on the player's entity thread, and if the player moved/teleported during
+     * the async open, dropping at the vault from that thread is a cross-region
+     * write on Folia. Fire-and-forget is fine: nothing downstream depends on
+     * the item entities.
      */
     private fun ejectLootAtVault(
         loot: List<ItemStack>,
@@ -667,31 +716,34 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
         val spawn = vaultLocation.clone().add(0.5, 1.15, 0.5)
         val ownerOnly = plugin.config.getBoolean("vaults.drop-loot-owner-only", true)
         val droppedAt = System.currentTimeMillis()
+        val ownerUuid = player.uniqueId
 
-        loot.forEach { stack ->
-            world.dropItem(spawn, stack) { entity ->
-                entity.velocity = Vector(
-                    (Math.random() - 0.5) * 0.2,
-                    0.3,
-                    (Math.random() - 0.5) * 0.2
-                )
-                entity.pickupDelay = 10 // ~0.5s so players see the pop
-                if (ownerOnly) {
-                    entity.owner = player.uniqueId
-                    val pdc = entity.persistentDataContainer
-                    pdc.set(
-                        VaultDropOwnerListener.OWNER_KEY,
-                        PersistentDataType.STRING,
-                        player.uniqueId.toString()
+        plugin.scheduler.runAtLocation(vaultLocation, Runnable {
+            loot.forEach { stack ->
+                world.dropItem(spawn, stack) { entity ->
+                    entity.velocity = Vector(
+                        (Math.random() - 0.5) * 0.2,
+                        0.3,
+                        (Math.random() - 0.5) * 0.2
                     )
-                    pdc.set(
-                        VaultDropOwnerListener.DROPPED_AT_KEY,
-                        PersistentDataType.LONG,
-                        droppedAt
-                    )
+                    entity.pickupDelay = 10 // ~0.5s so players see the pop
+                    if (ownerOnly) {
+                        entity.owner = ownerUuid
+                        val pdc = entity.persistentDataContainer
+                        pdc.set(
+                            VaultDropOwnerListener.OWNER_KEY,
+                            PersistentDataType.STRING,
+                            ownerUuid.toString()
+                        )
+                        pdc.set(
+                            VaultDropOwnerListener.DROPPED_AT_KEY,
+                            PersistentDataType.LONG,
+                            droppedAt
+                        )
+                    }
                 }
             }
-        }
+        })
     }
 
     /**
