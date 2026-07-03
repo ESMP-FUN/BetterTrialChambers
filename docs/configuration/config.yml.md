@@ -88,7 +88,6 @@ global:
   reset-complete-alert: true
   teleport-players-on-reset: true
   teleport-location: EXIT_POINT
-  async-block-placement: true
   blocks-per-tick: 500
   auto-snapshot-on-register: true
 ```
@@ -151,16 +150,6 @@ Where players go when kicked out:
 * **EXIT\_POINT:** Your `/tcp setexit` location (recommended)
 * **OUTSIDE\_BOUNDS:** Just outside the chamber boundary
 * **WORLD\_SPAWN:** Server spawn point
-
-</details>
-
-<details>
-
-<summary><code>async-block-placement</code></summary>
-
-**Default:** `true`
-
-Place blocks asynchronously during resets? Keeps the server smooth during big chamber resets. Only turn this off if you're having issues.
 
 </details>
 

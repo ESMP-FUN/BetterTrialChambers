@@ -96,9 +96,6 @@ class ResetManager(private val plugin: TrialChamberPro) {
         // Skip paused chambers — they have no active behavior including auto-resets
         if (chamber.isPaused) return
 
-        // Skip paused chambers — they have no active behavior including auto-resets
-        if (chamber.isPaused) return
-
         // Skip if automatic resets are disabled (resetInterval <= 0)
         if (chamber.resetInterval <= 0) {
             plugin.logger.fine("Automatic resets disabled for chamber ${chamber.name} (interval: ${chamber.resetInterval})")
@@ -151,11 +148,7 @@ class ResetManager(private val plugin: TrialChamberPro) {
             Bukkit.getOnlinePlayers()
                 .filter { it.hasPermission("tcp.admin.reset") }
                 .forEach { p ->
-                    p.sendRichMessage(
-                        "<gold>[TCP] <yellow>${chamber.name}</yellow> is ready to reset — " +
-                            "<click:run_command:'/tcp reset confirm ${chamber.name}'><green>[confirm]</green></click> " +
-                            "<click:run_command:'/tcp reset pending'><aqua>[list all]</aqua></click>"
-                    )
+                    p.sendMessage(plugin.getMessageComponent("reset-ready-notify", "chamber" to chamber.name))
                 }
         })
     }
@@ -211,7 +204,7 @@ class ResetManager(private val plugin: TrialChamberPro) {
      * Sends a reset warning to all players in the chamber.
      */
     private fun sendResetWarning(chamber: Chamber, secondsRemaining: Long) {
-        val timeString = MessageUtil.formatTimeSeconds(secondsRemaining)
+        val timeString = MessageUtil.formatTimeSeconds(plugin, secondsRemaining)
         val message = plugin.getMessageComponent("chamber-reset-warning",
             "chamber" to chamber.label(),
             "time" to timeString
