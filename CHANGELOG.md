@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.7.1] - 2026-07-03
+### Fixed
+- **Ominous Bottles in loot tables are now the real `minecraft:ominous_bottle` item.** Previously, every example and doc taught a workaround — a renamed `POTION` with Bad Omen added as a custom effect. It granted Bad Omen when drunk, but it was the wrong item: potion texture, "Uncraftable Potion" underneath the custom name, and it didn't stack with bottles from vanilla vaults. Use `type: OMINOUS_BOTTLE` with `potion-level: 0-4` (Bad Omen I–V), or the new `potion-level-min` / `potion-level-max` to roll the level randomly per drop exactly like vanilla vaults do (normal vaults use 0–1, ominous vaults 2–4). All bundled examples and the vanilla-accurate tables now use the real item; old workaround configs keep functioning.
+- **Editing loot in the GUI no longer strips advanced fields from hand-written loot.yml entries.** Saving from the loot editor rewrites the whole file, and the writer only knew a subset of the schema — so potion types/levels, ominous flags, effect durations, enchantment ranges, random-enchantment pools, durability ranges, and goat-horn instruments were silently deleted from every hand-authored entry, and `VANILLA_TABLE` entries were corrupted to `type: AIR`. Every field now round-trips intact. (This was also quietly manufacturing the "legacy entries with no NBT" that `/tcp loot audit` flags.)
+- **A bad loot entry can no longer kill the whole vault roll.** Reversed `amount-min`/`amount-max` or `min-rolls`/`max-rolls` ranges used to throw at generation time (player gets nothing); an out-of-range ominous `potion-level` did the same. These are now fixed up at load with a console warning.
+- **Typo'd enchantment names are now reported instead of silently skipped** in all three formats (`enchantments`, `enchantment-ranges`, `random-enchantment-pool`); namespaced ids from datapacks (`somepack:blaze`) are accepted too.
+- **A pool whose entries all have `weight: 0` no longer drops its first entry every roll** — zero weight now reliably means "never drops".
+- **Splash potions with a custom level/duration now last as long as drinkable ones** (the old 75% multiplier was the pre-1.9 rule); lingering (¼) and tipped arrows (⅛) were already correct.
+- **Turtle Master potions with a custom level keep both effects** — previously only the first (Resistance was dropped).
+- **Loot item names and lore now support hex colors and MiniMessage tags** (same syntax as messages.yml) and no longer render with Minecraft's forced italics.
+- **Non-OP players can now actually use `/tcp stats` and `/tcp leaderboard`.** The whole `/tcp` command was gated behind `tcp.admin` in plugin.yml, so the "default: everyone" permissions (`tcp.stats`, `tcp.leaderboard`) were unreachable — regular players got a permission error before any subcommand could run. The command-level gate is gone and every subcommand now checks its own permission (stats and leaderboard included, which previously checked nothing). Admins see no change; `tcp.admin` is now a properly declared node (still gates `/tcp list` / `/tcp info` and update notifications) and is granted by the `tcp.admin.*` wildcard.
+- **`vaults.sounds.ominous-open` is honored.** Ominous vaults always played the `normal-open` sound; the ominous key was read never. Set a distinct sound and ominous vaults now use it.
+- **Every remaining hardcoded command message moved into messages.yml.** ~75 admin-command strings (`/tcp dungeon`, `/tcp container`, `/tcp claims`, `/tcp debug`, the reset-confirmation queue, snapshot bulk/missing listings, `/tcp list`, loot audit, setup prompts, admin reminders) are now translatable — new `dungeon-*`, `container-*`, `claims-*`, `debug-*`, `reset-*`, `snapshot-all-*`/`snapshot-missing-*`, `loot-audit-*`, `list-*` and shared `pagination-*` key families, plus new `help-*` lines. Existing messages.yml files keep working; the startup schema check lists any new keys your file is missing (regenerate or copy them over), and leftover removed keys are harmless.
+- **Time durations in messages are now localizable.** The `time-days/hours/minutes/seconds/now` keys that shipped unused since forever are now actually used for every "2d 3h 5m"-style duration (cooldowns, reset warnings, `/tcp info`, stats, leaderboards, placeholders), joined by the new `time-ago` key for "… ago" timestamps.
+
+### Changed
+- **Deprecation cleanup:** sound names resolve via the registry first (enum fallback kept), goat-horn instruments resolve via the Paper registry API, plugin info reads `pluginMeta`, and GUI titles pass the Adventure Component straight through (gradients/hex in titles render at full fidelity).
+- Removed the dead `global.async-block-placement` config key (restoration has been batched/async regardless since long ago) and ~30 unused messages.yml keys.
+
 ## [1.7.0] - 2026-07-02
 ### Added
 - **Tunnel-breaking: let players mine INTO a walled chamber — without letting them farm it.** Properly-generated Trial Chambers have no entrance; with block-break protection on, players were locked out entirely, and with it off they could strip-mine the (endlessly restored) tuff for infinite blocks. The new opt-in `protection.tunnel-breaking` mode allows breaking a configurable block set (default: the tuff-brick shell family) inside registered chambers with **drops always suppressed** — no items, no XP — so there's nothing to farm, and the tunnel heals on the next reset. An optional `shell-depth` (default 3) restricts digging to the outer wall so the interior can't be hollowed out; players digging too deep get a clear "outer wall only" message (`tunnel-only-outer-wall` in messages.yml). Everything else stays protected.
@@ -1509,6 +1528,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.7.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.7.0...v1.7.1
+[1.7.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.6.3...v1.7.0
 [1.6.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.6.2...v1.6.3
 [1.6.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.6.0...v1.6.1

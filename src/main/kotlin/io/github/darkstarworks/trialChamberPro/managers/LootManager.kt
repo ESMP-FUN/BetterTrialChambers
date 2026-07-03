@@ -154,8 +154,7 @@ class LootManager(private val plugin: TrialChamberPro) {
             return LootTable(name = name, pools = pools)
         } else {
             // Legacy single-pool format (backwards compatible)
-            val minRolls = section.getInt("min-rolls", 3)
-            val maxRolls = section.getInt("max-rolls", 5)
+            val (minRolls, maxRolls) = sanitizeRolls(section.getInt("min-rolls", 3), section.getInt("max-rolls", 5), name)
 
             // Parse guaranteed items
             val guaranteedItems = mutableListOf<LootItem>()
@@ -202,8 +201,11 @@ class LootManager(private val plugin: TrialChamberPro) {
      */
     private fun parseLootPool(data: Map<String, Any>): LootPool? {
         val poolName = data["name"] as? String ?: return null
-        val minRolls = (data["min-rolls"] as? Number)?.toInt() ?: 1
-        val maxRolls = (data["max-rolls"] as? Number)?.toInt() ?: 1
+        val (minRolls, maxRolls) = sanitizeRolls(
+            (data["min-rolls"] as? Number)?.toInt() ?: 1,
+            (data["max-rolls"] as? Number)?.toInt() ?: 1,
+            "pool '$poolName'"
+        )
 
         // Parse guaranteed items
         val guaranteedItems = mutableListOf<LootItem>()
@@ -234,6 +236,20 @@ class LootManager(private val plugin: TrialChamberPro) {
         }
 
         return LootPool(poolName, minRolls, maxRolls, guaranteedItems, weightedItems, commandRewards, economyRewards)
+    }
+
+    /**
+     * Sanitizes a min/max roll pair: negatives coerced to 0, min > max swapped with a
+     * warning. Pre-1.7.1 a reversed pair threw inside Random.nextInt at generation time.
+     */
+    private fun sanitizeRolls(min: Int, max: Int, context: String): Pair<Int, Int> {
+        var lo = min.coerceAtLeast(0)
+        var hi = max.coerceAtLeast(0)
+        if (lo > hi) {
+            plugin.logger.warning("loot.yml: $context has min-rolls ($lo) > max-rolls ($hi) — swapped.")
+            val t = lo; lo = hi; hi = t
+        }
+        return lo to hi
     }
 
     /**
@@ -314,9 +330,18 @@ class LootManager(private val plugin: TrialChamberPro) {
 
         val customModelData = (data["custom-model-data"] as? Number)?.toInt()
 
-        val amountMin = (data["amount-min"] as? Number)?.toInt() ?: 1
-        val amountMax = (data["amount-max"] as? Number)?.toInt() ?: 1
+        // v1.7.1 validation: a bad amount range used to throw inside Random.nextInt at
+        // GENERATION time, killing the whole vault roll. Sanitize at parse with a warning.
+        var amountMin = ((data["amount-min"] as? Number)?.toInt() ?: 1).coerceAtLeast(1)
+        var amountMax = ((data["amount-max"] as? Number)?.toInt() ?: 1).coerceAtLeast(1)
+        if (amountMin > amountMax) {
+            plugin.logger.warning("loot.yml: '$typeStr' has amount-min ($amountMin) > amount-max ($amountMax) — swapped.")
+            val t = amountMin; amountMin = amountMax; amountMax = t
+        }
         val weight = (data["weight"] as? Number)?.toDouble() ?: 1.0
+        if (weight <= 0.0) {
+            plugin.logger.warning("loot.yml: '$typeStr' has weight $weight — entries with weight <= 0 never drop.")
+        }
 
         val name = data["name"] as? String
         @Suppress("UNCHECKED_CAST")
@@ -327,14 +352,18 @@ class LootManager(private val plugin: TrialChamberPro) {
         @Suppress("UNCHECKED_CAST")
         (data["enchantments"] as? List<String>)?.forEach { enchStr ->
             val parts = enchStr.split(":")
-            if (parts.size == 2) {
-                val enchantment = io.papermc.paper.registry.RegistryAccess.registryAccess()
-                    .getRegistry(io.papermc.paper.registry.RegistryKey.ENCHANTMENT)
-                    .get(org.bukkit.NamespacedKey.minecraft(parts[0].lowercase()))
-                val level = parts[1].toIntOrNull()
-                if (enchantment != null && level != null) {
+            // A namespaced id ("minecraft:sharpness" / "somepack:blaze") also splits on ':' —
+            // treat the last segment as the level and everything before it as the id.
+            if (parts.size >= 2) {
+                val enchantment = resolveEnchantment(parts.dropLast(1).joinToString(":"), enchStr)
+                val level = parts.last().toIntOrNull()
+                if (level == null) {
+                    plugin.logger.warning("loot.yml: enchantment entry '$enchStr' has a non-numeric level — skipped.")
+                } else if (enchantment != null) {
                     enchantments[enchantment] = level
                 }
+            } else {
+                plugin.logger.warning("loot.yml: enchantment entry '$enchStr' isn't NAME:level — skipped.")
             }
         }
 
@@ -342,34 +371,14 @@ class LootManager(private val plugin: TrialChamberPro) {
         val enchantmentRanges = mutableMapOf<Enchantment, io.github.darkstarworks.trialChamberPro.models.EnchantmentRange>()
         @Suppress("UNCHECKED_CAST")
         (data["enchantment-ranges"] as? List<String>)?.forEach { enchStr ->
-            val parts = enchStr.split(":")
-            if (parts.size == 3) {
-                val enchantment = io.papermc.paper.registry.RegistryAccess.registryAccess()
-                    .getRegistry(io.papermc.paper.registry.RegistryKey.ENCHANTMENT)
-                    .get(org.bukkit.NamespacedKey.minecraft(parts[0].lowercase()))
-                val minLevel = parts[1].toIntOrNull()
-                val maxLevel = parts[2].toIntOrNull()
-                if (enchantment != null && minLevel != null && maxLevel != null) {
-                    enchantmentRanges[enchantment] = io.github.darkstarworks.trialChamberPro.models.EnchantmentRange(enchantment, minLevel, maxLevel)
-                }
-            }
+            parseEnchantmentRange(enchStr)?.let { enchantmentRanges[it.enchantment] = it }
         }
 
         // Parse random enchantment pool (pick one random enchantment from this list)
         val randomEnchantmentPool = mutableListOf<io.github.darkstarworks.trialChamberPro.models.EnchantmentRange>()
         @Suppress("UNCHECKED_CAST")
         (data["random-enchantment-pool"] as? List<String>)?.forEach { enchStr ->
-            val parts = enchStr.split(":")
-            if (parts.size == 3) {
-                val enchantment = io.papermc.paper.registry.RegistryAccess.registryAccess()
-                    .getRegistry(io.papermc.paper.registry.RegistryKey.ENCHANTMENT)
-                    .get(org.bukkit.NamespacedKey.minecraft(parts[0].lowercase()))
-                val minLevel = parts[1].toIntOrNull()
-                val maxLevel = parts[2].toIntOrNull()
-                if (enchantment != null && minLevel != null && maxLevel != null) {
-                    randomEnchantmentPool.add(io.github.darkstarworks.trialChamberPro.models.EnchantmentRange(enchantment, minLevel, maxLevel))
-                }
-            }
+            parseEnchantmentRange(enchStr)?.let { randomEnchantmentPool.add(it) }
         }
 
         // Parse potion type for potions and tipped arrows
@@ -383,10 +392,39 @@ class LootManager(private val plugin: TrialChamberPro) {
             }
         }
 
-        val potionLevel = (data["potion-level"] as? Number)?.toInt()
+        var potionLevel = (data["potion-level"] as? Number)?.toInt()
+        // v1.7.1: random amplifier range, matching vanilla's set_ominous_bottle_amplifier
+        // (real vault bottles are ONE entry with amplifier 0-1 / 2-4, rolled per drop).
+        // Also works for regular potion amplifiers.
+        var potionLevelMin = (data["potion-level-min"] as? Number)?.toInt()
+        var potionLevelMax = (data["potion-level-max"] as? Number)?.toInt()
+        if ((potionLevelMin == null) != (potionLevelMax == null)) {
+            plugin.logger.warning("loot.yml: '$typeStr' sets only one of potion-level-min/potion-level-max — both are required; ignored.")
+            potionLevelMin = null; potionLevelMax = null
+        }
+        if (potionLevelMin != null && potionLevelMax != null && potionLevelMin > potionLevelMax) {
+            plugin.logger.warning("loot.yml: '$typeStr' has potion-level-min > potion-level-max — swapped.")
+            val t = potionLevelMin; potionLevelMin = potionLevelMax; potionLevelMax = t
+        }
         val customEffectType = data["custom-effect-type"] as? String
         val isOminousPotion = (data["ominous-potion"] as? Boolean) ?: false
         val effectDuration = (data["effect-duration"] as? Number)?.toInt()
+
+        // Ominous bottles only hold Bad Omen at amplifier 0-4 (Paper's OminousBottleMeta
+        // throws outside that range — pre-1.7.1 a potion-level: 5 killed the whole roll).
+        val isOminousBottle = material == Material.OMINOUS_BOTTLE || (isOminousPotion && material == Material.POTION)
+        if (isOminousBottle) {
+            if (data["potion-type"] != null) {
+                plugin.logger.warning("loot.yml: '$typeStr' is an ominous bottle — 'potion-type' is ignored (ominous bottles can only hold Bad Omen).")
+            }
+            fun clampAmp(v: Int, field: String): Int {
+                if (v !in 0..4) plugin.logger.warning("loot.yml: ominous bottle $field $v is out of range 0-4 (Bad Omen I-V) — clamped.")
+                return v.coerceIn(0, 4)
+            }
+            potionLevel = potionLevel?.let { clampAmp(it, "potion-level") }
+            potionLevelMin = potionLevelMin?.let { clampAmp(it, "potion-level-min") }
+            potionLevelMax = potionLevelMax?.let { clampAmp(it, "potion-level-max") }
+        }
 
         // Parse variable durability
         val durabilityMin = (data["durability-min"] as? Number)?.toInt()
@@ -409,6 +447,8 @@ class LootManager(private val plugin: TrialChamberPro) {
             randomEnchantmentPool = randomEnchantmentPool.takeIf { it.isNotEmpty() },
             potionType = potionType,
             potionLevel = potionLevel,
+            potionLevelMin = potionLevelMin,
+            potionLevelMax = potionLevelMax,
             customEffectType = customEffectType,
             isOminousPotion = isOminousPotion,
             effectDuration = effectDuration,
@@ -422,6 +462,44 @@ class LootManager(private val plugin: TrialChamberPro) {
             vanillaTable = vanillaTable,
             enabled = enabled
         )
+    }
+
+    /**
+     * Resolves an enchantment by Bukkit-style name ("SHARPNESS") or namespaced key
+     * ("minecraft:sharpness", "somepack:blaze"). Warns and returns null when unknown —
+     * pre-1.7.1 an unknown name was skipped silently, so typos lost enchants invisibly.
+     */
+    private fun resolveEnchantment(name: String, sourceEntry: String): Enchantment? {
+        val key = org.bukkit.NamespacedKey.fromString(name.lowercase())
+            ?: org.bukkit.NamespacedKey.minecraft(name.lowercase())
+        val enchantment = io.papermc.paper.registry.RegistryAccess.registryAccess()
+            .getRegistry(io.papermc.paper.registry.RegistryKey.ENCHANTMENT)
+            .get(key)
+        if (enchantment == null) {
+            plugin.logger.warning("loot.yml: unknown enchantment '$name' in '$sourceEntry' — skipped. Use the in-game id (e.g. SHARPNESS or minecraft:sharpness).")
+        }
+        return enchantment
+    }
+
+    /** Parses "NAME:min:max" (name may itself be namespaced) into an EnchantmentRange, warning on problems. */
+    private fun parseEnchantmentRange(enchStr: String): io.github.darkstarworks.trialChamberPro.models.EnchantmentRange? {
+        val parts = enchStr.split(":")
+        if (parts.size < 3) {
+            plugin.logger.warning("loot.yml: enchantment range '$enchStr' isn't NAME:minLevel:maxLevel — skipped.")
+            return null
+        }
+        val enchantment = resolveEnchantment(parts.dropLast(2).joinToString(":"), enchStr) ?: return null
+        var min = parts[parts.size - 2].toIntOrNull()
+        var max = parts.last().toIntOrNull()
+        if (min == null || max == null) {
+            plugin.logger.warning("loot.yml: enchantment range '$enchStr' has non-numeric levels — skipped.")
+            return null
+        }
+        if (min > max) {
+            plugin.logger.warning("loot.yml: enchantment range '$enchStr' has min > max — swapped.")
+            val t = min; min = max; max = t
+        }
+        return io.github.darkstarworks.trialChamberPro.models.EnchantmentRange(enchantment, min, max)
     }
 
     /**
@@ -646,19 +724,47 @@ class LootManager(private val plugin: TrialChamberPro) {
      * Selects a random item based on weights.
      */
     private fun selectWeightedItem(items: List<LootItem>): LootItem? {
-        if (items.isEmpty()) return null
+        // Weight <= 0 means "never drops" — pre-1.7.1, an all-zero-weight pool made the
+        // FIRST zero-weight entry drop every roll (0 * random = 0, first subtraction hit 0).
+        val eligible = items.filter { it.weight > 0.0 }
+        if (eligible.isEmpty()) return null
 
-        val totalWeight = items.sumOf { it.weight }
+        val totalWeight = eligible.sumOf { it.weight }
         var random = Random.nextDouble() * totalWeight
 
-        items.forEach { item ->
+        eligible.forEach { item ->
             random -= item.weight
             if (random <= 0) {
                 return item
             }
         }
 
-        return items.lastOrNull()
+        return eligible.lastOrNull()
+    }
+
+    /**
+     * Renders a loot name/lore line to a Component through the plugin's standard text
+     * pipeline (MessageParser: `&` codes, `&#RRGGBB` hex, and MiniMessage tags), with
+     * Minecraft's forced-italic for custom names disabled — pre-1.7.1 these went through
+     * raw `Component.text` with `§` codes, which rendered but left names italic and
+     * supported neither hex nor MiniMessage.
+     */
+    private fun lootText(text: String, player: Player): net.kyori.adventure.text.Component =
+        io.github.darkstarworks.trialChamberPro.utils.MessageParser.parse(replacePlaceholders(text, player))
+            .decorationIfAbsent(
+                net.kyori.adventure.text.format.TextDecoration.ITALIC,
+                net.kyori.adventure.text.format.TextDecoration.State.FALSE
+            )
+
+    /**
+     * The effect amplifier for this entry: rolled uniformly from
+     * potion-level-min/max when set, else the fixed potion-level, else null.
+     */
+    private fun rolledAmplifier(lootItem: LootItem): Int? {
+        val min = lootItem.potionLevelMin
+        val max = lootItem.potionLevelMax
+        if (min != null && max != null) return Random.nextInt(min, max + 1)
+        return lootItem.potionLevel
     }
 
     /**
@@ -689,14 +795,8 @@ class LootManager(private val plugin: TrialChamberPro) {
             val itemStack = resolved.clone().also { it.amount = amount }
             // Apply any name/lore/enchantments specified on top of the custom item base
             itemStack.itemMeta = itemStack.itemMeta?.apply {
-                lootItem.name?.let {
-                    displayName(net.kyori.adventure.text.Component.text(colorize(replacePlaceholders(it, player))))
-                }
-                lootItem.lore?.let { loreLines ->
-                    lore(loreLines.map { line ->
-                        net.kyori.adventure.text.Component.text(colorize(replacePlaceholders(line, player)))
-                    })
-                }
+                lootItem.name?.let { displayName(lootText(it, player)) }
+                lootItem.lore?.let { loreLines -> lore(loreLines.map { line -> lootText(line, player) }) }
             }
             lootItem.enchantments?.forEach { (ench, level) -> itemStack.addUnsafeEnchantment(ench, level) }
             lootItem.enchantmentRanges?.values?.forEach { range ->
@@ -725,24 +825,22 @@ class LootManager(private val plugin: TrialChamberPro) {
 
         itemStack.itemMeta = itemStack.itemMeta?.apply {
             // Set custom name
-            lootItem.name?.let {
-                displayName(net.kyori.adventure.text.Component.text(colorize(replacePlaceholders(it, player))))
-            }
+            lootItem.name?.let { displayName(lootText(it, player)) }
 
             // Set lore
-            lootItem.lore?.let { loreLines ->
-                lore(loreLines.map { line ->
-                    net.kyori.adventure.text.Component.text(colorize(replacePlaceholders(line, player)))
-                })
-            }
+            lootItem.lore?.let { loreLines -> lore(loreLines.map { line -> lootText(line, player) }) }
 
-            // Apply custom model data
-            lootItem.customModelData?.let { setCustomModelData(it) }
+            // Apply custom model data. Deliberately the deprecated Int setter: the
+            // CustomModelDataComponent replacement isn't stable across every API level
+            // we target, and resource packs keyed on integer CMD expect this form.
+            lootItem.customModelData?.let { @Suppress("DEPRECATION") setCustomModelData(it) }
 
             // Handle OMINOUS_BOTTLE separately (uses OminousBottleMeta, not PotionMeta)
             if (this is org.bukkit.inventory.meta.OminousBottleMeta) {
-                // Set Bad Omen amplifier for ominous bottles
-                val amplifier = lootItem.potionLevel ?: 0
+                // Bad Omen amplifier: rolled from potion-level-min/max when set (matches
+                // vanilla's random-range set_ominous_bottle_amplifier), else potion-level.
+                // Coerced 0..4 defensively — Paper's setAmplifier throws outside that range.
+                val amplifier = (rolledAmplifier(lootItem) ?: 0).coerceIn(0, 4)
 
                 if (plugin.config.getBoolean("debug.verbose-logging", false)) {
                     plugin.logger.info("Setting ominous bottle amplifier: $amplifier (Bad Omen ${amplifier + 1})")
@@ -776,7 +874,7 @@ class LootManager(private val plugin: TrialChamberPro) {
                             else -> 120000
                         }
 
-                        val amplifier = lootItem.potionLevel ?: 0
+                        val amplifier = rolledAmplifier(lootItem) ?: 0
 
                         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
                             plugin.logger.info("Adding custom effect: type=${lootItem.customEffectType}, duration=$duration ticks (${duration/20}s), amplifier=$amplifier (level ${amplifier + 1})")
@@ -802,61 +900,62 @@ class LootManager(private val plugin: TrialChamberPro) {
                     }
                 } else if (lootItem.potionType != null) {
                     // Handle standard potion types
-                    // Use custom effect when: potion-level is specified OR effect-duration is specified
-                    // This ensures effect-duration is not ignored when specified without potion-level
-                    val useCustomEffect = lootItem.potionLevel != null ||
+                    // Use custom effects when a level (fixed or ranged) or duration is
+                    // specified — otherwise the plain base potion type is fully vanilla.
+                    val amplifierOverride = rolledAmplifier(lootItem)
+                    val useCustomEffect = amplifierOverride != null ||
                         (lootItem.effectDuration != null && lootItem.effectDuration > 0)
 
                     if (useCustomEffect) {
-                        // Get the effect type from the potion type
-                        // Use getPotionEffects() instead of deprecated effectType property
-                        val effectType = lootItem.potionType.potionEffects.firstOrNull()?.type
+                        // v1.7.1: apply EVERY effect the potion type carries — TURTLE_MASTER
+                        // has two (Slowness + Resistance); the old firstOrNull() dropped one.
+                        val baseEffects = lootItem.potionType.potionEffects
 
-                        if (effectType != null) {
-                            // Calculate duration - use explicit value if positive, otherwise calculate
-                            val calculatedDuration = if (lootItem.effectDuration != null && lootItem.effectDuration > 0) {
-                                lootItem.effectDuration
-                            } else {
-                                // Get base duration from the potion type (vanilla duration)
-                                // Note: Some PotionTypes return 0 duration, so we check for both null and <= 0
-                                val rawDuration = lootItem.potionType.potionEffects.firstOrNull()?.duration
-                                val baseDuration = if (rawDuration != null && rawDuration > 0) rawDuration else 3600
+                        if (baseEffects.isNotEmpty()) {
+                            val amplifier = amplifierOverride ?: 0
+                            for (baseEffect in baseEffects) {
+                                // Explicit duration wins; otherwise scale this effect's own
+                                // vanilla duration by the item form's multiplier.
+                                val calculatedDuration = if (lootItem.effectDuration != null && lootItem.effectDuration > 0) {
+                                    lootItem.effectDuration
+                                } else {
+                                    val rawDuration = baseEffect.duration
+                                    val baseDuration = if (rawDuration > 0) rawDuration else 3600
 
-                                // Apply vanilla duration multipliers based on item type
-                                when (lootItem.type) {
-                                    Material.POTION -> baseDuration  // 1.0x (base duration)
-                                    Material.SPLASH_POTION -> (baseDuration * 0.75).toInt()  // 75% of base
-                                    Material.LINGERING_POTION -> (baseDuration * 0.25).toInt()  // 25% of base
-                                    Material.TIPPED_ARROW -> (baseDuration / 8)  // 1/8 of base (12.5%)
-                                    else -> baseDuration
+                                    // Vanilla duration multipliers per item form. Splash potions
+                                    // last as long as drinkable ones in modern Minecraft (the old
+                                    // 0.75x here was the pre-1.9 rule); lingering = 1/4, arrow = 1/8.
+                                    when (lootItem.type) {
+                                        Material.POTION, Material.SPLASH_POTION -> baseDuration
+                                        Material.LINGERING_POTION -> baseDuration / 4
+                                        Material.TIPPED_ARROW -> baseDuration / 8
+                                        else -> baseDuration
+                                    }
                                 }
-                            }
 
-                            // Always enforce minimum duration (fixes 00:00 duration bug)
-                            // Vanilla tipped arrows are typically 100-400 ticks (5-20 seconds)
-                            val minDuration = when (lootItem.type) {
-                                Material.TIPPED_ARROW -> 100  // 5 seconds minimum
-                                Material.LINGERING_POTION -> 200  // 10 seconds minimum
-                                else -> 600  // 30 seconds minimum for other potions
-                            }
-                            val duration = maxOf(calculatedDuration, minDuration)
+                                // Always enforce minimum duration (fixes 00:00 duration bug)
+                                // Vanilla tipped arrows are typically 100-400 ticks (5-20 seconds)
+                                val minDuration = when (lootItem.type) {
+                                    Material.TIPPED_ARROW -> 100  // 5 seconds minimum
+                                    Material.LINGERING_POTION -> 200  // 10 seconds minimum
+                                    else -> 600  // 30 seconds minimum for other potions
+                                }
+                                val duration = maxOf(calculatedDuration, minDuration)
 
-                            // Use specified potion level or default to 0 (Level I)
-                            val amplifier = lootItem.potionLevel ?: 0
-
-                            addCustomEffect(
-                                org.bukkit.potion.PotionEffect(
-                                    effectType,
-                                    duration,
-                                    amplifier,
-                                    false,
-                                    true,
+                                addCustomEffect(
+                                    org.bukkit.potion.PotionEffect(
+                                        baseEffect.type,
+                                        duration,
+                                        amplifier,
+                                        false,
+                                        true,
+                                        true
+                                    ),
                                     true
-                                ),
-                                true
-                            )
+                                )
+                            }
                         } else {
-                            // effectType is null (e.g., AWKWARD, MUNDANE, THICK potions)
+                            // No effects (e.g., AWKWARD, MUNDANE, THICK potions)
                             // Fall back to base potion type, but log a warning if duration was specified
                             if (lootItem.effectDuration != null && lootItem.effectDuration > 0) {
                                 plugin.logger.warning(
@@ -894,23 +993,18 @@ class LootManager(private val plugin: TrialChamberPro) {
                         "${lootItem.instrument.uppercase()}_GOAT_HORN"
                     }
 
-                    try {
-                        // Get the MusicInstrument using reflection to support both field access patterns
-                        val instrumentField = org.bukkit.MusicInstrument::class.java.getField(instrumentName)
-                        val instrument = instrumentField.get(null) as? org.bukkit.MusicInstrument
-                        if (instrument != null) {
-                            setInstrument(instrument)
-                            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-                                plugin.logger.info("Applied goat horn instrument: $instrumentName")
-                            }
-                        } else {
-                            plugin.logger.warning("Invalid goat horn instrument: $instrumentName (field exists but value is null)")
+                    // Resolve via the registry (v1.7.1 — replaces Field reflection)
+                    val instrument = io.papermc.paper.registry.RegistryAccess.registryAccess()
+                        .getRegistry(io.papermc.paper.registry.RegistryKey.INSTRUMENT)
+                        .get(org.bukkit.NamespacedKey.minecraft(instrumentName.lowercase()))
+                    if (instrument != null) {
+                        setInstrument(instrument)
+                        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                            plugin.logger.info("Applied goat horn instrument: $instrumentName")
                         }
-                    } catch (e: NoSuchFieldException) {
+                    } else {
                         plugin.logger.warning("Invalid goat horn instrument: ${lootItem.instrument}. " +
                             "Valid options: PONDER, SING, SEEK, FEEL, ADMIRE, CALL, YEARN, DREAM")
-                    } catch (e: Exception) {
-                        plugin.logger.warning("Failed to set goat horn instrument: ${e.message}")
                     }
                 }
             }
@@ -1131,13 +1225,6 @@ class LootManager(private val plugin: TrialChamberPro) {
     }
 
     /**
-     * Colorizes text with & color codes.
-     */
-    private fun colorize(text: String): String {
-        return text.replace('&', '§')
-    }
-
-    /**
      * Gets all loaded loot table names.
      */
     fun getLootTableNames(): Set<String> = lootTables.keys
@@ -1227,12 +1314,22 @@ class LootManager(private val plugin: TrialChamberPro) {
         null
     }
 
+    /**
+     * Serializes a LootItem back to its loot.yml map form. Must round-trip EVERY field
+     * [parseLootItem] reads: `saveAllToFile` rewrites the whole file on any GUI loot edit,
+     * so a field missing here is silently stripped from every hand-written entry (the
+     * pre-1.7.1 version dropped potion/ominous/duration/durability/instrument/range fields
+     * and wrote VANILLA_TABLE entries back as `type: AIR` — destroying them).
+     */
     private fun serializeLootItem(li: LootItem): Map<String, Any> {
         val map = mutableMapOf<String, Any>()
         if (li.customItemPlugin != null) {
             map["type"] = "CUSTOM_ITEM"
             map["plugin"] = li.customItemPlugin
             li.customItemId?.let { map["item-id"] = it }
+        } else if (li.vanillaTable != null) {
+            map["type"] = "VANILLA_TABLE"
+            map["table"] = li.vanillaTable
         } else {
             map["type"] = li.type.name
         }
@@ -1245,6 +1342,22 @@ class LootManager(private val plugin: TrialChamberPro) {
         li.enchantments?.let { ench ->
             map["enchantments"] = ench.map { (k, v) -> "${k.key.key.uppercase()}:$v" }
         }
+        li.enchantmentRanges?.let { ranges ->
+            map["enchantment-ranges"] = ranges.values.map { "${it.enchantment.key.key.uppercase()}:${it.minLevel}:${it.maxLevel}" }
+        }
+        li.randomEnchantmentPool?.let { pool ->
+            map["random-enchantment-pool"] = pool.map { "${it.enchantment.key.key.uppercase()}:${it.minLevel}:${it.maxLevel}" }
+        }
+        li.potionType?.let { map["potion-type"] = it.name }
+        li.potionLevel?.let { map["potion-level"] = it }
+        li.potionLevelMin?.let { map["potion-level-min"] = it }
+        li.potionLevelMax?.let { map["potion-level-max"] = it }
+        li.customEffectType?.let { map["custom-effect-type"] = it }
+        if (li.isOminousPotion) map["ominous-potion"] = true
+        li.effectDuration?.let { map["effect-duration"] = it }
+        li.durabilityMin?.let { map["durability-min"] = it }
+        li.durabilityMax?.let { map["durability-max"] = it }
+        li.instrument?.let { map["instrument"] = it }
         li.serializedItem?.let { map["serialized-item"] = it }
         map["enabled"] = li.enabled
         return map

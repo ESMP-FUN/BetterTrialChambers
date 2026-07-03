@@ -474,7 +474,7 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
                         player, location, true,
                         plugin.getMessageComponent("vault-opened", "type" to plugin.vaultTypeDisplay(vaultType))
                     ) {
-                        playSuccessSound(player, player.location)
+                        playSuccessSound(player, player.location, vaultType)
                     }
 
                     // Grant the appropriate advancement
@@ -633,10 +633,11 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
     /**
      * Plays success sound to the player.
      */
-    private fun playSuccessSound(player: org.bukkit.entity.Player, location: org.bukkit.Location) {
+    private fun playSuccessSound(player: org.bukkit.entity.Player, location: org.bukkit.Location, vaultType: VaultType) {
         if (!plugin.config.getBoolean("vaults.play-sound-on-open", true)) return
 
-        val soundName = plugin.config.getString("vaults.sounds.normal-open", "BLOCK_VAULT_OPEN_SHUTTER")!!
+        val soundKey = if (vaultType == VaultType.OMINOUS) "vaults.sounds.ominous-open" else "vaults.sounds.normal-open"
+        val soundName = plugin.config.getString(soundKey, "BLOCK_VAULT_OPEN_SHUTTER")!!
         val sound = io.github.darkstarworks.trialChamberPro.utils.SoundUtil.resolve(soundName) ?: return
         player.playSound(location, sound, 1.0f, 1.0f)
     }
