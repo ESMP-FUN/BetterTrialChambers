@@ -162,7 +162,8 @@ Translate the templates once, translate per-toggle labels/descs, and the result 
 
 Everything user-visible:
 
-* Chat messages, command output, error messages
+* Chat messages, command output, error messages — as of 1.7.1 this includes every admin command (`/tcp dungeon`, `/tcp container`, `/tcp claims`, `/tcp debug`, the reset-confirmation queue, snapshot listings, `/tcp list`, loot audit) and the shared `pagination-*` Prev/Next line
+* Time durations ("2d 3h 5m", "5m ago") via the `time-*` keys (actually applied since 1.7.1)
 * Boss bar text on trial spawner waves
 * Every name, lore line, and button label in the admin GUI
 * `/tcp help` and `/tcp info` output
