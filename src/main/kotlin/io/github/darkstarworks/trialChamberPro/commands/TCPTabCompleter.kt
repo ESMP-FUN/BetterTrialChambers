@@ -59,15 +59,15 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                     }
                     "scan" -> {
                         // `add` (grow bounds into missed sections) + chamber names.
-                        (listOf("add") + getChamberNames()).filter { it.startsWith(args[1].lowercase()) }
+                        (listOf("add") + getChamberNames(sender)).filter { it.startsWith(args[1].lowercase()) }
                     }
                     "setexit", "info", "delete", "pause", "resume", "rename", "menu" -> {
                         // Chamber names (menu: optional deep-link into the chamber's GUI)
-                        getChamberNames().filter { it.startsWith(args[1].lowercase()) }
+                        getChamberNames(sender).filter { it.startsWith(args[1].lowercase()) }
                     }
                     "reset" -> {
                         // Queue actions + chamber names
-                        (listOf("pending", "confirm") + getChamberNames()).filter { it.startsWith(args[1].lowercase()) }
+                        (listOf("pending", "confirm") + getChamberNames(sender)).filter { it.startsWith(args[1].lowercase()) }
                     }
                     "stats" -> {
                         // Player names for stats
@@ -83,7 +83,7 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                     }
                     "mobs" -> {
                         // Chamber name or the literal "providers"
-                        (getChamberNames() + "providers").filter { it.startsWith(args[1], ignoreCase = true) }
+                        (getChamberNames(sender) + "providers").filter { it.startsWith(args[1], ignoreCase = true) }
                     }
                     "give" -> {
                         getPresetNames().filter { it.startsWith(args[1].lowercase()) }
@@ -101,13 +101,13 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                 when (args[0].lowercase()) {
                     "snapshot" -> when (args[1].lowercase()) {
                         // `create`/`update` also accept the literal `all` (bulk backfill).
-                        "create", "update" -> (listOf("all") + getChamberNames()).filter { it.startsWith(args[2].lowercase()) }
+                        "create", "update" -> (listOf("all") + getChamberNames(sender)).filter { it.startsWith(args[2].lowercase()) }
                         "missing" -> emptyList() // optional page number, no completion
-                        else -> getChamberNames().filter { it.startsWith(args[2].lowercase()) }
+                        else -> getChamberNames(sender).filter { it.startsWith(args[2].lowercase()) }
                     }
-                    "container", "containers" -> getChamberNames().filter { it.startsWith(args[2].lowercase()) }
+                    "container", "containers" -> getChamberNames(sender).filter { it.startsWith(args[2].lowercase()) }
                     "scan" -> if (args[1].equals("add", ignoreCase = true))
-                        getChamberNames().filter { it.startsWith(args[2].lowercase()) } else emptyList()
+                        getChamberNames(sender).filter { it.startsWith(args[2].lowercase()) } else emptyList()
                     "dungeon" -> {
                         if (args[1].equals("delete", ignoreCase = true)) {
                             try { plugin.roomTemplateManager.list().filter { it.startsWith(args[2], ignoreCase = true) } }
@@ -133,7 +133,7 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                     "loot" -> {
                         // Chamber names for set/clear/info
                         when (args[1].lowercase()) {
-                            "set", "clear", "info" -> getChamberNames().filter { it.startsWith(args[2].lowercase()) }
+                            "set", "clear", "info" -> getChamberNames(sender).filter { it.startsWith(args[2].lowercase()) }
                             else -> emptyList()
                         }
                     }
@@ -208,7 +208,13 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
         }
     }
 
-    private fun getChamberNames(): List<String> {
+    /**
+     * v1.7.2: chamber names are only suggested to staff. Since 1.7.1 the base
+     * /tcp command is open to everyone (stats/leaderboard), which made
+     * tab-completion leak every chamber name to regular players.
+     */
+    private fun getChamberNames(sender: org.bukkit.command.CommandSender): List<String> {
+        if (!sender.hasPermission("tcp.admin")) return emptyList()
         return try {
             val names = plugin.chamberManager.getCachedChamberNames()
             names.ifEmpty { emptyList() }

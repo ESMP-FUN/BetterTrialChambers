@@ -123,4 +123,19 @@ class SpectatorListener(private val plugin: TrialChamberPro) : Listener {
 
         plugin.spectatorManager.handlePlayerQuit(event.player)
     }
+
+    /**
+     * v1.7.2 crash recovery: if the server stopped while this player was
+     * spectating, PDC recovery keys survived in their player data — restore
+     * their previous gamemode/location instead of leaving them in SPECTATOR.
+     * Runs on the player's entity thread (Folia-safe).
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    fun onPlayerJoin(event: org.bukkit.event.player.PlayerJoinEvent) {
+        if (!plugin.isReady) return
+        val player = event.player
+        plugin.scheduler.runAtEntity(player, Runnable {
+            if (player.isOnline) plugin.spectatorManager.restoreCrashedSpectator(player)
+        })
+    }
 }
