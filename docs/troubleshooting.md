@@ -136,7 +136,6 @@ Snapshot and restore operations scale with chamber size. A 100×50×100 chamber 
 
 ```yaml
 global:
-  async-block-placement: true     # Must be true. Non-negotiable.
   blocks-per-tick: 500            # Lower this to 100-200 on low-spec servers.
 
 performance:
@@ -273,7 +272,6 @@ Full messages reference: [messages.yml →](configuration/messages.yml.md)
 General-purpose tuning guidance.
 
 * **`blocks-per-tick`** is the single most important knob. Lower on low-spec hardware, raise on beefy servers with headroom. Default 500 is conservative.
-* **`async-block-placement: true`** should never be turned off.
 * **Cache durations** — `cache-duration-seconds: 300` (5 min) is fine for most servers. Bump to 600+ if you have hundreds of registered chambers and rare modifications.
 * **MySQL** outperforms SQLite past \~50 concurrent players. Below that, SQLite is simpler and plenty fast.
 * **Snapshot files** live in `plugins/TrialChamberPro/snapshots/`. They're gzip-compressed but a 500k-block chamber can still be 20+ MB. Monitor disk if you have many large chambers.

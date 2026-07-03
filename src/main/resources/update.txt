@@ -1,4 +1,13 @@
 <black>.
+<aqua>[1.7.1] <gray>- <white>2026-07-03
+<lime>+ <white>FIX: <green>Ominous Bottles from loot tables are now the REAL <yellow>minecraft:ominous_bottle<green> item (correct texture, stacks with vanilla drops) — use <yellow>type: OMINOUS_BOTTLE<green> with <yellow>potion-level<green> or the new <yellow>potion-level-min/max<green> random range, just like vanilla vaults.
+<lime>+ <white>FIX: <green>GUI loot edits no longer strip potion/enchant-range/durability/instrument fields from hand-written loot.yml entries (and no longer corrupt <yellow>VANILLA_TABLE<green> entries).
+<lime>+ <white>FIX: <green>Bad amount/roll ranges and out-of-range ominous levels are fixed up at load with a warning instead of killing the whole vault roll; typo'd enchantment names are now reported.
+<lime>+ <white>NEW: <green>Loot names & lore support hex colors and MiniMessage, without forced italics.
+<lime>+ <white>FIX: <green>Non-OP players can now use <yellow>/tcp stats<green> and <yellow>/tcp leaderboard<green> — the whole /tcp command was gated behind <yellow>tcp.admin<green>; every subcommand now checks its own permission (admins unaffected).
+<lime>+ <white>FIX: <green>Ominous vaults now play <yellow>vaults.sounds.ominous-open<green> (was always the normal-open sound).
+<lime>+ <white>NEW: <green>All remaining admin-command messages are translatable — ~75 strings moved into messages.yml (<yellow>dungeon-*, container-*, claims-*, reset-*, snapshot-*, pagination-*<green> and more); the startup schema check lists any keys your file is missing.
+<lime>+ <white>NEW: <green>Time durations ("2d 3h 5m", "… ago") are localizable via the <yellow>time-*<green> keys.
 <aqua>[1.7.0] <gray>- <white>2026-07-02
 <lime>+ <white>NEW: <green>Tunnel-breaking — opt-in <yellow>protection.tunnel-breaking<green> lets players mine INTO a walled chamber through the tuff-brick shell (configurable blocks, <yellow>shell-depth<green> limit) with drops always suppressed, so nothing can be farmed; tunnels heal on the next reset.
 <lime>+ <white>NEW: <green>Import datapack rooms — <yellow>/tcp dungeon import <file|folder|zip><green> turns vanilla <yellow>.nbt<green> structure templates (e.g. "crazy chambers"-style packs) into dungeon rooms; jigsaws become door connectors automatically.

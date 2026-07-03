@@ -96,11 +96,7 @@ class SnapshotReminderService(private val plugin: TrialChamberPro) : Listener {
     private fun sendSummary(player: Player, chambers: List<Chamber>) {
         val sample = chambers.take(5).joinToString(", ") { it.name }
         val more = if (chambers.size > 5) " (+${chambers.size - 5} more)" else ""
-        player.sendRichMessage(
-            "<gold>[TCP] <yellow>${chambers.size}</yellow> discovered chamber(s) have no snapshot — " +
-                "<gray>$sample$more</gray> " +
-                "<click:run_command:'/tcp snapshot missing'><hover:show_text:'<gray>List chambers missing a snapshot'><aqua>[list]</aqua></hover></click> " +
-                "<click:run_command:'/tcp snapshot create all'><hover:show_text:'<gray>Snapshot all of them now (staggered)'><green>[create all]</green></hover></click>"
-        )
+        player.sendMessage(plugin.getMessageComponent("snapshot-reminder",
+            "count" to chambers.size, "chambers" to "$sample$more"))
     }
 }

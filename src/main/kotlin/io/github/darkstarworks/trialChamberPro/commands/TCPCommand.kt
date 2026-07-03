@@ -86,7 +86,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         sender.sendMessage(plugin.getMessageComponent("help-info"))
         // Create
         sender.sendMessage(plugin.getMessageComponent("help-generate"))
-        sender.sendRichMessage("<yellow>/tcp dungeon <create rooms & generate> <gray>- Procedural dungeon assembly")
+        sender.sendMessage(plugin.getMessageComponent("help-dungeon"))
         sender.sendMessage(plugin.getMessageComponent("help-paste"))
         // Manage
         sender.sendMessage(plugin.getMessageComponent("help-scan"))
@@ -110,11 +110,11 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         sender.sendMessage(plugin.getMessageComponent("help-stats"))
         sender.sendMessage(plugin.getMessageComponent("help-leaderboard"))
         // Admin
-        sender.sendRichMessage("<yellow>/tcp setup <gray>- Friendly tour of the main settings (opt-in; Enable/Skip/Disable each)")
+        sender.sendMessage(plugin.getMessageComponent("help-setup"))
         sender.sendMessage(plugin.getMessageComponent("help-menu"))
-        sender.sendRichMessage("<yellow>/tcp container <list|materialize|reset|clearcopies|tp|edit> <chamber> <gray>- Manage per-player container loot")
-        sender.sendRichMessage("<yellow>/tcp claims scan <gray>- Find chambers overlapping land-claim plugin claims")
-        sender.sendRichMessage("<yellow>/tcp debug schema <gray>- Print database table columns (diagnostics)")
+        sender.sendMessage(plugin.getMessageComponent("help-container"))
+        sender.sendMessage(plugin.getMessageComponent("help-claims"))
+        sender.sendMessage(plugin.getMessageComponent("help-debug"))
         sender.sendMessage(plugin.getMessageComponent("help-reload"))
     }
 
@@ -124,20 +124,21 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             return
         }
         if (args.getOrNull(1)?.lowercase() != "schema") {
-            sender.sendRichMessage("<yellow>/tcp debug schema <gray>- Print each database table's actual columns")
+            sender.sendMessage(plugin.getMessageComponent("debug-usage"))
             return
         }
-        sender.sendRichMessage("<gray>Reading database schema…")
+        sender.sendMessage(plugin.getMessageComponent("debug-schema-reading"))
         plugin.launchAsync {
             val schema = plugin.databaseManager.describeSchema()
             plugin.scheduler.runTask(Runnable {
-                sender.sendRichMessage("<gold>TCP database schema <gray>(${plugin.databaseManager.databaseType}):")
+                sender.sendMessage(plugin.getMessageComponent("debug-schema-page-header", "type" to plugin.databaseManager.databaseType))
                 for ((table, cols) in schema) {
                     if (cols.isEmpty()) {
-                        sender.sendRichMessage("<red>$table<gray>: (missing table)")
+                        sender.sendMessage(plugin.getMessageComponent("debug-schema-missing-list-item", "table" to table))
                     } else {
                         val flag = if (table == plugin.databaseManager.tables.playerStats && "player_uuid" !in cols) "<red>" else "<green>"
-                        sender.sendRichMessage("$flag$table<gray>: ${cols.joinToString(", ")}")
+                        sender.sendMessage(plugin.getMessageComponent("debug-schema-table-list-item",
+                            "flag" to flag, "table" to table, "columns" to cols.joinToString(", ")))
                     }
                 }
             })
@@ -150,25 +151,19 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             return
         }
         if (args.getOrNull(1)?.lowercase() != "scan") {
-            sender.sendRichMessage("<yellow>/tcp claims scan <gray>- Scan registered chambers for land-claim conflicts")
+            sender.sendMessage(plugin.getMessageComponent("claims-usage"))
             return
         }
         if (!plugin.claimIntegrationManager.hasActiveProvider()) {
-            sender.sendRichMessage(
-                "<yellow>No land-claim integration is active. Install Residence, Lands, or GriefPrevention " +
-                    "and enable it under <gray>protection.*-integration<yellow> in config.yml."
-            )
+            sender.sendMessage(plugin.getMessageComponent("claims-no-integration"))
             return
         }
-        sender.sendRichMessage("<gray>Scanning chambers for claim conflicts…")
+        sender.sendMessage(plugin.getMessageComponent("claims-scanning"))
         plugin.scheduler.runTask(Runnable {
             val conflicts = plugin.claimIntegrationManager.scanAndLog()
-            sender.sendRichMessage(
-                if (conflicts > 0) {
-                    "<red>Found $conflicts chamber(s) overlapping existing claims — see the console for details."
-                } else {
-                    "<green>No claim conflicts found."
-                }
+            sender.sendMessage(
+                if (conflicts > 0) plugin.getMessageComponent("claims-conflicts-found", "count" to conflicts)
+                else plugin.getMessageComponent("claims-no-conflicts")
             )
         })
     }
@@ -375,18 +370,16 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             val all = plugin.chamberManager.getAllChambers()
             val targets = (if (force) all else all.filter { isSnapshotMissing(it) }).sortedBy { it.name }
             if (targets.isEmpty()) {
-                sender.sendRichMessage(
-                    if (all.isEmpty()) "<yellow>No chambers are registered yet."
-                    else "<green>All <yellow>${all.size}</yellow> registered chambers already have a snapshot. " +
-                        "<gray>(use <yellow>/tcp snapshot create all force</yellow> to re-capture them)"
+                sender.sendMessage(
+                    if (all.isEmpty()) plugin.getMessageComponent("snapshot-all-none-registered")
+                    else plugin.getMessageComponent("snapshot-all-covered", "count" to all.size)
                 )
                 return@launchAsync
             }
-            sender.sendRichMessage(
-                "<gold>Snapshotting <yellow>${targets.size}</yellow> chamber(s)" +
-                    (if (force) " <gray>(force — re-capturing all)</gray>" else " <gray>(missing only)</gray>") +
-                    " <gray>— one every 20 ticks; this can take a while…"
-            )
+            // rawMessage: the mode label is nested into snapshot-all-start's {mode} placeholder.
+            sender.sendMessage(plugin.getMessageComponent("snapshot-all-start",
+                "count" to targets.size,
+                "mode" to plugin.rawMessage(if (force) "snapshot-all-mode-force" else "snapshot-all-mode-missing")))
             var created = 0
             var failed = 0
             for ((index, chamber) in targets.withIndex()) {
@@ -400,14 +393,14 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 }
                 val done = index + 1
                 if (done % 10 == 0 && done < targets.size) {
-                    sender.sendRichMessage("<gray>… <yellow>$done</yellow>/<yellow>${targets.size}</yellow> done")
+                    sender.sendMessage(plugin.getMessageComponent("snapshot-all-progress-list-item",
+                        "done" to done, "total" to targets.size))
                 }
                 if (done < targets.size) waitTicks(20)
             }
-            sender.sendRichMessage(
-                "<green>Snapshot backfill complete: <yellow>$created</yellow> created" +
-                    (if (failed > 0) "<gray>, <red>$failed failed</red> (see console)" else "") + "<green>."
-            )
+            sender.sendMessage(plugin.getMessageComponent("snapshot-all-complete",
+                "created" to created,
+                "failed" to if (failed > 0) plugin.rawMessage("snapshot-all-failed-part", "failed" to failed) else ""))
         }
     }
 
@@ -421,7 +414,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         plugin.launchAsync {
             val missing = plugin.chamberManager.getAllChambers().filter { isSnapshotMissing(it) }.sortedBy { it.name }
             if (missing.isEmpty()) {
-                sender.sendRichMessage("<green>Every registered chamber has a snapshot. ✔")
+                sender.sendMessage(plugin.getMessageComponent("snapshot-missing-none"))
                 return@launchAsync
             }
             val pageSize = 10
@@ -430,30 +423,14 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             val start = (page - 1) * pageSize
             val pageItems = missing.subList(start, minOf(start + pageSize, missing.size))
 
-            sender.sendRichMessage(
-                "<gold>Chambers missing a snapshot <gray>(page <yellow>$page</yellow>/<yellow>$maxPage</yellow>, " +
-                    "<yellow>${missing.size}</yellow> total)</gray> " +
-                    "<click:run_command:'/tcp snapshot create all'><hover:show_text:'<gray>Snapshot all of them now (staggered)'><green>[Create all]</green></hover></click>"
-            )
+            sender.sendMessage(plugin.getMessageComponent("snapshot-missing-page-header",
+                "page" to page, "maxPage" to maxPage, "total" to missing.size))
             pageItems.forEach { chamber ->
-                if (sender is Player) {
-                    val name = chamber.name
-                    sender.sendRichMessage(
-                        "<gray>• <yellow>$name</yellow> <gray>— ${chamber.world}</gray> " +
-                            "<click:run_command:'/tcp snapshot create $name'><hover:show_text:'<gray>Create snapshot for <yellow>$name'>" +
-                            "<green>[Create]</green></hover></click>"
-                    )
-                } else {
-                    sender.sendRichMessage("<gray>• <yellow>${chamber.name}</yellow> <gray>— ${chamber.world} <dark_gray>(/tcp snapshot create ${chamber.name})")
-                }
+                val missingKey = if (sender is Player) "snapshot-missing-list-item" else "snapshot-missing-list-item-console"
+                sender.sendMessage(plugin.getMessageComponent(missingKey,
+                    "chamber" to chamber.name, "world" to chamber.world))
             }
-            if (maxPage > 1) {
-                val prev = if (page > 1) "<click:run_command:'/tcp snapshot missing ${page - 1}'><green>« Prev</green></click>"
-                else "<dark_gray>« Prev</dark_gray>"
-                val next = if (page < maxPage) "<click:run_command:'/tcp snapshot missing ${page + 1}'><green>Next »</green></click>"
-                else "<dark_gray>Next »</dark_gray>"
-                sender.sendRichMessage("$prev <gray>|</gray> $next")
-            }
+            sendPageNav(sender, page, maxPage, "/tcp snapshot missing")
         }
     }
 
@@ -527,23 +504,20 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 val chambers = plugin.chamberManager.getAllChambers().filter { it.world == worldName }
                 val inside = chambers.firstOrNull { it.contains(loc) }
                 if (inside != null) {
-                    sender.sendRichMessage(
-                        "<green>You are inside <yellow>${inside.name}</yellow> <gray>(volume ${inside.getVolume()})"
-                    )
+                    sender.sendMessage(plugin.getMessageComponent("list-current-inside",
+                        "chamber" to inside.name, "volume" to inside.getVolume()))
                     return@launchAsync
                 }
                 val nearest = chambers.minByOrNull { centerDistanceSq(it, loc) }
                 if (nearest == null) {
-                    sender.sendRichMessage("<gray>No chambers found in this world.")
+                    sender.sendMessage(plugin.getMessageComponent("list-current-none"))
                 } else {
                     val cx = (nearest.minX + nearest.maxX) / 2
                     val cy = (nearest.minY + nearest.maxY) / 2
                     val cz = (nearest.minZ + nearest.maxZ) / 2
                     val dist = kotlin.math.sqrt(centerDistanceSq(nearest, loc)).toInt()
-                    sender.sendRichMessage(
-                        "<gold>Nearest chamber: <yellow>${nearest.name}</yellow> <gray>~${dist}m at " +
-                            "<white>$cx $cy $cz</white> <click:suggest_command:'/tp $cx $cy $cz'><aqua>[/tp]</aqua></click>"
-                    )
+                    sender.sendMessage(plugin.getMessageComponent("list-current-nearest",
+                        "chamber" to nearest.name, "distance" to dist, "x" to cx, "y" to cy, "z" to cz))
                 }
             }
             return
@@ -563,22 +537,17 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             val start = (page - 1) * pageSize
             val pageItems = chambers.subList(start, minOf(start + pageSize, chambers.size))
 
-            sender.sendRichMessage(
-                "<gold>Chambers <gray>(page <yellow>$page</yellow>/<yellow>$maxPage</yellow>, " +
-                    "<yellow>${chambers.size}</yellow> total) — <i>/tcp list current</i> to locate"
-            )
+            sender.sendMessage(plugin.getMessageComponent("list-page-header",
+                "page" to page, "maxPage" to maxPage, "total" to chambers.size))
             pageItems.forEach { chamber ->
                 if (sender is Player) {
                     // Interactive line (v1.5.7): click the name to copy it,
                     // click [menu] to jump straight into the chamber's GUI.
-                    val name = chamber.name
-                    sender.sendRichMessage(
-                        "<click:copy_to_clipboard:'$name'><hover:show_text:'<gray>Click to copy <yellow>$name'>" +
-                            "<yellow>$name</yellow></hover></click> <gray>— ${chamber.world} " +
-                            "(${chamber.getVolume()} blocks)</gray> " +
-                            "<click:run_command:'/tcp menu $name'><hover:show_text:'<gray>Open <yellow>$name</yellow> in the GUI'>" +
-                            "<aqua>[menu]</aqua></hover></click>"
-                    )
+                    sender.sendMessage(plugin.getMessageComponent("chamber-list-item-interactive",
+                        "chamber" to chamber.name,
+                        "world" to chamber.world,
+                        "volume" to chamber.getVolume()
+                    ))
                 } else {
                     sender.sendMessage(plugin.getMessageComponent("chamber-list-item",
                         "chamber" to chamber.name,
@@ -587,14 +556,23 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                     ))
                 }
             }
-            if (maxPage > 1) {
-                val prev = if (page > 1) "<click:run_command:'/tcp list ${page - 1}'><green>« Prev</green></click>"
-                else "<dark_gray>« Prev</dark_gray>"
-                val next = if (page < maxPage) "<click:run_command:'/tcp list ${page + 1}'><green>Next »</green></click>"
-                else "<dark_gray>Next »</dark_gray>"
-                sender.sendRichMessage("$prev <gray>|</gray> $next")
-            }
+            sendPageNav(sender, page, maxPage, "/tcp list")
         }
+    }
+
+    /**
+     * Prev/Next pagination line built from the shared pagination-* keys. The
+     * active variants keep their <click:run_command> tag, with {command} filled
+     * as "[baseCommand] [page]". No-op on single-page results.
+     */
+    private fun sendPageNav(sender: CommandSender, page: Int, maxPage: Int, baseCommand: String) {
+        if (maxPage <= 1) return
+        // rawMessage: prev/next are nested into pagination-list-item's placeholders.
+        val prev = if (page > 1) plugin.rawMessage("pagination-prev-active", "command" to "$baseCommand ${page - 1}")
+        else plugin.rawMessage("pagination-prev-disabled")
+        val next = if (page < maxPage) plugin.rawMessage("pagination-next-active", "command" to "$baseCommand ${page + 1}")
+        else plugin.rawMessage("pagination-next-disabled")
+        sender.sendMessage(plugin.getMessageComponent("pagination-list-item", "prev" to prev, "next" to next))
     }
 
     /** Squared distance from [loc] to the centre of chamber [c] (for nearest-chamber lookup). */
@@ -641,7 +619,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             }
 
             val lastResetStr = if (chamber.lastReset != null) {
-                MessageUtil.formatRelativeTime(chamber.lastReset)
+                MessageUtil.formatRelativeTime(plugin, chamber.lastReset)
             } else {
                 plugin.rawMessage("time-never")
             }
@@ -658,7 +636,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             sender.sendMessage(plugin.getMessageComponent("info-volume", "volume" to chamber.getVolume()))
             sender.sendMessage(plugin.getMessageComponent("info-exit", "exit" to exitStr))
             sender.sendMessage(plugin.getMessageComponent("info-reset-interval",
-                "interval" to MessageUtil.formatTimeSeconds(chamber.resetInterval)
+                "interval" to MessageUtil.formatTimeSeconds(plugin, chamber.resetInterval)
             ))
             sender.sendMessage(plugin.getMessageComponent("info-last-reset", "time" to lastResetStr))
 
@@ -679,9 +657,9 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
      * Shows plugin information including version, authors, integrations, and status.
      */
     private fun showPluginInfo(sender: CommandSender) {
-        val desc = plugin.description
-        val version = desc.version
-        val authors = desc.authors.joinToString(", ")
+        val meta = plugin.pluginMeta
+        val version = meta.version
+        val authors = meta.authors.joinToString(", ")
 
         // Check integrations
         val worldEdit = plugin.server.pluginManager.getPlugin("WorldEdit") != null ||
@@ -913,6 +891,10 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
     }
 
     private fun handleStats(sender: CommandSender, args: Array<out String>) {
+        if (!sender.hasPermission("tcp.stats")) {
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
+            return
+        }
         if (!plugin.config.getBoolean("statistics.enabled", true)) {
             sender.sendMessage(plugin.getMessageComponent("statistics-disabled"))
             return
@@ -962,6 +944,10 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
     }
 
     private fun handleLeaderboard(sender: CommandSender, args: Array<out String>) {
+        if (!sender.hasPermission("tcp.leaderboard")) {
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
+            return
+        }
         if (!plugin.config.getBoolean("statistics.enabled", true)) {
             sender.sendMessage(plugin.getMessageComponent("statistics-disabled"))
             return

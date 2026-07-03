@@ -104,9 +104,7 @@ class LootDepositView(
             draft.dirty = true
             if (h.chamber != null) menu.saveDraft(player, h.chamber, h.kind, h.poolName, draft)
             else menu.saveGlobalDraft(player, h.globalTableName!!, h.poolName, draft)
-            player.sendRichMessage(
-                "<green>Added <yellow>$added</yellow> item(s) to the loot draft — remember to <yellow>Save</yellow>."
-            )
+            player.sendMessage(plugin.getMessageComponent("gui-loot-deposit-added", "count" to added))
         }
 
         // Hand items back on the player's region thread (Folia-correct; on Paper this

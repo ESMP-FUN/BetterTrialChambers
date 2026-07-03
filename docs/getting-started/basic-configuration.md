@@ -202,7 +202,6 @@ If you have large chambers or many players, tune these:
 
 ```yaml
 global:
-  async-block-placement: true
   blocks-per-tick: 500
 ```
 
@@ -533,7 +532,7 @@ Most settings apply immediately. Exceptions:
 
 **"Can I disable per-player loot?"** Yes, set `vaults.per-player-loot: false`. Vaults become first-come-first-served like vanilla (not recommended for multiplayer).
 
-**"How do I make chambers reset faster without lag?"** Increase `blocks-per-tick` gradually (500 → 750 → 1000) and test for lag. Also ensure `async-block-placement: true`.
+**"How do I make chambers reset faster without lag?"** Increase `blocks-per-tick` gradually (500 → 750 → 1000) and test for lag.
 
 ***
 

@@ -44,32 +44,24 @@ class LootCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
     private fun handleAudit(sender: CommandSender) {
         val legacy = plugin.lootManager.findLegacyItems()
         if (legacy.isEmpty()) {
-            sender.sendRichMessage("<gold>[TCP] <green>No legacy loot entries found.")
+            sender.sendMessage(plugin.getMessageComponent("loot-audit-clean"))
             return
         }
 
-        sender.sendRichMessage(
-            "<gold>[TCP] <yellow>${legacy.size}</yellow> legacy loot entr" +
-                if (legacy.size == 1) "y:" else "ies:"
-        )
+        sender.sendMessage(plugin.getMessageComponent("loot-audit-found", "count" to legacy.size))
         // Group by table:pool for readability; cap output at ~50 lines to avoid spam.
         val capped = legacy.take(50)
         capped.groupBy { "${it.table} / ${it.pool}" }.forEach { (header, items) ->
-            sender.sendRichMessage("<gray>$header")
+            sender.sendMessage(plugin.getMessageComponent("loot-audit-group-list-item", "group" to header))
             items.forEach { ref ->
-                sender.sendRichMessage(
-                    "  <dark_gray>•</dark_gray> <white>${ref.kind}[${ref.index}]</white> " +
-                        "<gray>${ref.material.name}</gray> <dark_gray>—</dark_gray> <yellow>${ref.reason}"
-                )
+                sender.sendMessage(plugin.getMessageComponent("loot-audit-entry-list-item",
+                    "kind" to ref.kind, "index" to ref.index, "material" to ref.material.name, "reason" to ref.reason))
             }
         }
         if (legacy.size > capped.size) {
-            sender.sendRichMessage("<gray>… and ${legacy.size - capped.size} more.")
+            sender.sendMessage(plugin.getMessageComponent("loot-audit-more-list-item", "count" to (legacy.size - capped.size)))
         }
-        sender.sendRichMessage(
-            "<gray>Re-add each entry via <click:run_command:'/tcp menu'><aqua>/tcp menu</aqua></click> " +
-                "→ Loot to restore full enchantments/NBT."
-        )
+        sender.sendMessage(plugin.getMessageComponent("loot-audit-hint"))
     }
 
     /** `/tcp loot set <chamber> <normal|ominous> <table>` */
