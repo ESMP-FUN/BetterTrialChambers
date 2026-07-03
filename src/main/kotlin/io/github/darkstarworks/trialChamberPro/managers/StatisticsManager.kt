@@ -387,14 +387,6 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
      * Formats time in seconds to a human-readable string.
      */
     fun formatTime(seconds: Long): String {
-        val hours = seconds / 3600
-        val minutes = (seconds % 3600) / 60
-        val secs = seconds % 60
-
-        return when {
-            hours > 0 -> "${hours}h ${minutes}m ${secs}s"
-            minutes > 0 -> "${minutes}m ${secs}s"
-            else -> "${secs}s"
-        }
+        return io.github.darkstarworks.trialChamberPro.utils.MessageUtil.formatTimeSeconds(plugin, seconds)
     }
 }

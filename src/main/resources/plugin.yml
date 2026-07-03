@@ -15,7 +15,6 @@ commands:
   tcp:
     description: Main TrialChamberPro command
     usage: /<command> [args]
-    permission: tcp.admin
     aliases: [trialchamberpro, tcpro, chamber]
 
 permissions:
@@ -38,7 +37,11 @@ permissions:
       tcp.admin.containers: true
       tcp.admin.mobs: true
       tcp.admin.setup: true
+      tcp.admin: true
       tcp.give: true
+  tcp.admin:
+    description: General admin access (/tcp list, /tcp info, update notifications)
+    default: op
   tcp.admin.setup:
     description: Run the /tcp setup settings tour and receive its reminder
     default: op

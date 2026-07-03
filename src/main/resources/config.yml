@@ -1,4 +1,4 @@
-# TrialChamberPro Configuration v1.0
+# TrialChamberPro Configuration
 
 # Database settings
 database:
@@ -31,7 +31,6 @@ global:
   broadcast-chamber-cleared: false
   teleport-players-on-reset: true
   teleport-location: EXIT_POINT # EXIT_POINT, OUTSIDE_BOUNDS, or WORLD_SPAWN
-  async-block-placement: true
   blocks-per-tick: 500
   auto-snapshot-on-register: true
   # Throttle for chamber resets. When many chambers come due at once (e.g. lots of

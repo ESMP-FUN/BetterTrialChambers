@@ -464,136 +464,55 @@ Create potions with any effect level—perfect for ominous vault rewards!
 
 </details>
 
-### Ominous Potions
-
-**NEW IN 1.21!** Ominous potions are special bottles with extreme effect levels—only available from Trial Chambers in vanilla!
-
-```yaml
-- type: POTION
-  amount-min: 1
-  amount-max: 1
-  weight: 2.0
-  potion-type: STRENGTH
-  potion-level: 3          # Strength IV!
-  ominous-potion: true     # Makes it an ominous bottle
-  name: "&5&lOminous Strength"
-  lore:
-    - "&7A powerful ominous concoction"
-    - "&7Only found in Trial Chambers"
-```
-
-**Perfect for ominous vault loot!** These are the rarest potions in Minecraft.
-
-<details>
-
-<summary><strong>Popular ominous potions</strong></summary>
-
-```yaml
-# Ominous Strength IV (vanilla: only from ominous vaults)
-- type: POTION
-  potion-type: STRENGTH
-  potion-level: 3
-  ominous-potion: true
-  weight: 3.0
-
-# Ominous Regeneration IV
-- type: POTION
-  potion-type: REGENERATION
-  potion-level: 3
-  ominous-potion: true
-  weight: 2.0
-
-# Ominous Speed IV
-- type: POTION
-  potion-type: SPEED
-  potion-level: 3
-  ominous-potion: true
-  weight: 2.5
-```
-
-</details>
-
-{% hint style="info" %}
-**Ominous Potion Note:** The `ominous-potion: true` flag is cosmetic in most 1.21 implementations. The real power is the high `potion-level` (3+ = Level IV+)!
-{% endhint %}
-
 ### Ominous Bottles (Bad Omen Effect)
 
-**NEW IN 1.21!** Ominous Bottles are special potions that give the **Bad Omen** effect, which triggers **Ominous Trials** when entering a Trial Chamber. In vanilla Minecraft, these bottles are only found in ominous vaults and come in levels **III-V** (never I or II).
-
-#### What Makes Them Special?
-
-* Give **Bad Omen** effect (not available as a regular PotionType)
-* Found exclusively in ominous vaults
-* Randomly determined level: **III, IV, or V** only
-* Used to trigger Ominous Trials for better loot
-
-<details>
-
-<summary><strong>Creating Ominous Bottles</strong></summary>
-
-Use the `custom-effect-type` field to specify custom potion effects like `BAD_OMEN`:
+Ominous Bottles give the **Bad Omen** effect when drunk, which triggers an **Ominous Trial** in a Trial Chamber. As of TCP **1.7.1** loot tables produce the **real `minecraft:ominous_bottle` item** — correct texture, correct name, and it stacks with bottles from vanilla vaults.
 
 ```yaml
-# Ominous Bottle III (most common)
-- type: POTION
-  amount-min: 1
-  amount-max: 1
-  weight: 8.0
-  custom-effect-type: BAD_OMEN  # Use custom effect type, not potion-type
-  potion-level: 2               # 0=I, 1=II, 2=III, 3=IV, 4=V
-  name: "&5&lOminous Bottle III"
-  lore:
-    - "&7Drink to receive Bad Omen III"
-    - "&7Triggers an Ominous Trial"
-
-# Ominous Bottle IV (less common)
-- type: POTION
+# Fixed level:
+- type: OMINOUS_BOTTLE
   amount-min: 1
   amount-max: 1
   weight: 5.0
-  custom-effect-type: BAD_OMEN
-  potion-level: 3               # Bad Omen IV
-  name: "&5&lOminous Bottle IV"
-  lore:
-    - "&7Drink to receive Bad Omen IV"
-    - "&7A more challenging Ominous Trial!"
+  potion-level: 2            # 0=I, 1=II, 2=III, 3=IV, 4=V
 
-# Ominous Bottle V (very rare!)
-- type: POTION
+# Random level per drop — exactly how vanilla vaults roll it:
+- type: OMINOUS_BOTTLE
   amount-min: 1
   amount-max: 1
   weight: 2.0
-  custom-effect-type: BAD_OMEN
-  potion-level: 4               # Bad Omen V (maximum)
-  effect-duration: 240000       # Optional: 200 minutes (default is 100 minutes)
-  name: "&5&lOminous Bottle V"
-  lore:
-    - "&7Drink to receive Bad Omen V"
-    - "&7The ultimate Ominous Trial challenge!"
+  potion-level-min: 2        # Bad Omen III…
+  potion-level-max: 4        # …to V, rolled each drop
 ```
 
-</details>
+#### Vanilla reference
+
+* **Normal vaults** drop ominous bottles at levels **I–II** (`potion-level-min: 0`, `potion-level-max: 1`)
+* **Ominous vaults** drop them at levels **III–V** (`potion-level-min: 2`, `potion-level-max: 4`)
+* Ominous bottles can **only hold Bad Omen** — that's the game itself, not a plugin limit. A `potion-type:` on an ominous bottle is ignored (TCP warns at startup), and a `potion-level` outside 0–4 is clamped with a warning.
+
+Custom `name:` and `lore:` still work on ominous bottles, but the real item already displays properly without them.
+
+{% hint style="warning" %}
+**Upgrading from an older version?** Configs written before 1.7.1 were taught a workaround: a `POTION` with `custom-effect-type: BAD_OMEN` and a purple name. That produces a renamed *potion* that grants Bad Omen when drunk — it works, but it isn't the real ominous bottle item and won't stack with vanilla-dropped ones. Replace those entries with `type: OMINOUS_BOTTLE` as above (the old form still functions, so nothing breaks in the meantime).
+{% endhint %}
 
 <details>
 
 <summary><strong>Key Differences: <code>custom-effect-type</code> vs <code>potion-type</code></strong></summary>
 
-| Field                | Purpose                            | Examples                                             |
-| -------------------- | ---------------------------------- | ---------------------------------------------------- |
-| `potion-type`        | Standard Minecraft potion effects  | `SPEED`, `STRENGTH`, `POISON`, `HEALING`             |
-| `custom-effect-type` | Special/custom potion effect types | `BAD_OMEN`, `HERO_OF_THE_VILLAGE`, `GLOWING`, `LUCK` |
+| Field                | Purpose                            | Examples                                      |
+| -------------------- | ---------------------------------- | --------------------------------------------- |
+| `potion-type`        | Standard Minecraft potion effects  | `SPEED`, `STRENGTH`, `POISON`, `HEALING`      |
+| `custom-effect-type` | Special/custom potion effect types | `HERO_OF_THE_VILLAGE`, `GLOWING`, `LUCK`      |
 
 **When to use which:**
 
 * **Use `potion-type`** for normal potions (Strength, Speed, Healing, etc.)
-* **Use `custom-effect-type`** for special effects not available as PotionType (Bad Omen, Hero of the Village, etc.)
+* **Use `custom-effect-type`** for special effects that have no PotionType (Hero of the Village, Glowing, Luck, etc.)
+* **For Bad Omen, use `type: OMINOUS_BOTTLE`** — it's a real item with its own type, not a potion effect to fake.
 
 **Note:** The `effect-duration` field works with both `potion-type` and `custom-effect-type`! Use it to customize how long any potion effect lasts.
-
-{% hint style="warning" %}
-**Important:** In vanilla Minecraft, ominous bottles only come in levels **III, IV, and V**—never I or II. Match vanilla behavior by using `potion-level: 2` (III), `potion-level: 3` (IV), or `potion-level: 4` (V).
-{% endhint %}
 
 </details>
 

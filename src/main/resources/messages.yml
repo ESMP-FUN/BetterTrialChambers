@@ -29,13 +29,11 @@ reload-success: "&aConfiguration reloaded successfully!"
 no-permission: "&cYou don't have permission to use this command."
 player-only: "&cThis command can only be used by players."
 unknown-command: "&cUnknown subcommand. Use /tcp help for help."
-initializing: "&eTrialChamberPro is still starting up. Please try again in a moment..."
 
 # Chamber management
 chamber-created: "&aChamber &e{chamber}&a created successfully!"
 discovery-registered: "&aAuto-discovered chamber &e{name}&a with &f{vaults}&a vaults and &f{spawners}&a spawners."
 discovery-merged: "&aExpanded chamber &e{name}&a — absorbed &f{vaults}&a vaults and &f{spawners}&a spawners from an adjacent region."
-chamber-already-exists: "&cA chamber with that name already exists."
 generation-cancelled-name-in-use: "&eGeneration cancelled: &cname {name} is already in use."
 chamber-not-found: "&cChamber &e{chamber}&c not found."
 chamber-deleted: "&aChamber &e{chamber}&a deleted successfully."
@@ -45,7 +43,6 @@ chamber-already-paused: "&cChamber &e{chamber}&c is already paused. Use /tcp res
 chamber-not-paused: "&cChamber &e{chamber}&c is not paused."
 chamber-is-paused: "&cThis chamber is currently paused and cannot be interacted with."
 chamber-auto-paused: "&c[TCP] Chamber &e{chamber}&c was auto-paused: &e{count}&c critical block(s) destroyed (last: &e{block}&c). Use /tcp resume {chamber} to re-activate it."
-chamber-list-header: "&6=== Registered Chambers ==="
 chamber-list-item: "&e{chamber} &7- &f{world} &7({volume} blocks)"
 chamber-list-empty: "&cNo chambers registered yet."
 no-selection: "&cYou must make a WorldEdit selection first."
@@ -57,7 +54,6 @@ scan-complete: "&aScanning complete! Found &e{vaults}&a vaults, &e{spawners}&a s
 scan-add-started: "&aRe-flooding &e{chamber}&a from its vaults to find missing sections..."
 scan-add-grown: "&aExpanded &e{chamber}&a by &f{added}&a blocks — now &e{vaults}&a vaults, &e{spawners}&a spawners. Re-scan/snapshot done."
 scan-add-none: "&7No additional sections found for &e{chamber}&7 ({reason})."
-scan-failed: "&cFailed to scan chamber: {error}"
 
 # Snapshots
 snapshot-creating: "&aCreating snapshot for &e{chamber}&a..."
@@ -65,12 +61,10 @@ snapshot-created: "&aSnapshot created successfully! (&e{blocks}&a blocks, &e{siz
 snapshot-restoring: "&aRestoring chamber &e{chamber}&a from snapshot..."
 snapshot-restored: "&aChamber restored successfully!"
 snapshot-not-in-chamber: "&cStand inside a chamber, or name one: &e/tcp snapshot update <chamber>"
-snapshot-not-found: "&cNo snapshot found for chamber &e{chamber}&c."
 snapshot-failed: "&cSnapshot operation failed: {error}"
 
 # Exit location
 exit-set: "&aExit location set for chamber &e{chamber}&a."
-exit-not-set: "&cNo exit location set for chamber &e{chamber}&c."
 
 # Chamber resets
 chamber-reset-warning: "&eWarning: &7{chamber} will reset in &6{time}&7!"
@@ -90,7 +84,6 @@ vault-reopened: "&aReopened the {type} Vault for &e{cost}&a key(s)!"
 vault-reopen-need: "&cYou've already opened this {type} Vault. Hold &e{cost}&c matching key(s) in your main hand to open it again."
 vault-reset: "&aVault cooldown reset for &e{player}&a."
 wild-vault-place-blocked: "&cVault blocks can only be placed inside registered Trial Chambers."
-container-template-open: "&eEditing the shared loot template — changes affect every player's first-open loot and persist across resets."
 container-tp: "&aTeleported to container template at &e{x}, {y}, {z}&a."
 container-template-reset: "&aReverted container at &e{x}, {y}, {z}&a to vanilla — it now rolls fresh loot per player on each open."
 container-template-reset-none: "&7No registered container at &e{x}, {y}, {z}&7 to revert."
@@ -127,7 +120,6 @@ leaderboard-entry: "&e#{rank} &f{player}&7: &a{value}"
 leaderboard-empty: "&7No statistics recorded yet."
 
 # Chamber completion
-chamber-completed: "&a✓ You have completed &e{chamber}&a!"
 chamber-entered: "&7Entered chamber: &e{chamber}"
 chamber-exited: "&7Left chamber"
 player-died-in-chamber: "&c{player} died in {chamber}"
@@ -155,7 +147,6 @@ wave-boss-type-ominous: "Ominous Trial"
 orphan-spawner-needs-silk-touch: "&cThis spawner can only be retrieved with a &fSilk Touch&c tool."
 
 # Teleport
-teleported-to-chamber: "&aTeleported to chamber &e{chamber}&a."
 teleported-to-exit: "&aTeleported to exit of chamber &e{chamber}&a."
 
 # Chamber info
@@ -167,28 +158,19 @@ info-volume: "&eVolume: &f{volume} blocks"
 info-exit: "&eExit: &f{exit}"
 info-reset-interval: "&eReset Interval: &f{interval}"
 info-last-reset: "&eLast Reset: &f{time}"
-info-vaults: "&eVaults: &f{count}"
-info-spawners: "&eSpawners: &f{count}"
 info-snapshot: "&eSnapshot: &f{status}"
 info-paused: "&c[PAUSED] This chamber is inactive. Use /tcp resume <name> to re-activate it."
 
-# Time formatting
+# Time formatting — unit suffixes for durations ("2d 3h 5m"). Each key formats one
+# unit; non-zero units are joined with spaces. time-ago wraps a duration for
+# relative timestamps ("5m ago"); time-now replaces durations under a minute.
 time-days: "{days}d"
 time-hours: "{hours}h"
 time-minutes: "{minutes}m"
 time-seconds: "{seconds}s"
 time-never: "Never"
 time-now: "Just now"
-
-# Procedural Generation
-procgen-starting: "&aGenerating Trial Chamber procedurally..."
-procgen-complete: "&a✓ Trial Chamber generated! &7({pieces} pieces, {duration}ms)"
-procgen-processing: "&7⚙ Processing jigsaw blocks (spawners, vaults, decorations)..."
-procgen-failed: "&c✗ Generation failed: &7{error}"
-procgen-already-generating: "&cYou are already generating a chamber! Please wait."
-procgen-invalid-size: "&cSize must be between {min} and {max}!"
-procgen-teleport-hint: "&7Teleport: &e/tp {x} {y} {z}"
-procgen-not-available: "&cProcedural generation is not available. Contact an administrator."
+time-ago: "{time} ago"
 
 # Help
 help-header: "&6=== TrialChamberPro Commands ==="
@@ -215,6 +197,11 @@ help-give: "&e/tcp give <preset> [player] [amount] &7- Give a preconfigured tria
 help-stats: "&e/tcp stats [player] &7- View your stats or another player's"
 help-leaderboard: "&e/tcp leaderboard <type> &7- View top players (alias: lb, top)"
 help-menu: "&e/tcp menu &7- Open the admin GUI"
+help-dungeon: "&e/tcp dungeon <create rooms & generate> &7- Procedural dungeon assembly"
+help-setup: "&e/tcp setup &7- Friendly tour of the main settings (opt-in; Enable/Skip/Disable each)"
+help-container: "&e/tcp container <list|materialize|reset|clearcopies|tp|edit> <chamber> &7- Manage per-player container loot"
+help-claims: "&e/tcp claims scan &7- Find chambers overlapping land-claim plugin claims"
+help-debug: "&e/tcp debug schema &7- Print database table columns (diagnostics)"
 help-reload: "&e/tcp reload &7- Reload config.yml, loot.yml, and messages.yml"
 
 # WorldEdit Variable Regions
@@ -280,6 +267,119 @@ give-bad-amount: "&cInvalid amount: &f{value}"
 give-needs-target-from-console: "&cConsole must specify a target player: &e/tcp give <preset> <player> [amount]"
 give-build-failed: "&cFailed to build item for preset &f{preset}&c: {error}"
 give-inventory-full: "&eInventory full — overflow dropped at your feet."
+
+# Pagination (shared by /tcp list, /tcp snapshot missing). The *-active values keep the
+# clickable <click:run_command:'{command}'> tag — do not remove it when translating.
+pagination-list-item: "{prev} <gray>|</gray> {next}"
+pagination-prev-active: "<click:run_command:'{command}'><green>« Prev</green></click>"
+pagination-prev-disabled: "<dark_gray>« Prev</dark_gray>"
+pagination-next-active: "<click:run_command:'{command}'><green>Next »</green></click>"
+pagination-next-disabled: "<dark_gray>Next »</dark_gray>"
+
+# /tcp list
+list-page-header: "<gold>Chambers <gray>(page <yellow>{page}</yellow>/<yellow>{maxPage}</yellow>, <yellow>{total}</yellow> total) — <i>/tcp list current</i> to locate"
+chamber-list-item-interactive: "<click:copy_to_clipboard:'{chamber}'><hover:show_text:'<gray>Click to copy <yellow>{chamber}'><yellow>{chamber}</yellow></hover></click> <gray>— {world} ({volume} blocks)</gray> <click:run_command:'/tcp menu {chamber}'><hover:show_text:'<gray>Open <yellow>{chamber}</yellow> in the GUI'><aqua>[menu]</aqua></hover></click>"
+list-current-inside: "<green>You are inside <yellow>{chamber}</yellow> <gray>(volume {volume})"
+list-current-none: "<gray>No chambers found in this world."
+list-current-nearest: "<gold>Nearest chamber: <yellow>{chamber}</yellow> <gray>~{distance}m at <white>{x} {y} {z}</white> <click:suggest_command:'/tp {x} {y} {z}'><aqua>[/tp]</aqua></click>"
+
+# /tcp snapshot create all / missing
+snapshot-all-none-registered: "<yellow>No chambers are registered yet."
+snapshot-all-covered: "<green>All <yellow>{count}</yellow> registered chambers already have a snapshot. <gray>(use <yellow>/tcp snapshot create all force</yellow> to re-capture them)"
+snapshot-all-start: "<gold>Snapshotting <yellow>{count}</yellow> chamber(s) {mode} <gray>— one every 20 ticks; this can take a while…"
+snapshot-all-mode-force: "<gray>(force — re-capturing all)</gray>"
+snapshot-all-mode-missing: "<gray>(missing only)</gray>"
+snapshot-all-progress-list-item: "<gray>… <yellow>{done}</yellow>/<yellow>{total}</yellow> done"
+snapshot-all-complete: "<green>Snapshot backfill complete: <yellow>{created}</yellow> created{failed}<green>."
+snapshot-all-failed-part: "<gray>, <red>{failed} failed</red> (see console)"
+snapshot-missing-none: "<green>Every registered chamber has a snapshot. ✔"
+snapshot-missing-page-header: "<gold>Chambers missing a snapshot <gray>(page <yellow>{page}</yellow>/<yellow>{maxPage}</yellow>, <yellow>{total}</yellow> total)</gray> <click:run_command:'/tcp snapshot create all'><hover:show_text:'<gray>Snapshot all of them now (staggered)'><green>[Create all]</green></hover></click>"
+snapshot-missing-list-item: "<gray>• <yellow>{chamber}</yellow> <gray>— {world}</gray> <click:run_command:'/tcp snapshot create {chamber}'><hover:show_text:'<gray>Create snapshot for <yellow>{chamber}'><green>[Create]</green></hover></click>"
+snapshot-missing-list-item-console: "<gray>• <yellow>{chamber}</yellow> <gray>— {world} <dark_gray>(/tcp snapshot create {chamber})"
+snapshot-reminder: "<gold>[TCP] <yellow>{count}</yellow> discovered chamber(s) have no snapshot — <gray>{chambers}</gray> <click:run_command:'/tcp snapshot missing'><hover:show_text:'<gray>List chambers missing a snapshot'><aqua>[list]</aqua></hover></click> <click:run_command:'/tcp snapshot create all'><hover:show_text:'<gray>Snapshot all of them now (staggered)'><green>[create all]</green></hover></click>"
+
+# /tcp reset confirmation queue (global.reset-require-confirmation)
+reset-pending-empty: "<gray>No chambers are awaiting reset confirmation."
+reset-pending-page-header: "<gold>Awaiting reset confirmation ({count}): <click:run_command:'/tcp reset confirm all'><green>[confirm all]</green></click>"
+reset-pending-list-item: "<gray>• <yellow>{chamber}</yellow> <click:run_command:'/tcp reset confirm {chamber}'><green>[confirm]</green></click>"
+reset-confirm-usage: "<red>Usage: /tcp reset confirm <chamber|all>"
+reset-confirm-all: "<green>Confirmed <yellow>{count}</yellow> reset(s) — they'll run staggered."
+reset-confirm-all-none: "<gray>No chambers were awaiting confirmation."
+reset-confirmed: "<green>Confirmed reset for <yellow>{chamber}</yellow>."
+reset-confirm-not-pending: "<gray><yellow>{chamber}</yellow> wasn't awaiting confirmation."
+reset-ready-notify: "<gold>[TCP] <yellow>{chamber}</yellow> is ready to reset — <click:run_command:'/tcp reset confirm {chamber}'><green>[confirm]</green></click> <click:run_command:'/tcp reset pending'><aqua>[list all]</aqua></click>"
+
+# /tcp debug
+debug-usage: "<yellow>/tcp debug schema <gray>- Print each database table's actual columns"
+debug-schema-reading: "<gray>Reading database schema…"
+debug-schema-page-header: "<gold>TCP database schema <gray>({type}):"
+debug-schema-missing-list-item: "<red>{table}<gray>: (missing table)"
+debug-schema-table-list-item: "{flag}{table}<gray>: {columns}"
+
+# /tcp claims
+claims-usage: "<yellow>/tcp claims scan <gray>- Scan registered chambers for land-claim conflicts"
+claims-no-integration: "<yellow>No land-claim integration is active. Install Residence, Lands, or GriefPrevention and enable it under <gray>protection.*-integration<yellow> in config.yml."
+claims-scanning: "<gray>Scanning chambers for claim conflicts…"
+claims-conflicts-found: "<red>Found {count} chamber(s) overlapping existing claims — see the console for details."
+claims-no-conflicts: "<green>No claim conflicts found."
+
+# /tcp dungeon
+dungeon-usage: "<gold>/tcp dungeon</gold> <gray>— pos1 | pos2 | capture <id> [roles…] | generate <name> [seed] | list | delete <id> | import <file|folder|zip> [tags…]</gray>"
+dungeon-pos-set: "<green>Dungeon pos{label} set to <yellow>{x}, {y}, {z}</yellow>."
+dungeon-usage-capture: "<red>Usage: /tcp dungeon capture <id> [roles…]"
+dungeon-need-positions: "<red>Set pos1 and pos2 (same world) first."
+dungeon-capturing: "<gray>Capturing room <yellow>{id}</yellow>…"
+dungeon-captured: "<green>Captured <yellow>{id}</yellow>: {blocks} blocks, {connectors} connector(s), tags={tags}."
+dungeon-capture-failed: "<red>Capture failed: {error}"
+dungeon-usage-generate: "<red>Usage: /tcp dungeon generate <name> [seed]"
+dungeon-generating: "<gray>Generating dungeon <yellow>{name}</yellow> (seed {seed})…"
+dungeon-generated: "<green>Dungeon <yellow>{name}</yellow> generated and registered as a chamber."
+dungeon-generate-failed-console: "<red>Generation failed — see console (no templates / start room / required tags?)."
+dungeon-generate-failed: "<red>Generation failed: {error}"
+dungeon-list-empty: "<gray>No room templates captured yet."
+dungeon-list-page-header: "<gold>Room templates:</gold> <yellow>{templates}</yellow>"
+dungeon-usage-delete: "<red>Usage: /tcp dungeon delete <id>"
+dungeon-deleted: "<green>Deleted room template <yellow>{id}</yellow>."
+dungeon-delete-not-found: "<red>No such room template: {id}"
+dungeon-usage-import: "<red>Usage: /tcp dungeon import <file|folder|zip> [tags…]"
+dungeon-import-bad-path: "<red>Path must be inside dungeon/import/."
+dungeon-import-not-found: "<red>Not found: dungeon/import/{file} <gray>(drop .nbt files, folders or datapack .zips there)"
+dungeon-importing: "<gray>Importing <yellow>{file}</yellow>…"
+dungeon-import-unsupported: "<red>Unsupported file type '{extension}' — use .nbt, a folder, or a .zip."
+dungeon-import-empty: "<red>No structure templates found in {file}."
+dungeon-import-complete: "<green>Imported <yellow>{count}</yellow> room(s), {connectors} connector(s) total. <gray>Rooms without connectors can't be stitched."
+dungeon-import-list-item: "<gray> - <yellow>{id}</yellow>: {blocks} blocks, {connectors} connector(s), tags={tags}"
+dungeon-import-more-list-item: "<gray> … and {count} more (see /tcp dungeon list)"
+dungeon-import-note: "<gray>Note: imported rooms are literal — worldgen processor randomizers aren't applied; vertical jigsaws are walls."
+dungeon-import-failed: "<red>Import failed: {error}"
+
+# /tcp container (admin CLI)
+container-usage: "<gold>/tcp container</gold> <gray>— list | materialize | reset | resetone <#> | clearcopies | tp <#> | edit <#> <white><chamber></white></gray>"
+container-usage-action: "<red>Usage: /tcp container {action} <chamber>"
+container-list-page-header: "<gold>Container loot — <yellow>{chamber}</yellow></gold> <gray>(per-player-loot: {state}<gray>)"
+container-state-on: "<green>on"
+container-state-off: "<red>off"
+container-list-stats: "<gray>Templates: <yellow>{templates}</yellow>  ·  Player copies: <yellow>{copies}</yellow>"
+container-list-item: "<gray> #{index} <white>{x}, {y}, {z}</white> <dark_gray>— <yellow>{items}<gray> item stack(s)"
+container-list-more: "<dark_gray>…and {count} more."
+container-list-empty-hint: "<gray>No templates yet — run <yellow>/tcp container materialize {chamber}</yellow> or open a container in-world."
+container-usage-index: "<red>Usage: /tcp container {action} {chamber} <#>  (index from /tcp container list)"
+container-no-template: "<red>No template #{index} — there are {count}."
+container-resetone-success: "<green>Reverted container #{index} to vanilla — it rolls fresh loot per player on each open."
+container-resetone-failed: "<red>Couldn't revert container #{index}."
+container-world-not-loaded: "<red>Chamber world isn't loaded."
+container-teleported: "<green>Teleported to template #{index} (<yellow>{x}, {y}, {z}</yellow>)."
+
+# /tcp loot audit
+loot-audit-clean: "<green>No legacy loot entries found."
+loot-audit-found: "<yellow>{count}</yellow> legacy loot entries:"
+loot-audit-group-list-item: "<gray>{group}"
+loot-audit-entry-list-item: "  <dark_gray>•</dark_gray> <white>{kind}[{index}]</white> <gray>{material}</gray> <dark_gray>—</dark_gray> <yellow>{reason}"
+loot-audit-more-list-item: "<gray>… and {count} more."
+loot-audit-hint: "<gray>Re-add each entry via <click:run_command:'/tcp menu'><aqua>/tcp menu</aqua></click> → Loot to restore full enchantments/NBT."
+
+# Loot deposit chest (bulk add)
+gui-loot-deposit-added: "<green>Added <yellow>{count}</yellow> item(s) to the loot draft — remember to <yellow>Save</yellow>."
 give-received: "&aReceived &fx{amount} &aof preset &f{preset}&a."
 give-sent: "&aGave &fx{amount} &aof preset &f{preset} &ato &f{player}&a."
 
@@ -292,7 +392,6 @@ loot-money-received: "&aYou received &e{amount}&a!"
 usage-scan: "&cUsage: /tcp scan <chamber> &7(or &c/tcp scan add <chamber>&7 to grow bounds into missed sections)"
 usage-setexit: "&cUsage: /tcp setexit <chamber>"
 usage-snapshot: "&cUsage: /tcp snapshot <create|update|restore|missing> [chamber] &7(omit the name to use the chamber you're standing in; &echamber&7 may be &eall&7 to backfill every chamber missing one)"
-usage-info: "&cUsage: /tcp info <chamber>"
 usage-delete: "&cUsage: /tcp delete <chamber>"
 usage-pause: "&cUsage: /tcp pause <chamber>"
 usage-resume: "&cUsage: /tcp resume <chamber>"
@@ -411,23 +510,12 @@ gui-broadcast-reset-disabled: "&cReset broadcast disabled for this chamber"
 gui-broadcast-reset-failed: "&cFailed to update broadcast setting"
 gui-broadcast-reset-global-override: "&cReset broadcasts are disabled globally in config.yml (global.reset-complete-alert)"
 
-# GUI Action Messages - Settings Toggle
-gui-setting-toggled: "&a{setting}: {value}"
-gui-setting-enabled: "Enabled"
-gui-setting-disabled: "Disabled"
-
 # GUI Action Messages - Loot Editor
 gui-hold-item-to-add: "&cHold an item to add!"
 gui-item-added-to-loot: "&aAdded {item} to loot table"
 gui-item-removed-from-loot: "&cRemoved {item} from loot table"
 gui-loot-changes-saved: "&aLoot table changes saved!"
 gui-loot-pool-saved: "&aPool '{pool}' changes saved!"
-
-# GUI Info Messages - Loot Table List
-gui-loot-table-edit-hint-1: "&eTo edit loot table '{table}':"
-gui-loot-table-edit-hint-2: "&71. Go to Chambers and select a chamber"
-gui-loot-table-edit-hint-3: "&72. Click Normal/Ominous Loot to edit"
-gui-loot-table-edit-hint-4: "&73. Or edit loot.yml directly"
 
 # GUI Info Messages - Pool Selector
 gui-pool-create-hint: "&eTo add a new pool, edit loot.yml directly and /tcp reload"
@@ -1539,6 +1627,10 @@ setup:
     - "<dark_gray>Tip: a few changes take effect on the next chamber reset or /tcp reload."
   reminder: "<yellow>New to TrialChamberPro? Take a quick, friendly tour of the main settings — nothing is forced. <click:run_command:'/tcp setup'><hover:show_text:'<gray>Opens the setup tour'><green><bold>[Start /tcp setup]</bold></green></hover></click>"
   reminder-resume: "<yellow>You started the setup tour but didn't finish. <click:run_command:'/tcp setup continue'><hover:show_text:'<gray>Pick up where you left off'><green><bold>[Resume setup]</bold></green></hover></click>"
+  usage: "<red>Usage: <yellow>/tcp setup [start|continue]"
+  missing-option: "<red>Missing option."
+  invalid-step: "<red>Invalid setup step."
+  requires-plugin: "<gray>That option needs the <yellow>{plugin}</yellow> plugin, which isn't installed."
   paused: "<yellow>Setup paused. <click:run_command:'/tcp setup continue'><hover:show_text:'<gray>Pick up where you left off'><gold>[Resume]</gold></hover></click>"
   stopped: "<gray>Setup stopped. Restart at any time using <click:run_command:'/tcp setup'><hover:show_text:'<gray>Start the tour again'><yellow>/tcp setup</yellow></hover></click>."
   steps:

@@ -57,7 +57,7 @@ class SetupCommand(
                 controller.stop(player.uniqueId)
                 player.sendMessage(plugin.getMessageComponent("setup.stopped"))
             }
-            else -> player.sendRichMessage("<red>Usage: <yellow>/tcp setup [start|continue]")
+            else -> player.sendMessage(plugin.getMessageComponent("setup.usage"))
         }
     }
 
@@ -81,7 +81,7 @@ class SetupCommand(
 
     private fun applyChoice(player: Player, args: Array<out String>) {
         val index = indexArg(player, args) ?: return
-        val optionId = args.getOrNull(3) ?: run { player.sendRichMessage("<red>Missing option."); return }
+        val optionId = args.getOrNull(3) ?: run { player.sendMessage(plugin.getMessageComponent("setup.missing-option")); return }
         val choice = controller.stepAt(index) as? SetupStep.Choice
         val opt = choice?.options?.firstOrNull { it.optionId == optionId }
         if (choice != null && opt != null) controller.applyChoice(choice.configPath, opt.value)
@@ -91,7 +91,7 @@ class SetupCommand(
     private fun indexArg(player: Player, args: Array<out String>): Int? {
         val i = args.getOrNull(2)?.toIntOrNull()
         if (i == null || i < 0 || i >= controller.stepCount) {
-            player.sendRichMessage("<red>Invalid setup step."); return null
+            player.sendMessage(plugin.getMessageComponent("setup.invalid-step")); return null
         }
         return i
     }
