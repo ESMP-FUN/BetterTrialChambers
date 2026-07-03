@@ -26,16 +26,11 @@ fun handleReset(plugin: TrialChamberPro, sender: CommandSender, args: Array<out 
         "pending" -> {
             val names = plugin.resetManager.pendingResetNames()
             if (names.isEmpty()) {
-                sender.sendRichMessage("<gray>No chambers are awaiting reset confirmation.")
+                sender.sendMessage(plugin.getMessageComponent("reset-pending-empty"))
             } else {
-                sender.sendRichMessage(
-                    "<gold>Awaiting reset confirmation (${names.size}): " +
-                        "<click:run_command:'/tcp reset confirm all'><green>[confirm all]</green></click>"
-                )
+                sender.sendMessage(plugin.getMessageComponent("reset-pending-page-header", "count" to names.size))
                 names.forEach {
-                    sender.sendRichMessage(
-                        "<gray>• <yellow>$it</yellow> <click:run_command:'/tcp reset confirm $it'><green>[confirm]</green></click>"
-                    )
+                    sender.sendMessage(plugin.getMessageComponent("reset-pending-list-item", "chamber" to it))
                 }
             }
             return
@@ -43,14 +38,14 @@ fun handleReset(plugin: TrialChamberPro, sender: CommandSender, args: Array<out 
         "confirm" -> {
             val target = args.getOrNull(2)
             if (target == null) {
-                sender.sendRichMessage("<red>Usage: /tcp reset confirm <chamber|all>")
+                sender.sendMessage(plugin.getMessageComponent("reset-confirm-usage"))
                 return
             }
             if (target.equals("all", ignoreCase = true)) {
                 val n = plugin.resetManager.confirmAllResets()
-                sender.sendRichMessage(
-                    if (n > 0) "<green>Confirmed <yellow>$n</yellow> reset(s) — they'll run staggered."
-                    else "<gray>No chambers were awaiting confirmation."
+                sender.sendMessage(
+                    if (n > 0) plugin.getMessageComponent("reset-confirm-all", "count" to n)
+                    else plugin.getMessageComponent("reset-confirm-all-none")
                 )
                 return
             }
@@ -61,9 +56,9 @@ fun handleReset(plugin: TrialChamberPro, sender: CommandSender, args: Array<out 
                     return@launch
                 }
                 if (plugin.resetManager.confirmReset(chamber)) {
-                    sender.sendRichMessage("<green>Confirmed reset for <yellow>$target</yellow>.")
+                    sender.sendMessage(plugin.getMessageComponent("reset-confirmed", "chamber" to target))
                 } else {
-                    sender.sendRichMessage("<gray><yellow>$target</yellow> wasn't awaiting confirmation.")
+                    sender.sendMessage(plugin.getMessageComponent("reset-confirm-not-pending", "chamber" to target))
                 }
             }
             return

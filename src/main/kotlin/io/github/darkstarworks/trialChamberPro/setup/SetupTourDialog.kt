@@ -80,7 +80,7 @@ class SetupTourDialog(
                     list += DialogPromptManager.Action(
                         Component.text("${step.requiresPlugin} not present", NamedTextColor.DARK_GRAY)
                     ) {
-                        player.sendRichMessage("<gray>That option needs the <yellow>${step.requiresPlugin}</yellow> plugin, which isn't installed.")
+                        player.sendMessage(plugin.getMessageComponent("setup.requires-plugin", "plugin" to step.requiresPlugin))
                         render(player, index)
                     }
                 } else {

@@ -12,6 +12,12 @@ After making changes, reload with `/tcp reload`
 **Translating the admin GUI?** As of v1.3.0 every name, lore line, and button label across all 18 admin GUI views also lives here, under a nested `gui.*` section (~330 keys). For the GUI-specific translation conventions — section layout, shared toggle templates, the `gui.common.*` reuse pattern — see the [Localization](localization.md) guide.
 {% endhint %}
 
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
+**New in 1.7.1:** every remaining admin-command message moved into `messages.yml` — new key families `dungeon-*`, `container-*`, `claims-*`, `debug-*`, `reset-*` (confirmation queue), `snapshot-all-*` / `snapshot-missing-*`, `loot-audit-*`, `list-*`, and shared `pagination-*` keys, plus new `help-*` entries and `time-ago`. Older `messages.yml` files keep working — the startup schema check lists any keys your file is missing, and leftover keys from removed messages are harmless.
+
+</div>
+
 ***
 
 ## Text formatting — MiniMessage and legacy `&` codes

@@ -36,8 +36,13 @@ data class LootItem(
     // Potion/Tipped Arrow support
     val potionType: PotionType? = null, // For potions and tipped arrows
     val potionLevel: Int? = null, // Potion effect amplifier (0 = level I, 1 = level II, etc.)
+    // Random amplifier range (v1.7.1) — rolled per generation when both are set; overrides
+    // potionLevel. Matches vanilla's set_ominous_bottle_amplifier uniform range (e.g. the
+    // real ominous vault bottle is one entry with amplifier 2-4, not three split entries).
+    val potionLevelMin: Int? = null,
+    val potionLevelMax: Int? = null,
     val customEffectType: String? = null, // For custom effects like BAD_OMEN (ominous bottles)
-    val isOminousPotion: Boolean = false, // For ominous potions (1.21+ feature)
+    val isOminousPotion: Boolean = false, // Legacy alias: POTION entries with this flag become OMINOUS_BOTTLE
     val effectDuration: Int? = null, // Custom effect duration in ticks (20 ticks = 1 second). If null, uses defaults.
 
     // Variable durability
