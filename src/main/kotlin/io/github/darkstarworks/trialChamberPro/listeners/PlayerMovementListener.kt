@@ -50,7 +50,42 @@ class PlayerMovementListener(private val plugin: TrialChamberPro) : Listener {
             return
         }
 
+        handleTransition(event.player, from, to)
+    }
+
+    /**
+     * v1.7.2: teleports do NOT fire PlayerMoveEvent (PlayerTeleportEvent has its
+     * own handler list) — so `/tp`, `/home`, ender pearls and the reset eviction
+     * itself crossed chamber boundaries without firing entry/exit events, leaving
+     * stale time tracking and a stale playersInChambers entry. Same transition
+     * logic as movement.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    fun onPlayerTeleport(event: org.bukkit.event.player.PlayerTeleportEvent) {
+        handleTransition(event.player, event.from, event.to)
+    }
+
+    /**
+     * v1.7.2: joining inside a chamber (logout inside → login) never registered
+     * as an entry until the first move — time tracking and the public
+     * ChamberEnteredEvent started late. Entry message suppressed (relogging
+     * shouldn't re-announce).
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    fun onPlayerJoin(event: org.bukkit.event.player.PlayerJoinEvent) {
         val player = event.player
+        val uuid = player.uniqueId
+        val location = player.location
+        val statsEnabled = plugin.config.getBoolean("statistics.enabled", true) &&
+            plugin.config.getBoolean("statistics.track-time-spent", true)
+        movementScope.launch {
+            val chamber = plugin.chamberManager.getChamberAt(location)?.takeIf { !it.isPaused } ?: return@launch
+            onChamberEntered(player, uuid, chamber, statsEnabled, sendEntryMessage = false)
+        }
+    }
+
+    /** Shared chamber-transition dispatch for moves and teleports. */
+    private fun handleTransition(player: org.bukkit.entity.Player, from: org.bukkit.Location, to: org.bukkit.Location) {
         val uuid = player.uniqueId
         val statsEnabled = plugin.config.getBoolean("statistics.enabled", true) &&
             plugin.config.getBoolean("statistics.track-time-spent", true)

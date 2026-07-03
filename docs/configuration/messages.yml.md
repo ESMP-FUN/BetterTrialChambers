@@ -1024,7 +1024,7 @@ All messages update immediately. No restart needed!
 
 **"What if I want different prefixes for different message types?"** You'll need to manually add prefixes to individual messages instead of using the global prefix.
 
-**"Can I use hex color codes?"** Not in the current version, but it's planned for a future update!
+**"Can I use hex color codes?"** Yes — since **v1.4.0**. Use legacy `&#FF5500` or MiniMessage `<#FF5500>` (and gradients like `<gradient:#FF5500:#00AAFF>…</gradient>`). See the **Text formatting — MiniMessage and legacy `&` codes** section near the top of this page.
 
 **"What if I mess up the YAML formatting?"** The plugin will fail to load messages and log errors. Always backup before editing!
 
