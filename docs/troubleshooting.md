@@ -100,6 +100,20 @@ Set `discovery.auto-snapshot: true` in `config.yml` and `/tcp reload`. New chamb
 
 <details>
 
+<summary><strong>After a reset, my signs / banners / player heads / lecterns came back blank</strong></summary>
+
+**Fixed in 1.7.2 — update, then re-snapshot.** Older snapshots only captured spawners, vaults, decorated pots, and chests; every other block with stored data — sign text, player-head skins, banner patterns, lectern books, jukebox discs, chiseled-bookshelf contents, and suspicious-block items — was restored as a blank block on reset. Since 1.7.2 all of these are captured and restored faithfully (in chamber snapshots and in captured/imported dungeon rooms).
+
+**A snapshot taken on an older build still has no decoration data** — re-capture it once on 1.7.2+ while the chamber is in a known-good state:
+
+```
+/tcp snapshot create <chamber>
+```
+
+</details>
+
+<details>
+
 <summary><strong>A reset deleted blocks around the chamber / the chamber came back broken</strong></summary>
 
 **Fixed in 1.5.6 — update first.** On older versions, an auto-discovered chamber whose bounding box _grew_ after its snapshot was taken (discovery merges adjacent regions as their chunks load) could have its reset wipe everything inside the grown bounds while only restoring the old, smaller region. Since 1.5.6 the reset can never clear ground its snapshot doesn't cover, and merges automatically re-capture the snapshot.

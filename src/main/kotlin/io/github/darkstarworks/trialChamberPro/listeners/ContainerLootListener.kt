@@ -250,6 +250,40 @@ class ContainerLootListener(private val plugin: TrialChamberPro) : Listener {
     }
 
     /**
+     * v1.7.2: persists any private-copy / template-editor inventories still open
+     * when the plugin disables. Previously `pluginScope.cancel()` could discard
+     * the async close-save, silently losing whatever the player had taken out of
+     * (or left in) their open copy. Saves synchronously (runBlocking — the DB
+     * pool is still open at this point in onDisable), then closes the view.
+     */
+    fun shutdown() {
+        plugin.server.onlinePlayers.forEach { player ->
+            val top = player.openInventory.topInventory
+            when (val holder = top.holder) {
+                is CopyHolder -> {
+                    val contents = top.contents.map { it?.clone() }.toTypedArray()
+                    runCatching {
+                        kotlinx.coroutines.runBlocking {
+                            plugin.containerLootManager.saveContents(holder.chamberId, holder.pos, player.uniqueId, contents)
+                        }
+                    }.onFailure { plugin.logger.warning("[ContainerLoot] Disable-flush failed for ${player.name}: ${it.message}") }
+                    player.closeInventory()
+                }
+                is TemplateHolder -> {
+                    val contents = top.contents.map { it?.clone() }.toTypedArray()
+                    runCatching {
+                        kotlinx.coroutines.runBlocking {
+                            plugin.containerLootManager.updateTemplateContents(holder.chamberId, holder.pos, contents)
+                        }
+                    }.onFailure { plugin.logger.warning("[ContainerLoot] Disable-flush failed for ${player.name}: ${it.message}") }
+                    player.closeInventory()
+                }
+                else -> {}
+            }
+        }
+    }
+
+    /**
      * Tag containers players place inside chambers (only reachable when
      * protection allows placement) so they keep vanilla behaviour forever.
      */

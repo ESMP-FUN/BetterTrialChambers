@@ -76,67 +76,86 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
     }
 
     /**
+     * v1.7.2: atomic single-column increment upsert. The old read-modify-write
+     * (getStats → ++ → saveStats full-row overwrite) silently lost counts when two
+     * servers sharing one MySQL incremented concurrently — the database now does the
+     * addition itself, same pattern as [batchAddTimeSpent]. [column] must come from
+     * the hardcoded call sites below, never from user input.
+     */
+    private suspend fun atomicIncrement(playerUuid: UUID, column: String, amount: Long, reason: StatisticsUpdatedEvent.Reason) =
+        withContext(Dispatchers.IO) {
+            val isSQLite = plugin.databaseManager.databaseType ==
+                io.github.darkstarworks.trialChamberPro.database.DatabaseManager.DatabaseType.SQLITE
+            val sql = if (isSQLite) {
+                """
+                INSERT INTO $statsTable (player_uuid, $column, last_updated)
+                VALUES (?, ?, ?)
+                ON CONFLICT(player_uuid) DO UPDATE SET
+                    $column = $column + excluded.$column,
+                    last_updated = excluded.last_updated
+                """.trimIndent()
+            } else {
+                """
+                INSERT INTO $statsTable (player_uuid, $column, last_updated)
+                VALUES (?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    $column = $column + VALUES($column),
+                    last_updated = VALUES(last_updated)
+                """.trimIndent()
+            }
+            try {
+                plugin.databaseManager.connection.use { conn ->
+                    conn.prepareStatement(sql).use { stmt ->
+                        stmt.setString(1, playerUuid.toString())
+                        stmt.setLong(2, amount)
+                        stmt.setLong(3, System.currentTimeMillis())
+                        stmt.executeUpdate()
+                    }
+                }
+                invalidateCache(playerUuid)
+                fireStatsUpdated(playerUuid, reason)
+            } catch (e: Exception) {
+                plugin.logger.warning("Failed to increment $column for $playerUuid: ${e.message}")
+            }
+        }
+
+    /**
      * Increments chambers completed for a player.
      */
-    suspend fun incrementChambersCompleted(playerUuid: UUID) = withContext(Dispatchers.IO) {
-        val stats = getStats(playerUuid)
-        stats.chambersCompleted++
-        stats.lastUpdated = System.currentTimeMillis()
-        saveStats(stats)
-        invalidateCache(playerUuid)
-        fireStatsUpdated(playerUuid, StatisticsUpdatedEvent.Reason.CHAMBER_COMPLETE)
-    }
+    suspend fun incrementChambersCompleted(playerUuid: UUID) =
+        atomicIncrement(playerUuid, "chambers_completed", 1, StatisticsUpdatedEvent.Reason.CHAMBER_COMPLETE)
 
     /**
      * Increments vaults opened counter (Normal or Ominous).
      */
-    suspend fun incrementVaultsOpened(playerUuid: UUID, vaultType: VaultType) = withContext(Dispatchers.IO) {
-        val stats = getStats(playerUuid)
-        when (vaultType) {
-            VaultType.NORMAL -> stats.normalVaultsOpened++
-            VaultType.OMINOUS -> stats.ominousVaultsOpened++
-        }
-        stats.lastUpdated = System.currentTimeMillis()
-        saveStats(stats)
-        invalidateCache(playerUuid)
-        fireStatsUpdated(playerUuid, StatisticsUpdatedEvent.Reason.VAULT)
-    }
+    suspend fun incrementVaultsOpened(playerUuid: UUID, vaultType: VaultType) =
+        atomicIncrement(
+            playerUuid,
+            when (vaultType) {
+                VaultType.NORMAL -> "normal_vaults_opened"
+                VaultType.OMINOUS -> "ominous_vaults_opened"
+            },
+            1,
+            StatisticsUpdatedEvent.Reason.VAULT
+        )
 
     /**
      * Increments mobs killed counter.
      */
-    suspend fun incrementMobsKilled(playerUuid: UUID) = withContext(Dispatchers.IO) {
-        val stats = getStats(playerUuid)
-        stats.mobsKilled++
-        stats.lastUpdated = System.currentTimeMillis()
-        saveStats(stats)
-        invalidateCache(playerUuid)
-        fireStatsUpdated(playerUuid, StatisticsUpdatedEvent.Reason.MOB_KILL)
-    }
+    suspend fun incrementMobsKilled(playerUuid: UUID) =
+        atomicIncrement(playerUuid, "mobs_killed", 1, StatisticsUpdatedEvent.Reason.MOB_KILL)
 
     /**
      * Increments deaths counter.
      */
-    suspend fun incrementDeaths(playerUuid: UUID) = withContext(Dispatchers.IO) {
-        val stats = getStats(playerUuid)
-        stats.deaths++
-        stats.lastUpdated = System.currentTimeMillis()
-        saveStats(stats)
-        invalidateCache(playerUuid)
-        fireStatsUpdated(playerUuid, StatisticsUpdatedEvent.Reason.DEATH)
-    }
+    suspend fun incrementDeaths(playerUuid: UUID) =
+        atomicIncrement(playerUuid, "deaths", 1, StatisticsUpdatedEvent.Reason.DEATH)
 
     /**
      * Adds time spent in chambers (in seconds).
      */
-    suspend fun addTimeSpent(playerUuid: UUID, seconds: Long) = withContext(Dispatchers.IO) {
-        val stats = getStats(playerUuid)
-        stats.timeSpent += seconds
-        stats.lastUpdated = System.currentTimeMillis()
-        saveStats(stats)
-        invalidateCache(playerUuid)
-        fireStatsUpdated(playerUuid, StatisticsUpdatedEvent.Reason.TIME)
-    }
+    suspend fun addTimeSpent(playerUuid: UUID, seconds: Long) =
+        atomicIncrement(playerUuid, "time_spent", seconds, StatisticsUpdatedEvent.Reason.TIME)
 
     /**
      * Batch adds time spent for multiple players in a single transaction.

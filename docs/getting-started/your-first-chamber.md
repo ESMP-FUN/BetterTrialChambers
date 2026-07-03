@@ -122,9 +122,15 @@ Here's where the magic happens. TrialChamberPro needs a "snapshot" of your chamb
 
 The plugin will:
 1. Scan every block in the chamber
-2. Save block types, orientations, and tile entity data
+2. Save block types, orientations, and tile entity data — including spawner/vault state, container loot, decorated pots, and (since **1.7.2**) sign text, player-head skins, banner patterns, lectern books, jukebox discs, chiseled-bookshelf contents, and suspicious-block items
 3. Compress it all into a file
 4. Store it in `snapshots/MyChamber.dat`
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
+**Upgrading from before 1.7.2?** Older snapshots restored decorations (signs, heads, banners, etc.) as blank blocks. Re-run `/tcp snapshot create <chamber>` on decorated chambers once to capture them with full fidelity.
+
+</div>
 
 This might take 5-30 seconds depending on chamber size. You'll see:
 ```

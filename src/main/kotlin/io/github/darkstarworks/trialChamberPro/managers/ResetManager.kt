@@ -153,6 +153,19 @@ class ResetManager(private val plugin: TrialChamberPro) {
         })
     }
 
+    /**
+     * v1.7.2: cancels any scheduled reset, pending warnings, and pending
+     * confirmation for a chamber. Called when a chamber is paused or deleted —
+     * previously the queued warning messages ("resets in 30 seconds!") kept
+     * firing for paused/deleted chambers, and a parked pending-confirmation
+     * entry survived deletion.
+     */
+    fun cancelScheduledFor(chamberId: Int) {
+        scheduledResets.remove(chamberId)?.cancel()
+        warningJobs.remove(chamberId)?.forEach { it.cancel() }
+        pendingResets.remove(chamberId)
+    }
+
     /** Names of chambers currently awaiting reset confirmation. */
     fun pendingResetNames(): List<String> =
         pendingResets.mapNotNull { id -> plugin.chamberManager.getCachedChamberById(id)?.name }.sorted()
@@ -226,6 +239,18 @@ class ResetManager(private val plugin: TrialChamberPro) {
         initiatingPlayer: Player? = null,
         reason: ChamberResetEvent.Reason = ChamberResetEvent.Reason.MANUAL
     ): Boolean {
+        // v1.7.2: re-check pause state at FIRE time for scheduled resets. Scheduling
+        // skips paused chambers, but a chamber paused during an already-running
+        // countdown still reset — the delayed job never rechecked. Manual resets
+        // (and API calls) stay allowed: an admin force-resetting a paused chamber
+        // is deliberate.
+        if (reason == ChamberResetEvent.Reason.SCHEDULED &&
+            plugin.chamberManager.getCachedChamberById(chamber.id)?.isPaused == true
+        ) {
+            plugin.logger.info("Skipping scheduled reset for '${chamber.name}' — chamber was paused during the countdown.")
+            return false
+        }
+
         if (!inProgress.add(chamber.id)) {
             // Visible (not fine) so admins running /tcp reset see WHY it failed when the
             // previous attempt is still mid-restore (or got stuck and never released the slot).
@@ -306,8 +331,7 @@ class ResetManager(private val plugin: TrialChamberPro) {
                     )
                     val snapshotFile = chamber.getSnapshotFile()
                     if (snapshotFile != null && snapshotFile.exists()) {
-                        restoreFromSnapshot(chamber, snapshotFile, initiatingPlayer)
-                        blocksRestored = chamber.getVolume()
+                        blocksRestored = restoreFromSnapshot(chamber, snapshotFile, initiatingPlayer)
                     } else {
                         plugin.logger.warning("No on-disk snapshot found for chamber ${chamber.name}, skipping block restoration")
                     }
@@ -318,8 +342,9 @@ class ResetManager(private val plugin: TrialChamberPro) {
                     // restoreFromSnapshot now suspends until every region-thread batch
                     // finishes, so spawner reset (Step 4) and vault cooldown clear
                     // (Step 6) are guaranteed to act on the restored blocks.
-                    restoreFromSnapshot(chamber, snapshotFile, initiatingPlayer)
-                    blocksRestored = chamber.getVolume()
+                    // v1.7.2: report the real restored count (was chamber.getVolume(),
+                    // which inflated ChamberResetCompleteEvent.blocksRestored).
+                    blocksRestored = restoreFromSnapshot(chamber, snapshotFile, initiatingPlayer)
                 } else {
                     plugin.logger.warning("No snapshot found for chamber ${chamber.name}, skipping block restoration")
                 }
@@ -722,16 +747,18 @@ class ResetManager(private val plugin: TrialChamberPro) {
      * @param snapshotFile The snapshot file to restore from
      * @param initiatingPlayer Optional player who initiated the restoration (for WorldEdit undo support)
      */
-    private suspend fun restoreFromSnapshot(chamber: Chamber, snapshotFile: File, initiatingPlayer: Player? = null) {
+    /** @return the number of blocks actually restored (0 when the snapshot failed to load). */
+    private suspend fun restoreFromSnapshot(chamber: Chamber, snapshotFile: File, initiatingPlayer: Player? = null): Int {
         plugin.logger.info("Restoring chamber ${chamber.name} from snapshot")
 
         val snapshot = plugin.snapshotManager.loadSnapshot(snapshotFile)
         if (snapshot == null) {
             plugin.logger.severe("Failed to load snapshot for chamber ${chamber.name}")
-            return
+            return 0
         }
 
         restoreFromSnapshotBlocks(chamber, snapshot, initiatingPlayer)
+        return snapshot.size
     }
 
     /**
