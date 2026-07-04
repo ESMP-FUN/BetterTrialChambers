@@ -70,6 +70,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             "claims" -> handleClaims(sender, args)
             "setup" -> setupHandler.execute(sender, args)
             "debug" -> handleDebug(sender, args)
+            "update" -> handleUpdate(sender, args)
             else -> sender.sendMessage(plugin.getMessageComponent("unknown-command"))
         }
 
@@ -115,6 +116,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         sender.sendMessage(plugin.getMessageComponent("help-container"))
         sender.sendMessage(plugin.getMessageComponent("help-claims"))
         sender.sendMessage(plugin.getMessageComponent("help-debug"))
+        sender.sendMessage(plugin.getMessageComponent("help-update"))
         sender.sendMessage(plugin.getMessageComponent("help-reload"))
     }
 
@@ -166,6 +168,15 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 else plugin.getMessageComponent("claims-no-conflicts")
             )
         })
+    }
+
+    private fun handleUpdate(sender: CommandSender, args: Array<out String>) {
+        // Delegates to the shaded PluginPulse handler: check (default),
+        // download/install, ignore <v>, unignore <v>, restore, status.
+        // Permission (tcp.admin) is enforced inside handle().
+        if (!plugin.updateSubcommand.handle(sender, args.copyOfRange(1, args.size))) {
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
+        }
     }
 
     private fun handleReload(sender: CommandSender) {
