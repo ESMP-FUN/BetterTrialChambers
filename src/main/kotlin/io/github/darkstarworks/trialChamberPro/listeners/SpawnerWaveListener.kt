@@ -94,8 +94,10 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
 
             if (provider != null && provider.id != "vanilla" && mobId != null && provider.isAvailable()) {
                 val replaceLoc = entity.location.clone()
+                var originalRemoved = false
                 try {
                     entity.remove()
+                    originalRemoved = true
                     val custom = provider.spawnMob(mobId, replaceLoc, isOminous)
                     if (custom != null) {
                         plugin.spawnerWaveManager.recordMobSpawn(spawnerLocation, custom, isOminous)
@@ -121,6 +123,13 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
                         return
                     }
                 } catch (e: Throwable) {
+                    if (originalRemoved) {
+                        // The vanilla entity is already gone — recording it would
+                        // put a dead entity into the wave and stall the counter
+                        // until sweepWaves papers over it.
+                        plugin.logger.warning("[CustomProvider] Replace-after-spawn failed post-remove (${provider.id}:$mobId): ${e.message} — wave will undercount this spawn")
+                        return
+                    }
                     plugin.logger.warning("[CustomProvider] Replace-after-spawn failed (${provider.id}:$mobId): ${e.message} — falling back to vanilla")
                     // fall through to vanilla tracking
                 }
@@ -181,8 +190,10 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
         if (provider.id == "vanilla" || !provider.isAvailable()) return false
 
         val replaceLoc = originalEntity.location.clone()
+        var originalRemoved = false
         return try {
             originalEntity.remove()
+            originalRemoved = true
             val custom = provider.spawnMob(mobId, replaceLoc, isOminous)
             if (custom == null) {
                 plugin.logger.warning(
@@ -214,9 +225,14 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
             true
         } catch (e: Throwable) {
             plugin.logger.warning(
-                "[WildSpawnerResolver] Replacement failed (${provider.id}:$mobId): ${e.message} — falling back to vanilla"
+                "[WildSpawnerResolver] Replacement failed (${provider.id}:$mobId): ${e.message}" +
+                    if (originalRemoved) " — wave will undercount this spawn" else " — falling back to vanilla"
             )
-            false  // let the caller record the original entity (already removed though, so undercount)
+            // If the original entity was already removed, the caller must NOT
+            // record it — a dead entity in the wave stalls the counter until
+            // sweepWaves catches it. Only fall back to vanilla recording when
+            // the failure happened before the removal.
+            originalRemoved
         }
     }
 
