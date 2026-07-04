@@ -7,7 +7,11 @@ import io.github.darkstarworks.trialChamberPro.gui.MenuService
 import io.github.darkstarworks.trialChamberPro.listeners.*
 import io.github.darkstarworks.trialChamberPro.managers.*
 import io.github.darkstarworks.trialChamberPro.scheduler.SchedulerAdapter
-import io.github.darkstarworks.trialChamberPro.utils.UpdateChecker
+import io.github.darkstarworks.pluginpulse.UpdateMode
+import io.github.darkstarworks.pluginpulse.UpdateSubcommand
+import io.github.darkstarworks.pluginpulse.Updater
+import io.github.darkstarworks.pluginpulse.source.GitHubReleasesSource
+import io.github.darkstarworks.pluginpulse.source.ModrinthSource
 import kotlinx.coroutines.*
 import org.bukkit.plugin.java.JavaPlugin
 import java.io.File
@@ -131,7 +135,10 @@ class TrialChamberPro : JavaPlugin() {
         private set
 
     // Update checker
-    private lateinit var updateChecker: UpdateChecker
+    lateinit var updater: Updater
+        private set
+    lateinit var updateSubcommand: UpdateSubcommand
+        private set
 
     // Cached messages configuration (invalidated on reload)
     @Volatile
@@ -173,21 +180,6 @@ class TrialChamberPro : JavaPlugin() {
         moduleRegistry = io.github.darkstarworks.trialChamberPro.api.TCPModuleRegistry(this)
         server.pluginManager.registerEvents(moduleRegistry, this)
 
-        // Initialize update checker
-        updateChecker = UpdateChecker(
-            this,
-            "darkstarworks/TrialChamberPro",
-            "https://raw.githubusercontent.com/darkstarworks/TrialChamberPro/master/src/main/resources/update.txt"
-        )
-        updateChecker.checkForUpdates()
-        // v1.5.2: also notify admins in-game on join with a clickable Modrinth link
-        server.pluginManager.registerEvents(updateChecker, this)
-
-        // Schedule periodic update checks (every 6 hours = 432000 ticks)
-        scheduler.runTaskTimerAsync(Runnable {
-            updateChecker.checkForUpdates(notifyConsole = false)
-        }, 432000L, 432000L)
-
         // Save default config files (only written when absent)
         saveDefaultConfig()
         saveResource("messages.yml", false)
@@ -205,6 +197,38 @@ class TrialChamberPro : JavaPlugin() {
 
         // v1.3.0: sanity-check numeric config values; clamp with warnings rather than hard-fail
         io.github.darkstarworks.trialChamberPro.config.ConfigValidator.validate(this)
+
+        // v1.8.0: PluginPulse updater (replaces the old UpdateChecker) — Modrinth
+        // primary, GitHub Releases fallback, clickable admin notices, and (when
+        // enabled in config) checksum-verified downloads staged into the server's
+        // update folder for install on the next restart. Runs after config load
+        // because update.* keys drive its mode. `-mc26` releases are matched
+        // automatically when the server itself runs MC 26+.
+        val updateMode = when (config.getString("update.mode", "notify")!!.lowercase()) {
+            "check-only", "check", "silent" -> UpdateMode.CHECK_ONLY
+            "download" -> UpdateMode.DOWNLOAD
+            "auto-stage", "auto" -> UpdateMode.AUTO_STAGE
+            else -> UpdateMode.NOTIFY
+        }
+        val onMc26 = runCatching {
+            server.minecraftVersion.substringBefore('.').toInt() >= 26
+        }.getOrDefault(false)
+        updater = Updater.builder(this)
+            .source(ModrinthSource("trialchamberpro"))
+            .fallbackSource(GitHubReleasesSource("darkstarworks/TrialChamberPro"))
+            .mode(updateMode)
+            .checkInterval(java.time.Duration.ofHours(
+                config.getLong("update.check-interval-hours", 6L).coerceAtLeast(1)))
+            .permission("tcp.admin")
+            .commandRoot("/tcp")
+            .prefix("<gold>[TCP]</gold>")
+            .changelogUrl("https://raw.githubusercontent.com/darkstarworks/TrialChamberPro/master/src/main/resources/update.txt")
+            .userAgentContact("https://github.com/darkstarworks/TrialChamberPro")
+            .requireHash(config.getBoolean("update.require-hash", true))
+            .apply { if (onMc26) track("mc26") }
+            .build()
+        updater.start()
+        updateSubcommand = UpdateSubcommand(updater)
 
         // v1.4.1: warn when the user's messages.yml is missing keys this version expects.
         // Pure log output — never modifies the file, never blocks startup. See the user
@@ -621,6 +645,11 @@ class TrialChamberPro : JavaPlugin() {
 
         // Remove our console log filter so a reload doesn't stack duplicates.
         io.github.darkstarworks.trialChamberPro.utils.TrialSpawnerLogFilter.uninstall()
+
+        // Stop update checks and unregister the join-notify listener.
+        if (::updater.isInitialized) {
+            updater.shutdown()
+        }
 
         // v1.3.3: unload modules FIRST so they can still touch TCP
         // managers / database during their onUnload before everything
