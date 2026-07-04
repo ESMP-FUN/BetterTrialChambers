@@ -8,6 +8,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ### Added
 - **Built-in updater with one-command installs.** The old notify-only update check is replaced by [PluginPulse](https://github.com/darkstarworks/PluginPulse): updates are now checked on Modrinth first (GitHub Releases as fallback), and a new `/tcp update` command lets admins act on them — `check`, `download` (fetches the new jar, verifies its checksum, backs up the current jar, and stages it in the server's update folder so it installs on the next restart), `restore` (roll back to the previous jar), `ignore <version>`, and `status`. Behaviour is controlled by the new `update` section in config.yml: `mode` (`check-only` / `notify` / `download` / `auto-stage`), `check-interval-hours`, and `require-hash`. Servers running the `-mc26` build automatically follow `-mc26` releases. Nothing is ever downloaded in the default `notify` mode.
 
+- **Optional no-restart updates.** With `update.allow-hot-reload: true`, `/tcp update apply` swaps a staged, checksum-verified update in-place — the old version is unloaded, the jar replaced, and the new version enabled live (verified end-to-end on Paper 1.21.7). Refused on Folia and while other plugins depend on TCP; if the new version fails to load, TCP rolls back to the automatic backup. Off by default — restarting remains the recommended way to apply updates.
+
 ### Changed
 - Update checks are rate-limit friendly: check state persists across restarts in `plugins/TrialChamberPro/pluginpulse/`, and fleet servers no longer check in lockstep at startup.
 
