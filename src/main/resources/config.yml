@@ -30,6 +30,10 @@ update:
   # Refuse downloads that don't publish a checksum. Leave enabled unless a
   # release is missing hashes and you accept the risk.
   require-hash: true
+  # Allow /tcp update apply to hot-swap a staged update WITHOUT a restart.
+  # Refused on Folia and while other plugins depend on TCP. Advanced feature:
+  # restarting is always the safer way to apply updates.
+  allow-hot-reload: false
 
 # Global chamber settings
 global:
