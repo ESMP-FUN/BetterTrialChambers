@@ -202,6 +202,7 @@ help-setup: "&e/tcp setup &7- Friendly tour of the main settings (opt-in; Enable
 help-container: "&e/tcp container <list|materialize|reset|clearcopies|tp|edit> <chamber> &7- Manage per-player container loot"
 help-claims: "&e/tcp claims scan &7- Find chambers overlapping land-claim plugin claims"
 help-debug: "&e/tcp debug schema &7- Print database table columns (diagnostics)"
+help-update: "&e/tcp update [check|download|restore|status] &7- Check for and install plugin updates"
 help-reload: "&e/tcp reload &7- Reload config.yml, loot.yml, and messages.yml"
 
 # WorldEdit Variable Regions

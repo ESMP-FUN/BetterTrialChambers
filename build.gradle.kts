@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "io.github.darkstarworks"
-version = "1.7.3"
+version = "1.8.0"
 
 repositories {
     mavenCentral()
@@ -54,6 +54,9 @@ dependencies {
 
     // JSON parsing for update checker
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // PluginPulse — multi-source update checking + verified install staging
+    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.2.0")
 
     // Anonymous usage metrics (relocated below — bStats requires it)
     implementation("org.bstats:bstats-bukkit:3.2.1")
@@ -110,6 +113,8 @@ tasks {
         relocate("com.zaxxer.hikari", "io.github.darkstarworks.tcp.hikari")
         // bStats mandates relocation so multiple plugins can shade different versions
         relocate("org.bstats", "io.github.darkstarworks.tcp.bstats")
+        // PluginPulse relocation so other plugins can shade different versions
+        relocate("io.github.darkstarworks.pluginpulse", "io.github.darkstarworks.tcp.pluginpulse")
         // InventoryFramework relocation removed in v1.5.0 — see dependency comment.
 
         // Exclude unnecessary SQLite native binaries to reduce jar size
