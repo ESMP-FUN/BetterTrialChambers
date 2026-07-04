@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.7.3] - 2026-07-04
+### Fixed
+- **Spawner-wave counter can no longer be stalled by a dead entity when a custom-mob provider fails mid-replacement.** In both the chamber replace-after-spawn path and the wild-spawner resolver path, a provider that threw *after* the vanilla mob was removed caused the already-removed entity to be recorded into the wave — the counter then hung until the periodic sweep caught it. A failure after removal now records nothing (the wave undercounts that one spawn and completes normally); only failures *before* removal fall back to vanilla tracking.
+
 ## [1.7.2] - 2026-07-03
 ### Fixed
 - **Chamber resets no longer erase decorations.** Snapshots only knew how to capture four block types (spawners, vaults, pots, chests) — everything else restored as a blank block, so sign text, player-head skins, banner patterns, lectern books, jukebox discs, chiseled-bookshelf contents, and suspicious-block items were silently wiped on every reset. All of these are now captured and restored faithfully, in chamber snapshots AND in captured/imported dungeon rooms. Re-run `/tcp snapshot create <chamber>` on decorated chambers to capture them with the new fidelity.
@@ -1545,6 +1549,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.7.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.7.2...v1.7.3
 [1.7.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.6.3...v1.7.0
