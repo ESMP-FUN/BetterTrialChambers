@@ -1,6 +1,7 @@
 <black>.
 <aqua>[1.8.0] <gray>- <white>2026-07-05
 <lime>+ <white>NEW: <green>Built-in updater — <yellow>/tcp update<green> checks Modrinth/GitHub and (opt-in) downloads a checksum-verified jar staged to install on your next restart, with automatic backup and <yellow>/tcp update restore<green> rollback. Configure with the new <yellow>update<green> section in config.yml.
+<lime>+ <white>NEW: <green>Optional no-restart updates — with <yellow>update.allow-hot-reload: true<green>, <yellow>/tcp update apply<green> swaps the new version in live (Paper only, off by default).
 <lime>+ <white>NEW: <green>1.7.3 fix included: spawner-wave counters can no longer stall when a custom-mob provider fails mid-replacement.
 <aqua>[1.7.2] <gray>- <white>2026-07-03
 <lime>+ <white>FIX: <green>Chamber resets no longer erase decorations — signs, player heads, banners, lecterns, jukeboxes, bookshelves and suspicious-block items now survive snapshots and resets (re-run <yellow>/tcp snapshot create<green> on decorated chambers).
