@@ -15,7 +15,7 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
         "help", "reload", "generate", "paste", "scan", "setexit",
         "snapshot", "list", "info", "delete", "vault", "key",
         "stats", "leaderboard", "lb", "top", "reset", "menu", "loot", "mobs", "give",
-        "pause", "resume", "rename", "dungeon", "container", "claims", "setup", "debug"
+        "pause", "resume", "rename", "dungeon", "container", "claims", "setup", "debug", "update"
     )
     private val setupActions = listOf("start", "continue")
 
@@ -26,6 +26,7 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
     private val containerActions = listOf("list", "materialize", "reset", "clearcopies", "tp", "edit")
 
     private val snapshotActions = listOf("create", "update", "restore", "missing")
+    private val updateActions = listOf("check", "download", "ignore", "unignore", "restore", "status")
     private val statTypes = listOf("chambers", "normal", "ominous", "mobs", "time")
     private val lootActions = listOf("set", "clear", "info", "list", "audit")
     private val vaultTypes = listOf("normal", "ominous")
@@ -47,6 +48,7 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                 // Second argument - depends on subcommand
                 when (args[0].lowercase()) {
                     "snapshot" -> snapshotActions.filter { it.startsWith(args[1].lowercase()) }
+                    "update" -> updateActions.filter { it.startsWith(args[1].lowercase()) }
                     "setup" -> setupActions.filter { it.startsWith(args[1].lowercase()) }
                     "generate" -> listOf("value", "coords", "wand", "blocks").filter { it.startsWith(args[1].lowercase()) }
                     "paste" -> {
