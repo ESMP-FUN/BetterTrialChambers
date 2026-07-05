@@ -1509,6 +1509,81 @@ _(Added in 1.6.0.)_ Controls the opt-in [`/tcp setup`](../reference/commands.md)
 
 ***
 
+## Updates
+
+_(Added in 1.8.0.)_ TrialChamberPro can check for new releases and, if you let it, download and install them for you.
+
+```yaml
+update:
+  mode: notify
+  check-interval-hours: 6
+  require-hash: true
+  allow-hot-reload: false
+```
+
+Updates are checked on **Modrinth** first, falling back to **GitHub Releases**. Checks run shortly after startup and then on the interval below; check state is cached under `plugins/TrialChamberPro/pluginpulse/` so a fleet of servers doesn't hammer the APIs. Servers running the `-mc26` build automatically follow `-mc26` releases.
+
+<details>
+
+<summary><code>mode</code></summary>
+
+**Default:** `notify`
+
+How far the updater is allowed to go on its own. Each mode includes everything the one above it does:
+
+* `check-only` — check silently; results are only visible via `/tcp update status`.
+* `notify` — additionally announce available updates in the console and to admins on join (holders of `tcp.admin`).
+* `download` — additionally allow `/tcp update download` to fetch a new release, verify it, and stage it for install on the next restart.
+* `auto-stage` — automatically download, verify and stage new releases as they appear.
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
+In `notify` (the default) nothing is ever written to disk — the plugin only tells you an update exists. You stay in full control of when anything is downloaded.
+
+</div>
+
+</details>
+
+<details>
+
+<summary><code>check-interval-hours</code></summary>
+
+**Default:** `6` — minimum `1`
+
+Hours between automatic update checks.
+
+</details>
+
+<details>
+
+<summary><code>require-hash</code></summary>
+
+**Default:** `true`
+
+Refuse to install a downloaded jar unless its checksum matches the one the source published. Leave this on unless a release is genuinely missing hashes and you accept the risk of an unverified download.
+
+</details>
+
+<details>
+
+<summary><code>allow-hot-reload</code></summary>
+
+**Default:** `false`
+
+When enabled, `/tcp update apply` can swap a staged update into place **without a server restart** — the old version is unloaded, the jar replaced, and the new version enabled live. If the new version fails to load, TCP rolls back to the automatic backup it made before staging.
+
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
+Hot reload is refused on Folia, and while other plugins depend on TrialChamberPro. It is an advanced convenience for small updates — **restarting the server is always the safer way to apply an update.** Leave this off unless you specifically want in-place reloads.
+
+</div>
+
+</details>
+
+See [Commands](../reference/commands.md) for the `/tcp update` subcommands (`check`, `download`, `apply`, `restore`, `ignore`, `status`).
+
+***
+
 ## Metrics
 
 ```yaml
