@@ -22,7 +22,7 @@ class ContainerLootHolder : BaseHolder()
  * teleport), and bulk actions (materialize all, clear player copies, reset
  * templates). All strings under `gui.container-loot.*`. Mirrors
  * [VaultManagementView] (incl. the `runBlocking` fetch — see the deferred
- * async-GUI refactor note in project docs).
+ * async-GUI refactor note in the project docs).
  */
 class ContainerLootView(
     private val plugin: TrialChamberPro,

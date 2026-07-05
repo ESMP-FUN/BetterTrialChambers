@@ -17,7 +17,7 @@ class LeaderboardHolder : BaseHolder()
 /**
  * Top-10 leaderboard view. Category switcher across the bottom row.
  * Migrated to VcGui in v1.5.0. `runBlocking` for the leaderboard fetch is
- * preserved unchanged (deferred refactor — see project docs).
+ * preserved unchanged (deferred refactor — see the project docs).
  */
 class LeaderboardView(
     private val plugin: TrialChamberPro,
