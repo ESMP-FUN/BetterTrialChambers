@@ -20,11 +20,6 @@ gradle-app.setting
 .gradletasknamecache
 **/build/
 
-# Local tooling state
-.internal/
-.junie/
-project docs
-
 # Runtime / development artifacts
 database.db
 *.db
