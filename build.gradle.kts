@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "2.3.0-Beta1"
-    id("com.gradleup.shadow") version "8.3.0"
+    kotlin("jvm") version "2.3.21"
+    id("com.gradleup.shadow") version "9.0.0"
     id("xyz.jpenilla.run-paper") version "2.3.1"
     // v1.3.3: enable Maven publication so Jitpack can serve TCP as a
     // compile-time dependency to premium add-on modules and third-party
