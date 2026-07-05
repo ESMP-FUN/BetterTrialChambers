@@ -1,8 +1,8 @@
 import org.gradle.api.attributes.java.TargetJvmVersion
 
 plugins {
-    kotlin("jvm") version "2.3.20"
-    id("com.gradleup.shadow") version "8.3.6"
+    kotlin("jvm") version "2.3.21"
+    id("com.gradleup.shadow") version "9.0.0"
     id("xyz.jpenilla.run-paper") version "2.3.1"
     // v1.3.3: enable Maven publication so Jitpack can serve TCP as a
     // compile-time dependency to premium add-on modules and third-party
@@ -13,7 +13,7 @@ plugins {
 }
 
 group = "io.github.darkstarworks"
-version = "1.7.3"
+version = "1.8.0"
 
 repositories {
     mavenCentral()
@@ -56,6 +56,11 @@ dependencies {
 
     // JSON parsing for update checker
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // PluginPulse — multi-source update checking + verified install staging,
+    // plus the opt-in hot-reload engine (gated behind update.allow-hot-reload).
+    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.5.0")
+    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-hotreload:v0.5.0")
 
     // Anonymous usage metrics (relocated below — bStats requires it)
     implementation("org.bstats:bstats-bukkit:3.2.1")
@@ -134,6 +139,8 @@ tasks {
         relocate("com.zaxxer.hikari", "io.github.darkstarworks.tcp.hikari")
         // bStats mandates relocation so multiple plugins can shade different versions
         relocate("org.bstats", "io.github.darkstarworks.tcp.bstats")
+        // PluginPulse relocation so other plugins can shade different versions
+        relocate("io.github.darkstarworks.pluginpulse", "io.github.darkstarworks.tcp.pluginpulse")
         // InventoryFramework relocation removed in v1.5.0 — see dependency comment.
 
         // Exclude unnecessary SQLite native binaries to reduce jar size

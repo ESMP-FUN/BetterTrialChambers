@@ -16,6 +16,25 @@ database:
   # unprefixed names under "tcp_").
   table-prefix: "tcp_"
 
+# Plugin update checking & installation (checks Modrinth, falls back to GitHub Releases)
+update:
+  # What the updater is allowed to do:
+  #   check-only - check silently; results only via /tcp update status
+  #   notify     - also announce updates to console + admins (default)
+  #   download   - additionally allow /tcp update download to stage a
+  #                checksum-verified jar that installs on the next restart
+  #   auto-stage - download, verify and stage new releases automatically
+  mode: notify
+  # Hours between automatic update checks (minimum 1)
+  check-interval-hours: 6
+  # Refuse downloads that don't publish a checksum. Leave enabled unless a
+  # release is missing hashes and you accept the risk.
+  require-hash: true
+  # Allow /tcp update apply to hot-swap a staged update WITHOUT a restart.
+  # Refused on Folia and while other plugins depend on TCP. Advanced feature:
+  # restarting is always the safer way to apply updates.
+  allow-hot-reload: false
+
 # Global chamber settings
 global:
   # Default reset interval in seconds
