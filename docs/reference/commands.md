@@ -51,6 +51,7 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | `/tcp claims scan`                                                               | Log chambers that overlap existing land-claim plugin claims                                                                                      | `tcp.admin.reload`              |
 | `/tcp debug schema`                                                              | Print each database table's actual columns (diagnostics)                                                                                         | `tcp.admin.reload`              |
 | `/tcp reload`                                                                    | Reload configuration                                                                                                                             | `tcp.admin.reload`              |
+| `/tcp update [check\|download\|apply\|restore\|status]`                          | Check for and install plugin updates                                                                                                             | `tcp.admin`                     |
 
 ***
 
@@ -978,6 +979,46 @@ Reloads the plugin configuration without restarting the server.
 
 {% hint style="warning" %}
 **Database changes require restart!** If you changed database settings in config.yml, you MUST restart the server, not just reload.
+{% endhint %}
+
+</details>
+
+<details>
+
+<summary><code>/tcp update</code></summary>
+
+_(Added in 1.8.0.)_ Check for, download, and install TrialChamberPro updates. Updates are looked up on Modrinth (with GitHub Releases as a fallback).
+
+**Usage:**
+
+```
+/tcp update [check|download|apply|ignore <version>|unignore <version>|restore|status]
+```
+
+**Permission:** `tcp.admin`
+
+**Subcommands:**
+
+* `check` (default when no argument is given) — check now and report the result.
+* `status` — show the last known result without making a network call.
+* `download` — download the latest release, verify its checksum, back up the current jar, and stage the new one for install on the **next restart**. Requires `update.mode: download` or `auto-stage`.
+* `apply` — hot-swap a staged update into place **without a restart**. Requires `update.allow-hot-reload: true` (and is refused on Folia or when other plugins depend on TCP). See below.
+* `restore` — stage the most recent backup for install on the next restart, rolling back a bad update.
+* `ignore <version>` — stop notifications for a specific version until a newer one is released.
+* `unignore <version>` — undo `ignore` for a version.
+
+**Behaviour is set in config.yml** under [`update`](../configuration/config.yml.md#updates). In the default `notify` mode the plugin only tells you an update exists — `download` and `apply` are rejected until you raise the mode.
+
+**Typical restart-based flow:**
+
+```
+/tcp update check       # see what's available
+/tcp update download    # verify + stage it
+# restart the server — the new jar installs on boot
+```
+
+{% hint style="info" %}
+**Hot reload (`apply`)** is an opt-in convenience for small updates. It unloads the running plugin, swaps the jar, and re-enables the new version live, rolling back to the automatic backup if the new version fails to load. Restarting the server is always the safer choice — leave `allow-hot-reload` off unless you specifically want in-place reloads.
 {% endhint %}
 
 </details>

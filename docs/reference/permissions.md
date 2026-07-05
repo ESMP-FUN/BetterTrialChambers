@@ -281,6 +281,7 @@ Only relevant when `chests.per-player-loot` is enabled. Editing is GUI/command-o
 
 * `/tcp list` - List all chambers
 * `/tcp info <chamber>` - View chamber details
+* `/tcp update …` - Check for and install plugin updates (see [Commands](commands.md))
 
 Also receives plugin update notifications on join.
 
