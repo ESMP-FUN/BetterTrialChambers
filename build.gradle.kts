@@ -57,8 +57,8 @@ dependencies {
 
     // PluginPulse — multi-source update checking + verified install staging,
     // plus the opt-in hot-reload engine (gated behind update.allow-hot-reload).
-    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.5.0")
-    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-hotreload:v0.5.0")
+    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.8.0")
+    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-hotreload:v0.8.0")
 
     // Anonymous usage metrics (relocated below — bStats requires it)
     implementation("org.bstats:bstats-bukkit:3.2.1")
