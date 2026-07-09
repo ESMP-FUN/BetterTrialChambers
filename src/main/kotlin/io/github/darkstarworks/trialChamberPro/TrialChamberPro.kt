@@ -868,6 +868,16 @@ class TrialChamberPro : JavaPlugin() {
     }
 
     /**
+     * Whether TCP should stay inactive in this world (`global.excluded-worlds`
+     * in config.yml). Gates auto-discovery, chamber creation, and wild-spawner
+     * wave tracking; case-insensitive on world name.
+     */
+    fun isWorldExcluded(world: org.bukkit.World): Boolean {
+        return config.getStringList("global.excluded-worlds")
+            .any { it.equals(world.name, ignoreCase = true) }
+    }
+
+    /**
      * Gets a message from messages.yml as a legacy section-coded String.
      *
      * v1.4.0: messages are now parsed via

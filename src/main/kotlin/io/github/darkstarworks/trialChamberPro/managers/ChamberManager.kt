@@ -98,6 +98,13 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             return@withContext null
         }
 
+        location1.world?.let {
+            if (plugin.isWorldExcluded(it)) {
+                plugin.logger.warning("Cannot create chamber '$name': world '${it.name}' is in global.excluded-worlds")
+                return@withContext null
+            }
+        }
+
         val world = location1.world!!.name
 
         // Calculate bounding box

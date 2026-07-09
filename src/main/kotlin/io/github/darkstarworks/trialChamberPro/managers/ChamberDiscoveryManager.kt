@@ -61,6 +61,7 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
     ) {
         if (!plugin.config.getBoolean("discovery.enabled", false)) return
         if (world.environment != World.Environment.NORMAL) return
+        if (plugin.isWorldExcluded(world)) return
 
         val key = regionKey(world, x, z)
         val now = System.currentTimeMillis()
@@ -93,6 +94,7 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
         var scheduled = 0
         for (world in worlds) {
             if (world.environment != World.Environment.NORMAL) continue
+            if (plugin.isWorldExcluded(world)) continue
             val chunks = world.loadedChunks
             for (chunk in chunks) {
                 val centerLoc = Location(
