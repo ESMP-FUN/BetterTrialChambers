@@ -8,6 +8,9 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ### Added
 - **World exclusion.** New `global.excluded-worlds` list in config.yml keeps TCP inactive in named worlds — useful when a second overworld-type world has Trial Chambers you want to leave vanilla. In an excluded world, auto-discovery never registers chambers, `/tcp generate` and `/tcp dungeon generate` are refused, and wild trial spawners get no boss bars or wave tracking. Chambers registered before a world was excluded keep working; remove them with `/tcp delete <name>`.
 
+### Changed
+- Updated the bundled PluginPulse updater to v0.8.0 (configurable source order, authenticated private-repo updates, Jenkins update source).
+
 ## [1.8.0] - 2026-07-05
 ### Added
 - **Built-in updater with one-command installs.** The old notify-only update check is replaced by [PluginPulse](https://github.com/darkstarworks/PluginPulse): updates are now checked on Modrinth first (GitHub Releases as fallback), and a new `/tcp update` command lets admins act on them — `check`, `download` (fetches the new jar, verifies its checksum, backs up the current jar, and stages it in the server's update folder so it installs on the next restart), `restore` (roll back to the previous jar), `ignore <version>`, and `status`. Behaviour is controlled by the new `update` section in config.yml: `mode` (`check-only` / `notify` / `download` / `auto-stage`), `check-interval-hours`, and `require-hash`. Servers running the `-mc26` build automatically follow `-mc26` releases. Nothing is ever downloaded in the default `notify` mode.
