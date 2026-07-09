@@ -90,7 +90,31 @@ global:
   teleport-location: EXIT_POINT
   blocks-per-tick: 500
   auto-snapshot-on-register: true
+  excluded-worlds: []
 ```
+
+<details>
+
+<summary><code>excluded-worlds</code> (v1.8.1)</summary>
+
+**Default:** `[]` (no worlds excluded)
+
+Worlds where TrialChamberPro stays completely inactive — useful when a second overworld-type world has Trial Chambers you want to leave vanilla. World names are case-insensitive.
+
+```yaml
+excluded-worlds:
+  - second_overworld
+```
+
+In an excluded world:
+
+* Auto-discovery never registers chambers (including the startup sweep).
+* `/tcp generate` and `/tcp dungeon generate` are refused.
+* Wild trial spawners get no boss bars or wave tracking.
+
+Chambers that were already registered **before** the world was excluded keep working — remove them with `/tcp delete <name>`.
+
+</details>
 
 <details>
 
@@ -1302,6 +1326,8 @@ _Added in 1.2.25 — opt-in._
 Automatically registers naturally-generated Trial Chambers the first time anyone loads their chunks. No `/tcp generate` needed — the plugin detects vaults and spawners as chunks enter memory, flood-fills the chamber's structural blocks (tuff/copper variants) to compute a bounding box, and registers it under a deterministic auto-name like `auto_world_123_456`.
 
 On plugin enable, a startup sweep also scans every already-loaded Overworld chunk, so chambers in pre-loaded spawn regions get picked up on restart.
+
+To keep discovery (and TCP as a whole) out of a specific world, list it under `global.excluded-worlds` (v1.8.1 — see [Global Chamber Settings](config.yml.md#global-chamber-settings)).
 
 ```yaml
 discovery:

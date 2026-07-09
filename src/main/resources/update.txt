@@ -1,4 +1,6 @@
 <black>.
+<aqua>[1.8.1] <gray>- <white>2026-07-10
+<lime>+ <white>NEW: <green>World exclusion — list worlds under <yellow>global.excluded-worlds<green> in config.yml to keep TCP fully inactive there (no auto-discovery, no generation, no wild-spawner boss bars). Handy for a second overworld you want to leave vanilla.
 <aqua>[1.8.0] <gray>- <white>2026-07-05
 <lime>+ <white>NEW: <green>Built-in updater — <yellow>/tcp update<green> checks Modrinth/GitHub and (opt-in) downloads a checksum-verified jar staged to install on your next restart, with automatic backup and <yellow>/tcp update restore<green> rollback. Configure with the new <yellow>update<green> section in config.yml.
 <lime>+ <white>NEW: <green>Optional no-restart updates — with <yellow>update.allow-hot-reload: true<green>, <yellow>/tcp update apply<green> swaps the new version in live (Paper only, off by default).
@@ -10,20 +12,3 @@
 <lime>+ <white>FIX: <green>Statistics increment atomically in the database — no more lost counts on shared-MySQL networks; plus Folia-safe vault loot ejection and chamber-deletion cleanup.
 <lime>+ <white>FIX: <green>Explosions from just OUTSIDE a chamber wall can no longer destroy blocks inside (per-block protection, now also covering bed/respawn-anchor explosions); pausing a chamber cancels an already-counting-down reset and its warnings.
 <lime>+ <white>FIX: <green>Teleports (<yellow>/tp<green>, <yellow>/home<green>, pearls) now count as chamber entry/exit for time tracking; open per-player container copies are saved on server stop; tab-completion no longer reveals chamber names to non-admins.
-<aqua>[1.7.1] <gray>- <white>2026-07-03
-<lime>+ <white>FIX: <green>Ominous Bottles from loot tables are now the REAL <yellow>minecraft:ominous_bottle<green> item (correct texture, stacks with vanilla drops) — use <yellow>type: OMINOUS_BOTTLE<green> with <yellow>potion-level<green> or the new <yellow>potion-level-min/max<green> random range, just like vanilla vaults.
-<lime>+ <white>FIX: <green>GUI loot edits no longer strip potion/enchant-range/durability/instrument fields from hand-written loot.yml entries (and no longer corrupt <yellow>VANILLA_TABLE<green> entries).
-<lime>+ <white>FIX: <green>Bad amount/roll ranges and out-of-range ominous levels are fixed up at load with a warning instead of killing the whole vault roll; typo'd enchantment names are now reported.
-<lime>+ <white>NEW: <green>Loot names & lore support hex colors and MiniMessage, without forced italics.
-<lime>+ <white>FIX: <green>Non-OP players can now use <yellow>/tcp stats<green> and <yellow>/tcp leaderboard<green> — the whole /tcp command was gated behind <yellow>tcp.admin<green>; every subcommand now checks its own permission (admins unaffected).
-<lime>+ <white>FIX: <green>Ominous vaults now play <yellow>vaults.sounds.ominous-open<green> (was always the normal-open sound).
-<lime>+ <white>NEW: <green>All remaining admin-command messages are translatable — ~75 strings moved into messages.yml (<yellow>dungeon-*, container-*, claims-*, reset-*, snapshot-*, pagination-*<green> and more); the startup schema check lists any keys your file is missing.
-<lime>+ <white>NEW: <green>Time durations ("2d 3h 5m", "… ago") are localizable via the <yellow>time-*<green> keys.
-<aqua>[1.7.0] <gray>- <white>2026-07-02
-<lime>+ <white>NEW: <green>Tunnel-breaking — opt-in <yellow>protection.tunnel-breaking<green> lets players mine INTO a walled chamber through the tuff-brick shell (configurable blocks, <yellow>shell-depth<green> limit) with drops always suppressed, so nothing can be farmed; tunnels heal on the next reset.
-<lime>+ <white>NEW: <green>Import datapack rooms — <yellow>/tcp dungeon import <file|folder|zip><green> turns vanilla <yellow>.nbt<green> structure templates (e.g. "crazy chambers"-style packs) into dungeon rooms; jigsaws become door connectors automatically.
-<lime>+ <white>NEW: <green>Auto-discovery now uses the game's exact structure bounds (<yellow>discovery.use-structure-bounds<green>), so datapack-enlarged natural chambers register at full size in one pass; player-built chambers still use the block scan.
-<lime>+ <white>NEW: <green>Configurable database table prefix — all TCP tables are now <yellow>tcp_<green>-prefixed (<yellow>database.table-prefix<green>) to avoid collisions on shared databases; existing installs migrate automatically and safely on first start.
-<aqua>[1.6.0] <gray>- <white>2026-06-26
-<lime>+ <white>NEW: <green>Guided setup tour — run <yellow>/tcp setup<green> for a friendly, one-setting-at-a-time walkthrough of the main options (<yellow>Enable / Skip / Disable<green>, nothing forced). Uses the native Dialog UI on 1.21.7+, with a clickable-chat fallback on older servers.
-<black>.
