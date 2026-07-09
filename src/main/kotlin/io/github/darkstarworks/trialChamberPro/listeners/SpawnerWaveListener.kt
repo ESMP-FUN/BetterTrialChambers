@@ -48,6 +48,7 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
 
         if (!plugin.isReady) return
         if (!plugin.config.getBoolean("spawner-waves.enabled", true)) return
+        if (plugin.isWorldExcluded(event.location.world)) return
 
         val entity = event.entity
         val location = event.location
@@ -318,6 +319,8 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
         if (from.blockX == to.blockX && from.blockY == to.blockY && from.blockZ == to.blockZ) {
             return
         }
+
+        if (plugin.isWorldExcluded(to.world)) return
 
         val player = event.player
         val location = to
