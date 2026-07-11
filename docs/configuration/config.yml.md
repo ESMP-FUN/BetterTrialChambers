@@ -1,15 +1,15 @@
 # config.yml
 
-Your `config.yml` is the control panel for TrialChamberPro. It's where you decide how chambers behave, when they reset, and how much protection you want. Let's break it down section by section.
+Your `config.yml` is the control panel for BetterTrialChambers. It's where you decide how chambers behave, when they reset, and how much protection you want. Let's break it down section by section.
 
 {% hint style="info" %}
-**Location:** `plugins/TrialChamberPro/config.yml`
+**Location:** `plugins/BetterTrialChambers/config.yml`
 
-After making changes, reload with `/tcp reload`
+After making changes, reload with `/trial reload`
 {% endhint %}
 
 {% hint style="success" %}
-**Your config auto-updates (1.5.19+).** When you update TrialChamberPro, any new options added in the release are merged into your existing `config.yml` on startup — **with their comments** — while your current values are left untouched. The previous file is saved as `config.yml.bak` first. So you'll always see new settings without having to delete and regenerate the file. (`messages.yml` updates the same way.)
+**Your config auto-updates (1.5.19+).** When you update BetterTrialChambers, any new options added in the release are merged into your existing `config.yml` on startup — **with their comments** — while your current values are left untouched. The previous file is saved as `config.yml.bak` first. So you'll always see new settings without having to delete and regenerate the file. (`messages.yml` updates the same way.)
 {% endhint %}
 
 ***
@@ -73,9 +73,9 @@ SQLite is perfect for single servers—no setup required, everything in one file
 
 **Default:** `tcp_` — letters, digits and underscores only, max 16 characters.
 
-Every TCP table name starts with this prefix (`tcp_chambers`, `tcp_vaults`, …), so TCP can share a database with other plugins without name collisions. You only need to change it if another plugin already uses `tcp_`-prefixed tables.
+Every BTC table name starts with this prefix (`tcp_chambers`, `tcp_vaults`, …), so BTC can share a database with other plugins without name collisions. You only need to change it if another plugin already uses `tcp_`-prefixed tables.
 
-Existing installs are migrated automatically the first time 1.7.0 starts: TCP renames its old unprefixed tables (`chambers` → `tcp_chambers`, etc.), keeping all data and foreign keys. A same-named table that belongs to another plugin is detected by its columns and left untouched. The migration is a one-time, idempotent rename — no action needed on your side.
+Existing installs are migrated automatically the first time 1.7.0 starts: BTC renames its old unprefixed tables (`chambers` → `tcp_chambers`, etc.), keeping all data and foreign keys. A same-named table that belongs to another plugin is detected by its columns and left untouched. The migration is a one-time, idempotent rename — no action needed on your side.
 
 ***
 
@@ -99,7 +99,7 @@ global:
 
 **Default:** `[]` (no worlds excluded)
 
-Worlds where TrialChamberPro stays completely inactive — useful when a second overworld-type world has Trial Chambers you want to leave vanilla. World names are case-insensitive.
+Worlds where BetterTrialChambers stays completely inactive — useful when a second overworld-type world has Trial Chambers you want to leave vanilla. World names are case-insensitive.
 
 ```yaml
 excluded-worlds:
@@ -109,10 +109,10 @@ excluded-worlds:
 In an excluded world:
 
 * Auto-discovery never registers chambers (including the startup sweep).
-* `/tcp generate` and `/tcp dungeon generate` are refused.
+* `/trial generate` and `/trial dungeon generate` are refused.
 * Wild trial spawners get no boss bars or wave tracking.
 
-Chambers that were already registered **before** the world was excluded keep working — remove them with `/tcp delete <name>`.
+Chambers that were already registered **before** the world was excluded keep working — remove them with `/trial delete <name>`.
 
 </details>
 
@@ -132,7 +132,7 @@ How long before chambers automatically reset. This is the default for ALL chambe
 * Weekly: `604800`
 
 {% hint style="info" %}
-**Disable automatic resets:** Set to `0` to disable automatic resets entirely. Chambers will only reset when manually triggered via `/tcp reset <chamber>` or the GUI.
+**Disable automatic resets:** Set to `0` to disable automatic resets entirely. Chambers will only reset when manually triggered via `/trial reset <chamber>` or the GUI.
 {% endhint %}
 
 </details>
@@ -171,7 +171,7 @@ Kick players out when the chamber resets? If `false`, players stay inside (proba
 
 Where players go when kicked out:
 
-* **EXIT\_POINT:** Your `/tcp setexit` location (recommended)
+* **EXIT\_POINT:** Your `/trial setexit` location (recommended)
 * **OUTSIDE\_BOUNDS:** Just outside the chamber boundary
 * **WORLD\_SPAWN:** Server spawn point
 
@@ -260,7 +260,7 @@ Control how long trial spawners stay in cooldown after being completed. This aff
 
 > **Note:** in `config.yml` this key lives under the **`reset:`** section (`reset.wild-spawner-cooldown-minutes`), not `global:`.
 
-Control cooldown for trial spawners **outside** of registered chambers (wild/unregistered Trial Chambers). This is a server-wide setting that affects all spawners not managed by TrialChamberPro.
+Control cooldown for trial spawners **outside** of registered chambers (wild/unregistered Trial Chambers). This is a server-wide setting that affects all spawners not managed by BetterTrialChambers.
 
 **Values:**
 
@@ -309,7 +309,7 @@ Stop a wave of due chambers from all restoring at once and cratering TPS. Confir
 
 <summary><code>reset-require-confirmation</code></summary>
 
-When `true`, a chamber that becomes due is **not** reset automatically; it's queued and online admins are notified. List with `/tcp reset pending`, fire with `/tcp reset confirm <chamber|all>` (they then run staggered).
+When `true`, a chamber that becomes due is **not** reset automatically; it's queued and online admins are notified. List with `/trial reset pending`, fire with `/trial reset confirm <chamber|all>` (they then run staggered).
 
 </details>
 
@@ -317,7 +317,7 @@ When `true`, a chamber that becomes due is **not** reset automatically; it's que
 
 <summary><code>use-fawe</code></summary>
 
-When `true` and FastAsyncWorldEdit is installed, **scheduled** resets place blocks through one FAWE EditSession to smooth out lag on large chambers. **Paper-only** (ignored on Folia); manual `/tcp reset` keeps the batched path so WorldEdit `//undo` still works; falls back automatically if FAWE is missing.
+When `true` and FastAsyncWorldEdit is installed, **scheduled** resets place blocks through one FAWE EditSession to smooth out lag on large chambers. **Paper-only** (ignored on Folia); manual `/trial reset` keeps the batched path so WorldEdit `//undo` still works; falls back automatically if FAWE is missing.
 
 </details>
 
@@ -343,7 +343,7 @@ naming:
     # …
 ```
 
-Every chamber has a unique **internal name** (used in commands) plus an optional friendly **display name** shown in player-facing announcements (reset/clear broadcasts, `/tcp info`). Rename any chamber with `/tcp rename <chamber> <name>` or via the chamber GUI.
+Every chamber has a unique **internal name** (used in commands) plus an optional friendly **display name** shown in player-facing announcements (reset/clear broadcasts, `/trial info`). Rename any chamber with `/trial rename <chamber> <name>` or via the chamber GUI.
 
 <details>
 
@@ -351,7 +351,7 @@ Every chamber has a unique **internal name** (used in commands) plus an optional
 
 **Default:** `true`
 
-Auto-assign a random unused display name from `name-pool` to each newly registered chamber (both manual `/tcp generate` and auto-discovered). The internal name is unchanged. Set `false` to leave new chambers nameless until you rename them.
+Auto-assign a random unused display name from `name-pool` to each newly registered chamber (both manual `/trial generate` and auto-discovered). The internal name is unchanged. Set `false` to leave new chambers nameless until you rename them.
 
 </details>
 
@@ -375,7 +375,7 @@ generation:
   # Keep this manageable for your server hardware
   max-volume: 750000
   blocks:
-    # When using /tcp generate blocks <amount>, we may need to round up to reach
+    # When using /trial generate blocks <amount>, we may need to round up to reach
     # minimum viable dimensions (31x15x31). This is the maximum number of extra
     # blocks allowed beyond the requested amount.
     rounding-allowance: 1000
@@ -661,7 +661,7 @@ Set to `true` if you have admin chests inside chambers that shouldn't be touched
 
 **Default:** `true` _(implemented in 1.5.19)_
 
-Allow player-vs-player combat inside registered chambers. When `false`, TCP cancels player-on-player damage — both melee and player-shot projectiles — inside a chamber, and tells the attacker. `true` keeps vanilla behaviour (PvP follows your world/server rules). Players with `tcp.bypass.protection` are exempt; mob damage and self-damage are never affected.
+Allow player-vs-player combat inside registered chambers. When `false`, BTC cancels player-on-player damage — both melee and player-shot projectiles — inside a chamber, and tells the attacker. `true` keeps vanilla behaviour (PvP follows your world/server rules). Players with `tcp.bypass.protection` are exempt; mob damage and self-damage are never affected.
 
 </details>
 
@@ -681,7 +681,7 @@ Stop mobs from breaking blocks (creeper explosions, endermen picking up blocks, 
 
 **Default:** `true` _(functional since 1.5.9)_
 
-If WorldGuard is installed, **respect its regions**: when a WorldGuard region covers a spot inside a chamber and grants the player build rights — region membership, an explicit `build` flag allow, or WorldGuard bypass — TrialChamberPro yields and skips its own block-break / block-place / container-access protection there. This lets region owners and staff work inside chambers that overlap their regions without disabling TCP protection elsewhere. Where there is no WG region (or the player has no build rights), TCP protection applies as normal. Set to `false` to ignore WorldGuard entirely.
+If WorldGuard is installed, **respect its regions**: when a WorldGuard region covers a spot inside a chamber and grants the player build rights — region membership, an explicit `build` flag allow, or WorldGuard bypass — BetterTrialChambers yields and skips its own block-break / block-place / container-access protection there. This lets region owners and staff work inside chambers that overlap their regions without disabling BTC protection elsewhere. Where there is no WG region (or the player has no build rights), BTC protection applies as normal. Set to `false` to ignore WorldGuard entirely.
 
 </details>
 
@@ -691,7 +691,7 @@ If WorldGuard is installed, **respect its regions**: when a WorldGuard region co
 
 **Default:** `true` _(added in 1.5.15)_
 
-If the matching land-claim plugin is installed, **stop players claiming a registered chamber**: TCP cancels that plugin's claim-create and claim-expand actions when the claimed area overlaps a chamber, and tells the player. This prevents someone fencing off a chamber and changing its claim flags to interfere with resets, loot, or protection. Each plugin has its own toggle and its own bypass permission (`tcp.bypass.residence` / `tcp.bypass.lands` / `tcp.bypass.griefprevention`, default op). Servers without the plugin are unaffected — the integration only activates when the plugin is present. Existing claims aren't removed; see the conflict scan below.
+If the matching land-claim plugin is installed, **stop players claiming a registered chamber**: BTC cancels that plugin's claim-create and claim-expand actions when the claimed area overlaps a chamber, and tells the player. This prevents someone fencing off a chamber and changing its claim flags to interfere with resets, loot, or protection. Each plugin has its own toggle and its own bypass permission (`tcp.bypass.residence` / `tcp.bypass.lands` / `tcp.bypass.griefprevention`, default op). Servers without the plugin are unaffected — the integration only activates when the plugin is present. Existing claims aren't removed; see the conflict scan below.
 
 </details>
 
@@ -701,7 +701,7 @@ If the matching land-claim plugin is installed, **stop players claiming a regist
 
 **Default:** `true` _(added in 1.5.15)_
 
-On startup, check every registered chamber against existing claims from the enabled land-claim plugins and log a warning for each overlap — including the chamber name, its location, and the claim owner. This surfaces pre-existing conflicts (e.g. a chamber registered on top of a claim made earlier) so you can resolve them. Re-run the scan at any time with **`/tcp claims scan`**. Set to `false` to skip the automatic startup scan (the command still works).
+On startup, check every registered chamber against existing claims from the enabled land-claim plugins and log a warning for each overlap — including the chamber name, its location, and the claim owner. This surfaces pre-existing conflicts (e.g. a chamber registered on top of a claim made earlier) so you can resolve them. Re-run the scan at any time with **`/trial claims scan`**. Set to `false` to skip the automatic startup scan (the command still works).
 
 </details>
 
@@ -721,14 +721,14 @@ How long (in milliseconds) to wait before re-showing a "you can't break / place 
 
 **Default:** `false` _(added in 1.5.18)_
 
-If [AdvancedEnchantments](https://www.spigotmc.org/resources/76519/) is installed, its custom enchants (e.g. _Blast Mining_) break blocks through their own effect path that **ignores TCP's block-break cancel** — so they can bypass chamber protection. Turn this on to make TCP cancel AE enchant activations that affect a registered chamber, stopping the effect (no break, no spam). Players with `tcp.bypass.protection` are exempt, and enchants in `advanced-enchantments-allowlist` are still permitted. Off by default, so AE behaves normally until you opt in. Reflection-based — nothing happens on servers without AE.
+If [AdvancedEnchantments](https://www.spigotmc.org/resources/76519/) is installed, its custom enchants (e.g. _Blast Mining_) break blocks through their own effect path that **ignores BTC's block-break cancel** — so they can bypass chamber protection. Turn this on to make BTC cancel AE enchant activations that affect a registered chamber, stopping the effect (no break, no spam). Players with `tcp.bypass.protection` are exempt, and enchants in `advanced-enchantments-allowlist` are still permitted. Off by default, so AE behaves normally until you opt in. Reflection-based — nothing happens on servers without AE.
 
 Since **1.5.21** this also catches mining a chamber wall from **just outside** it (Blast Mining the wall, AoE reaching across the boundary), not only when the player stands inside — see [`advanced-enchantments-block-radius`](config.yml.md#advanced-enchantments-block-radius) to tune the reach.
 
 {% hint style="info" %}
 **Do I need this for vein miners / hotkey area-miners?** Usually **no**. The real question for _any_ mass-breaker is whether it fires a normal, cancellable block-break for each block it removes:
 
-* **Hotkey-style area miners** (e.g. [VeinMiner](https://modrinth.com/plugin/veinminer)) simulate a player breaking each block — they fire a per-block break event, so TCP's standard block protection already cancels the ones inside a chamber. Nothing to enable; the only visible effect is the per-block denial, which `message-cooldown-ms` collapses to one line.
+* **Hotkey-style area miners** (e.g. [VeinMiner](https://modrinth.com/plugin/veinminer)) simulate a player breaking each block — they fire a per-block break event, so BTC's standard block protection already cancels the ones inside a chamber. Nothing to enable; the only visible effect is the per-block denial, which `message-cooldown-ms` collapses to one line.
 * **Enchantment / skill effect engines** (AdvancedEnchantments and similar) often break blocks through their own pipeline that _doesn't_ fire that event — those are what `block-advanced-enchantments` is for.
 
 So: if a tool fires an ordinary block-break per block, it's covered automatically; if it has its own effect pipeline that skips block-break events, it needs an explicit guard like this one.
@@ -758,7 +758,7 @@ advanced-enchantments-allowlist:
 
 **Default:** `2` _(added in 1.5.21)_
 
-How far (in blocks) an AE mining enchant's blast can reach — used to catch a player mining a chamber wall from **just outside** it. AE's event carries no block, so TCP ray-traces the block the player is looking at and checks a cube of that block **± this radius** against chamber bounds; if it touches a chamber, the enchant is blocked. The expansion is centred on the **mined block, not the player**.
+How far (in blocks) an AE mining enchant's blast can reach — used to catch a player mining a chamber wall from **just outside** it. AE's event carries no block, so BTC ray-traces the block the player is looking at and checks a cube of that block **± this radius** against chamber bounds; if it touches a chamber, the enchant is blocked. The expansion is centred on the **mined block, not the player**.
 
 Set it to your **largest** blast enchant's radius:
 
@@ -776,7 +776,7 @@ Note this only affects the thin shell of blocks just outside a chamber; normal m
 
 **Default:** `false` _(added in 1.5.20)_
 
-Stop players **teleporting into** a registered chamber from outside it, so they can't skip the intended entrance. Because it hooks the teleport itself rather than specific commands, it catches every method — `/tpa`, `/tpahere`, `/home`, `/warp`, `/tp`, ender pearls, chorus fruit, plugin teleports — in one place. Walking in on foot is unaffected. Players with **`tcp.bypass.entry`** (default: op), spectators, and creative-mode players are exempt (the gamemode exemption also covers TCP's own spectator-mode entry teleport). Off by default.
+Stop players **teleporting into** a registered chamber from outside it, so they can't skip the intended entrance. Because it hooks the teleport itself rather than specific commands, it catches every method — `/tpa`, `/tpahere`, `/home`, `/warp`, `/tp`, ender pearls, chorus fruit, plugin teleports — in one place. Walking in on foot is unaffected. Players with **`tcp.bypass.entry`** (default: op), spectators, and creative-mode players are exempt (the gamemode exemption also covers BTC's own spectator-mode entry teleport). Off by default.
 
 </details>
 
@@ -838,7 +838,7 @@ trial-keys:
 ```
 
 {% hint style="info" %}
-**Trial-key dupe protection isn't handled by TCP** — for that, use a dedicated plugin such as [AntiDupePro](https://modrinth.com/plugin/AntiDupePro).
+**Trial-key dupe protection isn't handled by BTC** — for that, use a dedicated plugin such as [AntiDupePro](https://modrinth.com/plugin/AntiDupePro).
 {% endhint %}
 
 <details>
@@ -1043,7 +1043,7 @@ Track how long players spend inside chambers. Disable if you don't care about ti
 
 **Default:** `true` _(added in 1.5.12)_
 
-Credit a "chamber completed" to every participant when a chamber is fully cleared (all its trial spawners finish their waves in one run). Drives the chambers leaderboard and the `%tcp_chambers_completed%` / `%tcp_leaderboard_chambers%` / `%tcp_top_chambers_*%` placeholders. Disable to leave chamber-completion stats untracked.
+Credit a "chamber completed" to every participant when a chamber is fully cleared (all its trial spawners finish their waves in one run). Drives the chambers leaderboard and the `%btc_chambers_completed%` / `%btc_leaderboard_chambers%` / `%btc_top_chambers_*%` placeholders. Disable to leave chamber-completion stats untracked.
 
 </details>
 
@@ -1233,7 +1233,7 @@ Outline colors as hex RGB, per wave type.
 **Default:** `"wave-active"` _(added in 1.5.4)_
 
 * `wave-active` — only the spawner whose wave is currently running glows.
-* `chamber-remaining` — when any wave starts in a chamber, **every uncleared spawner** in that chamber glows until its own wave completes. Solves "which spawner did I miss?" navigation on large chambers. Pairs well with TCP-MythicTrials' HUD.
+* `chamber-remaining` — when any wave starts in a chamber, **every uncleared spawner** in that chamber glows until its own wave completes. Solves "which spawner did I miss?" navigation on large chambers. Pairs well with Mythic Trials' HUD.
 
 {% hint style="warning" %}
 **Update to 1.5.6+ before enabling the glow.** On older builds the outline either didn't render at all (pre-1.5.4), floated one block above the spawner (1.5.4), or could be punched out and farmed for shulker shells (1.5.4–1.5.5).
@@ -1323,11 +1323,11 @@ Allow spectating empty chambers (when no other players are inside). Usually `fal
 
 _Added in 1.2.25 — opt-in._
 
-Automatically registers naturally-generated Trial Chambers the first time anyone loads their chunks. No `/tcp generate` needed — the plugin detects vaults and spawners as chunks enter memory, flood-fills the chamber's structural blocks (tuff/copper variants) to compute a bounding box, and registers it under a deterministic auto-name like `auto_world_123_456`.
+Automatically registers naturally-generated Trial Chambers the first time anyone loads their chunks. No `/trial generate` needed — the plugin detects vaults and spawners as chunks enter memory, flood-fills the chamber's structural blocks (tuff/copper variants) to compute a bounding box, and registers it under a deterministic auto-name like `auto_world_123_456`.
 
 On plugin enable, a startup sweep also scans every already-loaded Overworld chunk, so chambers in pre-loaded spawn regions get picked up on restart.
 
-To keep discovery (and TCP as a whole) out of a specific world, list it under `global.excluded-worlds` (v1.8.1 — see [Global Chamber Settings](config.yml.md#global-chamber-settings)).
+To keep discovery (and BTC as a whole) out of a specific world, list it under `global.excluded-worlds` (v1.8.1 — see [Global Chamber Settings](config.yml.md#global-chamber-settings)).
 
 ```yaml
 discovery:
@@ -1449,7 +1449,7 @@ Internal debounce and retry timers. `cooldown-seconds` prevents re-scanning the 
 
 When a newly discovered region's bounding box sits within `merge-distance-blocks` (Chebyshev distance) of an already-registered chamber, the two are merged into one chamber instead of registering a duplicate — vanilla chambers often load in pieces as their chunks stream in. `max-merged-volume` hard-caps the post-merge bounding box so pathological geometry can't swallow half the world into one logical chamber; regions that would exceed it stay separate.
 
-Since **1.5.6**, a merge automatically re-captures the chamber's snapshot whenever one exists (a pre-merge snapshot covers the old, smaller bounds and is unsafe to restore). If you see a console warning that a post-merge snapshot failed, run `/tcp snapshot create <chamber>` before the next reset.
+Since **1.5.6**, a merge automatically re-captures the chamber's snapshot whenever one exists (a pre-merge snapshot covers the old, smaller bounds and is unsafe to restore). If you see a console warning that a post-merge snapshot failed, run `/trial snapshot create <chamber>` before the next reset.
 
 </details>
 
@@ -1461,9 +1461,9 @@ Since **1.5.6**, a merge automatically re-captures the chamber's snapshot whenev
 
 The flood-fill that detects a chamber can be clipped: it floods outward from one vault/spawner, and if neighbouring chunks were still loading at detection time (or the chamber is big enough to hit the flood's internal node cap), the bounding box stops short — leaving part of the chamber, and its chests/vaults/spawners, outside the registered region. With `expand-on-discover` on, the plugin automatically runs **one expand pass** `expand-delay-seconds` after registering a chamber: a multi-seed re-flood from all of its vaults (now that the rows are committed and nearby chunks have loaded) that grows the bounds to cover what the first pass missed, then re-scans and re-snapshots.
 
-It's **best-effort** — it can only read chunks that are loaded when it runs, so a wing nobody has visited yet may still be missed. Repair on demand by standing in the chamber and running [`/tcp scan add <chamber>`](../reference/commands.md#tcp-scan-chamber), or use the chamber GUI's one-time **Travel & Expand** button (`/tcp menu <chamber>`), which teleports you there first then scans.
+It's **best-effort** — it can only read chunks that are loaded when it runs, so a wing nobody has visited yet may still be missed. Repair on demand by standing in the chamber and running [`/trial scan add <chamber>`](../reference/commands.md#tcp-scan-chamber), or use the chamber GUI's one-time **Travel & Expand** button (`/trial menu <chamber>`), which teleports you there first then scans.
 
-Set **`expand-force-load: true`** _(opt-in, Paper-only)_ to let both the auto pass and `/tcp scan add` **force-load** unloaded chunks on demand, so they can reach a wing nobody has visited without anyone travelling there. Off by default — it trades a chunk-load I/O spike for completeness.
+Set **`expand-force-load: true`** _(opt-in, Paper-only)_ to let both the auto pass and `/trial scan add` **force-load** unloaded chunks on demand, so they can reach a wing nobody has visited without anyone travelling there. Off by default — it trades a chunk-load I/O spike for completeness.
 
 </details>
 
@@ -1509,13 +1509,13 @@ How it behaves:
 * Containers **placed by players** inside a chamber keep vanilla behaviour (tagged at place time).
 * Decorated pots are excluded by design: their loot is break-based and already renews via chamber resets.
 
-**Customising a container's loot (overrides).** Editing is done entirely from the GUI — there is no in-world editing. Open the chamber GUI (`/tcp menu <chamber>` → **Container Loot**), then:
+**Customising a container's loot (overrides).** Editing is done entirely from the GUI — there is no in-world editing. Open the chamber GUI (`/trial menu <chamber>` → **Container Loot**), then:
 
 * **Scan Containers** lists every container in the chamber so you can pick one. Listing only — it does **not** freeze loot.
 * **Click a container to edit** its contents. Saving turns it into an **override**: every player then receives a copy of *that* loot (still per-player, and re-cloned fresh each reset), instead of a random roll. Overrides **persist across resets**.
-* **Revert to vanilla** with shift-left-click (or [`/tcp container resetone <chamber> <#>`](../reference/commands.md#tcp-container-action-chamber)) — the container goes back to random per-player rolls.
+* **Revert to vanilla** with shift-left-click (or [`/trial container resetone <chamber> <#>`](../reference/commands.md#tcp-container-action-chamber)) — the container goes back to random per-player rolls.
 
-Each container is labelled **Vanilla** (rolls fresh per player) or **Custom override** in the GUI. Toggle the whole feature on/off from the same screen, or via [`/tcp container`](../reference/commands.md#tcp-container-action-chamber) on the command line.
+Each container is labelled **Vanilla** (rolls fresh per player) or **Custom override** in the GUI. Toggle the whole feature on/off from the same screen, or via [`/trial container`](../reference/commands.md#tcp-container-action-chamber) on the command line.
 
 {% hint style="warning" %}
 Turn this on only after your chambers are registered — containers inside chamber bounds that players were already using as storage will start serving per-player loot. Player-placed containers _from before 1.5.7_ can't be distinguished from chamber loot containers.
@@ -1531,13 +1531,13 @@ setup:
     enabled: true
 ```
 
-_(Added in 1.6.0.)_ Controls the opt-in [`/tcp setup`](../reference/commands.md) tour's gentle reminder. When `enabled`, an operator who hasn't run the tour yet gets a one-line nudge on join — **at most once a week, three times total** — which stops permanently the moment they run `/tcp setup` (with a single follow-up if they start but don't finish). Set to `false` to never show it. The tour itself is always available on demand regardless of this setting; TCP runs perfectly on its defaults without ever opening it.
+_(Added in 1.6.0.)_ Controls the opt-in [`/trial setup`](../reference/commands.md) tour's gentle reminder. When `enabled`, an operator who hasn't run the tour yet gets a one-line nudge on join — **at most once a week, three times total** — which stops permanently the moment they run `/trial setup` (with a single follow-up if they start but don't finish). Set to `false` to never show it. The tour itself is always available on demand regardless of this setting; BTC runs perfectly on its defaults without ever opening it.
 
 ***
 
 ## Updates
 
-_(Added in 1.8.0.)_ TrialChamberPro can check for new releases and, if you let it, download and install them for you.
+_(Added in 1.8.0.)_ BetterTrialChambers can check for new releases and, if you let it, download and install them for you.
 
 ```yaml
 update:
@@ -1547,7 +1547,7 @@ update:
   allow-hot-reload: false
 ```
 
-Updates are checked on **Modrinth** first, falling back to **GitHub Releases**. Checks run shortly after startup and then on the interval below; check state is cached under `plugins/TrialChamberPro/pluginpulse/` so a fleet of servers doesn't hammer the APIs. Servers running the `-mc26` build automatically follow `-mc26` releases.
+Updates are checked on **Modrinth** first, falling back to **GitHub Releases**. Checks run shortly after startup and then on the interval below; check state is cached under `plugins/BetterTrialChambers/pluginpulse/` so a fleet of servers doesn't hammer the APIs. Servers running the `-mc26` build automatically follow `-mc26` releases.
 
 <details>
 
@@ -1557,9 +1557,9 @@ Updates are checked on **Modrinth** first, falling back to **GitHub Releases**. 
 
 How far the updater is allowed to go on its own. Each mode includes everything the one above it does:
 
-* `check-only` — check silently; results are only visible via `/tcp update status`.
+* `check-only` — check silently; results are only visible via `/trial update status`.
 * `notify` — additionally announce available updates in the console and to admins on join (holders of `tcp.admin`).
-* `download` — additionally allow `/tcp update download` to fetch a new release, verify it, and stage it for install on the next restart.
+* `download` — additionally allow `/trial update download` to fetch a new release, verify it, and stage it for install on the next restart.
 * `auto-stage` — automatically download, verify and stage new releases as they appear.
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
@@ -1596,17 +1596,17 @@ Refuse to install a downloaded jar unless its checksum matches the one the sourc
 
 **Default:** `false`
 
-When enabled, `/tcp update apply` can swap a staged update into place **without a server restart** — the old version is unloaded, the jar replaced, and the new version enabled live. If the new version fails to load, TCP rolls back to the automatic backup it made before staging.
+When enabled, `/trial update apply` can swap a staged update into place **without a server restart** — the old version is unloaded, the jar replaced, and the new version enabled live. If the new version fails to load, BTC rolls back to the automatic backup it made before staging.
 
 <div data-gb-custom-block data-tag="hint" data-style="warning">
 
-Hot reload is refused on Folia, and while other plugins depend on TrialChamberPro. It is an advanced convenience for small updates — **restarting the server is always the safer way to apply an update.** Leave this off unless you specifically want in-place reloads.
+Hot reload is refused on Folia, and while other plugins depend on BetterTrialChambers. It is an advanced convenience for small updates — **restarting the server is always the safer way to apply an update.** Leave this off unless you specifically want in-place reloads.
 
 </div>
 
 </details>
 
-See [Commands](../reference/commands.md) for the `/tcp update` subcommands (`check`, `download`, `apply`, `restore`, `ignore`, `status`).
+See [Commands](../reference/commands.md) for the `/trial update` subcommands (`check`, `download`, `apply`, `restore`, `ignore`, `status`).
 
 ***
 
@@ -1617,7 +1617,7 @@ metrics:
   enabled: true
 ```
 
-_(Added in 1.5.7.)_ Anonymous aggregate usage metrics via [bStats](https://bstats.org) — database backend, whether discovery is enabled, glow mode, chamber-count bucket, and which premium modules are installed alongside TCP. **No player data is ever collected.** Disable here or server-wide in `plugins/bStats/config.yml`.
+_(Added in 1.5.7.)_ Anonymous aggregate usage metrics via [bStats](https://bstats.org) — database backend, whether discovery is enabled, glow mode, chamber-count bucket, and which premium modules are installed alongside BTC. **No player data is ever collected.** Disable here or server-wide in `plugins/bStats/config.yml`.
 
 ***
 
@@ -1661,8 +1661,8 @@ This helps verify that debug mode is actually loaded from your config file.
 {% hint style="info" %}
 **Troubleshooting:** If you don't see the startup banner after enabling debug mode:
 
-1. Make sure you're editing the config in `plugins/TrialChamberPro/config.yml` (not the default in the plugin jar)
-2. Fully restart your server (not just `/tcp reload`)
+1. Make sure you're editing the config in `plugins/BetterTrialChambers/config.yml` (not the default in the plugin jar)
+2. Fully restart your server (not just `/trial reload`)
 3. Check for YAML syntax errors in your config file
 {% endhint %}
 
@@ -1678,7 +1678,7 @@ Debug mode generates TONS of console output. Don't leave it on in production!
 
 **Default:** `false`
 
-On startup TCP compares your `messages.yml` against the JAR-bundled defaults and warns about any missing keys — because when keys are missing, GUI tooltips and chat messages render as literal `<missing: key.name>` text. Set this to `true` only if that warning is noisy and you have a deliberate reason to ignore it.
+On startup BTC compares your `messages.yml` against the JAR-bundled defaults and warns about any missing keys — because when keys are missing, GUI tooltips and chat messages render as literal `<missing: key.name>` text. Set this to `true` only if that warning is noisy and you have a deliberate reason to ignore it.
 
 </details>
 
@@ -1758,7 +1758,7 @@ vaults:
 After editing `config.yml`:
 
 ```
-/tcp reload
+/trial reload
 ```
 
 Most settings apply immediately. Chamber-specific settings (like `default-reset-interval`) only affect new resets, not chambers mid-cycle.
@@ -1776,11 +1776,11 @@ Most settings apply immediately. Chamber-specific settings (like `default-reset-
 {% endhint %}
 
 {% hint style="info" %}
-**Test in dev:** Create a test chamber to experiment with settings. Use `/tcp reset TestChamber` to see how changes affect gameplay.
+**Test in dev:** Create a test chamber to experiment with settings. Use `/trial reset TestChamber` to see how changes affect gameplay.
 {% endhint %}
 
 {% hint style="warning" %}
-**Backup before tuning:** Changing database settings wrong can corrupt data. Always backup `plugins/TrialChamberPro/` before major config changes.
+**Backup before tuning:** Changing database settings wrong can corrupt data. Always backup `plugins/BetterTrialChambers/` before major config changes.
 {% endhint %}
 
 ***

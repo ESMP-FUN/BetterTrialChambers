@@ -28,7 +28,7 @@ Operators have **every** permission by default, including `tcp.bypass.cooldown`.
     ```
 3. Temporarily deop yourself: `/deop <yourname>`, test, re-op with `/op <yourname>`.
 
-**To confirm this is your issue:** set `debug.verbose-logging: true` in `config.yml`, `/tcp reload`, then open a vault. If the log shows `[Vault API] Player X has tcp.bypass.cooldown permission - SKIPPING cooldown check!` — that's it.
+**To confirm this is your issue:** set `debug.verbose-logging: true` in `config.yml`, `/trial reload`, then open a vault. If the log shows `[Vault API] Player X has tcp.bypass.cooldown permission - SKIPPING cooldown check!` — that's it.
 
 </details>
 
@@ -38,15 +38,15 @@ Operators have **every** permission by default, including `tcp.bypass.cooldown`.
 
 **The likely cause:** TAB characters in your `loot.yml`.
 
-YAML is strict about indentation. Mixing tabs and spaces — or using tabs at all — breaks the parser silently. The entire file fails to load, which is why `/tcp loot set` reports "Available tables:" as empty and vaults generate nothing.
+YAML is strict about indentation. Mixing tabs and spaces — or using tabs at all — breaks the parser silently. The entire file fails to load, which is why `/trial loot set` reports "Available tables:" as empty and vaults generate nothing.
 
 **Fix:**
 
-1. Open `plugins/TrialChamberPro/loot.yml` in a real text editor (VS Code, Notepad++, Sublime).
+1. Open `plugins/BetterTrialChambers/loot.yml` in a real text editor (VS Code, Notepad++, Sublime).
 2. Enable "Show whitespace" / "View invisible characters" so you can see tabs.
 3. Replace every tab with 2 spaces (or use your editor's "Convert Indentation to Spaces" command).
-4. `/tcp reload`.
-5. `/tcp menu` → Loot Tables — your tables should be listed.
+4. `/trial reload`.
+5. `/trial menu` → Loot Tables — your tables should be listed.
 
 Same rule applies to `config.yml` and `messages.yml`. If any of the three go quiet after an edit, tabs are the first suspect.
 
@@ -70,7 +70,7 @@ Restart once. Walk or fly around your world — chambers register themselves as 
 
 Full details: [Auto-Discovery config →](configuration/config.yml.md#auto-discovery-of-natural-trial-chambers)
 
-If you prefer manual control (e.g. you want custom names or only specific chambers to use the plugin), the classic WorldEdit workflow still works: `/tcp generate wand MyChamber`. See [Manual Chamber Setup](getting-started/your-first-chamber.md).
+If you prefer manual control (e.g. you want custom names or only specific chambers to use the plugin), the classic WorldEdit workflow still works: `/trial generate wand MyChamber`. See [Manual Chamber Setup](getting-started/your-first-chamber.md).
 
 </details>
 
@@ -85,14 +85,14 @@ Resets clear entities, restart spawners, and clear vault cooldowns — but to re
 **Fix for manually-registered chambers:**
 
 ```
-/tcp snapshot create <chamber>
+/trial snapshot create <chamber>
 ```
 
 Take this **before** players start breaking things. You can also take a fresh snapshot any time the chamber is in a known-good state and use it as the new baseline.
 
 **Fix for auto-discovered chambers:**
 
-Set `discovery.auto-snapshot: true` in `config.yml` and `/tcp reload`. New chambers discovered from that point forward will snapshot on registration. For chambers already auto-discovered without a snapshot, create one manually with `/tcp snapshot create <chamber>` (use `/tcp list` to find the auto-generated name, or just stand inside it and run `/tcp snapshot create` with no name).
+Set `discovery.auto-snapshot: true` in `config.yml` and `/trial reload`. New chambers discovered from that point forward will snapshot on registration. For chambers already auto-discovered without a snapshot, create one manually with `/trial snapshot create <chamber>` (use `/trial list` to find the auto-generated name, or just stand inside it and run `/trial snapshot create` with no name).
 
 **Note:** `discovery.auto-snapshot` requires **1.5.6+** to actually work — older builds saved the snapshot file but never linked it to the chamber, so resets still reported "No snapshot found" even with the option enabled.
 
@@ -107,7 +107,7 @@ Set `discovery.auto-snapshot: true` in `config.yml` and `/tcp reload`. New chamb
 **A snapshot taken on an older build still has no decoration data** — re-capture it once on 1.7.2+ while the chamber is in a known-good state:
 
 ```
-/tcp snapshot create <chamber>
+/trial snapshot create <chamber>
 ```
 
 </details>
@@ -121,10 +121,10 @@ Set `discovery.auto-snapshot: true` in `config.yml` and `/tcp reload`. New chamb
 **If one of your chambers was already affected:**
 
 ```
-/tcp delete <chamber>
+/trial delete <chamber>
 ```
 
-That single command is the complete plugin-side fix — it removes the broken registration **and** deletes its stale snapshot. If discovery is enabled, the chamber re-registers cleanly the next time its chunks load (with a fresh snapshot if `discovery.auto-snapshot: true`); otherwise re-register it manually with `/tcp generate`.
+That single command is the complete plugin-side fix — it removes the broken registration **and** deletes its stale snapshot. If discovery is enabled, the chamber re-registers cleanly the next time its chunks load (with a fresh snapshot if `discovery.auto-snapshot: true`); otherwise re-register it manually with `/trial generate`.
 
 Terrain that an affected reset already deleted **cannot be restored by the plugin** — the snapshot never contained those blocks. Restore that area from a world backup, or let it regenerate if it was untouched wilderness.
 
@@ -175,7 +175,7 @@ Usually a permission inheritance problem. Check:
     /lp user <player> permission check tcp.bypass.cooldown
     ```
 2. **Is the player in creative or spectator?** Creative players bypass cooldowns regardless of permissions (vanilla vault behaviour).
-3. **Did you recently clear vault data in the database?** If you wiped `player_vault_data` but not the native `rewarded_players` on the vault block (v1.2.21+ stores both), the native block state still remembers them. Use `/tcp vault reset <chamber> <player>` — it clears both.
+3. **Did you recently clear vault data in the database?** If you wiped `player_vault_data` but not the native `rewarded_players` on the vault block (v1.2.21+ stores both), the native block state still remembers them. Use `/trial vault reset <chamber> <player>` — it clears both.
 
 </details>
 
@@ -190,12 +190,12 @@ You enabled `prevent-teleport-into-chamber`, `prevent-entry-without-permission`,
     ```
     /lp user <yourname> permission set tcp.bypass.entry false
     ```
-2. **Turn on `debug.verbose-logging: true`** and `/tcp reload`, then reproduce. The console tells you exactly what happened, e.g.:
+2. **Turn on `debug.verbose-logging: true`** and `/trial reload`, then reproduce. The console tells you exactly what happened, e.g.:
    * `[Protection] teleport into 'X' allowed for Steve: has tcp.bypass.entry (note: OPs have this by default)` → permission exemption (see #1).
    * `[Protection] teleport into 'X' allowed for Steve: SPECTATOR mode is exempt` → spectators/creative are always exempt.
    * `[Protection] BLOCKED teleport into 'X' for Steve (cause COMMAND)` → it **is** working.
-   * **No `[Protection]` line at all** when teleporting in → the destination isn't inside a _registered_ chamber (wrong world, chamber not registered, or bounds don't reach where you landed). Check `/tcp list` / `/tcp info <chamber>`.
-3. **Did the config actually apply?** Confirm the key is nested under `protection:` (not pasted as a flat `protection.prevent-teleport-into-chamber:` line) and that you ran `/tcp reload` after editing.
+   * **No `[Protection]` line at all** when teleporting in → the destination isn't inside a _registered_ chamber (wrong world, chamber not registered, or bounds don't reach where you landed). Check `/trial list` / `/trial info <chamber>`.
+3. **Did the config actually apply?** Confirm the key is nested under `protection:` (not pasted as a flat `protection.prevent-teleport-into-chamber:` line) and that you ran `/trial reload` after editing.
 4. **AdvancedEnchantments specifically:** the `[AE]` debug lines tell you if the enchant was allowlisted, bypassed, or blocked. If you see **no `[AE]` lines at all** when an enchant procs, check the startup log for `AdvancedEnchantments integration: ready` — if it's missing, AE isn't being detected. Also remember `block-advanced-enchantments` is for effect-based enchants; ordinary vein miners are handled by normal block protection instead. For mining a wall from _outside_, make sure `advanced-enchantments-block-radius` covers your blast size.
 
 </details>
@@ -226,8 +226,8 @@ On worlds that existed before 1.21, players sometimes build structures out of tu
 **Short-term fix:** delete the false registration.
 
 ```
-/tcp list                  # find the auto_world_X_Z name
-/tcp delete <name>
+/trial list                  # find the auto_world_X_Z name
+/trial delete <name>
 ```
 
 **Long-term fix:** tighten the detection thresholds in `config.yml`:
@@ -270,7 +270,7 @@ Example that works:
 
 <summary><strong>I changed messages.yml but nothing changed in-game</strong></summary>
 
-1. Did you run `/tcp reload`? Config and message edits require a reload (or a restart).
+1. Did you run `/trial reload`? Config and message edits require a reload (or a restart).
 2. Is the key you edited the one actually being displayed? Some messages look similar. Search `messages.yml` for the exact text you see in-game.
 3. TAB characters? (See the **"Loot table not found"** section above — same rule.)
 4. Are you sure it's not a boss bar? Boss bar messages are in `messages.yml` under keys containing `boss-bar` — they use MiniMessage tags, different from regular color codes.
@@ -288,7 +288,7 @@ General-purpose tuning guidance.
 * **`blocks-per-tick`** is the single most important knob. Lower on low-spec hardware, raise on beefy servers with headroom. Default 500 is conservative.
 * **Cache durations** — `cache-duration-seconds: 300` (5 min) is fine for most servers. Bump to 600+ if you have hundreds of registered chambers and rare modifications.
 * **MySQL** outperforms SQLite past \~50 concurrent players. Below that, SQLite is simpler and plenty fast.
-* **Snapshot files** live in `plugins/TrialChamberPro/snapshots/`. They're gzip-compressed but a 500k-block chamber can still be 20+ MB. Monitor disk if you have many large chambers.
+* **Snapshot files** live in `plugins/BetterTrialChambers/snapshots/`. They're gzip-compressed but a 500k-block chamber can still be 20+ MB. Monitor disk if you have many large chambers.
 * **Skip discovery on world pregen.** If you're running Chunky to pre-generate your world, temporarily set `discovery.enabled: false`, run the pregen, then re-enable. Discovery + chunk-load storm adds up.
 
 ***
@@ -297,13 +297,13 @@ General-purpose tuning guidance.
 
 If you've hit something not covered here, a good bug report includes:
 
-1. **Plugin version** (`/tcp info` shows it).
+1. **Plugin version** (`/trial info` shows it).
 2. **Server type and version** (Paper 1.21.4, Folia 26.1.2, etc.).
 3. **Steps to reproduce** — exact commands, exact actions.
 4. **What you expected** vs **what actually happened**.
 5. **Relevant log excerpt** — run with `debug.verbose-logging: true` to get detailed output, then paste the lines around the error.
 6. **Your config.yml and loot.yml** (redact MySQL credentials first!) if they're relevant.
 
-File at [GitHub Issues](https://github.com/darkstarworks/TrialChamberPro/issues) or post in the `#support` channel on [Discord](https://discord.gg/qwYcTpHsNC).
+File at [GitHub Issues](https://github.com/ESMP-FUN/BetterTrialChambers/issues) or post in the `#support` channel on [Discord](https://discord.gg/qwYcTpHsNC).
 
 "Can't reproduce" is a real answer — sometimes a bug depends on state that's hard to observe. If we ask for more detail, it's because we're trying to track it down, not brushing it off.

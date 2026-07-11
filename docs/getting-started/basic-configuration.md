@@ -3,9 +3,9 @@
 You've installed the plugin and created your first chamber. Now let's tune the basics to match your server's playstyle. This is a quick-start guide—for deep dives, check the full [config.yml reference](../configuration/config.yml.md).
 
 {% hint style="info" %}
-**Config location:** `plugins/TrialChamberPro/config.yml`
+**Config location:** `plugins/BetterTrialChambers/config.yml`
 
-After editing, run `/tcp reload` to apply changes (no restart needed for most settings!)
+After editing, run `/trial reload` to apply changes (no restart needed for most settings!)
 {% endhint %}
 
 ***
@@ -219,7 +219,7 @@ global:
 **Test it:**
 
 ```
-/tcp reset YourChamber
+/trial reset YourChamber
 ```
 
 Watch for lag. Adjust `blocks-per-tick` and test again.
@@ -365,7 +365,7 @@ database:
 ```
 
 {% hint style="warning" %}
-**Database changes require a full restart,** not just `/tcp reload`!
+**Database changes require a full restart,** not just `/trial reload`!
 {% endhint %}
 
 **When to use MySQL:**
@@ -507,9 +507,9 @@ statistics:
 
 ## Applying Your Changes
 
-1. **Edit** `plugins/TrialChamberPro/config.yml`
+1. **Edit** `plugins/BetterTrialChambers/config.yml`
 2. **Save** the file
-3. **Reload:** `/tcp reload`
+3. **Reload:** `/trial reload`
 
 Most settings apply immediately. Exceptions:
 
@@ -517,14 +517,14 @@ Most settings apply immediately. Exceptions:
 * **Chamber-specific intervals** affect new resets, not current timers
 
 {% hint style="success" %}
-**Backup before major changes!** Copy your `plugins/TrialChamberPro/` folder before experimenting with config.
+**Backup before major changes!** Copy your `plugins/BetterTrialChambers/` folder before experimenting with config.
 {% endhint %}
 
 ***
 
 ## Common Questions
 
-**"Do I need to restart after editing config?"** Usually no—`/tcp reload` works for most settings. Only database changes require a restart.
+**"Do I need to restart after editing config?"** Usually no—`/trial reload` works for most settings. Only database changes require a restart.
 
 **"Can different chambers have different reset intervals?"** Not via config.yml (yet). All chambers use `default-reset-interval`. Per-chamber intervals are planned for future versions.
 
@@ -575,7 +575,7 @@ Change all player-facing messages to match your server's style.
 {% endhint %}
 
 {% hint style="success" %}
-**Join the discussion!** Check [GitHub Issues](https://github.com/darkstarworks/TrialChamberPro/issues) for community config tips and common setups.
+**Join the discussion!** Check [GitHub Issues](https://github.com/ESMP-FUN/BetterTrialChambers/issues) for community config tips and common setups.
 {% endhint %}
 
 Happy configuring!

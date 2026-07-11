@@ -1,11 +1,11 @@
 # =============================================================================
-# TrialChamberPro - Spawner Presets (v1.3.1+)
+# BetterTrialChambers - Spawner Presets (v1.3.1+)
 # =============================================================================
 #
 # Named templates for `minecraft:trial_spawner` items. Each preset can be
 # handed out via:
 #
-#     /tcp give <preset> [player] [amount]
+#     /trial give <preset> [player] [amount]
 #
 # The given item is a real trial_spawner block — placing it in the world
 # produces a working spawner with the configured normal_config / ominous_config
@@ -22,7 +22,7 @@
 # items are out of scope for this file (they belong to the planned premium
 # "Vault Crate" module).
 #
-# Reload after edits with:  /tcp reload
+# Reload after edits with:  /trial reload
 # =============================================================================
 
 presets:

@@ -1,19 +1,19 @@
 # dungeon.yml
 
-Controls **procedural dungeon generation** — assembling chambers on demand from modular room pieces you build yourself. See the [`/tcp dungeon` command](../reference/commands.md) for the full workflow.
+Controls **procedural dungeon generation** — assembling chambers on demand from modular room pieces you build yourself. See the [`/trial dungeon` command](../reference/commands.md) for the full workflow.
 
 ## Authoring rooms
 
 Build each room in WorldEdit with **complete, solid walls**. At each spot a doorway could be, place a `minecraft:jigsaw` block flush in the wall with its **front facing outward** (orientations `north_up` / `east_up` / `south_up` / `west_up`). Do **not** pre-cut the opening — the generator carves a standard doorway only where two rooms actually join, and leaves unused connectors as walls. Keep your door size consistent across all rooms.
 
-Capture rooms with `/tcp dungeon pos1`, `/tcp dungeon pos2`, then `/tcp dungeon capture <id> [roles…]` (roles become tags, e.g. `entrance`, `vault`, `boss`). Generate with `/tcp dungeon generate <name> [seed]`.
+Capture rooms with `/trial dungeon pos1`, `/trial dungeon pos2`, then `/trial dungeon capture <id> [roles…]` (roles become tags, e.g. `entrance`, `vault`, `boss`). Generate with `/trial dungeon generate <name> [seed]`.
 
 ## Importing datapack rooms (v1.7.0)
 
-Instead of building rooms in-world, you can import vanilla `.nbt` structure templates — the format datapacks (e.g. "crazy chambers"-style packs) use for their custom jigsaw rooms. Drop a loose `.nbt` file, a folder of them, or a whole datapack `.zip` into `plugins/TrialChamberPro/dungeon/import/`, then run:
+Instead of building rooms in-world, you can import vanilla `.nbt` structure templates — the format datapacks (e.g. "crazy chambers"-style packs) use for their custom jigsaw rooms. Drop a loose `.nbt` file, a folder of them, or a whole datapack `.zip` into `plugins/BetterTrialChambers/dungeon/import/`, then run:
 
 ```
-/tcp dungeon import <file|folder|zip> [tags…]
+/trial dungeon import <file|folder|zip> [tags…]
 ```
 
 - A **`.nbt` file** imports one room (id = filename).
@@ -54,4 +54,4 @@ wall-fallback-material: TUFF_BRICKS
 
 The stitcher picks a start room, then repeatedly attaches rooms whose connectors face back into an open doorway — trying all four rotations — rejecting any placement whose bounding box overlaps an already-placed room. Each join carves a doorway on both sides; unused connectors stay walls (no open holes). The finished layout is snapshotted and registered as a normal chamber, so resets, loot, protection and (with the premium module) tier scaling all apply to it unchanged.
 
-Generation is deterministic per `seed`, so the same seed produces the same layout. Block placement reuses TCP's Folia-safe restore pipeline; directional blocks (stairs, walls, fences, logs, signs) are rotated correctly without NMS.
+Generation is deterministic per `seed`, so the same seed produces the same layout. Block placement reuses BTC's Folia-safe restore pipeline; directional blocks (stairs, walls, fences, logs, signs) are rotated correctly without NMS.

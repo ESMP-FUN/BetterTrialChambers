@@ -1,6 +1,6 @@
 # Custom Mob Providers (Developer Guide)
 
-This page is for plugin developers who want to register a new mob source with TrialChamberPro. If you're a server admin looking to *use* an existing provider (MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens), see [Custom Mobs](../configuration/custom-mobs.md) instead.
+This page is for plugin developers who want to register a new mob source with BetterTrialChambers. If you're a server admin looking to *use* an existing provider (MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens), see [Custom Mobs](../configuration/custom-mobs.md) instead.
 
 ## Overview
 
@@ -17,7 +17,7 @@ Your provider plugs into step 4. Everything else is handled.
 ## The interface
 
 ```kotlin
-package io.github.darkstarworks.trialChamberPro.providers
+package com.esmpfun.bettertrialchambers.providers
 
 import org.bukkit.Location
 import org.bukkit.entity.Entity
@@ -51,7 +51,7 @@ interface TrialMobProvider {
 A minimal example that integrates a hypothetical "BossPlugin":
 
 ```kotlin
-class BossPluginProvider(private val tcp: TrialChamberPro) : TrialMobProvider {
+class BossPluginProvider(private val tcp: BetterTrialChambers) : TrialMobProvider {
     override val id = "bossplugin"
     override val displayName = "BossPlugin"
 
@@ -83,28 +83,28 @@ class BossPluginProvider(private val tcp: TrialChamberPro) : TrialMobProvider {
 
 ## Registering with the registry
 
-Register in your `onEnable` after TrialChamberPro has loaded. Use a soft-dependency so you don't hard-fail when TCP is missing:
+Register in your `onEnable` after BetterTrialChambers has loaded. Use a soft-dependency so you don't hard-fail when BTC is missing:
 
 **plugin.yml:**
 
 ```yaml
-softdepend: [TrialChamberPro]
+softdepend: [BetterTrialChambers]
 ```
 
 **MyPlugin.kt:**
 
 ```kotlin
 override fun onEnable() {
-    val tcp = server.pluginManager.getPlugin("TrialChamberPro") as? TrialChamberPro
+    val tcp = server.pluginManager.getPlugin("BetterTrialChambers") as? BetterTrialChambers
     if (tcp == null) {
-        logger.info("TrialChamberPro not present — skipping provider registration.")
+        logger.info("BetterTrialChambers not present — skipping provider registration.")
         return
     }
     tcp.trialMobProviderRegistry.register(BossPluginProvider(tcp))
 }
 ```
 
-Once registered, server admins can select your provider via `/tcp mobs <chamber> provider bossplugin` or through the per-chamber **Custom Mob Provider** GUI screen.
+Once registered, server admins can select your provider via `/trial mobs <chamber> provider bossplugin` or through the per-chamber **Custom Mob Provider** GUI screen.
 
 ## Patterns to follow
 
@@ -134,7 +134,7 @@ override fun spawnMob(mobId: String, location: Location, ominous: Boolean): Enti
 - **Cache `isAvailable()`.** Listeners call it on the hot path; reflective `Bukkit.getPluginManager().getPlugin(...)` checks every tick add up.
 - **Mob id format is yours to define.** Use whatever your plugin's natural identifier is. Document it on the [Custom Mobs](../configuration/custom-mobs.md) page (or similar) so admins know what to put in `customMobIdsNormal` / `customMobIdsOminous`.
 - **The `ominous` flag is captured at wave start** and cannot flip mid-wave. You can use it to pick a harder mob variant for ominous trials, but the wave system itself handles the ominous boss bar / loot table swap.
-- **Register early** — providers registered after a chamber has already started a wave will not be seen by that wave. The startup phase in `TrialChamberPro.onEnable` is the right time.
+- **Register early** — providers registered after a chamber has already started a wave will not be seen by that wave. The startup phase in `BetterTrialChambers.onEnable` is the right time.
 - **One provider per id.** Re-registering the same `id` overwrites the previous instance.
 
 ## Listening to wave events

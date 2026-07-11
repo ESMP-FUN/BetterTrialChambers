@@ -1,6 +1,6 @@
 # Permissions
 
-TrialChamberPro uses a hierarchical permission system. Grant broad access with wildcards or fine-tune with specific permissions.
+BetterTrialChambers uses a hierarchical permission system. Grant broad access with wildcards or fine-tune with specific permissions.
 
 {% hint style="info" %}
 **Permission Plugin Required:** Use LuckPerms, PermissionsEx, or any Bukkit-compatible permissions plugin.
@@ -10,7 +10,7 @@ TrialChamberPro uses a hierarchical permission system. Grant broad access with w
 
 <div data-gb-custom-block data-tag="hint" data-style="warning">
 
-**Fixed in 1.7.1:** Prior versions gated the entire `/tcp` command behind `tcp.admin`, so non-OP players could not use `/tcp stats` or `/tcp leaderboard` even though those default to everyone. As of 1.7.1 each subcommand checks its own permission, so the defaults documented on this page actually apply. Admins see no change; regular players gain access to the stats and leaderboard commands as intended.
+**Fixed in 1.7.1:** Prior versions gated the entire `/trial` command behind `tcp.admin`, so non-OP players could not use `/trial stats` or `/trial leaderboard` even though those default to everyone. As of 1.7.1 each subcommand checks its own permission, so the defaults documented on this page actually apply. Admins see no change; regular players gain access to the stats and leaderboard commands as intended.
 
 </div>
 
@@ -75,7 +75,7 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 **Description:** Use the guided settings tour **Default:** Operators only **Allows:**
 
-* `/tcp setup` / `/tcp setup continue` - Walk through the main settings (also gates the op-join setup reminder)
+* `/trial setup` / `/trial setup continue` - Walk through the main settings (also gates the op-join setup reminder)
 
 **Use this for:** Anyone you trust to change plugin settings
 
@@ -87,8 +87,8 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 **Description:** Register chambers **Default:** Operators only **Allows:**
 
-* `/tcp generate <mode> <args>` - Register chambers from WorldEdit selection, coordinates, or blocks
-* `/tcp dungeon …` - Procedural dungeon assembly (also `tcp.admin.generate`)
+* `/trial generate <mode> <args>` - Register chambers from WorldEdit selection, coordinates, or blocks
+* `/trial dungeon …` - Procedural dungeon assembly (also `tcp.admin.generate`)
 
 **Use this for:** Staff who register chamber infrastructure
 
@@ -100,10 +100,10 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 **Description:** Delete chambers and set exit points **Default:** Operators only **Allows:**
 
-* `/tcp delete <chamber>` - Delete a chamber and its data
-* `/tcp setexit <chamber>` - Set a chamber's exit location
+* `/trial delete <chamber>` - Delete a chamber and its data
+* `/trial setexit <chamber>` - Set a chamber's exit location
 
-**Use this for:** Staff who manage chamber lifecycle. _(Note: `/tcp delete` and `/tcp setexit` require this node, **not**_ _`tcp.admin.generate`.)_
+**Use this for:** Staff who manage chamber lifecycle. _(Note: `/trial delete` and `/trial setexit` require this node, **not**_ _`tcp.admin.generate`.)_
 
 </details>
 
@@ -113,7 +113,7 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 **Description:** Scan chambers for vaults and spawners **Default:** Operators only **Allows:**
 
-* `/tcp scan <chamber>` - Detect vaults/spawners
+* `/trial scan <chamber>` - Detect vaults/spawners
 
 **Use this for:** Staff who set up chambers (usually paired with `tcp.admin.create`)
 
@@ -125,8 +125,8 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 **Description:** Manage chamber snapshots **Default:** Operators only **Allows:**
 
-* `/tcp snapshot create <chamber>` - Create snapshots
-* `/tcp snapshot restore <chamber>` - Restore from snapshots
+* `/trial snapshot create <chamber>` - Create snapshots
+* `/trial snapshot restore <chamber>` - Restore from snapshots
 
 **Use this for:** Staff who maintain chambers and handle resets
 
@@ -138,7 +138,7 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 **Description:** Force chamber resets **Default:** Operators only **Allows:**
 
-* `/tcp reset <chamber>` - Immediately reset a chamber
+* `/trial reset <chamber>` - Immediately reset a chamber
 
 **Use this for:** Moderators who manage events and handle player issues
 
@@ -150,8 +150,8 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 **Description:** Manage trial keys **Default:** Operators only **Allows:**
 
-* `/tcp key give <player> <amount> [type]` - Give keys to players
-* `/tcp key check <player>` - Check player's key count
+* `/trial key give <player> <amount> [type]` - Give keys to players
+* `/trial key check <player>` - Check player's key count
 
 **Use this for:** Staff who run events or compensate players
 
@@ -163,7 +163,7 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 **Description:** Manage vault cooldowns **Default:** Operators only **Allows:**
 
-* `/tcp vault reset <chamber> <player> [type]` - Reset vault cooldowns
+* `/trial vault reset <chamber> <player> [type]` - Reset vault cooldowns
 
 **Use this for:** Staff who handle player support and bug compensation
 
@@ -175,7 +175,7 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 **Description:** Reload plugin configuration **Default:** Operators only **Allows:**
 
-* `/tcp reload` - Reload config files
+* `/trial reload` - Reload config files
 
 **Use this for:** Admins who tune configuration
 
@@ -187,11 +187,11 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 **Description:** Configure per-chamber custom mob providers _(1.3.0+)_ **Default:** Operators only **Allows:**
 
-* `/tcp mobs providers` - List registered providers and availability
-* `/tcp mobs <chamber> provider <id|vanilla|none>` - Set the provider for a chamber
-* `/tcp mobs <chamber> add normal|ominous <mobId>` - Add a mob id to the chamber's pool
-* `/tcp mobs <chamber> remove normal|ominous <mobId>` - Remove a mob id
-* `/tcp mobs <chamber> list` - Show the chamber's current config
+* `/trial mobs providers` - List registered providers and availability
+* `/trial mobs <chamber> provider <id|vanilla|none>` - Set the provider for a chamber
+* `/trial mobs <chamber> add normal|ominous <mobId>` - Add a mob id to the chamber's pool
+* `/trial mobs <chamber> remove normal|ominous <mobId>` - Remove a mob id
+* `/trial mobs <chamber> list` - Show the chamber's current config
 
 **Use this for:** Admins who manage MythicMobs / EliteMobs / EcoMobs / LevelledMobs / InfernalMobs / Citizens integrations on their chambers. See [Custom Mobs](../configuration/custom-mobs.md) for the per-provider mob-id format.
 
@@ -203,9 +203,9 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 **Description:** Manage per-chamber loot tables **Default:** Operators only **Allows:**
 
-* `/tcp loot set <chamber> <normal|ominous> <table>` - Override a chamber's loot table
-* `/tcp loot clear <chamber> [normal|ominous|all]` - Remove a per-chamber override
-* `/tcp loot audit` - List pre-1.5.0 loot entries that lost their NBT
+* `/trial loot set <chamber> <normal|ominous> <table>` - Override a chamber's loot table
+* `/trial loot clear <chamber> [normal|ominous|all]` - Remove a per-chamber override
+* `/trial loot audit` - List pre-1.5.0 loot entries that lost their NBT
 
 **Use this for:** Admins curating per-chamber loot.
 
@@ -218,7 +218,7 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 **Description:** Manage per-player container loot _(1.5.7+, reworked 1.6.3)_ **Default:** Operators only **Allows:**
 
 * The chamber GUI's **Container Loot** view — edit a container to create a loot **override** (every player then receives a copy of it), or revert it to vanilla per-player rolls
-* `/tcp container <list|materialize|edit|resetone|reset|clearcopies|tp> <chamber>` - the same management from the CLI
+* `/trial container <list|materialize|edit|resetone|reset|clearcopies|tp> <chamber>` - the same management from the CLI
 
 Only relevant when `chests.per-player-loot` is enabled. Editing is GUI/command-only — there is no in-world editing. Without an override, every player gets their own freshly-rolled loot.
 
@@ -230,7 +230,7 @@ Only relevant when `chests.per-player-loot` is enabled. Editing is GUI/command-o
 
 **Description:** Hand out preconfigured trial-spawner items _(1.3.1+)_ **Default:** Operators only **Allows:**
 
-* `/tcp give <preset> [player] [amount]` - Receive (or send) a `trial_spawner` item with `block_entity_data` baked in from a named preset
+* `/trial give <preset> [player] [amount]` - Receive (or send) a `trial_spawner` item with `block_entity_data` baked in from a named preset
 
 **Use this for:** Admins who deploy custom trial-spawner pools defined in datapacks. See [spawner\_presets.yml](../configuration/spawner-presets.yml.md) for the preset file format.
 
@@ -242,8 +242,8 @@ Only relevant when `chests.per-player-loot` is enabled. Editing is GUI/command-o
 
 **Description:** Pause and resume chambers _(1.4.3+)_ **Default:** Operators only **Allows:**
 
-* `/tcp pause <chamber>` - Suspend all active chamber behavior while preserving the DB record
-* `/tcp resume <chamber>` - Restore a paused chamber to normal operation
+* `/trial pause <chamber>` - Suspend all active chamber behavior while preserving the DB record
+* `/trial resume <chamber>` - Restore a paused chamber to normal operation
 
 **Use this for:** Admins managing chambers on hardcore/anarchy servers where griefing protection is intentionally off. Pausing freezes the chamber's record without deleting any data.
 
@@ -255,7 +255,7 @@ Only relevant when `chests.per-player-loot` is enabled. Editing is GUI/command-o
 
 **Description:** Open the in-game admin GUI **Default:** Operators only **Allows:**
 
-* `/tcp menu` - Open the full admin GUI (chambers, loot editing, stats, settings)
+* `/trial menu` - Open the full admin GUI (chambers, loot editing, stats, settings)
 
 **Use this for:** Staff who manage chambers through the GUI instead of commands. Note that GUI actions still respect the underlying feature permissions.
 
@@ -267,7 +267,7 @@ Only relevant when `chests.per-player-loot` is enabled. Editing is GUI/command-o
 
 **Description:** View other players' statistics **Default:** Operators only **Allows:**
 
-* `/tcp stats <player>` - View any player's stats
+* `/trial stats <player>` - View any player's stats
 
 **Use this for:** Staff who monitor player activity
 
@@ -279,9 +279,9 @@ Only relevant when `chests.per-player-loot` is enabled. Editing is GUI/command-o
 
 **Description:** View chamber information **Default:** Operators only **Allows:**
 
-* `/tcp list` - List all chambers
-* `/tcp info <chamber>` - View chamber details
-* `/tcp update …` - Check for and install plugin updates (see [Commands](commands.md))
+* `/trial list` - List all chambers
+* `/trial info <chamber>` - View chamber details
+* `/trial update …` - Check for and install plugin updates (see [Commands](commands.md))
 
 Also receives plugin update notifications on join.
 
@@ -303,7 +303,7 @@ Also receives plugin update notifications on join.
 
 **Description:** View own statistics **Default:** **All players** (true) **Allows:**
 
-* `/tcp stats` - View your own stats
+* `/trial stats` - View your own stats
 
 **Typical usage:** Default permission for all players
 
@@ -315,9 +315,9 @@ Also receives plugin update notifications on join.
 
 **Description:** View leaderboards **Default:** **All players** (true) **Allows:**
 
-* `/tcp leaderboard <type>` - View top players
-* `/tcp lb <type>` - Alias
-* `/tcp top <type>` - Alias
+* `/trial leaderboard <type>` - View top players
+* `/trial lb <type>` - Alias
+* `/trial top <type>` - Alias
 
 **Typical usage:** Default permission for all players
 
@@ -401,7 +401,7 @@ Also receives plugin update notifications on join.
 **Description:** Place VAULT blocks outside registered chambers _(1.5.7+)_ **Default:** Operators only **Effect:**
 
 * Exempt from `protection.block-wild-vault-placement`
-* Needed for creative builds using vault blocks and for setting up out-of-chamber crates (e.g. TCP-VaultCrates)
+* Needed for creative builds using vault blocks and for setting up out-of-chamber crates (e.g. Vault Crates)
 
 </details>
 
@@ -669,7 +669,7 @@ Steve can only create/scan chambers in the nether.
 
 ```
 tcp.admin.*                (wildcard — grants the children below)
-  ├─ tcp.admin.generate    (Register chambers, /tcp dungeon)
+  ├─ tcp.admin.generate    (Register chambers, /trial dungeon)
   ├─ tcp.admin.create      (Delete chambers, set exit)
   ├─ tcp.admin.scan        (Scan chambers)
   ├─ tcp.admin.snapshot    (Manage snapshots)
@@ -683,8 +683,8 @@ tcp.admin.*                (wildcard — grants the children below)
   ├─ tcp.admin.loot        (Per-chamber loot tables)
   ├─ tcp.admin.containers  (Per-player container loot templates)
   ├─ tcp.admin.mobs        (Per-chamber custom mob providers)
-  ├─ tcp.admin             (View chambers, /tcp list + /tcp info)
-  └─ tcp.give              (/tcp give spawner presets)
+  ├─ tcp.admin             (View chambers, /trial list + /trial info)
+  └─ tcp.give              (/trial give spawner presets)
 
 tcp.admin                  (View chambers - NOT a wildcard, but granted by tcp.admin.*)
 
@@ -786,11 +786,11 @@ admin:
 
 ## FAQ
 
-**"Do I need `tcp.admin` for `tcp.admin.create`?"** No! Specific permissions (like `tcp.admin.create`) work independently. `tcp.admin` only grants access to `/tcp list` and `/tcp info`.
+**"Do I need `tcp.admin` for `tcp.admin.create`?"** No! Specific permissions (like `tcp.admin.create`) work independently. `tcp.admin` only grants access to `/trial list` and `/trial info`.
 
 **"What's the difference between `tcp.admin` and `tcp.admin.*`?"**
 
-* `tcp.admin` = View chambers (`/tcp list`, `/tcp info`)
+* `tcp.admin` = View chambers (`/trial list`, `/trial info`)
 * `tcp.admin.*` = ALL admin permissions (wildcard)
 
 **"Can I use negative permissions to remove specific access?"** Yes! With LuckPerms or similar plugins:
