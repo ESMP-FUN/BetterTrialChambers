@@ -1,4 +1,4 @@
-# TrialChamberPro Configuration
+# BetterTrialChambers Configuration
 
 # Database settings
 database:
@@ -10,8 +10,8 @@ database:
   username: root
   password: ""
   pool-size: 10
-  # Prefix for all TCP tables (letters/digits/underscore, max 16 chars). Change only if
-  # another plugin's tables collide with TCP's. Existing tables are auto-renamed on first
+  # Prefix for all BTC tables (letters/digits/underscore, max 16 chars). Change only if
+  # another plugin's tables collide with BTC's. Existing tables are auto-renamed on first
   # start after changing this (or after upgrading to 1.7.0, which adopts the old
   # unprefixed names under "tcp_").
   table-prefix: "tcp_"
@@ -19,9 +19,9 @@ database:
 # Plugin update checking & installation (checks Modrinth, falls back to GitHub Releases)
 update:
   # What the updater is allowed to do:
-  #   check-only - check silently; results only via /tcp update status
+  #   check-only - check silently; results only via /trial update status
   #   notify     - also announce updates to console + admins (default)
-  #   download   - additionally allow /tcp update download to stage a
+  #   download   - additionally allow /trial update download to stage a
   #                checksum-verified jar that installs on the next restart
   #   auto-stage - download, verify and stage new releases automatically
   mode: notify
@@ -30,24 +30,24 @@ update:
   # Refuse downloads that don't publish a checksum. Leave enabled unless a
   # release is missing hashes and you accept the risk.
   require-hash: true
-  # Allow /tcp update apply to hot-swap a staged update WITHOUT a restart.
-  # Refused on Folia and while other plugins depend on TCP. Advanced feature:
+  # Allow /trial update apply to hot-swap a staged update WITHOUT a restart.
+  # Refused on Folia and while other plugins depend on BTC. Advanced feature:
   # restarting is always the safer way to apply updates.
   allow-hot-reload: false
 
 # Global chamber settings
 global:
-  # Worlds where TCP stays inactive (case-insensitive world names). In an
-  # excluded world: auto-discovery never registers chambers, /tcp generate and
-  # /tcp dungeon generate are refused, and wild trial spawners get no boss
+  # Worlds where BTC stays inactive (case-insensitive world names). In an
+  # excluded world: auto-discovery never registers chambers, /trial generate and
+  # /trial dungeon generate are refused, and wild trial spawners get no boss
   # bars / wave tracking. Chambers already registered in a world BEFORE it was
-  # excluded keep working — remove them with /tcp delete <name>.
+  # excluded keep working — remove them with /trial delete <name>.
   # Example:
   #   excluded-worlds:
   #     - second_overworld
   excluded-worlds: []
   # Default reset interval in seconds
-  # Set to 0 to disable automatic resets (manual reset only via /tcp reset or GUI)
+  # Set to 0 to disable automatic resets (manual reset only via /trial reset or GUI)
   # Common values: 86400 (daily), 172800 (48h), 604800 (weekly)
   default-reset-interval: 172800
   reset-warning-times: [300, 60, 30] # Warnings in seconds before reset
@@ -55,7 +55,7 @@ global:
   # Server-wide broadcast when a chamber is fully cleared (every trial spawner in it
   # finished its wave in one run). Uses the chamber's display name + the players who
   # took part — e.g. "Bastion has been cleared by Steve, Alex!". Off by default.
-  # (Premium TCP-MythicTrials layers a richer "at difficulty N" version on top.)
+  # (Premium Mythic Trials layers a richer "at difficulty N" version on top.)
   broadcast-chamber-cleared: false
   teleport-players-on-reset: true
   teleport-location: EXIT_POINT # EXIT_POINT, OUTSIDE_BOUNDS, or WORLD_SPAWN
@@ -68,29 +68,29 @@ global:
   reset-stagger-seconds: 5      # minimum gap between one reset finishing and the next starting
   # When true, chambers that come due for an automatic reset are NOT reset
   # immediately — they're parked in a queue and online admins are notified.
-  # An operator confirms them with /tcp reset confirm <chamber> or
-  # /tcp reset confirm all (then they run staggered per the settings above).
-  # /tcp reset pending lists what's waiting.
+  # An operator confirms them with /trial reset confirm <chamber> or
+  # /trial reset confirm all (then they run staggered per the settings above).
+  # /trial reset pending lists what's waiting.
   reset-require-confirmation: false
 
   # Mute the vanilla console line "Trial Spawner at BlockPos{...} has no detected
-  # players". TCP's reset fixes stop new occurrences, but spawners already broken
+  # players". BTC's reset fixes stop new occurrences, but spawners already broken
   # before updating keep logging it every tick until their chamber next resets.
   suppress-trial-spawner-spam: true
 
   # Use FastAsyncWorldEdit to place blocks during SCHEDULED (automatic) resets, which
   # smooths out the lag of large restores. Requires FastAsyncWorldEdit; ignored on
-  # Folia (FAWE has no Folia support) and for manual /tcp reset (those keep the
+  # Folia (FAWE has no Folia support) and for manual /trial reset (those keep the
   # batched restore so WorldEdit //undo still works). Falls back automatically.
   use-fawe: false
 
 # Chamber display names
 # Chambers have a unique internal name (used in commands) plus an optional friendly
-# DISPLAY name shown in player-facing announcements (reset/clear broadcasts, /tcp info).
-# Rename any chamber with /tcp rename <chamber> <name>, or via the chamber GUI.
+# DISPLAY name shown in player-facing announcements (reset/clear broadcasts, /trial info).
+# Rename any chamber with /trial rename <chamber> <name>, or via the chamber GUI.
 naming:
   # Auto-assign a random unused display name from the pool below to each newly
-  # registered chamber (both manual /tcp generate and auto-discovered). The internal
+  # registered chamber (both manual /trial generate and auto-discovered). The internal
   # name is unchanged. Set false to leave new chambers nameless until renamed.
   auto-assign: true
   # The pool to draw from. A name already used by another chamber is skipped; when all
@@ -143,7 +143,7 @@ generation:
   # Keep this manageable for your server hardware
   max-volume: 750000
   blocks:
-    # When using /tcp generate blocks <amount>, we may need to round up to reach minimum viable dimensions.
+    # When using /trial generate blocks <amount>, we may need to round up to reach minimum viable dimensions.
     # This is the maximum number of extra blocks allowed beyond the requested amount.
     rounding-allowance: 1000
 
@@ -244,8 +244,8 @@ protection:
   # AdvancedEnchantments "Blast Mining" enchant, a vein miner, or rapid clicking. 0 = no throttle.
   message-cooldown-ms: 1500
   # AdvancedEnchantments integration: AE custom enchants (Blast Mining, etc.) break blocks
-  # through their own effect path that ignores TCP's block-break cancel — so they can bypass
-  # chamber protection. When this is on (and AE is installed), TCP cancels AE enchant activations
+  # through their own effect path that ignores BTC's block-break cancel — so they can bypass
+  # chamber protection. When this is on (and AE is installed), BTC cancels AE enchant activations
   # for players standing in a registered chamber. Players with tcp.bypass.protection are exempt.
   # Off by default so AE behaves normally until you opt in.
   block-advanced-enchantments: false
@@ -267,7 +267,7 @@ protection:
   # make chambers rank-restricted. Spectators/creative are exempt. Off by default. (Note: this
   # runs on player movement; it's lightweight, but only enable it if you actually need it.)
   prevent-entry-without-permission: false
-  # Allow player-vs-player combat inside registered chambers. When false, TCP cancels
+  # Allow player-vs-player combat inside registered chambers. When false, BTC cancels
   # player-on-player damage (melee + player-shot projectiles) inside a chamber. true keeps
   # vanilla behaviour (PvP follows world/server rules). Players with tcp.bypass.protection
   # are exempt; mob damage and self-damage are never affected.
@@ -284,7 +284,7 @@ protection:
   griefprevention-integration: true
   # On startup, scan every registered chamber against existing claims from the above
   # plugins and log a warning for each overlap (with the chamber name + location), so
-  # you can find and fix pre-existing conflicts. Re-run anytime with /tcp claims scan.
+  # you can find and fix pre-existing conflicts. Re-run anytime with /trial claims scan.
   claim-conflict-scan-on-startup: true
 
   # Block placing functioning VAULT blocks outside registered chambers. A wild
@@ -296,7 +296,7 @@ protection:
   # destroyed, automatically pause the chamber so its record stays in the database
   # but all active behavior (resets, protection, tracking, vault interactions) is
   # suspended. Useful for "hardcore" servers where griefing protection is disabled.
-  # Paused chambers can be manually resumed at any time via /tcp resume <name> or the GUI.
+  # Paused chambers can be manually resumed at any time via /trial resume <name> or the GUI.
   auto-pause-on-destruction: false
   # How many critical blocks (vaults + trial spawners combined) must be destroyed
   # inside a chamber before auto-pause fires. Minimum effective value is 1.
@@ -308,7 +308,7 @@ protection:
 trial-keys:
   # Ensure normal keys only open normal vaults (and ominous keys only open ominous vaults).
   validate-key-type: true
-  # Note: TCP does not provide trial-key dupe protection — for that, use a dedicated plugin
+  # Note: BTC does not provide trial-key dupe protection — for that, use a dedicated plugin
   # such as AntiDupePro (https://modrinth.com/plugin/AntiDupePro).
 
 # Reset settings
@@ -369,7 +369,7 @@ statistics:
   track-time-spent: true
   # Count a "chamber completed" for every participant when a chamber is fully
   # cleared (all its trial spawners finish their waves in one run). Drives the
-  # chambers leaderboard and the %tcp_chambers_completed% / %tcp_top_chambers_*%
+  # chambers leaderboard and the %btc_chambers_completed% / %btc_top_chambers_*%
   # placeholders.
   track-chamber-completion: true
   top-players-count: 10
@@ -422,7 +422,7 @@ spawner-waves:
   #                                   spawner in that chamber glows for the rest of the
   #                                   cycle. Solves "where's the spawner I haven't done
   #                                   yet?" — recommended for premium difficulty modules
-  #                                   (TCP-MythicTrials's HUD pairs with this).
+  #                                   (Mythic Trials's HUD pairs with this).
   glow-mode: "wave-active"
 
 # Spectator Mode
@@ -469,16 +469,16 @@ discovery:
   # few seconds later — a multi-seed re-flood from the chamber's vaults that
   # grows the bounds to cover sections the first detection clipped (its node cap,
   # or chunks that were still loading at detection time). This is the automatic
-  # equivalent of `/tcp scan add`, so operators don't have to run it by hand on
+  # equivalent of `/trial scan add`, so operators don't have to run it by hand on
   # every chamber. Best-effort: it can only read chunks that are loaded when it
-  # runs, so a wing nobody has visited yet may still need a manual `/tcp scan add`.
+  # runs, so a wing nobody has visited yet may still need a manual `/trial scan add`.
   expand-on-discover: true
   expand-delay-seconds: 10         # Delay before the auto-expand pass (lets vault rows commit + nearby chunks load)
-  # Opt-in: let expand passes (auto-expand AND /tcp scan add) FORCE-LOAD unloaded
+  # Opt-in: let expand passes (auto-expand AND /trial scan add) FORCE-LOAD unloaded
   # chunks on demand so they can reach a wing nobody has visited yet. Off by
   # default — it trades a chunk-load I/O spike for completeness. Paper-only
   # (skipped on Folia). Even with this off, standing in the chamber and running
-  # /tcp scan add (or the GUI's "Travel & Expand") works because you load the chunks.
+  # /trial scan add (or the GUI's "Travel & Expand") works because you load the chunks.
   expand-force-load: false
 
   # v1.5.1: Nag operators when discovered chambers are missing a snapshot.
@@ -489,13 +489,13 @@ discovery:
     on-join: true                  # Ping an admin individually when they log in
     interval-minutes: 30           # Periodic console summary + admin chat ping (0 disables periodic only)
 
-# The opt-in `/tcp setup` settings tour (v1.6.0). Walks operators through the major
+# The opt-in `/trial setup` settings tour (v1.6.0). Walks operators through the major
 # options one at a time in a friendly Dialog UI (with a clickable-chat fallback on
-# older/non-Paper servers). Nothing is ever forced — run it on demand with `/tcp setup`.
+# older/non-Paper servers). Nothing is ever forced — run it on demand with `/trial setup`.
 setup:
   reminder:
     # Gently remind admins (with tcp.admin.setup) on join that the tour exists, IF they have
-    # never run it. At most once a week and at most 3 times ever; running /tcp setup once
+    # never run it. At most once a week and at most 3 times ever; running /trial setup once
     # silences it forever. Set false to never show the reminder.
     enabled: true
 
@@ -510,10 +510,10 @@ setup:
 # against chamber containers is blocked while enabled, and containers placed by
 # players inside chambers keep vanilla behaviour.
 #
-# Moderators customise a container's loot from the GUI: /tcp menu -> chamber ->
+# Moderators customise a container's loot from the GUI: /trial menu -> chamber ->
 # Container Loot -> click a container to edit. An edited container becomes an
 # OVERRIDE — every player gets a copy of that loot (still per-player, re-cloned
-# each reset). Shift-left-click in that GUI (or /tcp container resetone) reverts
+# each reset). Shift-left-click in that GUI (or /trial container resetone) reverts
 # it to vanilla random rolls. Editing is GUI-only (no in-world sneak-open).
 chests:
   per-player-loot: false

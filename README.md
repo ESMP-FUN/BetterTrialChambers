@@ -1,4 +1,4 @@
-# TrialChamberPro
+# BetterTrialChambers
 
 Transform Minecraft's Trial Chambers from single-use dungeons into renewable, multiplayer-ready content. Automatic resets, per-player vault loot, custom rewards, griefing protection — and it works on every natural chamber in your world without any setup per-chamber.
 
@@ -8,7 +8,7 @@ Transform Minecraft's Trial Chambers from single-use dungeons into renewable, mu
 
 Vanilla Trial Chambers weren't designed for multiplayer. The first player takes everything, vaults stay locked forever, and griefers can destroy spawners. On a server with more than one player, chambers become single-use content almost immediately.
 
-TrialChamberPro fixes all of that: every player gets their own loot roll, chambers reset on a schedule, spawners are protected, and progression is tracked. The plugin can find and manage natural chambers automatically — no WorldEdit, no commands per chamber.
+BetterTrialChambers fixes all of that: every player gets their own loot roll, chambers reset on a schedule, spawners are protected, and progression is tracked. The plugin can find and manage natural chambers automatically — no WorldEdit, no commands per chamber.
 
 ---
 
@@ -20,7 +20,7 @@ TrialChamberPro fixes all of that: every player gets their own loot roll, chambe
 * **Statistics & leaderboards** — track vaults opened, mobs killed, chambers completed, time spent.
 * **Custom loot** — multi-pool tables, command rewards, potions, tipped arrows, custom plugin items (Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible), resource-pack items via `custom-model-data`.
 * **Auto-discovery** — opt-in; the plugin finds and registers every natural chamber on its own.
-* **Admin GUI** — `/tcp menu` handles everything. No YAML editing required.
+* **Admin GUI** — `/trial menu` handles everything. No YAML editing required.
 * **Spawner wave tracking** — boss bar shows progress as players fight.
 * **Spectator mode** — dead players can watch teammates finish the chamber.
 * **PlaceholderAPI** — 20+ placeholders for scoreboards, holograms, tab lists.
@@ -55,22 +55,22 @@ TrialChamberPro fixes all of that: every player gets their own loot roll, chambe
 
 ## Premium add-ons
 
-TrialChamberPro is the free foundation. Two premium modules extend it further:
+BetterTrialChambers is the free foundation. Two premium modules extend it further:
 
-**[TCP-WildSpawners](https://esmp.fun/plugins)** — Place trial spawners anywhere on the survival map, not just inside registered chambers. Players receive spawner items via shop plugins or staff commands, place them wherever they like, and custom-plugin mobs (MythicMobs, EliteMobs, etc.) spawn correctly. Includes configurable mining-and-redeploy (no Silk Touch required), per-spawner holograms, griefing protection, and a full in-game preset editor.
+**[Wild Spawners](https://esmp.fun/plugins)** — Place trial spawners anywhere on the survival map, not just inside registered chambers. Players receive spawner items via shop plugins or staff commands, place them wherever they like, and custom-plugin mobs (MythicMobs, EliteMobs, etc.) spawn correctly. Includes configurable mining-and-redeploy (no Silk Touch required), per-spawner holograms, griefing protection, and a full in-game preset editor.
 
-**[TCP-VaultCrates](https://esmp.fun/plugins)** — Turn any vanilla Vault block into a loot crate. Players open crates with keys earned in-game or purchased in a shop. Supports two-tier crates (normal / ominous), weighted loot pools, per-player and server-wide reset modes, and crate-key drops from TCP-WildSpawners mob kills. Full in-game editor included.
+**[Vault Crates](https://esmp.fun/plugins)** — Turn any vanilla Vault block into a loot crate. Players open crates with keys earned in-game or purchased in a shop. Supports two-tier crates (normal / ominous), weighted loot pools, per-player and server-wide reset modes, and crate-key drops from Wild Spawners mob kills. Full in-game editor included.
 
-**[TCP-MythicTrials](https://esmp.fun/plugins)**
-Per-player chamber progression with Mythic difficulty tiers. Every chamber clear bumps each participant's personal tier (T1–T20, then opt-in Mythic M1–M5): mobs scale in health, damage, speed, armor, gear and tactics — gear-adaptive AI, themed rooms, anti-heal, true damage — while rewards scale with them. In-chamber HUD, per-chamber leaderboards, seasons with seasonal loot, and full custom-mob-provider support. Built on TCP's ChamberClearedEvent, so it works on every registered chamber automatically.
+**[Mythic Trials](https://esmp.fun/plugins)**
+Per-player chamber progression with Mythic difficulty tiers. Every chamber clear bumps each participant's personal tier (T1–T20, then opt-in Mythic M1–M5): mobs scale in health, damage, speed, armor, gear and tactics — gear-adaptive AI, themed rooms, anti-heal, true damage — while rewards scale with them. In-chamber HUD, per-chamber leaderboards, seasons with seasonal loot, and full custom-mob-provider support. Built on BTC's ChamberClearedEvent, so it works on every registered chamber automatically.
 
-All modules require TrialChamberPro and are available [esmp.fun](https://esmp.fun/) (Stripe + crypto, for regions where certain payment processors don't operate).
+All modules require BetterTrialChambers and are available [esmp.fun](https://esmp.fun/) (Stripe + crypto, for regions where certain payment processors don't operate).
 
 ---
 
 ## Support
 
-* **[GitHub Issues](https://github.com/darkstarworks/TrialChamberPro/issues)** — bug reports, feature requests
+* **[GitHub Issues](https://github.com/ESMP-FUN/BetterTrialChambers/issues)** — bug reports, feature requests
 * **[Discord](https://discord.gg/qwYcTpHsNC)** — community support, announcements
 * **[Modrinth](https://modrinth.com/plugin/trialchamberpro)** — downloads and release notes
 

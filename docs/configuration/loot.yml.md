@@ -3,9 +3,9 @@
 Time to get creative! The `loot.yml` file is where you customize what players get from vaults. Want to rain diamonds? Give economy rewards? Drop custom items from other plugins? This is your playground.
 
 {% hint style="info" %}
-**Location:** `plugins/TrialChamberPro/loot.yml`
+**Location:** `plugins/BetterTrialChambers/loot.yml`
 
-After making changes, reload with `/tcp reload`
+After making changes, reload with `/trial reload`
 {% endhint %}
 
 {% hint style="danger" %}
@@ -41,10 +41,10 @@ They're faithful recreations transcribed directly from Mojang's own datapack JSO
 
 **To activate them:**
 
-1. Open `plugins/TrialChamberPro/loot.yml`.
+1. Open `plugins/BetterTrialChambers/loot.yml`.
 2. Find the `VANILLA-ACCURATE LOOT TABLES` section.
 3. Copy the `vanilla-normal:` and/or `vanilla-ominous:` block, remove the leading `#` from every line, and paste it under `loot-tables:` — either replacing the bundled `default` / `ominous-default` examples, or alongside them under a new name.
-4. Run `/tcp reload`.
+4. Run `/trial reload`.
 5. Either point existing chambers at the new table via the Chamber GUI → Settings → Loot Overrides, or rename your activated copy to `default` / `ominous-default` so every chamber picks it up automatically.
 
 The block includes inline comments explaining the small approximations the plugin's schema requires (e.g. vanilla's 25% unique-pool chance maps to the plugin's `min-rolls: 0, max-rolls: 1` ≈ 50%) so you can tune from there.
@@ -217,7 +217,7 @@ loot-tables:
 {% endhint %}
 
 {% hint style="success" %}
-**Edit from the GUI** _(1.2.26+)_: open `/tcp menu` → **Loot Tables**, click any table to edit it. Multi-pool tables open a pool selector; single-pool tables open the editor directly. Changes save to `loot.yml` and apply to every chamber using that table.
+**Edit from the GUI** _(1.2.26+)_: open `/trial menu` → **Loot Tables**, click any table to edit it. Multi-pool tables open a pool selector; single-pool tables open the editor directly. Changes save to `loot.yml` and apply to every chamber using that table.
 {% endhint %}
 
 ### Config Option
@@ -255,7 +255,7 @@ loot:
 * `serialized-item`: Base64-encoded `ItemStack.serializeAsBytes()` output (set automatically when adding an item through the GUI editor — see below)
 
 {% hint style="info" %}
-**Faithful items via the GUI editor (v1.5.0+).** When you add a loot entry by clicking the **+ Add from Hand** button in `/tcp menu → Loot → …`, TCP captures the entire held `ItemStack` — enchantments, potion effects, custom names, lore, NBT, custom-model-data, third-party plugin tags, the lot — into the `serialized-item` field. The entry in `loot.yml` will look like:
+**Faithful items via the GUI editor (v1.5.0+).** When you add a loot entry by clicking the **+ Add from Hand** button in `/trial menu → Loot → …`, BTC captures the entire held `ItemStack` — enchantments, potion effects, custom names, lore, NBT, custom-model-data, third-party plugin tags, the lot — into the `serialized-item` field. The entry in `loot.yml` will look like:
 
 ```yaml
 - type: ENCHANTED_BOOK
@@ -466,7 +466,7 @@ Create potions with any effect level—perfect for ominous vault rewards!
 
 ### Ominous Bottles (Bad Omen Effect)
 
-Ominous Bottles give the **Bad Omen** effect when drunk, which triggers an **Ominous Trial** in a Trial Chamber. As of TCP **1.7.1** loot tables produce the **real `minecraft:ominous_bottle` item** — correct texture, correct name, and it stacks with bottles from vanilla vaults.
+Ominous Bottles give the **Bad Omen** effect when drunk, which triggers an **Ominous Trial** in a Trial Chamber. As of BTC **1.7.1** loot tables produce the **real `minecraft:ominous_bottle` item** — correct texture, correct name, and it stacks with bottles from vanilla vaults.
 
 ```yaml
 # Fixed level:
@@ -489,7 +489,7 @@ Ominous Bottles give the **Bad Omen** effect when drunk, which triggers an **Omi
 
 * **Normal vaults** drop ominous bottles at levels **I–II** (`potion-level-min: 0`, `potion-level-max: 1`)
 * **Ominous vaults** drop them at levels **III–V** (`potion-level-min: 2`, `potion-level-max: 4`)
-* Ominous bottles can **only hold Bad Omen** — that's the game itself, not a plugin limit. A `potion-type:` on an ominous bottle is ignored (TCP warns at startup), and a `potion-level` outside 0–4 is clamped with a warning.
+* Ominous bottles can **only hold Bad Omen** — that's the game itself, not a plugin limit. A `potion-type:` on an ominous bottle is ignored (BTC warns at startup), and a `potion-level` outside 0–4 is clamped with a warning.
 
 Custom `name:` and `lore:` still work on ominous bottles, but the real item already displays properly without them.
 
@@ -1003,7 +1003,7 @@ weighted-items:
     weight: 1.0
 ```
 
-TrialChamberPro resolves custom items at runtime using the plugin's API, so the custom item plugin must be installed and enabled on the server.
+BetterTrialChambers resolves custom items at runtime using the plugin's API, so the custom item plugin must be installed and enabled on the server.
 
 **Supported plugins:**
 
@@ -1020,7 +1020,7 @@ You can also stack extra `name:`, `lore:`, and `enchantments:` on top of the res
 {% endhint %}
 
 {% hint style="info" %}
-**Heads up — custom item plugins are optional integrations.** TrialChamberPro talks to Nexo, ItemsAdder, Oraxen, CraftEngine, and MythicCrucible through their own APIs at runtime. If one of those plugins releases a big update that changes how their API works, the integration here might stop working until TrialChamberPro is updated to match. If that happens, the worst case is that the custom item is skipped and a warning appears in the server log — your chamber won't break or crash. Just let me know (open an issue / ping on Modrinth) and I'll push a fix.
+**Heads up — custom item plugins are optional integrations.** BetterTrialChambers talks to Nexo, ItemsAdder, Oraxen, CraftEngine, and MythicCrucible through their own APIs at runtime. If one of those plugins releases a big update that changes how their API works, the integration here might stop working until BetterTrialChambers is updated to match. If that happens, the worst case is that the custom item is skipped and a warning appears in the server log — your chamber won't break or crash. Just let me know (open an issue / ping on Modrinth) and I'll push a fix.
 {% endhint %}
 
 ***
@@ -1301,17 +1301,17 @@ loot-tables:
 
 </details>
 
-Then assign the table to a specific chamber with `/tcp loot set <chamber> <normal|ominous> <table>`:
+Then assign the table to a specific chamber with `/trial loot set <chamber> <normal|ominous> <table>`:
 
 ```
-/tcp loot set NetherChamber normal nether-chamber
-/tcp loot set NetherChamber ominous nether-chamber-ominous
-/tcp loot set OceanChamber normal ocean-chamber
+/trial loot set NetherChamber normal nether-chamber
+/trial loot set NetherChamber ominous nether-chamber-ominous
+/trial loot set OceanChamber normal ocean-chamber
 ```
 
-Clear per-chamber overrides with `/tcp loot clear <chamber> [normal|ominous|all]` — after clearing, the chamber falls back to the default tables in `loot.yml`.
+Clear per-chamber overrides with `/trial loot clear <chamber> [normal|ominous|all]` — after clearing, the chamber falls back to the default tables in `loot.yml`.
 
-You can also set these overrides from the GUI: `/tcp menu` → pick the chamber → **Loot** → pick **Normal** or **Ominous**.
+You can also set these overrides from the GUI: `/trial menu` → pick the chamber → **Loot** → pick **Normal** or **Ominous**.
 
 ***
 
@@ -1327,7 +1327,7 @@ You can also set these overrides from the GUI: `/tcp menu` → pick the chamber 
 
 ### Weight Tuning
 
-**Test your tables!** Open 20-30 vaults and see if the loot feels right. Use `/tcp reset` to quickly test.
+**Test your tables!** Open 20-30 vaults and see if the loot feels right. Use `/trial reset` to quickly test.
 
 **Check the math:**
 
@@ -1368,8 +1368,8 @@ Not available yet, but coming soon!
 ### Quick Test Cycle
 
 1. Edit `loot.yml`
-2. Run `/tcp reload`
-3. Run `/tcp reset TestChamber` (forces instant reset)
+2. Run `/trial reload`
+3. Run `/trial reset TestChamber` (forces instant reset)
 4. Open vaults
 5. Check if loot feels right
 6. Repeat!
@@ -1398,7 +1398,7 @@ Open 50 vaults, record what you get, calculate actual drop rates. Does it match 
 
 **"Can I make loot tables that call other loot tables?"** Not currently, but you can work around it with multiple chambers assigned different tables.
 
-**"How do I remove an item from vanilla loot?"** You can't remove vanilla loot directly—TrialChamberPro _replaces_ vault loot entirely. Just don't include unwanted items in your weighted-items!
+**"How do I remove an item from vanilla loot?"** You can't remove vanilla loot directly—BetterTrialChambers _replaces_ vault loot entirely. Just don't include unwanted items in your weighted-items!
 
 ***
 

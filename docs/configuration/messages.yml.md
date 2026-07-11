@@ -3,9 +3,9 @@
 Want your plugin to match your server's vibe? The `messages.yml` file lets you customize every single message players see. Whether you're running a serious roleplay server or a meme-filled chaos realm, you've got full control.
 
 {% hint style="info" %}
-**Location:** `plugins/TrialChamberPro/messages.yml`
+**Location:** `plugins/BetterTrialChambers/messages.yml`
 
-After making changes, reload with `/tcp reload`
+After making changes, reload with `/trial reload`
 {% endhint %}
 
 {% hint style="info" %}
@@ -22,7 +22,7 @@ After making changes, reload with `/tcp reload`
 
 ## Text formatting — MiniMessage and legacy `&` codes
 
-**Added in v1.4.0.** TCP now supports the modern [MiniMessage](https://docs.advntr.dev/minimessage/format.html) syntax in every message — alongside the original `&` colour codes. You can use either format, or freely mix both in the same line.
+**Added in v1.4.0.** BTC now supports the modern [MiniMessage](https://docs.advntr.dev/minimessage/format.html) syntax in every message — alongside the original `&` colour codes. You can use either format, or freely mix both in the same line.
 
 {% hint style="success" %}
 **Existing `messages.yml` files keep working unchanged.** Migrating an entry to MiniMessage is opt-in, line by line. Use whichever feels more natural — the parser handles both transparently.
@@ -65,7 +65,7 @@ Plus features that **`&` codes can't do** (these need MiniMessage):
 "<gradient:#ff0000:#00ff00>Sunset to ocean</gradient>"
 
 # Clickable text — runs a command when clicked
-"<click:run_command:'/tcp menu'><yellow>[Open Menu]</yellow></click>"
+"<click:run_command:'/trial menu'><yellow>[Open Menu]</yellow></click>"
 
 # Hover tooltips — show extra text on hover
 "<hover:show_text:'Bonus loot table active!'><gold>★</gold></hover>"
@@ -107,7 +107,7 @@ prefix: "&8[&6TCP&8]&r "
 reload-success: "&aConfiguration reloaded successfully!"
 no-permission: "&cYou don't have permission to use this command."
 player-only: "&cThis command can only be used by players."
-unknown-command: "&cUnknown subcommand. Use /tcp help for help."
+unknown-command: "&cUnknown subcommand. Use /trial help for help."
 ```
 
 #### `prefix`
@@ -597,7 +597,7 @@ time-ago: "{time} ago"
 * `{days}`, `{hours}`, `{minutes}`, `{seconds}` - Time values
 * `{time}` (in `time-ago`) - The already-formatted duration
 
-Used for cooldowns, reset warnings, `/tcp info`, stats and leaderboards. Non-zero units are joined with spaces, like `"2d 5h 30m"`; `time-ago` wraps that for relative timestamps ("5m ago") and `time-now` replaces durations under a minute. _As of 1.7.1 these keys are actually applied everywhere durations are shown (they previously existed but were unused)._
+Used for cooldowns, reset warnings, `/trial info`, stats and leaderboards. Non-zero units are joined with spaces, like `"2d 5h 30m"`; `time-ago` wraps that for relative timestamps ("5m ago") and `time-now` replaces durations under a minute. _As of 1.7.1 these keys are actually applied everywhere durations are shown (they previously existed but were unused)._
 
 **Examples:**
 
@@ -626,7 +626,7 @@ time-seconds: "{seconds}s"
 <summary><strong>System Messages</strong></summary>
 
 ```yaml
-plugin-starting-up: "&eTrialChamberPro is still starting up. Please try again in a moment..."
+plugin-starting-up: "&eBetterTrialChambers is still starting up. Please try again in a moment..."
 ```
 
 Shown when commands are used before the plugin finishes async initialization.
@@ -638,7 +638,7 @@ Shown when commands are used before the plugin finishes async initialization.
 <summary><strong>Info Display Format</strong></summary>
 
 ```yaml
-# Used in /tcp info output
+# Used in /trial info output
 info-exit-location-set: "&a{x}, {y}, {z}"
 info-exit-location-not-set: "&cNot set"
 info-snapshot-created: "&aCreated"
@@ -785,7 +785,7 @@ gui-loot-changes-saved: "&aLoot table changes saved!"
 gui-loot-pool-saved: "&aPool '{pool}' changes saved!"
 
 # Info Messages
-gui-pool-create-hint: "&eTo add a new pool, edit loot.yml directly and /tcp reload"
+gui-pool-create-hint: "&eTo add a new pool, edit loot.yml directly and /trial reload"
 gui-pool-create-coming-soon: "&7GUI pool creation coming soon!"
 ```
 
@@ -826,9 +826,9 @@ gui-player-ejected: "&7An unseen force gently pushes you from the chamber..."
 <summary><strong>Help Messages</strong></summary>
 
 ```yaml
-help-header: "&6=== TrialChamberPro Commands ==="
-help-scan: "&e/tcp scan <chamber> &7- Scan for vaults/spawners"
-help-generate: "&e/tcp generate <mode> ... &7- Register chamber from various sources"
+help-header: "&6=== BetterTrialChambers Commands ==="
+help-scan: "&e/trial scan <chamber> &7- Scan for vaults/spawners"
+help-generate: "&e/trial generate <mode> ... &7- Register chamber from various sources"
 # ... (all help entries)
 ```
 
@@ -840,15 +840,15 @@ Compact:
 
 ```yaml
 help-header: "&6Commands:"
-help-scan: "&e/tcp scan <chamber> &8▸ &7Scan for blocks"
-help-generate: "&e/tcp generate <mode> &8▸ &7Register chamber"
+help-scan: "&e/trial scan <chamber> &8▸ &7Scan for blocks"
+help-generate: "&e/trial generate <mode> &8▸ &7Register chamber"
 ```
 
 Detailed:
 
 ```yaml
-help-header: "&6╔════════════════════════════╗\n&6║ &fTrialChamberPro Commands\n&6╚════════════════════════════╝"
-help-generate: "&e/tcp generate wand <name>\n  &7Registers a chamber from your WorldEdit selection"
+help-header: "&6╔════════════════════════════╗\n&6║ &fBetterTrialChambers Commands\n&6╚════════════════════════════╝"
+help-generate: "&e/trial generate wand <name>\n  &7Registers a chamber from your WorldEdit selection"
 ```
 
 </details>
@@ -942,7 +942,7 @@ Want to support multiple languages? You can create separate message files!
 3. Use a language switcher plugin to change which file is loaded per-player
 
 {% hint style="info" %}
-**Note:** TrialChamberPro doesn't have built-in per-player language switching (yet), but you can manually swap files and reload for server-wide language changes.
+**Note:** BetterTrialChambers doesn't have built-in per-player language switching (yet), but you can manually swap files and reload for server-wide language changes.
 {% endhint %}
 
 ***
@@ -989,13 +989,13 @@ Want to support multiple languages? You can create separate message files!
 
 ## Keeping messages.yml up-to-date after plugin upgrades
 
-**Since 1.5.19 this is automatic.** On startup, TrialChamberPro merges any message keys added in the new release into your existing `messages.yml` — **with their comments** — while leaving your existing translations and customisations untouched. The previous file is saved as `messages.yml.bak` first. So new keys just appear; you never have to delete and regenerate the file.
+**Since 1.5.19 this is automatic.** On startup, BetterTrialChambers merges any message keys added in the new release into your existing `messages.yml` — **with their comments** — while leaving your existing translations and customisations untouched. The previous file is saved as `messages.yml.bak` first. So new keys just appear; you never have to delete and regenerate the file.
 
 What you'll see in console when keys are added:
 
 ```
-[TCP] messages.yml: added 4 new key(s) introduced in this version
-[TCP] (your existing entries are kept; previous file saved as messages.yml.bak).
+[BTC] messages.yml: added 4 new key(s) introduced in this version
+[BTC] (your existing entries are kept; previous file saved as messages.yml.bak).
 ```
 
 **Older behaviour (before 1.5.19):** the file was only written when absent, so upgraders' files were missing new keys and the plugin fell back to the literal text `<missing: key.name>` in chat / GUI / boss bars. A startup schema check (v1.4.1) warned about this; with the auto-merge it no longer triggers, but it remains as a backstop if a merge ever fails.
@@ -1011,7 +1011,7 @@ What you'll see in console when keys are added:
 After editing `messages.yml`:
 
 ```
-/tcp reload
+/trial reload
 ```
 
 All messages update immediately. No restart needed!
@@ -1028,7 +1028,7 @@ All messages update immediately. No restart needed!
 
 **"What if I mess up the YAML formatting?"** The plugin will fail to load messages and log errors. Always backup before editing!
 
-**"Can I add custom messages for my own plugins?"** TrialChamberPro only uses the messages defined here. For custom messages, you'd need to modify the plugin or request new placeholder support.
+**"Can I add custom messages for my own plugins?"** BetterTrialChambers only uses the messages defined here. For custom messages, you'd need to modify the plugin or request new placeholder support.
 
 ***
 

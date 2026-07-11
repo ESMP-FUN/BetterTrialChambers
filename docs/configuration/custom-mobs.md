@@ -2,10 +2,10 @@
 
 **Added in v1.3.0.**
 
-Trial Chamber waves normally spawn vanilla mobs (zombies, husks, slimes, etc.) from the trial-spawner pool. With Custom Mob Providers, you can hand that job off to another plugin — MythicMobs, for example — while keeping every TrialChamberPro feature intact: wave counters, boss bars, glow outlines, spawner cooldowns, Trial Key drops, statistics.
+Trial Chamber waves normally spawn vanilla mobs (zombies, husks, slimes, etc.) from the trial-spawner pool. With Custom Mob Providers, you can hand that job off to another plugin — MythicMobs, for example — while keeping every BetterTrialChambers feature intact: wave counters, boss bars, glow outlines, spawner cooldowns, Trial Key drops, statistics.
 
 {% hint style="info" %}
-**How it works:** When a trial spawner fires, vanilla spawns its mob, TCP removes it the same tick, and asks the configured provider to spawn a replacement at the same spot. The vanilla spawner's internal state machine — which tracks participating players and completion — is untouched, so waves still progress normally and vanilla rewards still work.
+**How it works:** When a trial spawner fires, vanilla spawns its mob, BTC removes it the same tick, and asks the configured provider to spawn a replacement at the same spot. The vanilla spawner's internal state machine — which tracks participating players and completion — is untouched, so waves still progress normally and vanilla rewards still work.
 {% endhint %}
 
 ***
@@ -26,7 +26,7 @@ Trial Chamber waves normally spawn vanilla mobs (zombies, husks, slimes, etc.) f
 
 ## Configuring via GUI
 
-1. `/tcp menu` → **Chambers** → pick a chamber → **Settings**
+1. `/trial menu` → **Chambers** → pick a chamber → **Settings**
 2. Click the **Custom Mob Provider** button (spawner icon, centre of row 2)
 3. **Provider** cycle button — left-click to advance, right-click to go back, shift-click to reset to vanilla
 4. **Add normal mob id** / **Add ominous mob id** — click, then type the id in chat (or `cancel`)
@@ -39,20 +39,20 @@ Changes save immediately and the view refreshes. If the backing plugin isn't ins
 ## Configuring via Command
 
 ```
-/tcp mobs providers                          # list registered providers
-/tcp mobs list <chamber>                     # show current config
-/tcp mobs provider <chamber> <id|vanilla|none>
-/tcp mobs add <chamber> <normal|ominous> <mobId>
-/tcp mobs remove <chamber> <normal|ominous> <mobId>
+/trial mobs providers                          # list registered providers
+/trial mobs list <chamber>                     # show current config
+/trial mobs provider <chamber> <id|vanilla|none>
+/trial mobs add <chamber> <normal|ominous> <mobId>
+/trial mobs remove <chamber> <normal|ominous> <mobId>
 ```
 
 Example — route the `main_spire` chamber through MythicMobs:
 
 ```
-/tcp mobs provider main_spire mythicmobs
-/tcp mobs add main_spire normal SkeletalKnight
-/tcp mobs add main_spire normal VoidHound
-/tcp mobs add main_spire ominous VoidLich
+/trial mobs provider main_spire mythicmobs
+/trial mobs add main_spire normal SkeletalKnight
+/trial mobs add main_spire normal VoidHound
+/trial mobs add main_spire ominous VoidLich
 ```
 
 If the **ominous** list is empty, ominous waves fall back to the **normal** list. If the normal list is also empty while a non-vanilla provider is selected, individual spawns fall back to vanilla for that wave.
@@ -61,7 +61,7 @@ If the **ominous** list is empty, ominous waves fall back to the **normal** list
 
 ## Trial Key Drops
 
-Vanilla trial spawners drop Trial Keys through their own state machine — that machine only knows about vanilla mobs, so once a wave is driven by a custom provider, TCP takes over key drops itself:
+Vanilla trial spawners drop Trial Keys through their own state machine — that machine only knows about vanilla mobs, so once a wave is driven by a custom provider, BTC takes over key drops itself:
 
 * One `TRIAL_KEY` per unique participating player for a normal wave
 * One `OMINOUS_TRIAL_KEY` per unique participating player for an ominous wave
@@ -84,7 +84,7 @@ Players with permission `tcp.bypass.droplock` (default: op) can pick up keys reg
 ## Verifying a Provider Works
 
 1. Set a provider on a chamber and list a single well-known mob id (e.g. `SkeletalKnight` for MythicMobs, from a default pack)
-2. Enable verbose logging (`debug.verbose-logging: true` in config.yml, then `/tcp reload`) and watch the server console
+2. Enable verbose logging (`debug.verbose-logging: true` in config.yml, then `/trial reload`) and watch the server console
 3. Hit a trial spawner and watch chat:
    * Vanilla mob flash-spawns and is immediately removed
    * The custom mob appears at the same spot
@@ -95,7 +95,7 @@ If the custom mob never appears and the console shows `Mob provider X could not 
 
 * The mob id matches exactly (case-insensitive, but must be spelled right)
 * The backing plugin is installed and enabled (`/plugins`)
-* The provider id on the chamber matches a registered provider (`/tcp mobs providers`)
+* The provider id on the chamber matches a registered provider (`/trial mobs providers`)
 
 ***
 

@@ -4,21 +4,32 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [2.0.0] - 2026-07-11
+### Changed
+- **The plugin is now Better Trial Chambers.** Same plugin, new name — TrialChamberPro was always 100% free, and the name kept suggesting otherwise. The project now lives at https://github.com/ESMP-FUN/BetterTrialChambers.
+- Main command is now `/trial` (aliases: `/btc`, `/bettertrialchambers`, `/chamber`). The old `/tcp` still works as a legacy alias.
+- Permissions moved from `tcp.*` to `btc.*`. Existing `tcp.*` grants keep working — each old node is a legacy alias that grants its `btc.*` counterpart — but update your permission plugin when convenient.
+- PlaceholderAPI placeholders are now `%btc_*%`; the old `%tcp_*%` forms keep resolving.
+- Internal packages moved to `com.esmpfun.bettertrialchambers` (plugin/module developers: update imports; the premium modules ship matching updates).
+
+### Added
+- **Automatic upgrade from TrialChamberPro.** On first start, if `plugins/TrialChamberPro/` exists, its config, database, snapshots and dungeon templates are copied to `plugins/BetterTrialChambers/` automatically. The old folder is kept as a backup. World data (spawner presets, vault drop ownership) and database tables are untouched and keep working as-is.
+
 ## [1.8.1] - 2026-07-10
 ### Added
-- **World exclusion.** New `global.excluded-worlds` list in config.yml keeps TCP inactive in named worlds — useful when a second overworld-type world has Trial Chambers you want to leave vanilla. In an excluded world, auto-discovery never registers chambers, `/tcp generate` and `/tcp dungeon generate` are refused, and wild trial spawners get no boss bars or wave tracking. Chambers registered before a world was excluded keep working; remove them with `/tcp delete <name>`.
+- **World exclusion.** New `global.excluded-worlds` list in config.yml keeps BTC inactive in named worlds — useful when a second overworld-type world has Trial Chambers you want to leave vanilla. In an excluded world, auto-discovery never registers chambers, `/trial generate` and `/trial dungeon generate` are refused, and wild trial spawners get no boss bars or wave tracking. Chambers registered before a world was excluded keep working; remove them with `/trial delete <name>`.
 
 ### Changed
 - Updated the bundled PluginPulse updater to v0.8.0 (configurable source order, authenticated private-repo updates, Jenkins update source).
 
 ## [1.8.0] - 2026-07-05
 ### Added
-- **Built-in updater with one-command installs.** The old notify-only update check is replaced by [PluginPulse](https://github.com/darkstarworks/PluginPulse): updates are now checked on Modrinth first (GitHub Releases as fallback), and a new `/tcp update` command lets admins act on them — `check`, `download` (fetches the new jar, verifies its checksum, backs up the current jar, and stages it in the server's update folder so it installs on the next restart), `restore` (roll back to the previous jar), `ignore <version>`, and `status`. Behaviour is controlled by the new `update` section in config.yml: `mode` (`check-only` / `notify` / `download` / `auto-stage`), `check-interval-hours`, and `require-hash`. Servers running the `-mc26` build automatically follow `-mc26` releases. Nothing is ever downloaded in the default `notify` mode.
+- **Built-in updater with one-command installs.** The old notify-only update check is replaced by [PluginPulse](https://github.com/ESMP-FUN/PluginPulse): updates are now checked on Modrinth first (GitHub Releases as fallback), and a new `/trial update` command lets admins act on them — `check`, `download` (fetches the new jar, verifies its checksum, backs up the current jar, and stages it in the server's update folder so it installs on the next restart), `restore` (roll back to the previous jar), `ignore <version>`, and `status`. Behaviour is controlled by the new `update` section in config.yml: `mode` (`check-only` / `notify` / `download` / `auto-stage`), `check-interval-hours`, and `require-hash`. Servers running the `-mc26` build automatically follow `-mc26` releases. Nothing is ever downloaded in the default `notify` mode.
 
-- **Optional no-restart updates.** With `update.allow-hot-reload: true`, `/tcp update apply` swaps a staged, checksum-verified update in-place — the old version is unloaded, the jar replaced, and the new version enabled live (verified end-to-end on Paper 1.21.7). Refused on Folia and while other plugins depend on TCP; if the new version fails to load, TCP rolls back to the automatic backup. Off by default — restarting remains the recommended way to apply updates.
+- **Optional no-restart updates.** With `update.allow-hot-reload: true`, `/trial update apply` swaps a staged, checksum-verified update in-place — the old version is unloaded, the jar replaced, and the new version enabled live (verified end-to-end on Paper 1.21.7). Refused on Folia and while other plugins depend on BTC; if the new version fails to load, BTC rolls back to the automatic backup. Off by default — restarting remains the recommended way to apply updates.
 
 ### Changed
-- Update checks are rate-limit friendly: check state persists across restarts in `plugins/TrialChamberPro/pluginpulse/`, and fleet servers no longer check in lockstep at startup.
+- Update checks are rate-limit friendly: check state persists across restarts in `plugins/BetterTrialChambers/pluginpulse/`, and fleet servers no longer check in lockstep at startup.
 
 ## [1.7.3] - 2026-07-04
 ### Fixed
@@ -26,35 +37,35 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [1.7.2] - 2026-07-03
 ### Fixed
-- **Chamber resets no longer erase decorations.** Snapshots only knew how to capture four block types (spawners, vaults, pots, chests) — everything else restored as a blank block, so sign text, player-head skins, banner patterns, lectern books, jukebox discs, chiseled-bookshelf contents, and suspicious-block items were silently wiped on every reset. All of these are now captured and restored faithfully, in chamber snapshots AND in captured/imported dungeon rooms. Re-run `/tcp snapshot create <chamber>` on decorated chambers to capture them with the new fidelity.
+- **Chamber resets no longer erase decorations.** Snapshots only knew how to capture four block types (spawners, vaults, pots, chests) — everything else restored as a blank block, so sign text, player-head skins, banner patterns, lectern books, jukebox discs, chiseled-bookshelf contents, and suspicious-block items were silently wiped on every reset. All of these are now captured and restored faithfully, in chamber snapshots AND in captured/imported dungeon rooms. Re-run `/trial snapshot create <chamber>` on decorated chambers to capture them with the new fidelity.
 - **Opening a vault can no longer consume the wrong item.** The key was taken from whatever the player was holding at the moment loot was delivered — scroll your hotbar in the split second after clicking and the plugin ate your sword instead of the key. The key is now consumed from the slot that held it at click time (or wherever the key stack actually is), and never from a non-key item.
 - **Logging out — or crashing — while spectating no longer strands you in spectator mode.** Quitting mid-spectate now restores your gamemode and position immediately, and a server crash/restart mid-spectate is recovered on your next join (the restore data survives in your player file).
 - **Statistics no longer lose counts on shared MySQL databases.** Increments were read-modify-write, so two servers writing at once could drop each other's updates; every counter now increments atomically in the database — groundwork for cross-server networks.
 - **Key-to-reopen can't burn keys on a broken loot table.** With `reopen-cost-keys` of 2+, a missing/typo'd loot table used to take part of the payment and give nothing; the table is now validated before any keys are consumed.
 - **Vault loot ejection (`drop-loot-at-vault`) now drops items on the vault's own region thread** — fixes a potential cross-region error on Folia when the opener moved away during the open.
 - **Deleting a chamber now clears its wave-tracking state** (active boss bars, clear-cycle progress, spawner caches) instead of leaving stale entries behind.
-- `/tcp generate` fallback volume limit aligned with the rest of the plugin (750,000 — was 500,000 in one code path when the config key is absent).
+- `/trial generate` fallback volume limit aligned with the rest of the plugin (750,000 — was 500,000 in one code path when the config key is absent).
 - **Explosions from outside a chamber can no longer destroy blocks inside it.** The explosion filter only protected blocks when the blast *center* was inside a chamber — a creeper or TNT detonating just outside the wall blew chamber blocks up unprotected. Protection is now checked per affected block, and block-sourced explosions (beds/respawn anchors in the wrong dimension) — which previously bypassed chamber protection entirely — are covered too.
 - **Pausing a chamber now actually stops a reset that's already counting down.** A chamber paused mid-countdown still reset when the timer fired, and its "resets in 30 seconds!" warnings kept broadcasting; pause (and deletion) now cancel the scheduled reset, its warnings, and any parked confirmation.
 - **Per-player container copies are saved if the server stops while a player has one open** — previously the shutdown could discard the pending save, losing whatever they'd taken out or left in.
 - **Teleporting across a chamber boundary now counts as entering/leaving.** Teleports don't fire movement events, so `/tp`, `/home`, ender pearls — and the reset eviction itself — left stale "in chamber" tracking (time kept accruing, exit never fired). Logging out inside a chamber and back in also registers the entry immediately now.
-- **Chamber names are no longer suggested in tab-completion to players without admin permission** (they became visible to everyone when 1.7.1 opened `/tcp` for stats/leaderboard).
+- **Chamber names are no longer suggested in tab-completion to players without admin permission** (they became visible to everyone when 1.7.1 opened `/trial` for stats/leaderboard).
 - The post-reset event now reports the real number of restored blocks instead of the chamber's full volume.
 
 ## [1.7.1] - 2026-07-03
 ### Fixed
 - **Ominous Bottles in loot tables are now the real `minecraft:ominous_bottle` item.** Previously, every example and doc taught a workaround — a renamed `POTION` with Bad Omen added as a custom effect. It granted Bad Omen when drunk, but it was the wrong item: potion texture, "Uncraftable Potion" underneath the custom name, and it didn't stack with bottles from vanilla vaults. Use `type: OMINOUS_BOTTLE` with `potion-level: 0-4` (Bad Omen I–V), or the new `potion-level-min` / `potion-level-max` to roll the level randomly per drop exactly like vanilla vaults do (normal vaults use 0–1, ominous vaults 2–4). All bundled examples and the vanilla-accurate tables now use the real item; old workaround configs keep functioning.
-- **Editing loot in the GUI no longer strips advanced fields from hand-written loot.yml entries.** Saving from the loot editor rewrites the whole file, and the writer only knew a subset of the schema — so potion types/levels, ominous flags, effect durations, enchantment ranges, random-enchantment pools, durability ranges, and goat-horn instruments were silently deleted from every hand-authored entry, and `VANILLA_TABLE` entries were corrupted to `type: AIR`. Every field now round-trips intact. (This was also quietly manufacturing the "legacy entries with no NBT" that `/tcp loot audit` flags.)
+- **Editing loot in the GUI no longer strips advanced fields from hand-written loot.yml entries.** Saving from the loot editor rewrites the whole file, and the writer only knew a subset of the schema — so potion types/levels, ominous flags, effect durations, enchantment ranges, random-enchantment pools, durability ranges, and goat-horn instruments were silently deleted from every hand-authored entry, and `VANILLA_TABLE` entries were corrupted to `type: AIR`. Every field now round-trips intact. (This was also quietly manufacturing the "legacy entries with no NBT" that `/trial loot audit` flags.)
 - **A bad loot entry can no longer kill the whole vault roll.** Reversed `amount-min`/`amount-max` or `min-rolls`/`max-rolls` ranges used to throw at generation time (player gets nothing); an out-of-range ominous `potion-level` did the same. These are now fixed up at load with a console warning.
 - **Typo'd enchantment names are now reported instead of silently skipped** in all three formats (`enchantments`, `enchantment-ranges`, `random-enchantment-pool`); namespaced ids from datapacks (`somepack:blaze`) are accepted too.
 - **A pool whose entries all have `weight: 0` no longer drops its first entry every roll** — zero weight now reliably means "never drops".
 - **Splash potions with a custom level/duration now last as long as drinkable ones** (the old 75% multiplier was the pre-1.9 rule); lingering (¼) and tipped arrows (⅛) were already correct.
 - **Turtle Master potions with a custom level keep both effects** — previously only the first (Resistance was dropped).
 - **Loot item names and lore now support hex colors and MiniMessage tags** (same syntax as messages.yml) and no longer render with Minecraft's forced italics.
-- **Non-OP players can now actually use `/tcp stats` and `/tcp leaderboard`.** The whole `/tcp` command was gated behind `tcp.admin` in plugin.yml, so the "default: everyone" permissions (`tcp.stats`, `tcp.leaderboard`) were unreachable — regular players got a permission error before any subcommand could run. The command-level gate is gone and every subcommand now checks its own permission (stats and leaderboard included, which previously checked nothing). Admins see no change; `tcp.admin` is now a properly declared node (still gates `/tcp list` / `/tcp info` and update notifications) and is granted by the `tcp.admin.*` wildcard.
+- **Non-OP players can now actually use `/trial stats` and `/trial leaderboard`.** The whole `/trial` command was gated behind `tcp.admin` in plugin.yml, so the "default: everyone" permissions (`tcp.stats`, `tcp.leaderboard`) were unreachable — regular players got a permission error before any subcommand could run. The command-level gate is gone and every subcommand now checks its own permission (stats and leaderboard included, which previously checked nothing). Admins see no change; `tcp.admin` is now a properly declared node (still gates `/trial list` / `/trial info` and update notifications) and is granted by the `tcp.admin.*` wildcard.
 - **`vaults.sounds.ominous-open` is honored.** Ominous vaults always played the `normal-open` sound; the ominous key was read never. Set a distinct sound and ominous vaults now use it.
-- **Every remaining hardcoded command message moved into messages.yml.** ~75 admin-command strings (`/tcp dungeon`, `/tcp container`, `/tcp claims`, `/tcp debug`, the reset-confirmation queue, snapshot bulk/missing listings, `/tcp list`, loot audit, setup prompts, admin reminders) are now translatable — new `dungeon-*`, `container-*`, `claims-*`, `debug-*`, `reset-*`, `snapshot-all-*`/`snapshot-missing-*`, `loot-audit-*`, `list-*` and shared `pagination-*` key families, plus new `help-*` lines. Existing messages.yml files keep working; the startup schema check lists any new keys your file is missing (regenerate or copy them over), and leftover removed keys are harmless.
-- **Time durations in messages are now localizable.** The `time-days/hours/minutes/seconds/now` keys that shipped unused since forever are now actually used for every "2d 3h 5m"-style duration (cooldowns, reset warnings, `/tcp info`, stats, leaderboards, placeholders), joined by the new `time-ago` key for "… ago" timestamps.
+- **Every remaining hardcoded command message moved into messages.yml.** ~75 admin-command strings (`/trial dungeon`, `/trial container`, `/trial claims`, `/trial debug`, the reset-confirmation queue, snapshot bulk/missing listings, `/trial list`, loot audit, setup prompts, admin reminders) are now translatable — new `dungeon-*`, `container-*`, `claims-*`, `debug-*`, `reset-*`, `snapshot-all-*`/`snapshot-missing-*`, `loot-audit-*`, `list-*` and shared `pagination-*` key families, plus new `help-*` lines. Existing messages.yml files keep working; the startup schema check lists any new keys your file is missing (regenerate or copy them over), and leftover removed keys are harmless.
+- **Time durations in messages are now localizable.** The `time-days/hours/minutes/seconds/now` keys that shipped unused since forever are now actually used for every "2d 3h 5m"-style duration (cooldowns, reset warnings, `/trial info`, stats, leaderboards, placeholders), joined by the new `time-ago` key for "… ago" timestamps.
 
 ### Changed
 - **Deprecation cleanup:** sound names resolve via the registry first (enum fallback kept), goat-horn instruments resolve via the Paper registry API, plugin info reads `pluginMeta`, and GUI titles pass the Adventure Component straight through (gradients/hex in titles render at full fidelity).
@@ -63,78 +74,78 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ## [1.7.0] - 2026-07-02
 ### Added
 - **Tunnel-breaking: let players mine INTO a walled chamber — without letting them farm it.** Properly-generated Trial Chambers have no entrance; with block-break protection on, players were locked out entirely, and with it off they could strip-mine the (endlessly restored) tuff for infinite blocks. The new opt-in `protection.tunnel-breaking` mode allows breaking a configurable block set (default: the tuff-brick shell family) inside registered chambers with **drops always suppressed** — no items, no XP — so there's nothing to farm, and the tunnel heals on the next reset. An optional `shell-depth` (default 3) restricts digging to the outer wall so the interior can't be hollowed out; players digging too deep get a clear "outer wall only" message (`tunnel-only-outer-wall` in messages.yml). Everything else stays protected.
-- **Import datapack rooms into the dungeon engine: `/tcp dungeon import <file|folder|zip> [tags…]`.** Vanilla `.nbt` structure templates — the format "crazy chambers"-style datapacks use for their custom rooms — can now be imported straight into TCP's procedural dungeon system. Drop a loose `.nbt`, a folder of them, or a whole datapack `.zip` into `plugins/TrialChamberPro/dungeon/import/` and import; zip imports pick up every `data/<namespace>/structure/**/*.nbt` entry and auto-tag rooms by their folder (e.g. `spawner`, `large`). Jigsaw blocks in the templates become door connectors exactly as with in-world capture, and generated dungeons register as normal chambers (resets, loot, protection all apply). Limits: rooms import literally (worldgen processor randomizers aren't applied), only the first palette is read, and vertical jigsaw connectors become walls.
+- **Import datapack rooms into the dungeon engine: `/trial dungeon import <file|folder|zip> [tags…]`.** Vanilla `.nbt` structure templates — the format "crazy chambers"-style datapacks use for their custom rooms — can now be imported straight into BTC's procedural dungeon system. Drop a loose `.nbt`, a folder of them, or a whole datapack `.zip` into `plugins/BetterTrialChambers/dungeon/import/` and import; zip imports pick up every `data/<namespace>/structure/**/*.nbt` entry and auto-tag rooms by their folder (e.g. `spawner`, `large`). Jigsaw blocks in the templates become door connectors exactly as with in-world capture, and generated dungeons register as normal chambers (resets, loot, protection all apply). Limits: rooms import literally (worldgen processor randomizers aren't applied), only the first palette is read, and vertical jigsaw connectors become walls.
 - **Auto-discovery now understands datapack-enlarged chambers.** When a naturally-generated Trial Chamber is found, discovery now asks the game for the structure's exact bounds (`discovery.use-structure-bounds`, default on) instead of flood-scanning blocks — so chambers enlarged by datapacks that override the vanilla layout with custom rooms register at their full, correct size in one pass (no clipping, no fragments), and bounds are marked confirmed immediately. Player-built chambers still discover via the block scan. A separate `discovery.structure-max-volume` cap (default 15,000,000; `-1` = uncapped) applies to these, since datapack chambers can be much larger than vanilla ones.
 
 ### Changed
 - **Chamber scanning, snapshot capture and spawner resets are now batched across ticks.** These three operations used to walk the chamber's entire volume in a single tick — fine at vanilla sizes, but a freeze risk for the much larger chambers this release enables (structure-bounds discoveries and imported dungeons can run to millions of blocks). Each now processes ~100k blocks per scheduled task, so even a 15-million-block chamber scans smoothly in the background; small chambers behave exactly as before. Spawner resets also swap their old whole-scan 10-second timeout for a per-batch one, so huge chambers can't time out halfway. Note that block *restoration* speed is still governed by `global.blocks-per-tick` — for very large chambers, raise it or enable `global.use-fawe`.
-- **All TCP database tables are now prefixed (`tcp_chambers`, `tcp_vaults`, …) and the prefix is configurable.** TCP's generic table names (`chambers`, `vaults`, `spawners`, …) could collide with other plugins on a shared MySQL database. New `database.table-prefix` setting (default `tcp_`, letters/digits/underscore, max 16 chars). **Existing installs migrate automatically on first start**: legacy unprefixed tables are safely renamed (only when their columns unmistakably match TCP's schema — a same-named table belonging to another plugin is left alone and reported), foreign keys and data are preserved, and the migration is a no-op on every later start. No action needed; change the prefix only if you have a collision.
+- **All BTC database tables are now prefixed (`tcp_chambers`, `tcp_vaults`, …) and the prefix is configurable.** BTC's generic table names (`chambers`, `vaults`, `spawners`, …) could collide with other plugins on a shared MySQL database. New `database.table-prefix` setting (default `tcp_`, letters/digits/underscore, max 16 chars). **Existing installs migrate automatically on first start**: legacy unprefixed tables are safely renamed (only when their columns unmistakably match BTC's schema — a same-named table belonging to another plugin is left alone and reported), foreign keys and data are preserved, and the migration is a no-op on every later start. No action needed; change the prefix only if you have a collision.
 
 ## [1.6.3] - 2026-06-30
 ### Changed
-- **Per-player container loot now rolls fresh, random vanilla loot for each player — and again after every reset — instead of freezing one roll forever.** With `chests.per-player-loot` enabled, the first roll of a chest / barrel / dispenser / dropper used to become a frozen template that every player and every future reset reused, so the loot looked random once and then never changed. Now each player who opens an untouched container gets their **own independent roll** of its vanilla loot table (true Lootr-style), the container's loot table is **never consumed**, and after a chamber reset clears per-player copies the next open rolls fresh again — "vanilla, but repeatable." Moderators can still customise a container: open the **Container Loot GUI** (`/tcp menu` → chamber → Container Loot) and click a container to edit it, which saves an **override** that every player then receives (still per-player, re-cloned each reset). Shift-left-click (or `/tcp container resetone <chamber> <#>`) reverts a container to vanilla random rolls. Each container is labelled **Vanilla** vs **Custom override** in the GUI. In-world editing of containers was removed in favour of the GUI. The snapshot-based reset path (servers not using per-player loot) gets the same freshness fix — restored container and decorated-pot loot tables now re-roll fresh each reset rather than repeating an identical fixed-seed roll.
+- **Per-player container loot now rolls fresh, random vanilla loot for each player — and again after every reset — instead of freezing one roll forever.** With `chests.per-player-loot` enabled, the first roll of a chest / barrel / dispenser / dropper used to become a frozen template that every player and every future reset reused, so the loot looked random once and then never changed. Now each player who opens an untouched container gets their **own independent roll** of its vanilla loot table (true Lootr-style), the container's loot table is **never consumed**, and after a chamber reset clears per-player copies the next open rolls fresh again — "vanilla, but repeatable." Moderators can still customise a container: open the **Container Loot GUI** (`/trial menu` → chamber → Container Loot) and click a container to edit it, which saves an **override** that every player then receives (still per-player, re-cloned each reset). Shift-left-click (or `/trial container resetone <chamber> <#>`) reverts a container to vanilla random rolls. Each container is labelled **Vanilla** vs **Custom override** in the GUI. In-world editing of containers was removed in favour of the GUI. The snapshot-based reset path (servers not using per-player loot) gets the same freshness fix — restored container and decorated-pot loot tables now re-roll fresh each reset rather than repeating an identical fixed-seed roll.
 - The per-player container inventory is now titled **"Personal Loot"** (was the more confusing "Supply Loot (yours)").
 
 ### Added
-- **`/tcp scan add <chamber>` — grow a chamber's bounds into sections auto-discovery missed.** Auto-discovery floods outward from a vault/spawner, but if neighbouring chunks were still loading when a chamber was first detected (or the chamber was big enough to hit the flood's node cap), the bounding box could be clipped at a chunk boundary — leaving part of the chamber (and its chests, vaults, spawners) outside the registered region, so per-player loot and resets ignored it. The new command re-floods from the chamber's known vaults (now that chunks are loaded) and merges the result into the existing bounds, then re-scans and re-snapshots. Flooding from multiple spread-out vaults also covers more than the original single-seed pass.
-- **Auto-expand on discovery.** Because few operators will run `/tcp scan add` across 100+ chambers, newly auto-discovered chambers now get one automatic expand pass a few seconds after registration (config: `discovery.expand-on-discover`, default on; `discovery.expand-delay-seconds`). It's best-effort — it can only read chunks that are loaded when it runs — so a wing nobody has visited may still need a manual pass.
-- **GUI "Travel & Expand" one-time prompt.** The chamber detail screen shows a red button when a chamber's bounds haven't been confirmed: click it to teleport to the chamber (loading its chunks), then click again from inside to scan for and add any clipped sections. It disappears once a thorough pass has run (here or via `/tcp scan add`).
-- **Opt-in `discovery.expand-force-load`.** When enabled, expand passes (auto-expand and `/tcp scan add`) force-load unloaded chunks on demand so they can reach a wing nobody has visited yet. Off by default — it trades a chunk-load spike for completeness; Paper-only.
+- **`/trial scan add <chamber>` — grow a chamber's bounds into sections auto-discovery missed.** Auto-discovery floods outward from a vault/spawner, but if neighbouring chunks were still loading when a chamber was first detected (or the chamber was big enough to hit the flood's node cap), the bounding box could be clipped at a chunk boundary — leaving part of the chamber (and its chests, vaults, spawners) outside the registered region, so per-player loot and resets ignored it. The new command re-floods from the chamber's known vaults (now that chunks are loaded) and merges the result into the existing bounds, then re-scans and re-snapshots. Flooding from multiple spread-out vaults also covers more than the original single-seed pass.
+- **Auto-expand on discovery.** Because few operators will run `/trial scan add` across 100+ chambers, newly auto-discovered chambers now get one automatic expand pass a few seconds after registration (config: `discovery.expand-on-discover`, default on; `discovery.expand-delay-seconds`). It's best-effort — it can only read chunks that are loaded when it runs — so a wing nobody has visited may still need a manual pass.
+- **GUI "Travel & Expand" one-time prompt.** The chamber detail screen shows a red button when a chamber's bounds haven't been confirmed: click it to teleport to the chamber (loading its chunks), then click again from inside to scan for and add any clipped sections. It disappears once a thorough pass has run (here or via `/trial scan add`).
+- **Opt-in `discovery.expand-force-load`.** When enabled, expand passes (auto-expand and `/trial scan add`) force-load unloaded chunks on demand so they can reach a wing nobody has visited yet. Off by default — it trades a chunk-load spike for completeness; Paper-only.
 - **Per-player container loot can be toggled from the GUI.** The Container Loot view now has an on/off switch for `chests.per-player-loot`, so it no longer needs a config edit + reload.
 - **Chamber detail now shows the friendly display name** as its title, with the internal ID on a separate line, so the auto-generated `auto_world_x_z` IDs are no longer mistaken for the chamber's name.
 
 ### Fixed
 - **Auto-discovery chat alert always reported "0 spawners".** The notification (and console line) for a newly auto-discovered chamber was built from the flood-fill scan, whose node budget could be exhausted among a chamber's thousands of structural blocks before reaching the recessed trial spawners — so it under-reported, usually as zero. The alert now uses the authoritative full-chamber scan (the same count written to the database), so vault and spawner totals are correct.
-- **Chamber resets (and `/tcp generate wand`) failed on servers without WorldEdit — or with a WorldEdit built for a different Java version.** The internal "is WorldEdit available?" check lived inside a class that imports WorldEdit types, so merely *calling the check* forced the server to load WorldEdit classes; when WorldEdit was missing or version-incompatible this threw `NoClassDefFoundError` / `UnsupportedClassVersionError` — and because that's an `Error`, not an `Exception`, it slipped past the reset's error handling, aborting the reset silently with no success/failure message and skipping cleanup. The availability check now lives in its own WorldEdit-free helper so it's always safe to call; reset degrades gracefully when WorldEdit is unusable (its optional `//undo` integration is simply skipped), catches errors of any kind, and always reports the outcome to the operator. WorldEdit remains an optional dependency — TCP no longer needs it installed to reset chambers.
+- **Chamber resets (and `/trial generate wand`) failed on servers without WorldEdit — or with a WorldEdit built for a different Java version.** The internal "is WorldEdit available?" check lived inside a class that imports WorldEdit types, so merely *calling the check* forced the server to load WorldEdit classes; when WorldEdit was missing or version-incompatible this threw `NoClassDefFoundError` / `UnsupportedClassVersionError` — and because that's an `Error`, not an `Exception`, it slipped past the reset's error handling, aborting the reset silently with no success/failure message and skipping cleanup. The availability check now lives in its own WorldEdit-free helper so it's always safe to call; reset degrades gracefully when WorldEdit is unusable (its optional `//undo` integration is simply skipped), catches errors of any kind, and always reports the outcome to the operator. WorldEdit remains an optional dependency — BTC no longer needs it installed to reset chambers.
 
 ## [1.6.2] - 2026-06-29
 ### Fixed
-- **Several player-facing strings rendered raw `&`/`§` codes (and an embedded `[TCP]` prefix).** A recurring class of bug: a sub-value built with `getMessage()` — which adds the chat prefix and pre-renders to legacy section codes — was being substituted into *another* message's `{placeholder}` and parsed a second time, which the parser couldn't read. Most visible in `/tcp info` (Exit / Last Reset / Snapshot lines), but the same pattern affected per-chamber loot info, `/tcp mobs` listings, and several admin-GUI items (chamber detail/settings, global & protection toggles, back buttons). All nested sub-values now use a new `rawMessage()` helper (substitutes placeholders, no prefix, no pre-parse) so the outer message parses exactly once. No `messages.yml` changes required.
+- **Several player-facing strings rendered raw `&`/`§` codes (and an embedded `[BTC]` prefix).** A recurring class of bug: a sub-value built with `getMessage()` — which adds the chat prefix and pre-renders to legacy section codes — was being substituted into *another* message's `{placeholder}` and parsed a second time, which the parser couldn't read. Most visible in `/trial info` (Exit / Last Reset / Snapshot lines), but the same pattern affected per-chamber loot info, `/trial mobs` listings, and several admin-GUI items (chamber detail/settings, global & protection toggles, back buttons). All nested sub-values now use a new `rawMessage()` helper (substitutes placeholders, no prefix, no pre-parse) so the outer message parses exactly once. No `messages.yml` changes required.
 
 ## [1.6.1] - 2026-06-29
 ### Fixed
 - **Trial spawners weren't actually reset on a chamber reset.** Reset cleared each spawner's *tracked players* (so it would drop keys again) and set the cooldown *length*, but never cleared the spawner's **active cooldown end** — so a spawner that a player had already completed stayed stuck in its post-completion cooldown after the chamber reset and wouldn't re-activate. Reset now clears `cooldownEnd` (and the pending spawn timer) so spawners are genuinely ready again — or, when `reset.spawner-cooldown-minutes` is positive, schedules the cooldown to end that many minutes from the reset. (Affected every chamber; most visible on freshly force-reset chambers.)
 
 ### Added
-- **Chamber display names.** Chambers can now carry a friendly display name, separate from their internal name (which stays the command/database key). Set one with **`/tcp rename <chamber> <name>`** (`none` clears it) or the new **Rename** button in the chamber GUI (`/tcp menu` → chamber → Rename, then type the name in chat). Display names appear in player-facing announcements (reset warnings, the new clear broadcast) and `/tcp info`, and are exposed on the chamber API so premium modules can use them. An optional **name pool** (`naming.name-pool`, on by default via `naming.auto-assign`) auto-assigns a random unused name to each newly registered or auto-discovered chamber.
+- **Chamber display names.** Chambers can now carry a friendly display name, separate from their internal name (which stays the command/database key). Set one with **`/trial rename <chamber> <name>`** (`none` clears it) or the new **Rename** button in the chamber GUI (`/trial menu` → chamber → Rename, then type the name in chat). Display names appear in player-facing announcements (reset warnings, the new clear broadcast) and `/trial info`, and are exposed on the chamber API so premium modules can use them. An optional **name pool** (`naming.name-pool`, on by default via `naming.auto-assign`) auto-assigns a random unused name to each newly registered or auto-discovered chamber.
 - **Chamber-cleared broadcast.** New opt-in server-wide announcement when a chamber is fully cleared in one run — "*{chamber} has been cleared by {players}!*" — using the display name and the participating players. Off by default (`global.broadcast-chamber-cleared`). Built on the existing `ChamberClearedEvent`.
 
 ### Fixed
 - **"Reset Broadcast" toggle rendered raw `&` codes and a bracketed lore.** Its `messages.yml` value used `&`-codes in the name and a multi-line *list* for the lore, but `GuiComponents.toggleItem` wraps the name in the `gui.common.toggle-name-*` template and expects a single-line description — so the name double-processed into raw codes and the list stringified to `[line, line, …]`. The keys now follow the toggle contract (plain name, single-line lore); the helper supplies the colour, Status, and Click lines.
 - **Loot "Edit Amount" GUI: the Minimum buttons did nothing on most items.** The yellow adjust buttons clamped the minimum to the current maximum, so on a freshly-added item (which starts at min 1 / max 1) "Minimum +N" was capped at 1 and appeared dead — as did "Minimum -N" and "Maximum -N" at their floors. The min/max range is now kept coherent both ways: raising the minimum past the maximum carries the maximum up with it, and lowering the maximum below the minimum pulls the minimum down. Every button now responds.
-- **Wave mobs no longer fight each other.** A trial spawner's skeletons would clip other mobs with stray arrows, and the wave dissolved into mob-vs-mob brawls — skeleton 1v1s, the occasional 3v3 — that the player never had to touch. Worse than just looking silly: those self-kills still counted toward wave (and chamber) completion, so a wave could clear itself while the player stood there. Friendly fire and AI target-locking **strictly between two trial-spawner wave mobs** are now suppressed; player-vs-mob combat is untouched, and non-wave entities (wild animals, other plugins' mobs) are left alone. Toggle with `spawner-waves.prevent-infighting` (default `true`). Also keeps premium TCP-MythicTrials tier progression honest, since "clearing" a chamber once again means the players actually did the fighting.
+- **Wave mobs no longer fight each other.** A trial spawner's skeletons would clip other mobs with stray arrows, and the wave dissolved into mob-vs-mob brawls — skeleton 1v1s, the occasional 3v3 — that the player never had to touch. Worse than just looking silly: those self-kills still counted toward wave (and chamber) completion, so a wave could clear itself while the player stood there. Friendly fire and AI target-locking **strictly between two trial-spawner wave mobs** are now suppressed; player-vs-mob combat is untouched, and non-wave entities (wild animals, other plugins' mobs) are left alone. Toggle with `spawner-waves.prevent-infighting` (default `true`). Also keeps premium Mythic Trials tier progression honest, since "clearing" a chamber once again means the players actually did the fighting.
 
 ## [1.6.0] - 2026-06-26
 ### Added
-- **`/tcp setup` — an opt-in, guided settings tour.** TCP ships conservative defaults (auto-discovery and auto-snapshot are off, among others) and most operators never open a YAML file, so genuinely useful settings go unnoticed. `/tcp setup` walks the major settings **one at a time** — each with a plain-English explanation, its current state, and **Enable / Skip / Disable** buttons, plus **← Prev**, **Pause Setup** and **Stop Setup**. Nothing is ever forced and no default is changed. On Paper 1.21.7+ it renders in the native **Dialog** UI; on older or non-Paper servers it falls back automatically to a **clickable-chat** tour with the same content. Includes preset pickers (e.g. how often chambers reset, shown with the current value as a real duration), a clear **CPU-impact** badge on the few settings that warrant one, and a gentle op-join reminder — at most weekly, three times — that stops for good once you run the tour (with a single follow-up nudge if you start but don't finish). Permission: `tcp.admin.setup` (OP).
+- **`/trial setup` — an opt-in, guided settings tour.** BTC ships conservative defaults (auto-discovery and auto-snapshot are off, among others) and most operators never open a YAML file, so genuinely useful settings go unnoticed. `/trial setup` walks the major settings **one at a time** — each with a plain-English explanation, its current state, and **Enable / Skip / Disable** buttons, plus **← Prev**, **Pause Setup** and **Stop Setup**. Nothing is ever forced and no default is changed. On Paper 1.21.7+ it renders in the native **Dialog** UI; on older or non-Paper servers it falls back automatically to a **clickable-chat** tour with the same content. Includes preset pickers (e.g. how often chambers reset, shown with the current value as a real duration), a clear **CPU-impact** badge on the few settings that warrant one, and a gentle op-join reminder — at most weekly, three times — that stops for good once you run the tour (with a single follow-up nudge if you start but don't finish). Permission: `tcp.admin.setup` (OP).
 
 ### Changed
-- Paper API target raised to **1.21.7** for the Dialog API used by `/tcp setup`. The plugin's `api-version` stays `1.21`, so it still loads on **1.21.1+** — the Dialog code is gated behind a runtime class-presence check and degrades to the clickable-chat tour wherever the Dialog API isn't available.
+- Paper API target raised to **1.21.7** for the Dialog API used by `/trial setup`. The plugin's `api-version` stays `1.21`, so it still loads on **1.21.1+** — the Dialog code is gated behind a runtime class-presence check and degrades to the clickable-chat tour wherever the Dialog API isn't available.
 
 ## [1.5.22] - 2026-06-22
 ### Added
-- **Bulk snapshot backfill — `/tcp snapshot create all` and `/tcp snapshot missing`.** Chambers registered with `global.auto-snapshot-on-register` turned off have no snapshot and **can't be reset** until one is captured, and there was no way to fix a backlog short of running `create` on each chamber by hand. `create all` now snapshots every chamber that's missing one (add `force` to re-capture *all* chambers), running them **sequentially with a 20-tick gap after each capture finishes** — a capture is a single heavy main-thread pass over the whole chamber, so the stagger keeps TPS healthy across a 60+ backlog — and reporting progress every 10. `missing` lists the snapshot-less chambers 10 per page, each with a clickable `[Create]` (plus a `[Create all]` header button); the periodic "chambers have no snapshot" reminder's `[list]` link now points here too.
+- **Bulk snapshot backfill — `/trial snapshot create all` and `/trial snapshot missing`.** Chambers registered with `global.auto-snapshot-on-register` turned off have no snapshot and **can't be reset** until one is captured, and there was no way to fix a backlog short of running `create` on each chamber by hand. `create all` now snapshots every chamber that's missing one (add `force` to re-capture *all* chambers), running them **sequentially with a 20-tick gap after each capture finishes** — a capture is a single heavy main-thread pass over the whole chamber, so the stagger keeps TPS healthy across a 60+ backlog — and reporting progress every 10. `missing` lists the snapshot-less chambers 10 per page, each with a clickable `[Create]` (plus a `[Create all]` header button); the periodic "chambers have no snapshot" reminder's `[list]` link now points here too.
 
 ## [1.5.21] - 2026-06-22
 ### Added
 - **`debug.verbose-logging` now explains protection decisions.** With it on, the console logs *why* a block-break, PvP, teleport-into-chamber, walk-in entry, or AdvancedEnchantments action was or wasn't taken — including the bypass-permission exemptions (`tcp.bypass.entry` / `tcp.bypass.protection`, which OPs hold by default). This makes "I enabled the toggle but it doesn't work" self-diagnosable: the usual answer is testing as an OP. See the new troubleshooting entry.
 
 ### Fixed
-- **AdvancedEnchantments enchants could still break into a chamber from outside.** The `protection.block-advanced-enchantments` guard only checked the **player's own** location, so a player standing just outside a chamber and mining *into* it — Blast Mining the wall, or an AoE break reaching across the boundary — wasn't stopped. AE's `EnchantActivateEvent` exposes no block, so TCP now also ray-traces the block the player is looking at and checks it — expanded by the new **`protection.advanced-enchantments-block-radius`** (default `2`, set it to your largest blast enchant's radius; `0` = only the mined block itself) — against chamber bounds via `getIntersectingChamber`, closing the outside-in route. The expansion is centred on the mined block, not the player. Standing inside a chamber is blocked as before, and `tcp.bypass.protection` / the allowlist still apply.
+- **AdvancedEnchantments enchants could still break into a chamber from outside.** The `protection.block-advanced-enchantments` guard only checked the **player's own** location, so a player standing just outside a chamber and mining *into* it — Blast Mining the wall, or an AoE break reaching across the boundary — wasn't stopped. AE's `EnchantActivateEvent` exposes no block, so BTC now also ray-traces the block the player is looking at and checks it — expanded by the new **`protection.advanced-enchantments-block-radius`** (default `2`, set it to your largest blast enchant's radius; `0` = only the mined block itself) — against chamber bounds via `getIntersectingChamber`, closing the outside-in route. The expansion is centred on the mined block, not the player. Standing inside a chamber is blocked as before, and `tcp.bypass.protection` / the allowlist still apply.
 
 ## [1.5.20] - 2026-06-21
 ### Added
 - **Chamber entry control** — two opt-in protection toggles for gating who can get into a chamber:
   - **`protection.prevent-teleport-into-chamber`** cancels teleporting *into* a chamber from outside — `/tpa`, `/tpahere`, `/home`, `/warp`, `/tp`, ender pearls, chorus fruit, anything. It hooks the teleport itself (`PlayerTeleportEvent`), so it catches every method rather than specific commands, and players can't `/tpa` past the intended entrance.
   - **`protection.prevent-entry-without-permission`** gates *walking* into a chamber by rank — only players with the new **`tcp.bypass.entry`** permission (default op) can enter on foot; others are stopped at the boundary. Makes chambers rank-restricted.
-  Both are off by default. `tcp.bypass.entry`, spectators, and creative-mode players are exempt (the gamemode check also covers TCP's own spectator-entry teleport).
+  Both are off by default. `tcp.bypass.entry`, spectators, and creative-mode players are exempt (the gamemode check also covers BTC's own spectator-entry teleport).
 
 ### Fixed
-- **`/tcp info` rendered raw colour codes** instead of formatting (e.g. `&8&l&6TRIAL CHAMBER…` and `&7WorldEdit / FAWE:`) — most visible with a translated, `&`-coded prefix. The integration/feature status ticks were built with `§` section signs, which TCP's message parser rejects, making it fall back to printing the whole line literally. They now use `&` codes, so the line formats correctly.
+- **`/trial info` rendered raw colour codes** instead of formatting (e.g. `&8&l&6TRIAL CHAMBER…` and `&7WorldEdit / FAWE:`) — most visible with a translated, `&`-coded prefix. The integration/feature status ticks were built with `§` section signs, which BTC's message parser rejects, making it fall back to printing the whole line literally. They now use `&` codes, so the line formats correctly.
 
 ## [1.5.19] - 2026-06-21
 ### Added
-- **`config.yml` and `messages.yml` now auto-update on startup.** Bukkit only writes these files when they're *absent*, so servers that installed an earlier build never got options/message keys added later — features ran on code defaults that couldn't be configured, and new messages rendered as `<missing: …>` in-game. TCP now merges any key present in the bundled default but missing from your file, **carrying its comment across**, while leaving your existing values, comments, and order untouched. The previous file is saved as `<file>.bak` first. User-content files (`loot.yml`, `spawner_presets.yml`, `dungeon.yml`) are intentionally **not** merged — they're authored by you. (This is why some servers were stuck on old configs/messages.)
+- **`config.yml` and `messages.yml` now auto-update on startup.** Bukkit only writes these files when they're *absent*, so servers that installed an earlier build never got options/message keys added later — features ran on code defaults that couldn't be configured, and new messages rendered as `<missing: …>` in-game. BTC now merges any key present in the bundled default but missing from your file, **carrying its comment across**, while leaving your existing values, comments, and order untouched. The previous file is saved as `<file>.bak` first. User-content files (`loot.yml`, `spawner_presets.yml`, `dungeon.yml`) are intentionally **not** merged — they're authored by you. (This is why some servers were stuck on old configs/messages.)
 - **`protection.allow-pvp` is now implemented** (was a reserved no-op). When `false`, player-vs-player damage — melee and player-shot projectiles — is cancelled inside registered chambers. `tcp.bypass.protection` exempts staff; mob and self-damage are never affected.
 - **`reset.clear-trial-omen-effect` is now implemented** (was a reserved no-op). On reset, Trial Omen and Bad Omen are stripped from players who were inside the chamber, so leftover omen doesn't carry into the next cycle.
 - **Translatable `{type}` labels** — the `{type}` placeholder was being filled with hardcoded English. It now resolves through new messages.yml keys so it can be localized everywhere it appears: `vault-type-normal` / `vault-type-ominous` (vault messages **and** trial-key give messages), and `wave-type-*` / `wave-boss-type-*` for the spawner-wave completion + boss-bar lines. Defaults are unchanged (`Normal`/`Ominous`, `Trial`/`Ominous`, `Trial Spawner`/`Ominous Trial`).
@@ -144,27 +155,27 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [1.5.18] - 2026-06-21
 ### Added
-- **AdvancedEnchantments integration.** AE custom enchants (e.g. *Blast Mining*) break blocks through their own effect path that ignores TCP's `BlockBreakEvent` cancel — so they could bypass chamber protection. With `protection.block-advanced-enchantments: true` (and AE installed), TCP cancels AE enchant activations for a player standing in a registered chamber; `protection.advanced-enchantments-allowlist` keeps named enchants (e.g. combat ones) working there. Reflection-based — no dependency on the paid AE jar, inert when AE is absent — and `tcp.bypass.protection` exempts staff. **Off by default.**
+- **AdvancedEnchantments integration.** AE custom enchants (e.g. *Blast Mining*) break blocks through their own effect path that ignores BTC's `BlockBreakEvent` cancel — so they could bypass chamber protection. With `protection.block-advanced-enchantments: true` (and AE installed), BTC cancels AE enchant activations for a player standing in a registered chamber; `protection.advanced-enchantments-allowlist` keeps named enchants (e.g. combat ones) working there. Reflection-based — no dependency on the paid AE jar, inert when AE is absent — and `tcp.bypass.protection` exempts staff. **Off by default.**
 
 ### Fixed
 - **Protection-message chat spam.** A single multi-block action (Blast Mining, vein miners, rapid clicking) printed the "you can't break/place/access here" message once per affected block. The denial messages are now throttled per player via `protection.message-cooldown-ms` (default 1500 ms; `0` disables the throttle).
 
 ## [1.5.17] - 2026-06-20
 ### Fixed
-- **1.5.16 could rename another plugin's `player_stats` table.** The collision migration checked a table's columns via `DatabaseMetaData.getColumns()`, whose table-name argument treats `_` as a SQL wildcard — so the "is this table TCP's?" test could pick up a `player_uuid` column from a *different* matching table and wrongly rename a foreign `player_stats` to `tcp_player_stats`. The metadata lookup now filters to the exact table name (and catalog). **Servers affected by 1.5.16 auto-recover on next start:** a `tcp_player_stats` that isn't TCP's (no `player_uuid`) is renamed back to `player_stats` — returning the other plugin's table and data — and TCP creates its own fresh `tcp_player_stats`. If both names are already occupied, TCP logs exactly how to reconcile instead of touching anything.
+- **1.5.16 could rename another plugin's `player_stats` table.** The collision migration checked a table's columns via `DatabaseMetaData.getColumns()`, whose table-name argument treats `_` as a SQL wildcard — so the "is this table BTC's?" test could pick up a `player_uuid` column from a *different* matching table and wrongly rename a foreign `player_stats` to `tcp_player_stats`. The metadata lookup now filters to the exact table name (and catalog). **Servers affected by 1.5.16 auto-recover on next start:** a `tcp_player_stats` that isn't BTC's (no `player_uuid`) is renamed back to `player_stats` — returning the other plugin's table and data — and BTC creates its own fresh `tcp_player_stats`. If both names are already occupied, BTC logs exactly how to reconcile instead of touching anything.
 
 ## [1.5.16] - 2026-06-20
 ### Fixed
-- **Stats / leaderboard GUI crashed on shared databases** (`Could not pass event InventoryClickEvent`). If another plugin (e.g. a duels / PvP-stats plugin) already owned a generically-named `player_stats` table, TCP's `CREATE TABLE IF NOT EXISTS` saw it and never created its own — so every stat read/write hit the wrong table. TCP now uses its own namespaced **`tcp_player_stats`** table: existing TCP stats are migrated to it automatically on first start, and a foreign `player_stats` is left completely untouched. The stats GUI also now degrades gracefully (logs a clear `[TCP]` error and shows an empty board) instead of throwing into the click handler if a stat query ever fails.
+- **Stats / leaderboard GUI crashed on shared databases** (`Could not pass event InventoryClickEvent`). If another plugin (e.g. a duels / PvP-stats plugin) already owned a generically-named `player_stats` table, BTC's `CREATE TABLE IF NOT EXISTS` saw it and never created its own — so every stat read/write hit the wrong table. BTC now uses its own namespaced **`tcp_player_stats`** table: existing BTC stats are migrated to it automatically on first start, and a foreign `player_stats` is left completely untouched. The stats GUI also now degrades gracefully (logs a clear `[BTC]` error and shows an empty board) instead of throwing into the click handler if a stat query ever fails.
 
 ### Added
 - **Database schema self-check** on startup — reads each table's live columns and reconciles drift: missing (safe) `tcp_player_stats` columns are added automatically, and a missing critical column like the `player_uuid` primary key is reported with a loud, actionable warning that lists the table's actual columns.
-- **`/tcp debug schema`** — prints every TCP table's live columns on demand (no database client needed), flagging the stats table if its primary key is absent.
+- **`/trial debug schema`** — prints every BTC table's live columns on demand (no database client needed), flagging the stats table if its primary key is absent.
 
 ## [1.5.15] - 2026-06-19
 ### Added
 - **Land-claim plugin protection** — registered Trial Chambers can no longer be claimed (or have a claim expanded into them) with **Residence**, **Lands**, or **GriefPrevention**. Each integration cancels that plugin's claim-create / expand events when the claimed area overlaps a chamber, with a message to the player. Per-plugin config toggles (`protection.residence-integration` / `lands-integration` / `griefprevention-integration`, default on) and per-plugin bypass permissions (`tcp.bypass.residence` / `.lands` / `.griefprevention`, default op). Integrations are reflection-based — no version pinning, and nothing is touched on servers without the plugin.
-- **Claim conflict scan** — on startup (toggle: `protection.claim-conflict-scan-on-startup`) and via the new **`/tcp claims scan`**, TCP checks every registered chamber against existing claims and logs a warning per overlap (chamber name + location + claim owner), to help find and fix pre-existing conflicts on long-running servers.
+- **Claim conflict scan** — on startup (toggle: `protection.claim-conflict-scan-on-startup`) and via the new **`/trial claims scan`**, BTC checks every registered chamber against existing claims and logs a warning per overlap (chamber name + location + claim owner), to help find and fix pre-existing conflicts on long-running servers.
 
 ## [1.5.14] - 2026-06-19
 ### Fixed
@@ -173,7 +184,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ## [1.5.13] - 2026-06-19
 ### Fixed
 - **MySQL/MariaDB vault saving failed** with `error in your SQL syntax … near 'CONFLICT(...)'`. Two vault upserts (`ChamberManager.saveVault`, `VaultManager.recordOpen`) hardcoded SQLite's `ON CONFLICT … DO UPDATE` syntax instead of branching on the database type. They now use `ON DUPLICATE KEY UPDATE` on MySQL/MariaDB (matching the existing unique keys), like the other upserts already did. SQLite is unaffected.
-- **Missing message key** — `/tcp give` and `/tcp stats` against an unknown player rendered `Message not found: player-not-found`. Added the `player-not-found` key to messages.yml. (Verified all ~350 code-referenced message keys resolve.)
+- **Missing message key** — `/trial give` and `/trial stats` against an unknown player rendered `Message not found: player-not-found`. Added the `player-not-found` key to messages.yml. (Verified all ~350 code-referenced message keys resolve.)
 
 ## [1.5.12] - 2026-06-17
 ### Added
@@ -181,79 +192,79 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - **Time-based vault cooldowns now actually work** (`vaults.normal-cooldown-hours` / `ominous-cooldown-hours`). A positive value reopens the vault that many hours after a player last opened it (tracked per player in `player_vaults`); the player sees the remaining time when it's still on cooldown. `0` (or negative) keeps the vanilla permanent-until-reset behaviour. Previously any positive value was read but ignored — vaults were always permanent. A chamber reset is still a full unlock regardless of cooldown.
 
 ### Fixed
-- **Chamber completions were never recorded.** `chambers_completed` was permanently 0, dead-ending the chambers leaderboard, the `/tcp stats` "Chambers Completed" line, the "Vaults per Chamber" GUI stat, and the `%tcp_chambers_completed%` / `%tcp_leaderboard_chambers%` / `%tcp_top_chambers_*%` placeholders. Completions are now credited to every participant when a chamber is fully cleared (all its trial spawners finish their waves in one run), via the existing `ChamberClearedEvent`. Toggle with `statistics.track-chamber-completion` (default on).
+- **Chamber completions were never recorded.** `chambers_completed` was permanently 0, dead-ending the chambers leaderboard, the `/trial stats` "Chambers Completed" line, the "Vaults per Chamber" GUI stat, and the `%btc_chambers_completed%` / `%btc_leaderboard_chambers%` / `%btc_top_chambers_*%` placeholders. Completions are now credited to every participant when a chamber is fully cleared (all its trial spawners finish their waves in one run), via the existing `ChamberClearedEvent`. Toggle with `statistics.track-chamber-completion` (default on).
 - **`economy-rewards` are no longer dropped when editing a legacy loot table in the GUI** — the loot editor's legacy save path carried `command-rewards` forward but not `economy-rewards`.
-- **Permissions:** `tcp.admin.loot` (required by `/tcp loot`) is now declared in plugin.yml, and `tcp.admin.loot` / `tcp.admin.containers` / `tcp.admin.mobs` are now children of `tcp.admin.*` — so a wildcard grant covers them. (Previously `loot` was undeclared and `containers`/`mobs` weren't under the wildcard.)
+- **Permissions:** `tcp.admin.loot` (required by `/trial loot`) is now declared in plugin.yml, and `tcp.admin.loot` / `tcp.admin.containers` / `tcp.admin.mobs` are now children of `tcp.admin.*` — so a wildcard grant covers them. (Previously `loot` was undeclared and `containers`/`mobs` weren't under the wildcard.)
 - **Config validation** keyed two rules to the wrong section (`reset.default-reset-interval` / `performance.blocks-per-tick`); corrected to `global.*` so those values are actually range-checked at startup.
 
 ### Removed
 - **No-op config options removed:** `performance.async-database-operations`, `performance.use-folialib`, and `statistics.leaderboard-update-interval` were never read by any code (DB is always async, Folia is auto-detected, leaderboard caching is fixed). Leftover entries in an existing `config.yml` are ignored. Five other never-implemented toggles (`protection.allow-pvp`, `trial-keys.fix-paper-bugs` / `prevent-duplication` / `max-stack-size`, `reset.clear-trial-omen-effect`) are now clearly marked **not yet implemented** in `config.yml` and the docs.
 
 ### Docs
-- Full factual-accuracy sweep of `/docs`: corrected the `spawner-cooldown-minutes` / `wild-spawner-cooldown-minutes` section (`reset:`, not `global:`), the `/tcp delete` & `/tcp setexit` permission (`tcp.admin.create`, not `tcp.admin.generate`), the stale `tcp.admin.containers` description, the permission hierarchy, a bogus `/tcp debug` command reference, and the missing `tcp.admin.create` / `tcp.admin.loot` permission docs.
+- Full factual-accuracy sweep of `/docs`: corrected the `spawner-cooldown-minutes` / `wild-spawner-cooldown-minutes` section (`reset:`, not `global:`), the `/trial delete` & `/trial setexit` permission (`tcp.admin.create`, not `tcp.admin.generate`), the stale `tcp.admin.containers` description, the permission hierarchy, a bogus `/trial debug` command reference, and the missing `tcp.admin.create` / `tcp.admin.loot` permission docs.
 
 ## [1.5.11] - 2026-06-17
 ### Fixed
-- **Decorated pots came back empty after a chamber reset.** A trial-chamber pot drops its break-loot from an unrolled `LootTable` (the pot is `Lootable`), but the snapshot only captured the pot's *sherds* — so a reset restored the block without its loot table and the pot dropped nothing forever after. Snapshots now capture and re-arm the pot's loot table (or its literal item), so pots refill with fresh loot every cycle. **Re-run `/tcp snapshot create` on existing chambers** so the new snapshot includes the pot loot tables (old snapshots predate this capture).
+- **Decorated pots came back empty after a chamber reset.** A trial-chamber pot drops its break-loot from an unrolled `LootTable` (the pot is `Lootable`), but the snapshot only captured the pot's *sherds* — so a reset restored the block without its loot table and the pot dropped nothing forever after. Snapshots now capture and re-arm the pot's loot table (or its literal item), so pots refill with fresh loot every cycle. **Re-run `/trial snapshot create` on existing chambers** so the new snapshot includes the pot loot tables (old snapshots predate this capture).
 - **Container Loot GUI tooltip rendered `&` colour codes literally** (e.g. `&ePer-player-loot: &fon`). The per-player-loot status was injected as a pre-rendered section-coded string, which broke the lore line's MiniMessage re-parse; it now passes the raw message so colours render.
 
 ### Changed
-- **Container Loot GUI shows each template as its real container block** — a dispenser template displays as a dispenser, a barrel as a barrel, etc., instead of every entry being a generic chest. Makes finding a specific container among 30+ far easier. (Adds a `material` column to `container_template`, migrated automatically; templates materialized before 1.5.11 show as a chest until you reset + re-materialize them via the GUI or `/tcp container`.)
-- **Editing a template from the GUI or `/tcp container edit` now returns to the Container Loot view when you close it** — a "back" affordance the deposit-style editor inventory couldn't otherwise offer. In-world sneak edits still just close.
+- **Container Loot GUI shows each template as its real container block** — a dispenser template displays as a dispenser, a barrel as a barrel, etc., instead of every entry being a generic chest. Makes finding a specific container among 30+ far easier. (Adds a `material` column to `container_template`, migrated automatically; templates materialized before 1.5.11 show as a chest until you reset + re-materialize them via the GUI or `/trial container`.)
+- **Editing a template from the GUI or `/trial container edit` now returns to the Container Loot view when you close it** — a "back" affordance the deposit-style editor inventory couldn't otherwise offer. In-world sneak edits still just close.
 
 ## [1.5.10] - 2026-06-16
 ### Added
-- **More PlaceholderAPI placeholders.** New: `%tcp_kdr%` (kill/death ratio), `%tcp_current_chamber_reset%` (time until the current chamber resets), `%tcp_current_chamber_paused%`, `%tcp_chamber_count%` (registered chambers server-wide), `%tcp_leaderboard_mobs%` (rank by mobs killed), and `%tcp_top_mobs_<1-10>_name%` / `_value%`. The previously-implemented-but-undocumented `%tcp_top_time_*%` board is now documented too.
+- **More PlaceholderAPI placeholders.** New: `%btc_kdr%` (kill/death ratio), `%btc_current_chamber_reset%` (time until the current chamber resets), `%btc_current_chamber_paused%`, `%btc_chamber_count%` (registered chambers server-wide), `%btc_leaderboard_mobs%` (rank by mobs killed), and `%btc_top_mobs_<1-10>_name%` / `_value%`. The previously-implemented-but-undocumented `%btc_top_time_*%` board is now documented too.
 - **Full PlaceholderAPI reference** added to the docs ([getting-started/placeholders](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/placeholders)) — the complete, accurate list with caching/freshness notes and examples. (The old "full placeholder list" link pointed at a page that didn't exist.)
 
 ### Fixed
-- **`%tcp_leaderboard_vaults%` and `%tcp_top_vaults_*%` now rank by the normal + ominous TOTAL**, matching `%tcp_vaults_opened%`. They previously ranked by *normal vaults only*, so a player's "vaults" rank could disagree with their displayed vault total. (`StatisticsManager.getLeaderboard` gains a `"vaults"` total option.)
+- **`%btc_leaderboard_vaults%` and `%btc_top_vaults_*%` now rank by the normal + ominous TOTAL**, matching `%btc_vaults_opened%`. They previously ranked by *normal vaults only*, so a player's "vaults" rank could disagree with their displayed vault total. (`StatisticsManager.getLeaderboard` gains a `"vaults"` total option.)
 - **Stale documentation links.** Updated all GitBook URLs in `MODRINTH.md` / `SPIGOT.md` to the current docs home (`darkstarworks.gitbook.io/plugins/mc/tcp-documentation`).
 
 ## [1.5.9] - 2026-06-16
 ### Fixed
 - **Per-player chamber container loot was broken for naturally-generated chambers — every container appeared empty.** A trial-chamber chest/barrel/dispenser holds its loot as an *unrolled vanilla loot table* (the inventory is genuinely empty until a player triggers a vanilla open). The feature cancelled that vanilla open and read the empty inventory as the "template", so every player's copy came out empty. Containers are now seeded by **rolling the loot table** (Bukkit `LootTable`/`Lootable`) the first time one is accessed, so copies contain the real generated loot. Single chests, double chests (each half rolled), barrels, dispensers, and droppers are all handled.
 - **The op "edit template" (sneak-open) did nothing — no inventory opened.** It only printed a message and deferred to vanilla. Sneak-opening with `tcp.admin.containers` now opens the **shared loot template** for editing; changes affect every player's first-open loot.
-- **Container edits never persisted across a reset, and container loot was not restored on reset at all.** Two causes: (1) there was no template store — the "template" was just the live block, whose loot table a reset *wipes* (a block-data restore recreates an empty block entity); (2) the snapshot system never captured containers in the first place. Now: the shared template is stored in a new `container_template` table and **persists across resets** (per-player copies still reset for renewable loot), and snapshots **capture and restore each container's loot table** so a broken or reset container comes back with its loot intact. *Existing chambers should re-run `/tcp snapshot create` so their containers are captured under the new format; persisted templates already survive regardless.*
+- **Container edits never persisted across a reset, and container loot was not restored on reset at all.** Two causes: (1) there was no template store — the "template" was just the live block, whose loot table a reset *wipes* (a block-data restore recreates an empty block entity); (2) the snapshot system never captured containers in the first place. Now: the shared template is stored in a new `container_template` table and **persists across resets** (per-player copies still reset for renewable loot), and snapshots **capture and restore each container's loot table** so a broken or reset container comes back with its loot intact. *Existing chambers should re-run `/trial snapshot create` so their containers are captured under the new format; persisted templates already survive regardless.*
 
 ### Added
 - **Dispensers and droppers** are now covered by per-player container loot (`chests.per-player-loot`), alongside chests, trapped chests, and barrels.
-- **Container loot in the GUI** — the chamber screen (`/tcp menu <chamber>`) gains a **Container Loot** view: status + template/copy counts, a paginated list of every container template (left-click to edit the shared template inventory, right-click to teleport), and bulk actions to **materialize all** containers, clear player copies, or reset templates.
-- **`/tcp container` command** (`tcp.admin.containers`) — CLI parity with the GUI: `list`, `materialize`, `reset`, `clearcopies`, `tp <#>`, `edit <#>`. `materialize` rolls a template for every container in a chamber at once, so loot can be curated before anyone opens it. Tab-completed.
-- **WorldGuard integration is now functional** (`protection.worldguard-integration`, previously a no-op stub). When a WorldGuard region covers a spot inside a chamber and grants the player build rights (region membership, an explicit `build` allow, or WG bypass), TCP yields and skips its own block-break / block-place / container-access protection there — so region owners and staff can work inside chambers overlapping their regions. Where there's no region (or no build rights), TCP protection applies as before.
+- **Container loot in the GUI** — the chamber screen (`/trial menu <chamber>`) gains a **Container Loot** view: status + template/copy counts, a paginated list of every container template (left-click to edit the shared template inventory, right-click to teleport), and bulk actions to **materialize all** containers, clear player copies, or reset templates.
+- **`/trial container` command** (`tcp.admin.containers`) — CLI parity with the GUI: `list`, `materialize`, `reset`, `clearcopies`, `tp <#>`, `edit <#>`. `materialize` rolls a template for every container in a chamber at once, so loot can be curated before anyone opens it. Tab-completed.
+- **WorldGuard integration is now functional** (`protection.worldguard-integration`, previously a no-op stub). When a WorldGuard region covers a spot inside a chamber and grants the player build rights (region membership, an explicit `build` allow, or WG bypass), BTC yields and skips its own block-break / block-place / container-access protection there — so region owners and staff can work inside chambers overlapping their regions. Where there's no region (or no build rights), BTC protection applies as before.
 
 ## [1.5.8] - 2026-06-14
 ### Added
-- **Hologram vault feedback** (`vaults.feedback.mode`, default `TEXT` = unchanged). Switch to `HOLOGRAM` and the chat lines for every vault outcome are replaced by a floating **green ✔ / red ✘** above the vault — shown only to the player who interacted, so looters get a clean, glanceable result instead of a column of `[TCP]` chat. Covers all outcomes: a tick on a successful open, a cross on every failure (no key, wrong key type, on cooldown/locked, can't afford a reopen). Each result is paired with a configurable sound (defaults to the pillager celebrate cheer for success and the pillager grumble for failure) and despawns after a configurable duration. Position, scale, see-through, the symbols themselves, and both sounds are all tunable under `vaults.feedback.hologram` / `vaults.feedback.sounds`. Particles and advancements are unaffected, so existing setups keep their sparkles either way.
+- **Hologram vault feedback** (`vaults.feedback.mode`, default `TEXT` = unchanged). Switch to `HOLOGRAM` and the chat lines for every vault outcome are replaced by a floating **green ✔ / red ✘** above the vault — shown only to the player who interacted, so looters get a clean, glanceable result instead of a column of `[BTC]` chat. Covers all outcomes: a tick on a successful open, a cross on every failure (no key, wrong key type, on cooldown/locked, can't afford a reopen). Each result is paired with a configurable sound (defaults to the pillager celebrate cheer for success and the pillager grumble for failure) and despawns after a configurable duration. Position, scale, see-through, the symbols themselves, and both sounds are all tunable under `vaults.feedback.hologram` / `vaults.feedback.sounds`. Particles and advancements are unaffected, so existing setups keep their sparkles either way.
 
 ## [1.5.7] - 2026-06-10
 ### Added
 - **Per-player chamber container loot** (`chests.per-player-loot`, opt-in). Lootr-style: every player who opens a chest, trapped chest, or barrel inside a registered chamber gets their **own private copy** of its contents — the second player into a chamber no longer finds gutted chests. The real container is never modified (it stays the pristine template each player's copy is cloned from on first open); copies persist in a new `player_container_loot` table, survive restarts, and reset with the chamber so every cycle is fresh loot for everyone. Double chests share one copy. Hopper automation in/out of chamber containers is blocked while enabled (it would drain or pollute the shared template). Containers placed *by players* inside chambers are tagged at place time and keep vanilla behaviour. Admins with `tcp.admin.containers` (default op) **sneak-click** to open the real container and edit the template — a normal click gives them their own copy like any player, so the feature can't be silently "broken for ops only". Together with per-player vaults, the *entire* chamber is now per-player. Decorated pots are deliberately excluded (their loot is break-based and already renews via chamber resets).
-- **Wild vault placement blocked** (`protection.block-wild-vault-placement`, default on). Placing a functioning VAULT block outside a registered chamber is now cancelled with a friendly message — a wild vault is a permanent vanilla loot dispenser TCP can't manage (no per-player tracking, no resets, no loot tables). Players with `tcp.bypass.vaultplace` (default op) are exempt, so creative builds and crate setups are unaffected.
-- **Key-to-reopen vaults** (`vaults.reopen-cost-keys`, default `0` = off). Players can open an already-used vault again by paying the configured number of matching trial keys in total (a fresh open costs 1, so `1` = reopen at the same price, `2` = one extra key). Keys are taken from the main hand; the cooldown/locked message is replaced by a price hint when the player can't afford it. Covers the key-gated-reopen model popularized by single-feature vault-reset plugins while keeping TCP's time/reset-based cooldowns as the default.
+- **Wild vault placement blocked** (`protection.block-wild-vault-placement`, default on). Placing a functioning VAULT block outside a registered chamber is now cancelled with a friendly message — a wild vault is a permanent vanilla loot dispenser BTC can't manage (no per-player tracking, no resets, no loot tables). Players with `tcp.bypass.vaultplace` (default op) are exempt, so creative builds and crate setups are unaffected.
+- **Key-to-reopen vaults** (`vaults.reopen-cost-keys`, default `0` = off). Players can open an already-used vault again by paying the configured number of matching trial keys in total (a fresh open costs 1, so `1` = reopen at the same price, `2` = one extra key). Keys are taken from the main hand; the cooldown/locked message is replaced by a price hint when the player can't afford it. Covers the key-gated-reopen model popularized by single-feature vault-reset plugins while keeping BTC's time/reset-based cooldowns as the default.
 - **Vanilla / datapack loot-table passthrough in loot.yml.** A pool entry of `type: VANILLA_TABLE` with `table: "namespace:path"` (e.g. `minecraft:chests/trial_chambers/reward` or any datapack key) populates the referenced server loot table when rolled and adds every generated stack to the drop. Resolved via the Bukkit LootTable API at roll time on the player's region thread; unknown keys log a warning and yield nothing without breaking the rest of the pool. Examples documented at the bottom of `loot.yml`.
-- **Clickable `/tcp list`.** Each chamber line is now interactive for players: click the chamber name to **copy it to the clipboard** (hover hint included), or click the new **[menu]** button to jump straight into that chamber's GUI detail view. Backed by a new `/tcp menu <chamber>` deep-link (tab-completed; same `tcp.admin.menu` permission). Console output keeps the plain localized format.
+- **Clickable `/trial list`.** Each chamber line is now interactive for players: click the chamber name to **copy it to the clipboard** (hover hint included), or click the new **[menu]** button to jump straight into that chamber's GUI detail view. Backed by a new `/trial menu <chamber>` deep-link (tab-completed; same `tcp.admin.menu` permission). Console output keeps the plain localized format.
 - **Anonymous usage metrics (bStats).** Aggregate, non-personal charts that guide development: database backend, discovery enabled, glow mode, chamber-count bucket, and which premium modules are installed. Opt out via `metrics.enabled: false` or the global bStats config.
 
 ## [1.5.6] - 2026-06-10
 ### Fixed
-- **CRITICAL: chamber reset could wipe terrain far beyond what the snapshot covers.** When an auto-discovered chamber's bounds *grew* after its snapshot was captured (discovery region merges), the reset's clear-added-blocks pass cleared the **entire current AABB** while the snapshot could only restore the old, smaller region — deleting every block in the newly annexed volume (terrain, builds, neighbouring structures). The clear region is now clamped to the intersection of the chamber bounds and the snapshot's actual coverage, with a console warning pointing at `/tcp snapshot create` when a mismatch is detected. A snapshot can no longer destroy ground it cannot put back.
-  - **If one of your chambers was already affected:** run `/tcp delete <chamber>` — this removes the broken registration *and* its stale snapshot in one step (discovery will cleanly re-register the chamber afterwards if enabled). Terrain that a pre-1.5.6 reset already deleted cannot be recovered by the plugin; restore that area from a world backup (or let it regenerate if it was untouched wilderness).
-- **Discovery auto-snapshot never linked the snapshot in the database.** `discovery.auto-snapshot: true` captured the `.dat` file but skipped the `snapshot_file` DB update (the step `/tcp generate` performs), so auto-discovered chambers reported "No snapshot found" at reset time and skipped restoration — or worse, kept a stale link. Both the registration and merge paths now link the file and log loudly if the DB write fails.
+- **CRITICAL: chamber reset could wipe terrain far beyond what the snapshot covers.** When an auto-discovered chamber's bounds *grew* after its snapshot was captured (discovery region merges), the reset's clear-added-blocks pass cleared the **entire current AABB** while the snapshot could only restore the old, smaller region — deleting every block in the newly annexed volume (terrain, builds, neighbouring structures). The clear region is now clamped to the intersection of the chamber bounds and the snapshot's actual coverage, with a console warning pointing at `/trial snapshot create` when a mismatch is detected. A snapshot can no longer destroy ground it cannot put back.
+  - **If one of your chambers was already affected:** run `/trial delete <chamber>` — this removes the broken registration *and* its stale snapshot in one step (discovery will cleanly re-register the chamber afterwards if enabled). Terrain that a pre-1.5.6 reset already deleted cannot be recovered by the plugin; restore that area from a world backup (or let it regenerate if it was untouched wilderness).
+- **Discovery auto-snapshot never linked the snapshot in the database.** `discovery.auto-snapshot: true` captured the `.dat` file but skipped the `snapshot_file` DB update (the step `/trial generate` performs), so auto-discovered chambers reported "No snapshot found" at reset time and skipped restoration — or worse, kept a stale link. Both the registration and merge paths now link the file and log loudly if the DB write fails.
 - **Stale snapshot after a discovery merge.** Merging a newly discovered region into an existing chamber now re-captures the snapshot whenever the chamber already had one (previously only when `discovery.auto-snapshot` was on), because a pre-merge snapshot no longer covers the grown bounds and is dangerous to restore. If the re-capture fails, the console warns that the existing snapshot is stale.
 - **Glow marker was killable, collidable, and farmable.** The invisible glow Shulker had no invulnerability or collision flags: players could target it (health-indicator mods showed "Shulker 30❤" when looking at a glowing spawner), kill it (removing the glow mid-wave and rolling vanilla shulker loot — **farmable shulker shells** at every glowing spawner), and arrows aimed near the spawner collided with it. The marker is now `invulnerable` + non-`collidable` at both spawn sites (wave-attached and chamber-remaining standalone).
 - **First wave completion in a large chamber could freeze the server.** `ChamberClearedEvent`'s spawner census (and the chamber-remaining glow's location scan) iterated *every block* in the chamber AABB on the region thread — up to 1.5M `getBlockAt` calls plus sync chunk loads on a merged discovery chamber. Both now share a chunk tile-entity scan (`Chunk#getTileEntities`, the same pattern `ChamberDiscoveryListener` uses): O(chunks × tile-entities) instead of O(volume).
-- **Stale spawner counts made `ChamberClearedEvent` fire early or never.** The per-chamber spawner count/location caches were only cleared at shutdown, but the spawner set changes on discovery merges (bounds grow), `/tcp scan`, and spawner block breaks. New `SpawnerWaveManager.invalidateChamberSpawnerCaches(chamberId)` is now called from `ChamberManager.updateBounds`, `scanChamber`, and the spawner `BlockBreakEvent` handler — premium-module tier-ups (TCP-MythicTrials) depend on this signal being correct.
+- **Stale spawner counts made `ChamberClearedEvent` fire early or never.** The per-chamber spawner count/location caches were only cleared at shutdown, but the spawner set changes on discovery merges (bounds grow), `/trial scan`, and spawner block breaks. New `SpawnerWaveManager.invalidateChamberSpawnerCaches(chamberId)` is now called from `ChamberManager.updateBounds`, `scanChamber`, and the spawner `BlockBreakEvent` handler — premium-module tier-ups (Mythic Trials) depend on this signal being correct.
 - **Breaking a standalone-glowed spawner orphaned its glow.** In `chamber-remaining` mode, breaking a *non-active* glowing spawner left its glow entity floating until the next chamber reset (`cancelWaveAt` only cleans the wave-attached glow). The block-break handler now also removes the standalone glow.
 - **Pending spectator offers leaked when a dead player disconnected.** `PlayerDeathListener.pendingOffers` was only cleared on respawn; a player who quit on the death screen and never rejoined left their entry (and its `Location` → world reference) in memory permanently. Now also cleared on `PlayerQuitEvent`.
-- **`tcp.admin.create` was never declared in plugin.yml.** The permission gating `/tcp delete` and `/tcp setexit` was checked in code but missing from the permission tree — so it wasn't a child of `tcp.admin.*`, and staff granted the wildcard couldn't delete chambers or set exits (ops were unaffected). Now declared with `default: op` and included in `tcp.admin.*`.
+- **`tcp.admin.create` was never declared in plugin.yml.** The permission gating `/trial delete` and `/trial setexit` was checked in code but missing from the permission tree — so it wasn't a child of `tcp.admin.*`, and staff granted the wildcard couldn't delete chambers or set exits (ops were unaffected). Now declared with `default: op` and included in `tcp.admin.*`.
 
 ## [1.5.5] - 2026-06-09
 ### Fixed
 - **Spawner glow outline rendered one block too high.** The glow Shulker was spawned at the spawner block's centre (`+0.5` on Y), but a Shulker's bounding box originates at its *feet*, so the 1×1×1 outline floated a full block above the spawner. It's now spawned with its feet on the block floor (`+0.0` Y) so the shell encloses the spawner block exactly. Applies to both the wave-active and `chamber-remaining` glow modes.
 
 ### Changed
-- **`/tcp snapshot create` and `/tcp snapshot restore` now take the chamber name as an *optional* argument.** Omit it while standing inside a chamber and the command targets that chamber — the same convenience `/tcp snapshot update` already had. On servers with many chambers, typing exact names for create/restore was impractical; you can now just stand in the chamber and run the bare command. Naming a chamber explicitly still works exactly as before.
+- **`/trial snapshot create` and `/trial snapshot restore` now take the chamber name as an *optional* argument.** Omit it while standing inside a chamber and the command targets that chamber — the same convenience `/trial snapshot update` already had. On servers with many chambers, typing exact names for create/restore was impractical; you can now just stand in the chamber and run the bare command. Naming a chamber explicitly still works exactly as before.
 
 ## [1.5.4] - 2026-06-09
 ### Fixed
@@ -261,40 +272,40 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - **Update checker mis-parsed `-mc26` release tags.** `fetchLatestVersion()` only stripped a leading `v`, so a `releases/latest` tag of `v1.5.2-mc26` became `1.5.2-mc26` and `isNewerVersion()` parsed the third segment (`2-mc26`) as `0` — i.e. `1.5.0` — producing wrong update results whenever the most recently published release was an mc26 tag. It now also strips the track suffix (`.substringBefore('-')`) so both `vX.Y.Z` and `vX.Y.Z-mc26` collapse to the same `X.Y.Z` before comparison.
 
 ### Added
-- **`ChamberEnteredEvent` / `ChamberExitedEvent` — public Bukkit events for "player crossed into/out of a registered chamber."** Fired from `PlayerMovementListener` on the block-boundary-crossing transition, and from `PlayerQuitEvent` for any player who disconnects while inside (keeping entry/exit pairs balanced for downstream listeners that allocate per-player state on entry). Both fire un-gated by the `statistics.*` config flags — listeners that need chamber-presence signals shouldn't have their behaviour silently disabled by the admin's stats preferences. Direct chamber→chamber transitions fire an exit-then-entry pair (with entry/exit messages suppressed on the transition to avoid spam). Primary intended consumer: the TCP-MythicTrials HUD; useful for any plugin reacting to chamber presence (welcome messages, region effects, etc.).
-- **`spawner-waves.glow-mode`** (default `wave-active`). New `chamber-remaining` mode lights up *every* uncleared spawner in a chamber when any wave starts inside it, not just the wave-active one — solves "which spawner did I miss?" navigation on large chambers. Standalone glow entities are tracked per chamber, cleaned up on each spawner's wave completion and on chamber reset. Recommended for premium difficulty modules (TCP-MythicTrials's HUD pairs with this).
+- **`ChamberEnteredEvent` / `ChamberExitedEvent` — public Bukkit events for "player crossed into/out of a registered chamber."** Fired from `PlayerMovementListener` on the block-boundary-crossing transition, and from `PlayerQuitEvent` for any player who disconnects while inside (keeping entry/exit pairs balanced for downstream listeners that allocate per-player state on entry). Both fire un-gated by the `statistics.*` config flags — listeners that need chamber-presence signals shouldn't have their behaviour silently disabled by the admin's stats preferences. Direct chamber→chamber transitions fire an exit-then-entry pair (with entry/exit messages suppressed on the transition to avoid spam). Primary intended consumer: the Mythic Trials HUD; useful for any plugin reacting to chamber presence (welcome messages, region effects, etc.).
+- **`spawner-waves.glow-mode`** (default `wave-active`). New `chamber-remaining` mode lights up *every* uncleared spawner in a chamber when any wave starts inside it, not just the wave-active one — solves "which spawner did I miss?" navigation on large chambers. Standalone glow entities are tracked per chamber, cleaned up on each spawner's wave completion and on chamber reset. Recommended for premium difficulty modules (Mythic Trials's HUD pairs with this).
 
 ## [1.5.2] - 2026-05-27
 ### Added
 - **In-game update notification with clickable Modrinth download link.** `UpdateChecker` is now also a `Listener`. When the periodic GitHub check detects a newer release, any admin (`tcp.admin`) who logs in afterwards (and any already-online admins) gets a short MiniMessage line: `You are using version X.Y.Z, latest version is A.B.C.` followed by a clickable `[Download Latest Version]` pointing at the Modrinth versions page (hover tooltip explains it opens in a browser). One-shot per check; no in-game spam beyond the join ping.
 
 ### Fixed
-- **`/tcp reset` silently failing with "check console" but nothing in the console.** When a previous reset for the same chamber was still in `inProgress` (mid-restore, or stuck), the duplicate request returned false after only a `logger.fine` line, which Bukkit suppresses by default — so admins saw the failure chat message with no visible explanation. The log line is now a `warning` and tells you exactly what happened plus the restart-to-clear hint.
-- **`/tcp snapshot create` reporting success when the chamber row wasn't actually updated.** `captureSnapshot` wrote the `.dat` file then called `setSnapshotFile()` without checking the return value; a failed DB update left the chamber's `snapshot_file` column NULL, so the *next* reset logged "No snapshot found" and skipped restoration even though the file was on disk. Both `createSnapshot` and `setSnapshotFile` are now wrapped — exceptions are logged with stack traces, and a failed DB link produces a clear `snapshot-failed` chat message instead of the misleading "created" line.
-- **Tab completion missing for `/tcp loot audit`.** The 1.5.1 audit subcommand worked but wasn't suggested by tab-complete; added to `lootActions`.
+- **`/trial reset` silently failing with "check console" but nothing in the console.** When a previous reset for the same chamber was still in `inProgress` (mid-restore, or stuck), the duplicate request returned false after only a `logger.fine` line, which Bukkit suppresses by default — so admins saw the failure chat message with no visible explanation. The log line is now a `warning` and tells you exactly what happened plus the restart-to-clear hint.
+- **`/trial snapshot create` reporting success when the chamber row wasn't actually updated.** `captureSnapshot` wrote the `.dat` file then called `setSnapshotFile()` without checking the return value; a failed DB update left the chamber's `snapshot_file` column NULL, so the *next* reset logged "No snapshot found" and skipped restoration even though the file was on disk. Both `createSnapshot` and `setSnapshotFile` are now wrapped — exceptions are logged with stack traces, and a failed DB link produces a clear `snapshot-failed` chat message instead of the misleading "created" line.
+- **Tab completion missing for `/trial loot audit`.** The 1.5.1 audit subcommand worked but wasn't suggested by tab-complete; added to `lootActions`.
 
 ## [1.5.1] - 2026-05-27
 ### Added
 - **Per-chamber spawner cooldown can now match the chamber's reset interval.** New cycle option in `ChamberSettingsView`'s spawner-cooldown toggle: **Match Chamber Reset**. At reset time, each trial spawner in the chamber is stamped with `cooldownLength = chamber.resetInterval`, so the spawner naturally rearms right as the chamber resets. Stored as the sentinel value `-2` on `chambers.spawner_cooldown_minutes`; existing per-chamber values, the `null = global config` default, and the `-1 = vanilla 30m` / `0 = immediate` modes are unchanged.
-- **Legacy loot audit (`/tcp loot audit` + startup warning + GUI badge).** Pre-1.5.0 loot entries were stored as material + amount only — so an "enchanted book" row added before the v1.5.0 faithful-loot fix still drops as a plain book (no migration is possible because the enchant data was never persisted). Three new touchpoints surface this without reading the user's mind: (a) at startup, a single warning line counts entries whose structured fields can't produce the intended item (enchanted book without enchants, potion/tipped arrow without potion type, goat horn without instrument) and points at the audit command; (b) `/tcp loot audit` lists them grouped by `table / pool` with the row kind/index/material/reason, capped at 50 rows; (c) `LootEditorView` decorates each legacy row with a `⚠ Legacy entry — re-add to capture NBT` lore line so it's obvious which to re-enter. Plain `10 cobblestone`-style entries are deliberately not flagged.
+- **Legacy loot audit (`/trial loot audit` + startup warning + GUI badge).** Pre-1.5.0 loot entries were stored as material + amount only — so an "enchanted book" row added before the v1.5.0 faithful-loot fix still drops as a plain book (no migration is possible because the enchant data was never persisted). Three new touchpoints surface this without reading the user's mind: (a) at startup, a single warning line counts entries whose structured fields can't produce the intended item (enchanted book without enchants, potion/tipped arrow without potion type, goat horn without instrument) and points at the audit command; (b) `/trial loot audit` lists them grouped by `table / pool` with the row kind/index/material/reason, capped at 50 rows; (c) `LootEditorView` decorates each legacy row with a `⚠ Legacy entry — re-add to capture NBT` lore line so it's obvious which to re-enter. Plain `10 cobblestone`-style entries are deliberately not flagged.
 - **Snapshot reminder for snapshotless discovered chambers.** Auto-discovered chambers can sit in the DB without a snapshot, in which case they silently can't be reset. New `SnapshotReminderService` pings admins with `tcp.admin.snapshot` (a) once on login if any chamber lacks a snapshot, and (b) periodically as a coalesced console + admin-chat summary. Configurable under `discovery.snapshot-reminder.*` (`enabled`, `on-join`, `interval-minutes`). Defaults: on, 30 min interval.
 
 ### Changed
-- **Pending-reset console output coalesced.** With `global.reset-require-confirmation` enabled, the per-chamber `is due for reset — awaiting confirmation` log line is replaced by a single per-tick summary (`N chamber(s) due for reset — M total awaiting confirmation. Use /tcp reset pending to list, /tcp reset confirm all to release.`). The in-game clickable `[confirm] [list all]` ping for admins is unchanged.
+- **Pending-reset console output coalesced.** With `global.reset-require-confirmation` enabled, the per-chamber `is due for reset — awaiting confirmation` log line is replaced by a single per-tick summary (`N chamber(s) due for reset — M total awaiting confirmation. Use /trial reset pending to list, /trial reset confirm all to release.`). The in-game clickable `[confirm] [list all]` ping for admins is unchanged.
 - **Default vault cooldowns are now `0` instead of `-1`.** `vaults.normal-cooldown-hours` and `vaults.ominous-cooldown-hours` ship at `0` (vanilla behaviour — locked until chamber reset). The old `-1` default was being clamped to `0` by the config validator and producing a startup warning on every fresh install; the value and the comment now reflect what actually happens.
 
 ## [1.5.0] - 2026-05-26
 ### Added
 - **Faithful loot items + bulk drag-in editor.** Items added to a loot table are now stored as a serialized `ItemStack`, so enchantments, potion data, custom names/lore, custom-model-data and any NBT (incl. third-party enchant tags) are preserved exactly — previously only the material+amount were kept, turning an enchanted book into a plain book and a potion into a water bottle. The loot editor's "Add" captures the whole held item, entries can be removed with **Q / drop key**, and a new **Bulk add** button opens a chest you can drag/shift-click any number of items into at once (captured faithfully and handed back on close).
-- **`/tcp list` pagination + locator.** Lists 10 chambers per page with clickable Prev/Next instead of spamming 100+ lines, and **`/tcp list current`** reports the chamber you're standing in (or the nearest, with coords and a `[/tp]` suggestion).
-- **`/tcp snapshot update [chamber]`** — re-captures a registered chamber's snapshot, overwriting the old one, so edits made *after* the chamber was first registered/snapshotted become the new reset baseline. With no name it targets the chamber you're standing in; with a name it behaves like `create`.
+- **`/trial list` pagination + locator.** Lists 10 chambers per page with clickable Prev/Next instead of spamming 100+ lines, and **`/trial list current`** reports the chamber you're standing in (or the nearest, with coords and a `[/tp]` suggestion).
+- **`/trial snapshot update [chamber]`** — re-captures a registered chamber's snapshot, overwriting the old one, so edits made *after* the chamber was first registered/snapshotted become the new reset baseline. With no name it targets the chamber you're standing in; with a name it behaves like `create`.
 - **Optional FastAsyncWorldEdit for resets** (`global.use-fawe`, default off, Paper-only). Scheduled resets place blocks through one FAWE EditSession to smooth out the lag of large restores; manual resets keep the batched path so WorldEdit `//undo` still works; falls back automatically.
-- **Operator-confirmation reset queue** (`global.reset-require-confirmation`, default off). Due chambers are parked and online admins notified; `/tcp reset pending` lists them and `/tcp reset confirm <chamber|all>` fires them through the stagger.
+- **Operator-confirmation reset queue** (`global.reset-require-confirmation`, default off). Due chambers are parked and online admins notified; `/trial reset pending` lists them and `/trial reset confirm <chamber|all>` fires them through the stagger.
 - **Reset throttle** (`global.max-concurrent-resets`, `global.reset-stagger-seconds`) so a wave of due chambers can't all restore at once and crater TPS.
 - **`global.suppress-trial-spawner-spam`** (default true) mutes the vanilla `Trial Spawner ... has no detected players` console line.
 - **`ChamberClearedEvent` — public Bukkit event for "chamber cleared in one run."** Fires exactly once when every trial spawner inside a registered chamber has completed a wave within the same reset cycle. Carries the cleared `Chamber`, the cumulative `Set<UUID>` of participants across every wave in the cycle, and the wall-clock `durationMs` from first-wave-start to last-wave-complete. Tracking is per-chamber, reset on every `ChamberResetEvent`. Wild spawners do not contribute.
 - **Network-sync foundation (developer API).** Groundwork for a future cross-server module: `ChamberManager`, `StatisticsManager` and `VaultManager` are now registered with Bukkit's `ServicesManager` (alongside `DatabaseManager`); cache-invalidation hooks added (`StatisticsManager.invalidatePlayer(uuid)`, `ChamberManager.reloadFromStore(name)` / `invalidateChamber(name)`); new `StatisticsUpdatedEvent` fires after every stat persist. All additive — no behaviour change for single-server installs.
-- **Procedural dungeon generation primitives** (`/tcp dungeon`, `dungeon.yml`). Modular rooms captured via WorldEdit selections + `minecraft:jigsaw` connectors are stitched into a dungeon and registered as a normal chamber. Built primarily as the room-assembly substrate for the upcoming Mythic Trials module; usable standalone too but not the headline feature of this release.
+- **Procedural dungeon generation primitives** (`/trial dungeon`, `dungeon.yml`). Modular rooms captured via WorldEdit selections + `minecraft:jigsaw` connectors are stitched into a dungeon and registered as a normal chamber. Built primarily as the room-assembly substrate for the upcoming Mythic Trials module; usable standalone too but not the headline feature of this release.
 
 ### Changed
 - **GUI framework rewrite: InventoryFramework → in-house VcGui.** All 14 admin GUI views moved off the third-party InventoryFramework library onto a framework adapted from `tcp-vault-crates`. Behaviour is preserved view-for-view; the wins are an event-handling overhaul (cross-inventory dup-exploits cancelled centrally, safe bottom-inventory actions pass through so cursor/pickup work normally while a GUI is open) and a cleaner deposit-style chest pattern. The IF dependency is dropped from the shaded JAR.
@@ -315,7 +326,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ### Config additions
 - **`reset.clear-added-blocks`** (default `true`) — whether chamber reset also clears player-added blocks that fall outside the snapshot (see Fixed above).
 - **`global.use-fawe`** (default `false`) — route scheduled chamber resets through FastAsyncWorldEdit when available.
-- **`global.reset-require-confirmation`** (default `false`) — park due chambers in a queue and require an operator to release them via `/tcp reset confirm`.
+- **`global.reset-require-confirmation`** (default `false`) — park due chambers in a queue and require an operator to release them via `/trial reset confirm`.
 - **`global.max-concurrent-resets`** / **`global.reset-stagger-seconds`** — concurrency throttle so a batch of simultaneously-due chambers don't all reset at the same instant.
 - **`global.suppress-trial-spawner-spam`** (default `true`) — mute the vanilla `Trial Spawner ... has no detected players` console line.
 
@@ -342,23 +353,23 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [1.4.5] - 2026-05-13
 ### Fixed
-- **TCP-preset spawners placed outside chambers can now be recovered with Silk Touch.** Vanilla trial spawners never drop anything when broken — not even with Silk Touch. TCP's protection listener only guards spawners *inside* registered chambers and returns early for anything outside them, meaning a spawner issued via `/tcp give` and placed anywhere on the map was permanently stuck there with no way to retrieve it. New `OrphanSpawnerMineListener` intercepts the break for any `TRIAL_SPAWNER` block carrying a `tcp:preset_id` tag that is not inside a chamber: with a Silk Touch tool the block is removed and the full preset item (PDC tag intact, so it can be re-placed and re-identified) drops naturally; without Silk Touch the break is cancelled and the player receives a hint. If the source preset has since been removed from `spawner_presets.yml`, a plain `trial_spawner` item is dropped as a fallback so the block is never permanently unrecoverable. TCP-WildSpawners (when installed) is unaffected: it drives mining through `BlockDamageEvent` and removes the block directly, so `BlockBreakEvent` never fires for spawners it manages.
+- **BTC-preset spawners placed outside chambers can now be recovered with Silk Touch.** Vanilla trial spawners never drop anything when broken — not even with Silk Touch. BTC's protection listener only guards spawners *inside* registered chambers and returns early for anything outside them, meaning a spawner issued via `/trial give` and placed anywhere on the map was permanently stuck there with no way to retrieve it. New `OrphanSpawnerMineListener` intercepts the break for any `TRIAL_SPAWNER` block carrying a `tcp:preset_id` tag that is not inside a chamber: with a Silk Touch tool the block is removed and the full preset item (PDC tag intact, so it can be re-placed and re-identified) drops naturally; without Silk Touch the break is cancelled and the player receives a hint. If the source preset has since been removed from `spawner_presets.yml`, a plain `trial_spawner` item is dropped as a fallback so the block is never permanently unrecoverable. Wild Spawners (when installed) is unaffected: it drives mining through `BlockDamageEvent` and removes the block directly, so `BlockBreakEvent` never fires for spawners it manages.
 
 ### Localization
 - New key: `orphan-spawner-needs-silk-touch` — message sent when a player tries to break an orphaned preset spawner without Silk Touch.
 
 ## [1.4.4] - 2026-05-12
 ### Added
-- **Bundled vanilla-accurate loot tables.** `loot.yml` now ships two ready-to-use loot tables — `vanilla-normal` and `vanilla-ominous` — as a commented section titled "VANILLA-ACCURATE LOOT TABLES". Both are faithful three-pool recreations transcribed directly from Mojang's own datapack JSONs (`data/minecraft/loot_table/chests/trial_chambers/{reward,reward_common,reward_rare,reward_unique,reward_ominous,reward_ominous_common,reward_ominous_rare,reward_ominous_unique}.json`), reproducing vanilla's structure: pool 1 picks 1 item with an 80/20 rare-or-common split, pool 2 rolls 1-3 additional common items, pool 3 has a chance at a single ultra-rare item. Every fidelity compromise the plugin's schema imposes is documented inline — vanilla's 25%/75% unique-pool gate maps to `min-rolls: 0, max-rolls: 1` (≈50%) with tuning instructions; vanilla's `enchant_with_levels` algorithm is approximated with `random-enchantment-pool` (one random enchant per item); shield damage from `set_damage` fraction; ominous bottle amplifier ranges split into separate per-level entries (Bad Omen I/II for normal, III/IV/V for ominous). To activate: uncomment the desired block, paste under `loot-tables:`, optionally rename to `default` / `ominous-default`, and `/tcp reload`.
+- **Bundled vanilla-accurate loot tables.** `loot.yml` now ships two ready-to-use loot tables — `vanilla-normal` and `vanilla-ominous` — as a commented section titled "VANILLA-ACCURATE LOOT TABLES". Both are faithful three-pool recreations transcribed directly from Mojang's own datapack JSONs (`data/minecraft/loot_table/chests/trial_chambers/{reward,reward_common,reward_rare,reward_unique,reward_ominous,reward_ominous_common,reward_ominous_rare,reward_ominous_unique}.json`), reproducing vanilla's structure: pool 1 picks 1 item with an 80/20 rare-or-common split, pool 2 rolls 1-3 additional common items, pool 3 has a chance at a single ultra-rare item. Every fidelity compromise the plugin's schema imposes is documented inline — vanilla's 25%/75% unique-pool gate maps to `min-rolls: 0, max-rolls: 1` (≈50%) with tuning instructions; vanilla's `enchant_with_levels` algorithm is approximated with `random-enchantment-pool` (one random enchant per item); shield damage from `set_damage` fraction; ominous bottle amplifier ranges split into separate per-level entries (Bad Omen I/II for normal, III/IV/V for ominous). To activate: uncomment the desired block, paste under `loot-tables:`, optionally rename to `default` / `ominous-default`, and `/trial reload`.
 
 ### Documentation
 - **`docs/configuration/loot.yml.md` opens with a "Want vanilla loot? It's already in the file." section** explaining where the bundled tables live and the five-step activation flow (find the section → copy the block → strip the leading `# ` → paste under `loot-tables:` → reload). Existing customization documentation is unchanged.
 
 ## [1.4.3] - 2026-05-05
 ### Added
-- **Chamber pause state.** Registered chambers can now be paused via `/tcp pause <name>` or the new toggle in the Chamber Detail GUI. Pausing preserves the full DB record — no history, stats, or vault data is lost — but suspends all active behavior: automatic resets stop scheduling, protection events skip the chamber, vault interactions are blocked with a `chamber-is-paused` message, and player/mob tracking is silenced. Resume at any time with `/tcp resume <name>` or the GUI toggle.
+- **Chamber pause state.** Registered chambers can now be paused via `/trial pause <name>` or the new toggle in the Chamber Detail GUI. Pausing preserves the full DB record — no history, stats, or vault data is lost — but suspends all active behavior: automatic resets stop scheduling, protection events skip the chamber, vault interactions are blocked with a `chamber-is-paused` message, and player/mob tracking is silenced. Resume at any time with `/trial resume <name>` or the GUI toggle.
 - **Auto-pause on destruction.** New `protection.auto-pause-on-destruction: false` opt-in (disabled by default). When enabled, a MONITOR-priority break observer counts vault and trial spawner destructions inside a chamber; once the count reaches `protection.auto-pause-threshold` (default `6`), the chamber auto-pauses and ops with `tcp.discovery.notify` permission are notified. Counter resets on every pause/resume transition and on chamber reset, so a resumed chamber always starts fresh.
-- **New permission `tcp.admin.pause`** (default op) — required to use `/tcp pause` and `/tcp resume`.
+- **New permission `tcp.admin.pause`** (default op) — required to use `/trial pause` and `/trial resume`.
 
 ### Config additions
 - **`protection.auto-pause-on-destruction`** (default `false`) — master switch for the automatic pause on critical-block destruction.
@@ -370,7 +381,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [1.4.2] - 2026-05-02
 ### Fixed
-- **`//undo` no longer gets hijacked by TCP after a chamber generation.** The previous `UndoListener` cancelled `//undo` at HIGHEST priority and demanded `confirm` / `cancel` in chat — but the chat handler only cleared the *pending* state on cancel, leaving the per-player `last` entry forever. Once any chamber had been generated in the session, every subsequent `//undo` (even for unrelated WorldEdit edits made hours later, or by a moderator joining after the fact) was intercepted, the chat prompt fired, and the actual WorldEdit undo never ran. There was also no path to retry: cancelling re-armed the same intercept, and confirming only deleted the DB registration without rolling back the placed blocks. The whole interception model was wrong — chamber registration is a DB write, not a WorldEdit edit, so it doesn't belong on WE's undo stack to begin with. New behavior: TCP never cancels `//undo`. WorldEdit's stack is fully untouched, any depth, any time. A new passive `PostUndoHintListener` observes `//undo` (and `/undo`) at MONITOR priority without cancelling and, *only if the player happens to be standing inside a registered chamber* when they run undo, posts a one-line tip suggesting `/tcp delete <name>` to also clean up the registration. Generation now also emits a one-time `chamber-created-rollback-tip` immediately after `chamber-created` so users learn the two-step rollback (`//undo` for blocks → `/tcp delete` for registration) up front. `UndoListener.kt` and `UndoTracker.kt` deleted.
+- **`//undo` no longer gets hijacked by BTC after a chamber generation.** The previous `UndoListener` cancelled `//undo` at HIGHEST priority and demanded `confirm` / `cancel` in chat — but the chat handler only cleared the *pending* state on cancel, leaving the per-player `last` entry forever. Once any chamber had been generated in the session, every subsequent `//undo` (even for unrelated WorldEdit edits made hours later, or by a moderator joining after the fact) was intercepted, the chat prompt fired, and the actual WorldEdit undo never ran. There was also no path to retry: cancelling re-armed the same intercept, and confirming only deleted the DB registration without rolling back the placed blocks. The whole interception model was wrong — chamber registration is a DB write, not a WorldEdit edit, so it doesn't belong on WE's undo stack to begin with. New behavior: BTC never cancels `//undo`. WorldEdit's stack is fully untouched, any depth, any time. A new passive `PostUndoHintListener` observes `//undo` (and `/undo`) at MONITOR priority without cancelling and, *only if the player happens to be standing inside a registered chamber* when they run undo, posts a one-line tip suggesting `/trial delete <name>` to also clean up the registration. Generation now also emits a one-time `chamber-created-rollback-tip` immediately after `chamber-created` so users learn the two-step rollback (`//undo` for blocks → `/trial delete` for registration) up front. `UndoListener.kt` and `UndoTracker.kt` deleted.
 
 ### Localization
 - **`messages.yml`**: removed obsolete `undo-confirm`, `undo-confirm-pending`, `undo-deleted`, `undo-failed`, `undo-cancelled`, `undo-expired` (the chat-prompt strings from the old confirmation flow). Added `undo-cleanup-hint` (passive post-`//undo` tip) and `chamber-created-rollback-tip` (post-generation tip). The `paste-undo-hint` key is unchanged — schematic paste still references `//undo` correctly because that path always was a normal WorldEdit edit.
@@ -384,7 +395,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 - **Main menu flattened — `SettingsMenuView` removed.** The previous "Settings → Plugin Settings → Global Settings" path had two papercut bugs: clicking "Settings" on the main menu opened a "Plugin Settings" hub whose only meaningful contents (Global Settings, Protection Settings, Performance Info, Reload Configuration) could just as well live one level up; and the back button on Protection Settings landed on Plugin Settings instead of the main menu, leaving the user one step deeper than they started. New main menu is a 6-row layout: Chambers / Loot Tables / Global Settings / Protection Settings on row 1, Help / Performance Info / Statistics on row 2, Reload Configuration centered on row 4 (shift-click to fire so accidental clicks don't reload), Close on row 5. `SettingsMenuView.kt` deleted; `Screen.SETTINGS_MENU` and `MenuService.openSettingsMenu` removed; back-button destinations in `GlobalSettingsView` and `ProtectionMenuView` updated from `gui.common.dest-settings` → `gui.common.dest-main-menu`. `gui.settings-menu.*` keys deleted from `messages.yml`; `gui.main-menu.settings-name/lore` renamed `global-settings-name/lore`; new `performance-name/lore` and `reload-name/lore` keys added under `gui.main-menu`. `CustomMobProviderView`'s back button still uses `dest-settings` because it goes back to *chamber* settings, not the deleted plugin-settings hub.
 - **Loot editor now shows the effective drop rate per item.** The Amount/Chance/Rolls model is technically accurate but genuinely confusing: a user looking at "Amount: 2-4" + "Chance: 20%" tends to read that as "20% chance of getting 2-4 of this item per opening", and the separate "Rolls: 1-3" tile multiplies the per-draw probability without making that visually obvious on the items themselves. Each item lore now includes a new `Expected: ≈X per vault opening` line computed as `avg(draws) × (weight / totalWeight) × avg(amount)` for weighted items, and `avg(amount)` for guaranteed items (which always drop once per opening). Adaptive precision: ≥10 → integer, ≥1 → one decimal, <1 → two decimals (so a 1-in-50 tier item still reads `≈0.02` rather than rounding to 0). The per-item "Chance: X%" line is now suffixed with " per draw" to make the relationship explicit. The "Rolls Configuration" tile is renamed "Draws per Opening" and its lore opens with three plain-English lines explaining that each opening picks N items from the weighted list, each draw chooses one item using its chance, and more draws = more total loot. Bumping the draws slider visibly recomputes every Expected line in real time so the multiplicative relationship becomes self-evident. Pure presentation change — `loot.yml` data model untouched.
-- **Help view rebuilt to mirror `/tcp help` and cover every wired subcommand.** Audit found `mobs` (v1.3.0) was missing from chat help entirely, and both `mobs` and `give` (v1.3.1) were missing from the GUI Help view. Two dead chat-help keys (`help-procgen`, `help-teleport` — subcommands that don't exist) deleted. Chat help reordered into logical groups (Browse → Create → Manage → Loot/Mobs → Players & rewards → Admin) with a comment in `TCPCommand.sendHelp` noting the order mirrors the GUI tile grouping so future edits don't drift. Wording tightened on `help-generate`, `help-snapshot`, `help-loot`, `help-vault`, `help-key`, `help-leaderboard`, `help-info`, `help-list`, and `help-reload` to drop jargon ("WE wand", "saved var") and uninformative phrases ("Manage snapshots"). GUI Help view re-laid out to a 4 + 4 + 1 tile grid: row 1 overview (Commands / Permissions / About), row 2 gameplay command groups (Chambers / Loot / Vaults & Keys / Stats), row 3 admin & setup command groups (Snapshots / Generate / Custom Mobs / Spawner Presets), row 4 lone Admin Tools tile, row 5 navigation. New `mobs-cmd` and `give-cmd` tiles cover the previously absent commands. Every tile lore opens with one plain-English sentence describing the group ("Browse and manage existing chambers." / "View or override per-chamber loot." etc.) before listing the actual commands. The `permissions` tile expanded from 5 entries to ~13 organized into Admin / Player / Bypass / Notifications groups.
+- **Help view rebuilt to mirror `/trial help` and cover every wired subcommand.** Audit found `mobs` (v1.3.0) was missing from chat help entirely, and both `mobs` and `give` (v1.3.1) were missing from the GUI Help view. Two dead chat-help keys (`help-procgen`, `help-teleport` — subcommands that don't exist) deleted. Chat help reordered into logical groups (Browse → Create → Manage → Loot/Mobs → Players & rewards → Admin) with a comment in `TCPCommand.sendHelp` noting the order mirrors the GUI tile grouping so future edits don't drift. Wording tightened on `help-generate`, `help-snapshot`, `help-loot`, `help-vault`, `help-key`, `help-leaderboard`, `help-info`, `help-list`, and `help-reload` to drop jargon ("WE wand", "saved var") and uninformative phrases ("Manage snapshots"). GUI Help view re-laid out to a 4 + 4 + 1 tile grid: row 1 overview (Commands / Permissions / About), row 2 gameplay command groups (Chambers / Loot / Vaults & Keys / Stats), row 3 admin & setup command groups (Snapshots / Generate / Custom Mobs / Spawner Presets), row 4 lone Admin Tools tile, row 5 navigation. New `mobs-cmd` and `give-cmd` tiles cover the previously absent commands. Every tile lore opens with one plain-English sentence describing the group ("Browse and manage existing chambers." / "View or override per-chamber loot." etc.) before listing the actual commands. The `permissions` tile expanded from 5 entries to ~13 organized into Admin / Player / Bypass / Notifications groups.
 
 ### Localization
 - **Every text change in this release routes through `messages.yml`.** No `Component.text(...)` literals introduced anywhere; all new and changed strings are translatable through the existing `gui.<view>.*` and flat `*` key system. New keys: `discovery-merged`, `gui.main-menu.global-settings-name/lore`, `gui.main-menu.performance-name/lore`, `gui.main-menu.reload-name/lore`, `gui.loot-editor.item-expected`, `gui.help-menu.mobs-cmd-name/lore`, `gui.help-menu.give-cmd-name/lore`, `help-mobs`. Removed keys: every key under `gui.settings-menu.*`, `help-procgen`, `help-teleport`, `gui.main-menu.settings-name/lore` (renamed). Changed keys: `gui.loot-editor.item-chance`, `gui.loot-editor.rolls-name`, `gui.loot-editor.rolls-lore`, `gui.main-menu.protection-name`, every `gui.help-menu.*` lore. The chat-help block in `messages.yml` was scattered across two locations (lines 152-166 and 225-228); all entries are now consolidated into a single contiguous block in the order `sendHelp` emits them.
@@ -400,25 +411,25 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ## [1.4.0] - 2026-04-26
 ### Added
 - **Phase 2 of the public extension API** — three more seams aimed at premium add-on modules and third-party integrations. No breaking changes; all existing behavior preserved when no listener / service is registered.
-- **`DatabaseManager` opened for extension.** Class is now `open` (was final) and the `plugin` constructor parameter is `protected` so subclasses in other packages can access it. The instance is auto-registered with Bukkit's `ServicesManager` at TCP startup so consumers can resolve it via `Bukkit.getServicesManager().load(DatabaseManager::class.java)`. Designed for the planned premium "Network Sync" module that adds Postgres / MariaDB / Redis backends. (Note: TCP itself currently still references its own `databaseManager` field directly throughout its own codebase, so subclass replacement only takes effect for callers that explicitly resolve via the services manager — full runtime substitution at every call site is planned for a future major version.)
-- **`ChamberResetEvent.snapshotOverride`** (mutable `ByteArray?`) — pre-reset hook lets listeners substitute a different snapshot for a single reset cycle without persistently modifying the chamber's on-disk snapshot. Bytes must be a gzip-compressed serialized `SnapshotData` (TCP's native snapshot format). New `SnapshotManager.loadSnapshotFromBytes(bytes, contextLabel)` deserializes the override; falls back to the on-disk snapshot with a logged warning if the override fails to load. Designed for premium / third-party "schematic injection" or "instance variant" workflows.
-- **`WildSpawnerResolver`** SPI in `api/` — pluggable lookup for the question "should this wild trial spawner spawn custom-plugin mobs, and if so, which provider + mob ids?". Lifts the long-standing limitation that TCP's Custom Mob Provider only worked inside registered chambers. Implementations register as a Bukkit service (`ServicesManager.register(WildSpawnerResolver::class.java, ...)`); TCP's `SpawnerWaveListener` consults the active resolver on every wild-spawner spawn observation. Returning a non-null `Config(providerId, normalIds, ominousIds)` triggers TCP's existing replace-after-spawn logic — vanilla mob removed the same tick, custom provider mob spawned at the same location, wave tracking and key drops preserved. **The seam lives in free TCP; the resolver implementation will ship in the planned premium "Wild Custom-Mob Spawners" module** (per the v1.3.1 architectural boundary: trial-spawner-only is the line, wild-spawner custom mobs are premium territory).
-- **`SpawnerPresetManager.PRESET_ID_KEY_NAME`** + automatic PDC tagging — every item produced by `SpawnerPresetManager.getItem` (i.e. given out via `/tcp give <preset>`) now carries a `tcp:preset_id` PersistentDataContainer tag with the source preset's id.
+- **`DatabaseManager` opened for extension.** Class is now `open` (was final) and the `plugin` constructor parameter is `protected` so subclasses in other packages can access it. The instance is auto-registered with Bukkit's `ServicesManager` at BTC startup so consumers can resolve it via `Bukkit.getServicesManager().load(DatabaseManager::class.java)`. Designed for the planned premium "Network Sync" module that adds Postgres / MariaDB / Redis backends. (Note: BTC itself currently still references its own `databaseManager` field directly throughout its own codebase, so subclass replacement only takes effect for callers that explicitly resolve via the services manager — full runtime substitution at every call site is planned for a future major version.)
+- **`ChamberResetEvent.snapshotOverride`** (mutable `ByteArray?`) — pre-reset hook lets listeners substitute a different snapshot for a single reset cycle without persistently modifying the chamber's on-disk snapshot. Bytes must be a gzip-compressed serialized `SnapshotData` (BTC's native snapshot format). New `SnapshotManager.loadSnapshotFromBytes(bytes, contextLabel)` deserializes the override; falls back to the on-disk snapshot with a logged warning if the override fails to load. Designed for premium / third-party "schematic injection" or "instance variant" workflows.
+- **`WildSpawnerResolver`** SPI in `api/` — pluggable lookup for the question "should this wild trial spawner spawn custom-plugin mobs, and if so, which provider + mob ids?". Lifts the long-standing limitation that BTC's Custom Mob Provider only worked inside registered chambers. Implementations register as a Bukkit service (`ServicesManager.register(WildSpawnerResolver::class.java, ...)`); BTC's `SpawnerWaveListener` consults the active resolver on every wild-spawner spawn observation. Returning a non-null `Config(providerId, normalIds, ominousIds)` triggers BTC's existing replace-after-spawn logic — vanilla mob removed the same tick, custom provider mob spawned at the same location, wave tracking and key drops preserved. **The seam lives in free BTC; the resolver implementation will ship in the planned premium "Wild Custom-Mob Spawners" module** (per the v1.3.1 architectural boundary: trial-spawner-only is the line, wild-spawner custom mobs are premium territory).
+- **`SpawnerPresetManager.PRESET_ID_KEY_NAME`** + automatic PDC tagging — every item produced by `SpawnerPresetManager.getItem` (i.e. given out via `/trial give <preset>`) now carries a `tcp:preset_id` PersistentDataContainer tag with the source preset's id.
 - **`SpawnerPresetPlaceListener`** — copies the `tcp:preset_id` tag from a placed trial-spawner item onto the resulting block's `TileState`. Lets `WildSpawnerResolver` implementations identify which preset a placed wild spawner originated from, even after the source ItemStack is gone. Tag survives chamber resets, chunk unloads, and world reloads via Minecraft's standard TileEntity persistence. Vanilla `/give minecraft:trial_spawner` items (no tag) are ignored.
 
 ### Added — MiniMessage support
 - **First-class [MiniMessage](https://docs.advntr.dev/minimessage/format.html) support across every user-facing text surface.** New `MessageParser` utility (`utils/MessageParser.kt`) translates raw `messages.yml` entries through MiniMessage as the primary syntax while remaining fully backwards-compatible with legacy `&` colour/format codes (and `&#RRGGBB` hex). Existing `messages.yml` files render unchanged; users adopt MM syntax entry-by-entry on their own schedule. Mixed input works too — `&aHello <gradient:#ff0000:#0000ff>world</gradient>` renders correctly.
-- **MM features now usable in TCP messages** that legacy `&` codes can't express:
+- **MM features now usable in BTC messages** that legacy `&` codes can't express:
   - Gradients: `<gradient:#ff5500:#0000ff>Sunset to ocean</gradient>`
-  - Click events: `<click:run_command:'/tcp menu'>[Open menu]</click>`
+  - Click events: `<click:run_command:'/trial menu'>[Open menu]</click>`
   - Hover tooltips: `<hover:show_text:'Bonus active'><gold>★</gold></hover>`
   - Custom fonts (resource-pack supplied): `<font:server:fancy>...</font>`
   - Cleaner hex syntax: `<#FF5500>` instead of `&#FF5500`
-- **New `TrialChamberPro.getMessageComponent(key, ...): Component`** — companion to the existing `getMessage()` String method. Returns a fully-styled Adventure Component preserving all MiniMessage features (gradients, click/hover, fonts) end-to-end through `Player.sendMessage(Component)`.
-- **All ~349 `sendMessage` call sites in TCP migrated** from the legacy String path to `getMessageComponent` so chat messages get full MiniMessage fidelity. Includes boss bar text, chat notifications (vault opened, chamber entered, reset warnings, spectator messages, discovery announcements, wave completion), death messages, and all command feedback.
+- **New `BetterTrialChambers.getMessageComponent(key, ...): Component`** — companion to the existing `getMessage()` String method. Returns a fully-styled Adventure Component preserving all MiniMessage features (gradients, click/hover, fonts) end-to-end through `Player.sendMessage(Component)`.
+- **All ~349 `sendMessage` call sites in BTC migrated** from the legacy String path to `getMessageComponent` so chat messages get full MiniMessage fidelity. Includes boss bar text, chat notifications (vault opened, chamber entered, reset warnings, spectator messages, discovery announcements, wave completion), death messages, and all command feedback.
 - **GUI helpers (`getGuiText`, `getGuiLore`) now route through MessageParser** — item names and lore in all 18 admin GUI views support full MM fidelity.
 - **Documentation updated** ([docs/configuration/messages.yml.md](docs/configuration/messages.yml.md)) — comprehensive coverage of both syntaxes side-by-side, mixed-format examples, and MM-only feature documentation. The `messages.yml` resource header explains the two formats with examples.
-- **Conflict-free with other plugins** — TCP parses its own messages internally; chat plugins (DiscordSRV, EssentialsXChat, ChatControl) only intercept `AsyncChatEvent` (player-typed chat), not plugin-sent notifications, so there's no double-processing risk. This is the same pattern MythicMobs, EcoEnchants, LuckPerms, and CMI use.
+- **Conflict-free with other plugins** — BTC parses its own messages internally; chat plugins (DiscordSRV, EssentialsXChat, ChatControl) only intercept `AsyncChatEvent` (player-typed chat), not plugin-sent notifications, so there's no double-processing risk. This is the same pattern MythicMobs, EcoEnchants, LuckPerms, and CMI use.
 
 ### Fixed
 - **Trial-spawner wave size off-by-one (the v1.3.2 follow-up).** v1.3.2 introduced `SpawnerWaveManager.computeExpectedMobs` to read the spawner's actual `total_mobs` / `total_mobs_added_per_player` config instead of hard-coding 6. The formula was `base + perPlayer × players`, but Mojang's actual `TrialSpawnerData` formula is `base + perPlayer × max(0, players - 1)` — the FIRST detected player gets the base count, each ADDITIONAL player adds the per-player bonus. The off-by-one over-counted by `perPlayer` per nearby player, producing the user-reported bug "spawner has 20 configured, bar shows 1/30, wave actually ends at 20". Plugin now matches vanilla exactly: `floor(base + perPlayer × additional)` where `additional = max(0, players - 1)`. Also switched `ceil` → `floor` to match Mojang's rounding.
@@ -426,26 +437,26 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ### Changed
 - `ResetManager.resetChamber` now consults `ChamberResetEvent.snapshotOverride` after firing the pre-event. If non-null, the override bytes are restored instead of the on-disk snapshot; if the override fails to load, the on-disk snapshot is used and a warning is logged. Internal helper `restoreFromSnapshotBlocks` extracted to share the BlockRestorer call between the on-disk and override paths.
-- `SpawnerWaveListener` gains a wild-spawner-replacement branch that fires immediately after `configureWildSpawnerCooldown`. When no `WildSpawnerResolver` service is registered (the default in free TCP), the branch is a single nullable lookup and a return-false — zero behavior change for end users.
-- `TrialChamberPro.onEnable` registers `SpawnerPresetPlaceListener` alongside the existing listener block, and registers the `DatabaseManager` instance with `ServicesManager` immediately after it initializes.
-- `TrialChamberPro.getMessage` and `getMessageComponent` share a new private helper `rawMessageWithPrefix` for placeholder substitution + chat-prefix logic. Behavior is identical to v1.3.x but the Component path now exists alongside the String path.
+- `SpawnerWaveListener` gains a wild-spawner-replacement branch that fires immediately after `configureWildSpawnerCooldown`. When no `WildSpawnerResolver` service is registered (the default in free BTC), the branch is a single nullable lookup and a return-false — zero behavior change for end users.
+- `BetterTrialChambers.onEnable` registers `SpawnerPresetPlaceListener` alongside the existing listener block, and registers the `DatabaseManager` instance with `ServicesManager` immediately after it initializes.
+- `BetterTrialChambers.getMessage` and `getMessageComponent` share a new private helper `rawMessageWithPrefix` for placeholder substitution + chat-prefix logic. Behavior is identical to v1.3.x but the Component path now exists alongside the String path.
 - `SpawnerWaveManager`'s private boss-bar `getMessageComponent` helper now delegates to `plugin.getMessageComponent` so boss bars inherit the same MM-aware parsing as chat messages. The local `LegacyComponentSerializer` import is removed.
 
 ## [1.3.3] - 2026-04-26
 ### Added
-- **Public extension API** — first instalment of the prerequisite seams that third-party plugins (and the planned premium add-on modules) need to integrate with TCP cleanly. No behavior change for end users; pure new surface area.
+- **Public extension API** — first instalment of the prerequisite seams that third-party plugins (and the planned premium add-on modules) need to integrate with BTC cleanly. No behavior change for end users; pure new surface area.
   - **`PreVaultOpenEvent`** (cancellable, `api/events/`) — fires immediately before a vault open resolves its loot table, after all gates pass (cooldown, spam-click, key validation). Listeners can cancel the open entirely (no key consumed, no reward marked) or set `lootTableOverride` to a non-null table id to substitute a different loot table for that specific open. Designed for premium custom-keys / vault-crate workflows where the consumed key dictates the loot tier.
   - **`ChamberMobSpawnedEvent`** (`api/events/`) — fires after a trial-spawner wave mob is spawned and recorded by `SpawnerWaveManager`. Carries chamber + spawner location + ominous flag + provider id. Fires for both vanilla spawns (`providerId = "vanilla"`) and replacement spawns from custom mob providers. Gives third-party plugins a single hook with full chamber/wave context — what `CreatureSpawnEvent` doesn't carry. Designed for difficulty-scaling addons, analytics pipelines, and the planned premium "Legendary Trials" module.
-  - **`TCPModule` SPI + `TCPModuleRegistry`** (`api/`) — uniform lifecycle contract for plugins that extend TCP. Implementations register themselves with `plugin.moduleRegistry.register(this)` during their own `onEnable`; the registry calls back into `onLoad(tcp)` once TCP reaches `isReady = true` (or immediately if TCP was already ready). Modules unregister automatically when their backing plugin is disabled (via `PluginDisableEvent` observer). Reverse-registration-order shutdown is preserved so modules with cross-dependencies tear down safely. Lifecycle callbacks always dispatch on the primary thread regardless of caller context.
-  - **Jitpack publication** — `jitpack.yml` + `maven-publish` configuration so consumers can declare TCP as a compile-time dependency:
+  - **`TCPModule` SPI + `TCPModuleRegistry`** (`api/`) — uniform lifecycle contract for plugins that extend BTC. Implementations register themselves with `plugin.moduleRegistry.register(this)` during their own `onEnable`; the registry calls back into `onLoad(tcp)` once BTC reaches `isReady = true` (or immediately if BTC was already ready). Modules unregister automatically when their backing plugin is disabled (via `PluginDisableEvent` observer). Reverse-registration-order shutdown is preserved so modules with cross-dependencies tear down safely. Lifecycle callbacks always dispatch on the primary thread regardless of caller context.
+  - **Jitpack publication** — `jitpack.yml` + `maven-publish` configuration so consumers can declare BTC as a compile-time dependency:
     ```kotlin
     repositories { maven("https://jitpack.io") }
-    dependencies { compileOnly("com.github.darkstarworks:TrialChamberPro:v1.3.3") }
+    dependencies { compileOnly("com.github.darkstarworks:BetterTrialChambers:v1.3.3") }
     ```
-    Compile-time consumers reference classes from the public `io.github.darkstarworks.trialChamberPro.api.*` package; at runtime the host server has TCP installed as a normal Bukkit plugin so the bundled-deps shadow JAR is inert.
+    Compile-time consumers reference classes from the public `com.esmpfun.bettertrialchambers.api.*` package; at runtime the host server has BTC installed as a normal Bukkit plugin so the bundled-deps shadow JAR is inert.
 
 ### Changed
-- `TrialChamberPro.onEnable` instantiates the module registry synchronously (right after the scheduler), so external plugins can register modules before TCP's async startup completes. `loadAllPending()` runs at the end of startup to flush queued registrations. `onDisable` invokes `shutdownAll()` first so modules can still touch TCP managers and the database during their own teardown.
+- `BetterTrialChambers.onEnable` instantiates the module registry synchronously (right after the scheduler), so external plugins can register modules before BTC's async startup completes. `loadAllPending()` runs at the end of startup to flush queued registrations. `onDisable` invokes `shutdownAll()` first so modules can still touch BTC managers and the database during their own teardown.
 - `VaultInteractListener.openVault` now fires `PreVaultOpenEvent` after the loot table is resolved but before any side effect. The event's `lootTableOverride` (when set) takes priority over chamber overrides and vault defaults; the existing override-resolution chain is unchanged when no listener intervenes.
 - `SpawnerWaveListener.onCreatureSpawn` fires `ChamberMobSpawnedEvent` once per recorded spawn — once on the provider-replaced path with the actual provider id, once on the vanilla fallback with `providerId = "vanilla"`. Wild spawners deliver the event with `chamber = null`.
 
@@ -457,14 +468,14 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [1.3.1] - 2026-04-26
 ### Added
-- **Spawner presets + `/tcp give` command** — server admins can now define named templates of trial-spawner configurations in a new `spawner_presets.yml` and hand them out as preconfigured items via `/tcp give <preset> [player] [amount]`. Each preset materializes as a `minecraft:trial_spawner` item with `block_entity_data` baked in (the same NBT vanilla `/give` accepts), so placing it produces a working spawner with the configured `normal_config` / `ominous_config` (datapack resource locations), `required_player_range`, `target_cooldown_length`, and any optional wave-shape overrides (`total_mobs`, `simultaneous_mobs`, `ticks_between_spawn`, `spawn_range`, etc.). Display name and lore are applied via `ItemMeta` so they survive future component remaps.
-- **`SpawnerPresetManager`** loads `spawner_presets.yml` on enable and on `/tcp reload`. Map swaps are atomic — in-flight `/tcp give` calls aren't affected by reloads. ItemStacks are built through `Bukkit.getItemFactory().createItemStack(...)` (the modern, non-deprecated path that parses the same `material[components]` syntax as vanilla `/give`), not via `Bukkit.getUnsafe().modifyItemStack`.
+- **Spawner presets + `/trial give` command** — server admins can now define named templates of trial-spawner configurations in a new `spawner_presets.yml` and hand them out as preconfigured items via `/trial give <preset> [player] [amount]`. Each preset materializes as a `minecraft:trial_spawner` item with `block_entity_data` baked in (the same NBT vanilla `/give` accepts), so placing it produces a working spawner with the configured `normal_config` / `ominous_config` (datapack resource locations), `required_player_range`, `target_cooldown_length`, and any optional wave-shape overrides (`total_mobs`, `simultaneous_mobs`, `ticks_between_spawn`, `spawn_range`, etc.). Display name and lore are applied via `ItemMeta` so they survive future component remaps.
+- **`SpawnerPresetManager`** loads `spawner_presets.yml` on enable and on `/trial reload`. Map swaps are atomic — in-flight `/trial give` calls aren't affected by reloads. ItemStacks are built through `Bukkit.getItemFactory().createItemStack(...)` (the modern, non-deprecated path that parses the same `material[components]` syntax as vanilla `/give`), not via `Bukkit.getUnsafe().modifyItemStack`.
 - **`tcp.give` permission** (default op, included in the `tcp.admin.*` aggregate) gates the new command. Tab completion lists every loaded preset id and online player names; lookups are case-insensitive.
-- **Trial-spawner-only hardening** — the YAML schema deliberately has no `material:` field. Every preset always produces `Material.TRIAL_SPAWNER`. This is an intentional architectural seam: custom keys, vault crates, and other custom items are out of scope for this file (they belong to the planned premium "Vault Crate" module, which will mirror the same preset/give pattern under its own `vault_presets.yml` + `/tcp vault give` command).
+- **Trial-spawner-only hardening** — the YAML schema deliberately has no `material:` field. Every preset always produces `Material.TRIAL_SPAWNER`. This is an intentional architectural seam: custom keys, vault crates, and other custom items are out of scope for this file (they belong to the planned premium "Vault Crate" module, which will mirror the same preset/give pattern under its own `vault_presets.yml` + `/trial vault give` command).
 - **Documentation** — new GitBook page [docs/configuration/spawner-presets.yml.md](docs/configuration/spawner-presets.yml.md) with full field reference, command usage, troubleshooting, and a cross-link to the [Trial Spawner wiki](https://minecraft.wiki/w/Trial_Spawner#Spawner_configuration) for the datapack JSON format. `commands.md` and `permissions.md` updated with the new entries.
 
 ### Changed
-- `TrialChamberPro.onEnable` now constructs `SpawnerPresetManager` after `LootManager.loadLootTables()` and calls `load()`. `reloadPluginConfig()` re-loads the preset file alongside loot tables.
+- `BetterTrialChambers.onEnable` now constructs `SpawnerPresetManager` after `LootManager.loadLootTables()` and calls `load()`. `reloadPluginConfig()` re-loads the preset file alongside loot tables.
 
 ## [1.3.0] - 2026-04-23
 ### Added
@@ -474,12 +485,12 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - **Owner-only spawner-key pickup** — new `SpawnerKeyDropOwnerListener` sibling of `VaultDropOwnerListener` (v1.2.28). Drops are PDC-tagged with `tcp:spawner_key_owner` + `tcp:spawner_key_dropped_at`; non-owner pickups are cancelled during the grace window. Config: `reset.spawner-key-drop-owner-grace-seconds` (default `30`, `0` = owner-locked until despawn). Shared `tcp.bypass.droplock` permission with vault drops.
 - **Per-chamber provider configuration** — new DB columns `custom_mob_provider`, `custom_mob_ids_normal`, `custom_mob_ids_ominous` (JSON-encoded id lists) on `chambers` via idempotent migration. Ominous waves fall back to the normal list if the ominous list is empty, matching the loot-table override pattern. `ChamberManager.updateCustomMobProvider(id, provider, normalIds, ominousIds)` is the single write path; `Chamber.pickMobId(ominous)` and `Chamber.hasCustomMobProvider(ominous)` are the read-side helpers.
 - **`CustomMobProviderView` GUI** — new 6-row admin view reachable from `ChamberSettingsView` (spawner icon, row 2 centre). Cycle providers with left/right-click, shift-click to reset to vanilla; add mob ids via a one-shot chat input (`MobIdInputListener`) with 30-second timeout and `cancel` keyword; click a mob-id icon to remove it. All writes go through `ChamberManager.updateCustomMobProvider` and the view refreshes on the player's region thread after each change.
-- **`/tcp mobs` command** — CLI path for per-chamber provider config:
-  - `/tcp mobs providers` — list registered providers and their availability
-  - `/tcp mobs <chamber> provider <id|vanilla|none>` — set the provider
-  - `/tcp mobs <chamber> add normal|ominous <mobId>` — add a mob id to the pool
-  - `/tcp mobs <chamber> remove normal|ominous <mobId>` — remove a mob id
-  - `/tcp mobs <chamber> list` — show current config
+- **`/trial mobs` command** — CLI path for per-chamber provider config:
+  - `/trial mobs providers` — list registered providers and their availability
+  - `/trial mobs <chamber> provider <id|vanilla|none>` — set the provider
+  - `/trial mobs <chamber> add normal|ominous <mobId>` — add a mob id to the pool
+  - `/trial mobs <chamber> remove normal|ominous <mobId>` — remove a mob id
+  - `/trial mobs <chamber> list` — show current config
   - Permission: `tcp.admin.mobs` (default op)
 - **MythicMobs integration** as a soft-dependency via `plugin.yml` `softdepend`. `MythicMobsProvider` resolves `io.lumine.mythic.bukkit.MythicBukkit` + `MobManager.spawnMob(String, Location, double)` reflectively and degrades gracefully if the API shape changes.
 - **Additional provider integrations** — five more providers, all zero-compile-time-dependency reflection with cached availability and verbose-logging-gated warnings:
@@ -491,12 +502,12 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - **Plugin.yml softdepends** — `EliteMobs`, `Eco`, `EcoMobs`, `LevelledMobs`, `InfernalMobs`, `Citizens` added alongside `MythicMobs` so load order guarantees the provider registry sees every backing plugin before seeding.
 
 ### Changed
-- `TrialChamberPro.onEnable` now constructs a `TrialMobProviderRegistry` after manager init and conditionally registers `MythicMobsProvider` when MythicMobs is present on the server. Accessible via `plugin.trialMobProviderRegistry`.
+- `BetterTrialChambers.onEnable` now constructs a `TrialMobProviderRegistry` after manager init and conditionally registers `MythicMobsProvider` when MythicMobs is present on the server. Accessible via `plugin.trialMobProviderRegistry`.
 
 ### Added — GUI translatability
 - **Full GUI localization** — every name, lore line, and button label across all 18 admin GUI views is now driven by `messages.yml` under a nested `gui.*` section (~330 new keys). No hard-coded `Component.text(...)` calls left in any view file. See [docs/configuration/localization.md](docs/configuration/localization.md) for the key naming conventions and translator workflow.
 - **`gui/components/GuiComponents.kt`** — reusable builders (`infoItem`, `toggleItem`, `backButton`, `closeButton`, `prevPageButton`, `nextPageButton`, `playerHead` x2) plus a class-doc that codifies icon material conventions in 5 categories (Navigation, Action buttons, State indicators, Settings categories, Domain icons). All views now build through this layer; future GUI code uses the localization layer by default.
-- **`TrialChamberPro` helper additions** — `loadedMessages()`, `getMessageList(key, ...)`, `getGuiText(key, ...)` returning a `Component`, `getGuiLore(key, ...)` returning a `List<Component>`. `getMessage()` auto-skips the chat prefix for any key starting with `gui.` so admin items don't get `[TCP]` prepended.
+- **`BetterTrialChambers` helper additions** — `loadedMessages()`, `getMessageList(key, ...)`, `getGuiText(key, ...)` returning a `Component`, `getGuiLore(key, ...)` returning a `List<Component>`. `getMessage()` auto-skips the chat prefix for any key starting with `gui.` so admin items don't get `[BTC]` prepended.
 - **Empty-state placeholders** added to 6 list/grid views (chamber list, chambers overview, loot table list, vault management, custom mob provider, loot editor) so admins always see a localized "no entries" card instead of a confusing blank pane.
 
 ### Added — Public event API
@@ -513,15 +524,15 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ### Added — Stability + reliability
 - **`MenuSessionCleanupListener`** — drops a player's GUI session on `PlayerQuitEvent`. Belt-and-braces soft-cap eviction at 500 sessions inside `MenuService` covers any future code paths that forget to clean up.
 - **`config/ConfigValidator`** — startup sanity check that clamps ~12 numeric config values back into safe ranges with logged warnings (no hard-fail). Sentinel values (e.g. `-1` for "use vanilla cooldown") pass through untouched. Runs early in `onEnable` so the rest of the bootstrap sees corrected values.
-- **`/tcp mobs` tab completer** — second/third/fourth-arg completion for `providers`, `provider`, `add`, `remove`, `list` and the `normal`/`ominous` wave keywords.
-- **`/tcp mobs` localization** — ~23 new `mobs-*` keys in `messages.yml`; the command no longer hard-codes any English strings.
+- **`/trial mobs` tab completer** — second/third/fourth-arg completion for `providers`, `provider`, `add`, `remove`, `list` and the `normal`/`ominous` wave keywords.
+- **`/trial mobs` localization** — ~23 new `mobs-*` keys in `messages.yml`; the command no longer hard-codes any English strings.
 
 ### Added — Test foundation
 - **67 unit tests across 5 test classes** (`./gradlew test` runs in seconds; covers gzip roundtripping, Chamber bounds math, coordinate parsing, LootEditorDraft mutability/equality, and ConfigValidator clamp behavior). Paper API added to `testImplementation` so tests can mock Bukkit types via MockK without spinning up a server.
 
 ### Changed — Internal structure
 - **`models/LootEditorDraft`** — extracted from `LootEditorView.Draft` so amount/loot editors and `MenuService` no longer reach into the view class for a shared data type.
-- **`commands/handlers/`** — three of the largest `/tcp` subcommands extracted to dedicated `SubcommandHandler` classes: `GenerateCommand` (548 → 432 lines, with all `parse*` / `validate*` / `placeBoxFromPlayer` helpers and `MIN_XZ` / `MIN_Y` constants moved out of `TCPCommand`), `MobsCommand`, and `LootCommand` (with the four sub-actions — set, clear, info, list — as private methods on the class). The four `generate` mode branches now share a `createChamberAsync` helper that deduplicated ~120 lines of identical scan/snapshot follow-up code.
+- **`commands/handlers/`** — three of the largest `/trial` subcommands extracted to dedicated `SubcommandHandler` classes: `GenerateCommand` (548 → 432 lines, with all `parse*` / `validate*` / `placeBoxFromPlayer` helpers and `MIN_XZ` / `MIN_Y` constants moved out of `TCPCommand`), `MobsCommand`, and `LootCommand` (with the four sub-actions — set, clear, info, list — as private methods on the class). The four `generate` mode branches now share a `createChamberAsync` helper that deduplicated ~120 lines of identical scan/snapshot follow-up code.
 - **`TCPCommand.kt`: 1461 → 627 lines (57% reduction).** The dispatcher is a thin when-chain that routes to size-appropriate cases — small handlers stay inline, big ones delegate.
 - **`commands/handlers/CoordinateParser`** — pure parsing logic (`parseTriple`, `parseHyphenated`, `isTripleString`) extracted from `GenerateCommand` to enable unit testing without mocking `Bukkit.getWorld()`. `GenerateCommand.parseCoordsArgs` now delegates to `CoordinateParser` for the pure parts and keeps only the world-aware composition logic.
 
@@ -643,7 +654,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Fix: Entries now cleaned up alongside cache invalidation
 
 ### Improved
-- **Messages Performance**: `getMessage()` now caches the parsed `messages.yml` instead of re-reading and re-parsing the file on every call; cache invalidated on `/tcp reload`
+- **Messages Performance**: `getMessage()` now caches the parsed `messages.yml` instead of re-reading and re-parsing the file on every call; cache invalidated on `/trial reload`
 - **Shutdown Reliability**: `PlayerMovementListener`, `PlayerDeathListener`, and `PasteConfirmListener` coroutine scopes now properly cancelled on plugin disable
 - **Time Tracking Data Preservation**: Player time-in-chamber data is flushed to database on plugin shutdown (previously up to 5 minutes of data could be lost)
 - **Duplicate Command Handlers**: Removed redundant `TCPCommand`/`TCPTabCompleter` creation during async initialization (already registered at startup)
@@ -680,7 +691,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - **VaultInteractListener**: Simplified trial key detection using direct `Material.OMINOUS_TRIAL_KEY` enum instead of string comparison
   - Note: Vault ominous detection still uses block data string parsing as Paper's Vault TileState doesn't have `isOminous` property (unlike TrialSpawner)
 - **Vault Reset Commands**: Now properly clear both database tracking AND native Vault `rewarded_players`
-  - `/tcp vault reset <chamber> <player>` - Clears specific player from vault cooldown
+  - `/trial vault reset <chamber> <player>` - Clears specific player from vault cooldown
   - GUI "Reset All Cooldowns" button - Clears all players from vault cooldowns
   - Chamber automatic reset - Clears all vault cooldowns (both DB and native API)
   - Uses `Vault.removeRewardedPlayer(UUID)` and `Vault.update()` to clear native state
@@ -715,12 +726,12 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [1.2.19] - 2026-01-09
 ### Added
-- **Plugin Info Command**: `/tcp info` now shows plugin information when used without arguments
+- **Plugin Info Command**: `/trial info` now shows plugin information when used without arguments
   - Displays version, authors, database type, chamber count, platform (Paper/Folia)
   - Shows integration status: WorldEdit/FAWE, WorldGuard, PlaceholderAPI, Vault
   - Shows feature status: Per-Player Loot, Spawner Waves, Spectator Mode, Statistics
   - Requires `tcp.admin` permission
-  - `/tcp info <chamber>` still shows chamber info (existing behavior)
+  - `/trial info <chamber>` still shows chamber info (existing behavior)
 
 ### Fixed
 - **GUI Item Drag Exploit**: Fixed players being able to drag items inside GUI menus
@@ -818,7 +829,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ## [1.2.14] - 2026-01-06
 ### Added
 - **Disable Automatic Resets**: Set `default-reset-interval: 0` to disable automatic chamber resets
-  - Chambers will only reset via manual `/tcp reset <chamber>` command or GUI
+  - Chambers will only reset via manual `/trial reset <chamber>` command or GUI
   - Per-chamber override available in Chamber Settings GUI with "Disabled" option
   - Useful for event chambers or manually-controlled dungeons
 
@@ -956,7 +967,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ### Changed
 - **MenuService**: Rewritten with 16 screen enums and unified navigation methods
 - **Legacy Compatibility**: Old GUI methods deprecated but still functional
-- **/tcp menu**: Now opens MainMenuView instead of ChambersOverviewView
+- **/trial menu**: Now opens MainMenuView instead of ChambersOverviewView
 
 ### Technical Details
 - New helper methods in ChamberManager: `updateResetInterval()`, `updateExitLocation()`
@@ -973,10 +984,10 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Fully backwards compatible - existing chambers use defaults automatically
 
 ### New Commands
-- `/tcp loot set <chamber> <normal|ominous> <table>` - Set loot table override for a chamber
-- `/tcp loot clear <chamber> [normal|ominous|all]` - Clear loot table override(s)
-- `/tcp loot info <chamber>` - Show current loot table settings for a chamber
-- `/tcp loot list` - List all available loot tables from loot.yml
+- `/trial loot set <chamber> <normal|ominous> <table>` - Set loot table override for a chamber
+- `/trial loot clear <chamber> [normal|ominous|all]` - Clear loot table override(s)
+- `/trial loot info <chamber>` - Show current loot table settings for a chamber
+- `/trial loot list` - List all available loot tables from loot.yml
 
 ### Technical Details
 - New database columns: `normal_loot_table` and `ominous_loot_table` in `chambers` table
@@ -1023,13 +1034,13 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ## [1.2.5] - 2025-11-30
 ### Added
 - **PlaceholderAPI Integration**: Full support for PlaceholderAPI placeholders
-  - Player statistics: `%tcp_vaults_opened%`, `%tcp_vaults_normal%`, `%tcp_vaults_ominous%`
-  - Progress tracking: `%tcp_chambers_completed%`, `%tcp_mobs_killed%`, `%tcp_deaths%`
-  - Time tracking: `%tcp_time_spent%` (formatted), `%tcp_time_spent_raw%` (seconds)
-  - Current state: `%tcp_current_chamber%`, `%tcp_in_chamber%`
-  - Leaderboard positions: `%tcp_leaderboard_vaults%`, `%tcp_leaderboard_chambers%`, `%tcp_leaderboard_time%`
-  - Top players: `%tcp_top_vaults_1_name%` through `%tcp_top_vaults_10_name%` (and `_value`)
-  - Same pattern for `%tcp_top_chambers_X_name%` and `%tcp_top_time_X_name%`
+  - Player statistics: `%btc_vaults_opened%`, `%btc_vaults_normal%`, `%btc_vaults_ominous%`
+  - Progress tracking: `%btc_chambers_completed%`, `%btc_mobs_killed%`, `%btc_deaths%`
+  - Time tracking: `%btc_time_spent%` (formatted), `%btc_time_spent_raw%` (seconds)
+  - Current state: `%btc_current_chamber%`, `%btc_in_chamber%`
+  - Leaderboard positions: `%btc_leaderboard_vaults%`, `%btc_leaderboard_chambers%`, `%btc_leaderboard_time%`
+  - Top players: `%btc_top_vaults_1_name%` through `%btc_top_vaults_10_name%` (and `_value`)
+  - Same pattern for `%btc_top_chambers_X_name%` and `%btc_top_time_X_name%`
   - Built-in 60-second cache for leaderboard data to reduce database load
 
 - **Trial Spawner Wave System**: Real-time wave progress tracking with boss bar display
@@ -1074,7 +1085,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ### Changed
 - **17 files updated** to use the new scheduler abstraction:
-  - Core: `TrialChamberPro.kt`, `CoroutineExtensions.kt`
+  - Core: `BetterTrialChambers.kt`, `CoroutineExtensions.kt`
   - Managers: `ResetManager.kt`, `ChamberManager.kt`, `SnapshotManager.kt`, `LootManager.kt`, `PasteConfirmationManager.kt`
   - Listeners: `VaultInteractListener.kt`, `PlayerMovementListener.kt`, `UndoListener.kt`
   - GUI: `MenuService.kt`, `LootTypeSelectView.kt`, `LootEditorView.kt`
@@ -1234,11 +1245,11 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Changed logic to UPDATE existing vaults with correct type and loot_table when rescanning
   - Old vaults in database retained stale `lootTable="default"` even for ominous vaults
   - Now properly updates vault type and loot table on every scan
-  - **Action Required**: Delete database and rescan all chambers with `/tcp scan <name>`
-- Fixed vault counts showing 0 in `/tcp menu` after reload
+  - **Action Required**: Delete database and rescan all chambers with `/trial scan <name>`
+- Fixed vault counts showing 0 in `/trial menu` after reload
   - Root cause: `VaultManager.countsCache` was not being cleared on reload
   - Added `VaultManager.clearCache()` method to clear vault counts cache
-  - `/tcp reload` now clears both chamber cache and vault counts cache
+  - `/trial reload` now clears both chamber cache and vault counts cache
   - Vault counts are now correctly refreshed after reload
 - Added comprehensive debug logging for loot generation
   - Shows requested loot table name and available tables
@@ -1271,12 +1282,12 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 **IMPORTANT: This version requires deleting your existing database!**
 
 1. Stop your server
-2. Delete `plugins/TrialChamberPro/database.db`
+2. Delete `plugins/BetterTrialChambers/database.db`
 3. Update to v1.1.9
 4. Start your server (new database with updated schema will be created)
-5. Re-register all chambers with `/tcp register` or `/tcp generate`
-6. Scan all chambers with `/tcp scan <chamber-name>`
-7. Create snapshots with `/tcp snapshot create <chamber-name>`
+5. Re-register all chambers with `/trial register` or `/trial generate`
+6. Scan all chambers with `/trial scan <chamber-name>`
+7. Create snapshots with `/trial snapshot create <chamber-name>`
 
 **Why**: Database schema changed to support separate NORMAL/OMINOUS vault tracking and enable foreign key constraints. Player cooldown data will be lost, but this ensures proper vault behavior going forward.
 
@@ -1293,15 +1304,15 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Ominous vault loot tables now properly applied instead of using normal vault loot
   - Menu now correctly displays ominous vault counts
   - Updated both `ChamberManager.saveVault()` and `VaultInteractListener` to use string-based detection
-- Fixed chambers disappearing from `/tcp menu` after `/tcp reload`
+- Fixed chambers disappearing from `/trial menu` after `/trial reload`
   - `ChamberManager.clearCache()` now automatically reloads all chambers from database asynchronously
-  - Chambers are immediately available after reload without needing to run `/tcp info`
+  - Chambers are immediately available after reload without needing to run `/trial info`
 
 ### Changed
 - Debug logging now shows full blockstate string for vault detection: `blockData='minecraft:vault[ominous=true,...]'`
 
 ### Migration Notes
-- **Action Required:** Rescan existing chambers with `/tcp scan <name>` to update vault types in database
+- **Action Required:** Rescan existing chambers with `/trial scan <name>` to update vault types in database
   - Existing vaults may be stored with incorrect types (all as NORMAL)
   - Rescanning will correctly identify ominous vs normal vaults using the new detection method
 
@@ -1352,7 +1363,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [1.1.6] - 2025-11-20
 ### Added
-- Added "Locked: X Normal, X Ominous" display to `/tcp menu` chamber tooltips showing per-player locked vault counts
+- Added "Locked: X Normal, X Ominous" display to `/trial menu` chamber tooltips showing per-player locked vault counts
 - Added `vault-locked` message for permanent vault locks (distinct from time-based cooldowns)
 - Added in-memory lock to prevent vault spam-clicking race condition (5-second window per player-vault)
 - Added `getLockedVaultCounts()` function to query locked vaults per player per chamber
@@ -1368,7 +1379,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Staggered vault count refreshes in menu to prevent connection stampede
 - Fixed UPSERT race condition in `recordOpen()` - now uses atomic SQL `INSERT ... ON CONFLICT DO UPDATE`
 - Fixed vault spam-clicking allowing multiple opens before database write completed
-- Removed all references to deprecated `/tcp add` command from help, docs, and tab completion
+- Removed all references to deprecated `/trial add` command from help, docs, and tab completion
 
 ### Changed
 - **BREAKING:** Changed default vault cooldown from 24/48 hours to -1 (permanent lock, vanilla behavior)
@@ -1378,7 +1389,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Cooldown can still be customized to time-based (e.g., 24 = 24 hours)
 - Updated `canOpenVault()` to interpret negative cooldown as permanent lock
 - Vault opening now shows different messages for permanent lock vs time-based cooldown
-- Replaced `/tcp add` with `/tcp generate wand` in all documentation and examples
+- Replaced `/trial add` with `/trial generate wand` in all documentation and examples
 
 ### Internal
 - Database schema changes: None (backwards compatible)
@@ -1387,29 +1398,29 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ### Migration Notes
 - Existing vaults opened with old cooldowns will now be permanently locked
-- Run `/tcp reset <chamber>` to unlock all vaults in a chamber
+- Run `/trial reset <chamber>` to unlock all vaults in a chamber
 - Admins: explicitly deny `tcp.bypass.cooldown` permission if you want to test locking behavior
 
 ## [1.1.5] - 2025-10-31
 ### Added
 - Checking for Update from GitHub Releases with a short message, describing what has changed from the previous version.
-- Particle Visualizer for the `/tcp paste <name>` command.
+- Particle Visualizer for the `/trial paste <name>` command.
 
 ### Fixed
-- Pasting a schematic with `/tcp paste <name>` now works as expected.`
+- Pasting a schematic with `/trial paste <name>` now works as expected.`
 - Correctly allowing WorldEdit `//undo` and `//redo` commands for pasted schematics.
 
 ### Changed
-- The `/tcp paste <name>` command now visually represents the boundaries with particles before pasting. The user needs to confirm or cancel the paste in chat.
+- The `/trial paste <name>` command now visually represents the boundaries with particles before pasting. The user needs to confirm or cancel the paste in chat.
 
 ## [1.1.4] - 2025-10-28
 ### Added
 - FastAsyncWorldEdit (and WorldEdit) soft-depend, as requested, along with FAWE/WE Detection.
-- New Schematic Manager can be called with /tcp paste to paste one of the included Trial Chambers or /tcp schematics to view a list of available schematics.
+- New Schematic Manager can be called with /trial paste to paste one of the included Trial Chambers or /trial schematics to view a list of available schematics.
 - Without WorldEdit/FAWE, schematic features will be disabled gracefully. 
 
 ### Fixed
-- Newly generated Trial Chambers appear immediately in `/tcp menu` without requiring a server restart. The Overview now sorts chambers by creation time (newest first), ensuring fresh entries are shown on the first page.
+- Newly generated Trial Chambers appear immediately in `/trial menu` without requiring a server restart. The Overview now sorts chambers by creation time (newest first), ensuring fresh entries are shown on the first page.
 - Cache refresh after updates: setting a chamber's exit location or snapshot file now refreshes the in-memory cache entry so the GUI reflects changes without delays.
 - Other minor bugfixes and code cleanup.
 
@@ -1453,7 +1464,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [1.1.0] - 2025-10-27
 ### Added
-- Admin GUI using InventoryFramework, open with `/tcp menu` (permission `tcp.admin.menu`).
+- Admin GUI using InventoryFramework, open with `/trial menu` (permission `tcp.admin.menu`).
   - Chambers overview screen: shows each chamber as a block with details like world, bounds, players inside, and time until reset. Click to manage loot tables.
   - Loot type selection: choose to edit Normal or Ominous loot tables.
   - Loot editor: drag & drop and click variations to adjust items.
@@ -1464,14 +1475,14 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
     - Middle click: toggle enabled/disabled
     - Green Save button (bottom-left) persists changes to loot.yml and updates chamber vaults to use the edited table names.
     - Red Cancel button (bottom-right) returns without saving.
-  - Session persistence: if the GUI is closed, the last open window and unsaved draft are remembered per admin until `/tcp menu` is opened again.
+  - Session persistence: if the GUI is closed, the last open window and unsaved draft are remembered per admin until `/trial menu` is opened again.
 - Loot items now support an optional `enabled` flag in `loot.yml` and the generator respects it.
 
 ### Changed
 - Bumped version to 1.1.0 and updated changelog.
 
 ### Fixed
-- Prevent crash `UninitializedPropertyAccessException: lateinit property menuService has not been initialized` when running `/tcp menu` during startup by guarding all `/tcp` subcommands until the plugin finishes asynchronous initialization and by setting a readiness flag after registrations complete.
+- Prevent crash `UninitializedPropertyAccessException: lateinit property menuService has not been initialized` when running `/trial menu` during startup by guarding all `/trial` subcommands until the plugin finishes asynchronous initialization and by setting a readiness flag after registrations complete.
 
 ## [1.0.9] - 2025-10-26
 ### Added
@@ -1490,7 +1501,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ## [1.0.7] - 2025-10-25
 ### Added
 - WorldEdit //undo integration for generated chambers with chat confirmation:
-  - When you run `//undo` (or `/undo`) after using `/tcp generate`, the plugin intercepts and asks you to type `confirm` in chat to delete the last chamber you generated (or `cancel`).
+  - When you run `//undo` (or `/undo`) after using `/trial generate`, the plugin intercepts and asks you to type `confirm` in chat to delete the last chamber you generated (or `cancel`).
   - Confirmation window lasts 15 seconds. On confirm, the chamber is deleted and its snapshot is removed. On cancel/timeout, nothing changes.
 - Generation anywhere: chambers can be generated even in empty/air regions; snapshots will simply contain fewer non-air blocks.
 
@@ -1502,16 +1513,16 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [1.0.6] - 2025-10-25
 ### Added
-- New /tcp generate modes and parsing improvements:
-  - Added `wand` mode to generate directly from your current WorldEdit selection: `/tcp generate wand <chamberName>`.
-  - Added `blocks` mode to generate a chamber at your current location based on a desired block count: `/tcp generate blocks <amount> [chamberName] [roundingAllowance]`.
+- New /trial generate modes and parsing improvements:
+  - Added `wand` mode to generate directly from your current WorldEdit selection: `/trial generate wand <chamberName>`.
+  - Added `blocks` mode to generate a chamber at your current location based on a desired block count: `/trial generate blocks <amount> [chamberName] [roundingAllowance]`.
     - The region is placed in front of you using your facing direction.
     - Minimum size enforced (31x15x31). Height defaults to 15; width/depth are chosen to approximate the requested blocks.
     - Rounds up within an allowance (default 1000, configurable at `generation.blocks.rounding-allowance`).
   - Enhanced `coords` mode to accept either two separate coordinate triples or the old hyphenated form:
-    - `/tcp generate coords <x1,y1,z1> <x2,y2,z2> [world] <name>`
-    - `/tcp generate coords <world> <x1,y1,z1> <x2,y2,z2> <name>`
-    - Legacy: `/tcp generate coords <x1,y1,z1-x2,y2,z2> [world] <name>`
+    - `/trial generate coords <x1,y1,z1> <x2,y2,z2> [world] <name>`
+    - `/trial generate coords <world> <x1,y1,z1> <x2,y2,z2> <name>`
+    - Legacy: `/trial generate coords <x1,y1,z1-x2,y2,z2> [world] <name>`
   - Robust negative coordinate handling (no more issues with hyphens in negatives).
 - Tab completion updated for new modes.
 
@@ -1520,11 +1531,11 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [1.0.5] - 2025-10-25
 ### Added
-- New /tcp generate command enhancements:
+- New /trial generate command enhancements:
   - Support for saved WorldEdit variable regions via plugin-managed we-vars.yml.
   - Subcommands: value save `<name>`, value list, value delete `<name>`.
-  - Generate from named var: `/tcp generate value <varName> [chamberName]`.
-  - Coordinate mode: `/tcp generate coords <x1,y1,z1-x2,y2,z2> [world] <chamberName>`.
+  - Generate from named var: `/trial generate value <varName> [chamberName]`.
+  - Coordinate mode: `/trial generate coords <x1,y1,z1-x2,y2,z2> [world] <chamberName>`.
 - Tab completion for generate subcommands and saved names.
 
 ### Changed
@@ -1544,7 +1555,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [1.0.2] - 2025-10-25
 ### Fixed
-- Prevented generic "/tcp [args]" usage from appearing for `/tcp`, `/tcp help`, and `/tcp list` by registering the command executor and tab completer immediately during plugin enable.
+- Prevented generic "/trial [args]" usage from appearing for `/trial`, `/trial help`, and `/trial list` by registering the command executor and tab completer immediately during plugin enable.
 
 ### Notes
 - Left the later, redundant registration in place for now (safe to remove in a future cleanup).
@@ -1558,103 +1569,104 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [1.0.0] - 2025-10-24
 ### Added
-- Initial release of TrialChamberPro with:
+- Initial release of BetterTrialChambers with:
   - Snapshot system for chambers
   - Per-player vaults and loot tables
   - Automatic reset scheduler with warnings
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
-[1.8.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.8.0...v1.8.1
-[1.8.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.7.3...v1.8.0
-[1.7.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.7.2...v1.7.3
-[1.7.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.7.1...v1.7.2
-[1.7.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.7.0...v1.7.1
-[1.7.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.6.3...v1.7.0
-[1.6.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.6.2...v1.6.3
-[1.6.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.6.1...v1.6.2
-[1.6.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.6.0...v1.6.1
-[1.6.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.22...v1.6.0
-[1.5.22]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.21...v1.5.22
-[1.5.21]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.20...v1.5.21
-[1.5.20]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.19...v1.5.20
-[1.5.19]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.18...v1.5.19
-[1.5.18]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.17...v1.5.18
-[1.5.17]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.16...v1.5.17
-[1.5.16]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.15...v1.5.16
-[1.5.15]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.14...v1.5.15
-[1.5.14]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.13...v1.5.14
-[1.5.13]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.12...v1.5.13
-[1.5.12]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.11...v1.5.12
-[1.5.11]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.10...v1.5.11
-[1.5.10]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.9...v1.5.10
-[1.5.9]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.8...v1.5.9
-[1.5.8]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.7...v1.5.8
-[1.5.7]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.6...v1.5.7
-[1.5.6]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.5...v1.5.6
-[1.5.5]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.4...v1.5.5
-[1.5.4]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.2...v1.5.4
-[1.5.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.1...v1.5.2
-[1.5.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.5.0...v1.5.1
-[1.5.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.7...v1.5.0
-[1.4.7]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.6...v1.4.7
-[1.4.6]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.5...v1.4.6
-[1.4.5]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.4...v1.4.5
-[1.4.4]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.3...v1.4.4
-[1.4.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.2...v1.4.3
-[1.4.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.1...v1.4.2
-[1.4.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.0...v1.4.1
-[1.4.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.3.3...v1.4.0
-[1.3.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.3.2...v1.3.3
-[1.3.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.3.1...v1.3.2
-[1.3.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.3.0...v1.3.1
-[1.3.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.29...v1.3.0
-[1.2.29]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.28...v1.2.29
-[1.2.28]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.27...v1.2.28
-[1.2.27]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.26...v1.2.27
-[1.2.26]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.25...v1.2.26
-[1.2.25]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.24...v1.2.25
-[1.2.24]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.23...v1.2.24
-[1.2.23]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.22...v1.2.23
-[1.2.22]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.21...v1.2.22
-[1.2.21]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.20...v1.2.21
-[1.2.20]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.19...v1.2.20
-[1.2.19]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.18...v1.2.19
-[1.2.18]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.17...v1.2.18
-[1.2.17]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.16...v1.2.17
-[1.2.16]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.15...v1.2.16
-[1.2.15]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.14...v1.2.15
-[1.2.14]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.13...v1.2.14
-[1.2.13]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.12...v1.2.13
-[1.2.12]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.11...v1.2.12
-[1.2.11]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.10...v1.2.11
-[1.2.10]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.9...v1.2.10
-[1.2.9]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.8...v1.2.9
-[1.2.8]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.7...v1.2.8
-[1.2.7]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.6...v1.2.7
-[1.2.6]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.5...v1.2.6
-[1.2.5]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.4...v1.2.5
-[1.2.4]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.3...v1.2.4
-[1.2.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.2...v1.2.3
-[1.2.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.1...v1.2.2
-[1.2.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.0...v1.2.1
-[1.2.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.9...v1.2.0
-[1.1.9]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.8...v1.1.9
-[1.1.8]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.7...v1.1.8
-[1.1.7]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.6...v1.1.7
-[1.1.6]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.5...v1.1.6
-[1.1.5]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.4...v1.1.5
-[1.1.4]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.3...v1.1.4
-[1.1.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.2...v1.1.3
-[1.1.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.1...v1.1.2
-[1.1.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.0...v1.1.1
-[1.1.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.0.9...v1.1.0
-[1.0.9]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.0.8...v1.0.9
-[1.0.8]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.0.7...v1.0.8
-[1.0.7]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.0.6...v1.0.7
-[1.0.6]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.0.5...v1.0.6
-[1.0.5]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.0.4...v1.0.5
-[1.0.4]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.0.3...v1.0.4
-[1.0.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.0.2...v1.0.3
-[1.0.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.0.1...v1.0.2
-[1.0.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.0.0...v1.0.1
+[2.0.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.8.1...v2.0.0
+[1.8.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.8.0...v1.8.1
+[1.8.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.7.3...v1.8.0
+[1.7.3]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.7.2...v1.7.3
+[1.7.2]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.7.1...v1.7.2
+[1.7.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.7.0...v1.7.1
+[1.7.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.6.3...v1.7.0
+[1.6.3]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.6.2...v1.6.3
+[1.6.2]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.6.1...v1.6.2
+[1.6.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.6.0...v1.6.1
+[1.6.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.22...v1.6.0
+[1.5.22]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.21...v1.5.22
+[1.5.21]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.20...v1.5.21
+[1.5.20]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.19...v1.5.20
+[1.5.19]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.18...v1.5.19
+[1.5.18]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.17...v1.5.18
+[1.5.17]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.16...v1.5.17
+[1.5.16]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.15...v1.5.16
+[1.5.15]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.14...v1.5.15
+[1.5.14]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.13...v1.5.14
+[1.5.13]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.12...v1.5.13
+[1.5.12]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.11...v1.5.12
+[1.5.11]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.10...v1.5.11
+[1.5.10]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.9...v1.5.10
+[1.5.9]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.8...v1.5.9
+[1.5.8]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.7...v1.5.8
+[1.5.7]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.6...v1.5.7
+[1.5.6]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.5...v1.5.6
+[1.5.5]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.4...v1.5.5
+[1.5.4]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.2...v1.5.4
+[1.5.2]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.1...v1.5.2
+[1.5.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.5.0...v1.5.1
+[1.5.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.4.7...v1.5.0
+[1.4.7]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.4.6...v1.4.7
+[1.4.6]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.4.5...v1.4.6
+[1.4.5]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.4.4...v1.4.5
+[1.4.4]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.4.3...v1.4.4
+[1.4.3]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.4.2...v1.4.3
+[1.4.2]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.4.1...v1.4.2
+[1.4.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.4.0...v1.4.1
+[1.4.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.3.3...v1.4.0
+[1.3.3]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.3.2...v1.3.3
+[1.3.2]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.3.1...v1.3.2
+[1.3.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.3.0...v1.3.1
+[1.3.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.29...v1.3.0
+[1.2.29]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.28...v1.2.29
+[1.2.28]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.27...v1.2.28
+[1.2.27]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.26...v1.2.27
+[1.2.26]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.25...v1.2.26
+[1.2.25]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.24...v1.2.25
+[1.2.24]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.23...v1.2.24
+[1.2.23]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.22...v1.2.23
+[1.2.22]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.21...v1.2.22
+[1.2.21]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.20...v1.2.21
+[1.2.20]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.19...v1.2.20
+[1.2.19]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.18...v1.2.19
+[1.2.18]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.17...v1.2.18
+[1.2.17]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.16...v1.2.17
+[1.2.16]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.15...v1.2.16
+[1.2.15]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.14...v1.2.15
+[1.2.14]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.13...v1.2.14
+[1.2.13]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.12...v1.2.13
+[1.2.12]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.11...v1.2.12
+[1.2.11]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.10...v1.2.11
+[1.2.10]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.9...v1.2.10
+[1.2.9]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.8...v1.2.9
+[1.2.8]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.7...v1.2.8
+[1.2.7]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.6...v1.2.7
+[1.2.6]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.5...v1.2.6
+[1.2.5]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.4...v1.2.5
+[1.2.4]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.3...v1.2.4
+[1.2.3]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.2...v1.2.3
+[1.2.2]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.1...v1.2.2
+[1.2.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.2.0...v1.2.1
+[1.2.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.1.9...v1.2.0
+[1.1.9]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.1.8...v1.1.9
+[1.1.8]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.1.7...v1.1.8
+[1.1.7]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.1.6...v1.1.7
+[1.1.6]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.1.5...v1.1.6
+[1.1.5]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.1.4...v1.1.5
+[1.1.4]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.1.3...v1.1.4
+[1.1.3]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.1.2...v1.1.3
+[1.1.2]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.1.1...v1.1.2
+[1.1.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.1.0...v1.1.1
+[1.1.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.0.9...v1.1.0
+[1.0.9]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.0.8...v1.0.9
+[1.0.8]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.0.7...v1.0.8
+[1.0.7]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.0.6...v1.0.7
+[1.0.6]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.0.5...v1.0.6
+[1.0.5]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.0.4...v1.0.5
+[1.0.4]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.0.3...v1.0.4
+[1.0.3]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.0.2...v1.0.3
+[1.0.2]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.0.0...v1.0.1
