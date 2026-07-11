@@ -7,13 +7,13 @@ plugins {
     // v1.3.3: enable Maven publication so Jitpack can serve TCP as a
     // compile-time dependency to premium add-on modules and third-party
     // integrations. Premium devs declare:
-    //   compileOnly("com.github.darkstarworks:TrialChamberPro:v1.3.3")
-    // and import classes from the io.github.darkstarworks.trialChamberPro.api.* package.
+    //   compileOnly("com.github.darkstarworks:BetterTrialChambers:v1.3.3")
+    // and import classes from the com.esmpfun.bettertrialchambers.api.* package.
     `maven-publish`
 }
 
-group = "io.github.darkstarworks"
-version = "1.8.1"
+group = "com.esmpfun"
+version = "2.0.0"
 
 repositories {
     mavenCentral()
@@ -33,7 +33,7 @@ repositories {
 
 dependencies {
     // Paper API — 26.x track (the `-mc26` build). Carries the same Dialog API as 1.21.7+
-    // (used by `/tcp setup`); plugin.yml's api-version '26.1' keeps this jar to 26.x servers,
+    // (used by `/trial setup`); plugin.yml's api-version '26.1' keeps this jar to 26.x servers,
     // while the master build targets 1.21.7 + api-version '1.21'.
     compileOnly("io.papermc.paper:paper-api:26.1.2.build.+")
 
@@ -89,6 +89,7 @@ dependencies {
     // Testing
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
     testImplementation("io.mockk:mockk:1.13.8")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     // Paper API on the test classpath so unit tests can mock Bukkit types directly.
     testImplementation("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
 }
@@ -136,11 +137,11 @@ tasks {
         // They will be shaded into the jar with their original package names
         // This avoids NoClassDefFoundError for kotlinx.coroutines.Dispatchers during plugin bootstrap
         // Important: Do NOT relocate org.sqlite, or the sqlite-jdbc native bindings (JNI) will fail to load
-        relocate("com.zaxxer.hikari", "io.github.darkstarworks.tcp.hikari")
+        relocate("com.zaxxer.hikari", "com.esmpfun.btc.hikari")
         // bStats mandates relocation so multiple plugins can shade different versions
-        relocate("org.bstats", "io.github.darkstarworks.tcp.bstats")
+        relocate("org.bstats", "com.esmpfun.btc.bstats")
         // PluginPulse relocation so other plugins can shade different versions
-        relocate("io.github.darkstarworks.pluginpulse", "io.github.darkstarworks.tcp.pluginpulse")
+        relocate("io.github.darkstarworks.pluginpulse", "com.esmpfun.btc.pluginpulse")
         // InventoryFramework relocation removed in v1.5.0 — see dependency comment.
 
         // Exclude unnecessary SQLite native binaries to reduce jar size
@@ -193,18 +194,18 @@ tasks {
 publishing {
     publications {
         create<MavenPublication>("shadow") {
-            artifactId = "TrialChamberPro"
+            artifactId = "BetterTrialChambers"
             artifact(tasks.shadowJar.get())
         }
     }
 }
 
 // Auto-maintain the CHANGELOG "compare link" footer. At release time this inserts a line
-// like `[1.7.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.7.1...v1.7.2`
+// like `[1.7.2]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.7.1...v1.7.2`
 // for the current `version`, placed newest-first above the previous release's link — the
 // step that used to be done by hand on every release. Idempotent: a no-op once the current
 // version's link is already present. Wired into `build` below so it runs on a version bump.
-val changelogRepoUrl = "https://github.com/darkstarworks/TrialChamberPro"
+val changelogRepoUrl = "https://github.com/ESMP-FUN/BetterTrialChambers"
 val updateChangelogLink by tasks.registering {
     group = "documentation"
     description = "Ensure CHANGELOG.md has a compare-link footer for the current version."

@@ -1,0 +1,137 @@
+package com.esmpfun.bettertrialchambers.gui
+
+import com.esmpfun.bettertrialchambers.BetterTrialChambers
+import com.esmpfun.bettertrialchambers.gui.framework.BaseHolder
+import com.esmpfun.bettertrialchambers.gui.framework.VcGui
+import com.esmpfun.bettertrialchambers.models.Chamber
+import com.esmpfun.bettertrialchambers.models.LootItem
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.NamedTextColor
+import org.bukkit.entity.Player
+
+/**
+ * Holder for the bulk loot-deposit chest. Stores the editor context
+ * (chamber/kind/pool/globalTableName) so [LootDepositView.handleClose]
+ * knows which draft to append to.
+ */
+class LootDepositHolder(
+    val chamber: Chamber?,
+    val kind: MenuService.LootKind,
+    val poolName: String?,
+    val globalTableName: String?,
+) : BaseHolder()
+
+/**
+ * A fully-editable 54-slot chest. The admin drags / shift-clicks / hotbar-
+ * swaps items in; on close every item is serialized into a weighted loot
+ * entry on the draft (preserving all NBT) and handed back to the admin, then
+ * the loot editor reopens with the new entries. Items are always returned
+ * even if the draft is gone, so nothing is ever lost.
+ *
+ * v1.5.0 — migrated off the raw `Bukkit.createInventory` + standalone
+ * `LootDepositListener` shape. Now uses the central VcGui framework with
+ * [freelyEditable] = true so [com.esmpfun.bettertrialchambers.gui.framework.VcGuiListener]
+ * passes all clicks and drags through to vanilla Bukkit (the player IS the
+ * source of truth — no slot wiring). The crash class from the previous
+ * shape (`serializeAsBytes()` throwing mid-loop and stranding items in the
+ * closing chest) is addressed here too: every item is wrapped in
+ * try/catch, falling back to a material-only loot entry on failure, and
+ * the return-items step runs in a try/finally so items are never lost.
+ */
+class LootDepositView(
+    private val plugin: BetterTrialChambers,
+    private val menu: MenuService,
+    chamber: Chamber?,
+    kind: MenuService.LootKind,
+    poolName: String?,
+    globalTableName: String?,
+) : VcGui(
+    rows = 6,
+    title = Component.text("Drag items to add — close to confirm", NamedTextColor.DARK_AQUA),
+    holder = LootDepositHolder(chamber, kind, poolName, globalTableName),
+) {
+    override val freelyEditable: Boolean = true
+
+    /**
+     * Read every item the player deposited, serialize it into the draft, and
+     * hand the items back so the admin never loses them. Reopens the loot
+     * editor next tick so they can see the new entries.
+     */
+    override fun handleClose(player: Player) {
+        val h = holder as LootDepositHolder
+        val draft = if (h.chamber != null) {
+            menu.getDraft(player, h.chamber, h.kind, h.poolName)
+        } else {
+            h.globalTableName?.let { menu.getGlobalDraft(player, it, h.poolName) }
+        }
+
+        var added = 0
+        val itemsToReturn = mutableListOf<org.bukkit.inventory.ItemStack>()
+        val contents = h.inventory.contents
+        for (i in contents.indices) {
+            val item = contents[i] ?: continue
+            if (item.type.isAir) continue
+
+            if (draft != null) {
+                val serialized = try {
+                    plugin.lootManager.serializeItem(item)
+                } catch (e: Exception) {
+                    // Some items (mod NBT, oversized component data) can't be
+                    // round-tripped through serializeAsBytes. Don't lose them —
+                    // store a material-only fallback and log so we can investigate.
+                    plugin.logger.warning(
+                        "Bulk-add: serializeItem failed for ${item.type} — falling back to material-only entry: ${e.message}"
+                    )
+                    null
+                }
+                draft.weighted.add(
+                    LootItem(
+                        type = item.type,
+                        amountMin = 1,
+                        amountMax = item.amount.coerceAtLeast(1),
+                        weight = 1.0,
+                        serializedItem = serialized,
+                        enabled = true,
+                    )
+                )
+                added++
+            }
+            itemsToReturn.add(item.clone())
+            h.inventory.setItem(i, null)
+        }
+
+        if (added > 0 && draft != null) {
+            draft.dirty = true
+            if (h.chamber != null) menu.saveDraft(player, h.chamber, h.kind, h.poolName, draft)
+            else menu.saveGlobalDraft(player, h.globalTableName!!, h.poolName, draft)
+            player.sendMessage(plugin.getMessageComponent("gui-loot-deposit-added", "count" to added))
+        }
+
+        // Hand items back on the player's region thread (Folia-correct; on Paper this
+        // is just the main thread). Safe inside the close event — we're only mutating
+        // the player's own inventory and dropping items into the world, not opening
+        // anything new.
+        plugin.scheduler.runAtEntity(player, Runnable {
+            for (item in itemsToReturn) {
+                val leftover = player.inventory.addItem(item)
+                leftover.values.forEach { player.world.dropItemNaturally(player.location, it) }
+            }
+        })
+
+        // CRITICAL: opening a new inventory while still inside `InventoryCloseEvent`
+        // re-fires the close event for the currently-detaching inventory on Paper 1.21+.
+        // On the Paper scheduler that's not even one tick later — `runAtEntity` runs
+        // synchronously when already on the primary thread, so the chain `close →
+        // open → close → open …` recurses until the JVM stack overflows. (Observed in
+        // a v1.5.0 pre-release local-test crash: 571k log lines, one root cause.)
+        //
+        // Schedule the editor reopen exactly one tick out via `runAtEntityLater` so the
+        // InventoryCloseEvent dispatch fully unwinds before we touch `openInventory`
+        // again.
+        plugin.scheduler.runAtEntityLater(player, Runnable {
+            if (!player.isOnline) return@Runnable
+            if (h.chamber != null) menu.openLootEditor(player, h.chamber, h.kind, h.poolName)
+            else h.globalTableName?.let { menu.openGlobalLootEditor(player, it, h.poolName) }
+        }, 1L)
+    }
+}

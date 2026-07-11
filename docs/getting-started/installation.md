@@ -1,6 +1,6 @@
 # Installation
 
-Getting TrialChamberPro up and running is easier than finding diamonds at Y=11. Let's do this!
+Getting BetterTrialChambers up and running is easier than finding diamonds at Y=11. Let's do this!
 
 ## Prerequisites
 
@@ -11,18 +11,18 @@ Before you start, make sure you have:
 * **WorldEdit** (optional but highly recommended for chamber creation)
 
 {% hint style="info" %}
-**Why Paper?** TrialChamberPro uses Paper-specific APIs for better performance and features. Spigot and CraftBukkit won't work!
+**Why Paper?** BetterTrialChambers uses Paper-specific APIs for better performance and features. Spigot and CraftBukkit won't work!
 {% endhint %}
 
 ## Download
 
 Grab the latest version from one of these sources:
 
-* [GitHub Releases](https://github.com/darkstarworks/TrialChamberPro/releases) (recommended)
+* [GitHub Releases](https://github.com/ESMP-FUN/BetterTrialChambers/releases) (recommended)
 * [Modrinth](https://modrinth.com/plugin/trialchamberpro)
 * [SpigotMC](https://www.spigotmc.org/resources/trialchamberpro)
 
-Look for the file named something like `TrialChamberPro-<version>.jar`.
+Look for the file named something like `BetterTrialChambers-<version>.jar`.
 
 ## Installation Steps
 
@@ -32,12 +32,12 @@ Yeah, yeah, you know the drill. Shut it down properly with `/stop`.
 
 ### 2. Drop the JAR
 
-Move `TrialChamberPro-<version>.jar` into your server's `plugins/` folder.
+Move `BetterTrialChambers-<version>.jar` into your server's `plugins/` folder.
 
 ```
 your-server/
 ├── plugins/
-│   ├── TrialChamberPro-<version>.jar  ← Put it here!
+│   ├── BetterTrialChambers-<version>.jar  ← Put it here!
 │   ├── WorldEdit.jar
 │   └── ... other plugins
 └── ...
@@ -48,10 +48,10 @@ your-server/
 Fire it back up! Watch the console for this beautiful message:
 
 ```
-[TrialChamberPro] Enabling TrialChamberPro v<version>
-[TrialChamberPro] Database connected successfully
-[TrialChamberPro] Loaded 2 loot tables
-[TrialChamberPro] TrialChamberPro enabled successfully!
+[BetterTrialChambers] Enabling BetterTrialChambers v<version>
+[BetterTrialChambers] Database connected successfully
+[BetterTrialChambers] Loaded 2 loot tables
+[BetterTrialChambers] BetterTrialChambers enabled successfully!
 ```
 
 {% hint style="success" %}
@@ -60,10 +60,10 @@ Fire it back up! Watch the console for this beautiful message:
 
 ### 4. Check the Config Files
 
-The plugin creates several files in `plugins/TrialChamberPro/`:
+The plugin creates several files in `plugins/BetterTrialChambers/`:
 
 ```
-plugins/TrialChamberPro/
+plugins/BetterTrialChambers/
 ├── config.yml      # Main configuration
 ├── loot.yml        # Loot table definitions
 ├── messages.yml    # Customizable messages
@@ -75,7 +75,7 @@ Don't touch anything yet! We'll configure everything in the next section.
 
 ## Optional Dependencies
 
-TrialChamberPro works great on its own, but these plugins add extra functionality:
+BetterTrialChambers works great on its own, but these plugins add extra functionality:
 
 ### WorldEdit / FAWE
 
@@ -99,34 +99,34 @@ Display things like "Chambers Completed: 5" in your custom UIs.
 
 **Purpose:** Enhanced region protection **Required?** No, built-in protection works fine **Download:** [WorldGuard](https://dev.bukkit.org/projects/worldguard)
 
-If you already use WorldGuard, TrialChamberPro can integrate with it for protection.
+If you already use WorldGuard, BetterTrialChambers can integrate with it for protection.
 
 ### Residence / Lands / GriefPrevention
 
 **Purpose:** Stop players claiming registered Trial Chambers _(1.5.15+)_ **Required?** No — only matters if you run one of these land-claim plugins **Download:** [Residence](https://www.spigotmc.org/resources/11480/) · [Lands](https://www.spigotmc.org/resources/53313/) · [GriefPrevention](https://github.com/GriefPrevention/GriefPrevention)
 
-If any of these is installed, TrialChamberPro blocks claim creation/expansion that overlaps a chamber and can scan for pre-existing conflicts (`/tcp claims scan`). Enabled by default per plugin; see [protection config](../configuration/config.yml.md) and the `tcp.bypass.*` [permissions](../reference/permissions.md).
+If any of these is installed, BetterTrialChambers blocks claim creation/expansion that overlaps a chamber and can scan for pre-existing conflicts (`/trial claims scan`). Enabled by default per plugin; see [protection config](../configuration/config.yml.md) and the `tcp.bypass.*` [permissions](../reference/permissions.md).
 
 ### AdvancedEnchantments
 
 **Purpose:** Stop AE enchants (e.g. Blast Mining) breaking blocks inside chambers _(1.5.18+)_ **Required?** No — only matters if you run AdvancedEnchantments **Download:** [AdvancedEnchantments](https://www.spigotmc.org/resources/76519/)
 
-AE custom enchants break blocks through their own effect path that ignores TCP's block-break cancel, so they can bypass chamber protection. Set `protection.block-advanced-enchantments: true` to make TCP cancel AE enchant activations that affect a registered chamber (with an allowlist for enchants you want to keep working). As of **1.5.21** this also stops mining a chamber wall from just outside it, tunable via `protection.advanced-enchantments-block-radius`. **Off by default.** See [protection config](../configuration/config.yml.md#block-advanced-enchantments).
+AE custom enchants break blocks through their own effect path that ignores BTC's block-break cancel, so they can bypass chamber protection. Set `protection.block-advanced-enchantments: true` to make BTC cancel AE enchant activations that affect a registered chamber (with an allowlist for enchants you want to keep working). As of **1.5.21** this also stops mining a chamber wall from just outside it, tunable via `protection.advanced-enchantments-block-radius`. **Off by default.** See [protection config](../configuration/config.yml.md#block-advanced-enchantments).
 
-Hotkey-style **vein miners** (e.g. VeinMiner) don't need this — they fire a normal block-break per block, so TCP's standard protection already blocks the ones inside a chamber. The toggle is only for effect engines (like AE) that skip block-break events.
+Hotkey-style **vein miners** (e.g. VeinMiner) don't need this — they fire a normal block-break per block, so BTC's standard protection already blocks the ones inside a chamber. The toggle is only for effect engines (like AE) that skip block-break events.
 
 ## Verify Installation
 
 Run this command in-game:
 
 ```
-/tcp help
+/trial help
 ```
 
 You should see a list of commands. If you do — congrats, you're installed!
 
 {% hint style="success" %}
-**Next, head to** [**Quick Start**](quick-start.md)**.** Run `/tcp setup` and turn on auto-discovery + snapshots, and TCP will find and manage every natural Trial Chamber on your server automatically. For most servers, that's the entire setup.
+**Next, head to** [**Quick Start**](quick-start.md)**.** Run `/trial setup` and turn on auto-discovery + snapshots, and BTC will find and manage every natural Trial Chamber on your server automatically. For most servers, that's the entire setup.
 {% endhint %}
 
 ## Updating
@@ -139,12 +139,12 @@ Updating is just as easy:
 4. Check console for "Successfully updated database to version X"
 
 {% hint style="warning" %}
-**Always backup first!** Before updating, copy your `plugins/TrialChamberPro/` folder somewhere safe. Better safe than sorry when dealing with player data.
+**Always backup first!** Before updating, copy your `plugins/BetterTrialChambers/` folder somewhere safe. Better safe than sorry when dealing with player data.
 {% endhint %}
 
 ## What's Next?
 
-Now that you're installed, get TCP running — for most servers it's a single command:
+Now that you're installed, get BTC running — for most servers it's a single command:
 
 {% content-ref url="quick-start.md" %}
 [quick-start.md](quick-start.md)
@@ -155,7 +155,7 @@ Now that you're installed, get TCP running — for most servers it's a single co
 ## Quick Tips
 
 {% hint style="info" %}
-**Folia Support:** TrialChamberPro works on Folia out of the box! Just make sure `use-folialib: true` in config.yml.
+**Folia Support:** BetterTrialChambers works on Folia out of the box! Just make sure `use-folialib: true` in config.yml.
 {% endhint %}
 
 {% hint style="info" %}

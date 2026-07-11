@@ -1,4 +1,4 @@
-# TrialChamberPro Messages
+# BetterTrialChambers Messages
 # =====================================================================
 # v1.4.0+ — MiniMessage support is now first-class.
 #
@@ -8,7 +8,7 @@
 #   2. MiniMessage tags:  <green>Hello <bold>world</bold>!</green>
 #   3. Hex colors:        &#FF5500Custom color   OR   <#FF5500>Custom color
 #   4. Gradients:         <gradient:#ff5500:#0000ff>Sunset to ocean</gradient>
-#   5. Click events:      <click:run_command:'/tcp menu'>Click me</click>
+#   5. Click events:      <click:run_command:'/trial menu'>Click me</click>
 #   6. Hover events:      <hover:show_text:'Tooltip text'>Hover me</hover>
 #
 # Existing messages with only & codes continue to work unchanged.
@@ -17,18 +17,18 @@
 # Note: chat messages (sent via player.sendMessage) get full MiniMessage
 # fidelity in v1.4.0+. Boss bars, GUI item names, and lore also have
 # full fidelity. Some MM features (gradients, click, hover) require
-# Component-based delivery — TCP routes them correctly automatically.
+# Component-based delivery — BTC routes them correctly automatically.
 #
 # Available placeholders vary by message; see surrounding comments.
 # =====================================================================
 
-prefix: "&8[&6TCP&8]&r "
+prefix: "&8[&6BTC&8]&r "
 
 # General messages
 reload-success: "&aConfiguration reloaded successfully!"
 no-permission: "&cYou don't have permission to use this command."
 player-only: "&cThis command can only be used by players."
-unknown-command: "&cUnknown subcommand. Use /tcp help for help."
+unknown-command: "&cUnknown subcommand. Use /trial help for help."
 
 # Chamber management
 chamber-created: "&aChamber &e{chamber}&a created successfully!"
@@ -39,10 +39,10 @@ chamber-not-found: "&cChamber &e{chamber}&c not found."
 chamber-deleted: "&aChamber &e{chamber}&a deleted successfully."
 chamber-paused: "&eChamber &6{chamber}&e has been &cpaused&e. All active behavior is suspended; the record is preserved."
 chamber-resumed: "&eChamber &6{chamber}&e has been &aresumed&e. Active behavior is restored."
-chamber-already-paused: "&cChamber &e{chamber}&c is already paused. Use /tcp resume {chamber} to re-activate it."
+chamber-already-paused: "&cChamber &e{chamber}&c is already paused. Use /trial resume {chamber} to re-activate it."
 chamber-not-paused: "&cChamber &e{chamber}&c is not paused."
 chamber-is-paused: "&cThis chamber is currently paused and cannot be interacted with."
-chamber-auto-paused: "&c[TCP] Chamber &e{chamber}&c was auto-paused: &e{count}&c critical block(s) destroyed (last: &e{block}&c). Use /tcp resume {chamber} to re-activate it."
+chamber-auto-paused: "&c[BTC] Chamber &e{chamber}&c was auto-paused: &e{count}&c critical block(s) destroyed (last: &e{block}&c). Use /trial resume {chamber} to re-activate it."
 chamber-list-item: "&e{chamber} &7- &f{world} &7({volume} blocks)"
 chamber-list-empty: "&cNo chambers registered yet."
 no-selection: "&cYou must make a WorldEdit selection first."
@@ -60,7 +60,7 @@ snapshot-creating: "&aCreating snapshot for &e{chamber}&a..."
 snapshot-created: "&aSnapshot created successfully! (&e{blocks}&a blocks, &e{size}&a)"
 snapshot-restoring: "&aRestoring chamber &e{chamber}&a from snapshot..."
 snapshot-restored: "&aChamber restored successfully!"
-snapshot-not-in-chamber: "&cStand inside a chamber, or name one: &e/tcp snapshot update <chamber>"
+snapshot-not-in-chamber: "&cStand inside a chamber, or name one: &e/trial snapshot update <chamber>"
 snapshot-failed: "&cSnapshot operation failed: {error}"
 
 # Exit location
@@ -159,7 +159,7 @@ info-exit: "&eExit: &f{exit}"
 info-reset-interval: "&eReset Interval: &f{interval}"
 info-last-reset: "&eLast Reset: &f{time}"
 info-snapshot: "&eSnapshot: &f{status}"
-info-paused: "&c[PAUSED] This chamber is inactive. Use /tcp resume <name> to re-activate it."
+info-paused: "&c[PAUSED] This chamber is inactive. Use /trial resume <name> to re-activate it."
 
 # Time formatting — unit suffixes for durations ("2d 3h 5m"). Each key formats one
 # unit; non-zero units are joined with spaces. time-ago wraps a duration for
@@ -173,37 +173,37 @@ time-now: "Just now"
 time-ago: "{time} ago"
 
 # Help
-help-header: "&6=== TrialChamberPro Commands ==="
-help-list: "&e/tcp list &7- List all registered chambers"
-help-info: "&e/tcp info [chamber] &7- Show plugin info, or details for one chamber"
-help-generate: "&e/tcp generate <wand|coords|value|blocks> <name> ... &7- Register a chamber so TCP can manage it"
-help-paste: "&e/tcp paste <schematic> &7- Paste a Trial Chamber schematic into the world"
-help-scan: "&e/tcp scan <chamber> &7- Re-scan a chamber's vaults, spawners, and pots"
-help-scan-add: "&e/tcp scan add <chamber> &7- Grow the chamber's bounds into sections discovery missed"
-help-setexit: "&e/tcp setexit <chamber> &7- Set the exit teleport point for a chamber"
-help-snapshot: "&e/tcp snapshot <create|update|restore> [chamber] &7- Save, re-save, or roll back a chamber's blocks"
-help-snapshot-bulk: "&e/tcp snapshot create all [force] &7- Snapshot every chamber missing one (force = re-do all)"
-help-snapshot-missing: "&e/tcp snapshot missing &7- List chambers with no snapshot (clickable [Create])"
-help-reset: "&e/tcp reset <chamber> &7- Force a chamber to reset right now"
-help-pause: "&e/tcp pause <chamber> &7- Pause a chamber (suspends all activity, preserves data)"
-help-resume: "&e/tcp resume <chamber> &7- Resume a paused chamber"
-help-rename: "&e/tcp rename <chamber> <name> &7- Set a chamber's display name (shown in announcements)"
-help-delete: "&e/tcp delete <chamber> &7- Unregister a chamber"
-help-loot: "&e/tcp loot <list|info|set|clear> ... &7- View or override per-chamber loot tables"
-help-mobs: "&e/tcp mobs <providers|<chamber> <list|provider|add|remove> ...> &7- Configure custom mob providers per chamber"
-help-vault: "&e/tcp vault reset <chamber> <player> [type] &7- Clear a player's vault cooldown"
-help-key: "&e/tcp key give <player> <amount> [type] &7- Give trial keys (normal or ominous)"
-help-give: "&e/tcp give <preset> [player] [amount] &7- Give a preconfigured trial spawner item"
-help-stats: "&e/tcp stats [player] &7- View your stats or another player's"
-help-leaderboard: "&e/tcp leaderboard <type> &7- View top players (alias: lb, top)"
-help-menu: "&e/tcp menu &7- Open the admin GUI"
-help-dungeon: "&e/tcp dungeon <create rooms & generate> &7- Procedural dungeon assembly"
-help-setup: "&e/tcp setup &7- Friendly tour of the main settings (opt-in; Enable/Skip/Disable each)"
-help-container: "&e/tcp container <list|materialize|reset|clearcopies|tp|edit> <chamber> &7- Manage per-player container loot"
-help-claims: "&e/tcp claims scan &7- Find chambers overlapping land-claim plugin claims"
-help-debug: "&e/tcp debug schema &7- Print database table columns (diagnostics)"
-help-update: "&e/tcp update [check|download|restore|status] &7- Check for and install plugin updates"
-help-reload: "&e/tcp reload &7- Reload config.yml, loot.yml, and messages.yml"
+help-header: "&6=== BetterTrialChambers Commands ==="
+help-list: "&e/trial list &7- List all registered chambers"
+help-info: "&e/trial info [chamber] &7- Show plugin info, or details for one chamber"
+help-generate: "&e/trial generate <wand|coords|value|blocks> <name> ... &7- Register a chamber so BTC can manage it"
+help-paste: "&e/trial paste <schematic> &7- Paste a Trial Chamber schematic into the world"
+help-scan: "&e/trial scan <chamber> &7- Re-scan a chamber's vaults, spawners, and pots"
+help-scan-add: "&e/trial scan add <chamber> &7- Grow the chamber's bounds into sections discovery missed"
+help-setexit: "&e/trial setexit <chamber> &7- Set the exit teleport point for a chamber"
+help-snapshot: "&e/trial snapshot <create|update|restore> [chamber] &7- Save, re-save, or roll back a chamber's blocks"
+help-snapshot-bulk: "&e/trial snapshot create all [force] &7- Snapshot every chamber missing one (force = re-do all)"
+help-snapshot-missing: "&e/trial snapshot missing &7- List chambers with no snapshot (clickable [Create])"
+help-reset: "&e/trial reset <chamber> &7- Force a chamber to reset right now"
+help-pause: "&e/trial pause <chamber> &7- Pause a chamber (suspends all activity, preserves data)"
+help-resume: "&e/trial resume <chamber> &7- Resume a paused chamber"
+help-rename: "&e/trial rename <chamber> <name> &7- Set a chamber's display name (shown in announcements)"
+help-delete: "&e/trial delete <chamber> &7- Unregister a chamber"
+help-loot: "&e/trial loot <list|info|set|clear> ... &7- View or override per-chamber loot tables"
+help-mobs: "&e/trial mobs <providers|<chamber> <list|provider|add|remove> ...> &7- Configure custom mob providers per chamber"
+help-vault: "&e/trial vault reset <chamber> <player> [type] &7- Clear a player's vault cooldown"
+help-key: "&e/trial key give <player> <amount> [type] &7- Give trial keys (normal or ominous)"
+help-give: "&e/trial give <preset> [player] [amount] &7- Give a preconfigured trial spawner item"
+help-stats: "&e/trial stats [player] &7- View your stats or another player's"
+help-leaderboard: "&e/trial leaderboard <type> &7- View top players (alias: lb, top)"
+help-menu: "&e/trial menu &7- Open the admin GUI"
+help-dungeon: "&e/trial dungeon <create rooms & generate> &7- Procedural dungeon assembly"
+help-setup: "&e/trial setup &7- Friendly tour of the main settings (opt-in; Enable/Skip/Disable each)"
+help-container: "&e/trial container <list|materialize|reset|clearcopies|tp|edit> <chamber> &7- Manage per-player container loot"
+help-claims: "&e/trial claims scan &7- Find chambers overlapping land-claim plugin claims"
+help-debug: "&e/trial debug schema &7- Print database table columns (diagnostics)"
+help-update: "&e/trial update [check|download|restore|status] &7- Check for and install plugin updates"
+help-reload: "&e/trial reload &7- Reload config.yml, loot.yml, and messages.yml"
 
 # WorldEdit Variable Regions
 wevar-saved: "&aSaved selection as &e{name}&a."
@@ -212,11 +212,11 @@ wevar-deleted: "&aDeleted saved region &e{name}&a."
 wevar-not-found: "&cSaved region &e{name}&c not found."
 wevar-list-header: "&6=== Saved Regions ==="
 wevar-list-item: "&e{name} &7- &f{world} &7(&f{minX},{minY},{minZ}&7 -> &f{maxX},{maxY},{maxZ}&7)"
-wevar-list-empty: "&7No saved regions yet. Use &e/tcp generate value save <name>&7 to save your selection."
+wevar-list-empty: "&7No saved regions yet. Use &e/trial generate value save <name>&7 to save your selection."
 
-# Undo integration (passive hints — TCP never intercepts //undo)
-undo-cleanup-hint: "&7Tip: if &f//undo &7rolled back chamber &e{chamber}&7's blocks, also run &f/tcp delete {chamber} &7to clear the registration."
-chamber-created-rollback-tip: "&7To roll this back: &f//undo &7for the blocks, then &f/tcp delete {chamber} &7to unregister."
+# Undo integration (passive hints — BTC never intercepts //undo)
+undo-cleanup-hint: "&7Tip: if &f//undo &7rolled back chamber &e{chamber}&7's blocks, also run &f/trial delete {chamber} &7to clear the registration."
+chamber-created-rollback-tip: "&7To roll this back: &f//undo &7for the blocks, then &f/trial delete {chamber} &7to unregister."
 
 # Schematic paste confirmation
 paste-loading: "&7Loading schematic dimensions..."
@@ -259,17 +259,17 @@ loot-info-default: "&7(using default)"
 loot-list-header: "&6=== Available Loot Tables ==="
 loot-list-item: "&e- &f{table}"
 
-# /tcp give (v1.3.1+)
-give-usage: "&cUsage: &e/tcp give <preset> [player] [amount]"
+# /trial give (v1.3.1+)
+give-usage: "&cUsage: &e/trial give <preset> [player] [amount]"
 give-available: "&7Available presets: &f{presets}"
-give-no-presets: "&cNo presets defined. Edit &fspawner_presets.yml &cand run &f/tcp reload&c."
+give-no-presets: "&cNo presets defined. Edit &fspawner_presets.yml &cand run &f/trial reload&c."
 give-unknown-preset: "&cUnknown preset: &f{preset}"
 give-bad-amount: "&cInvalid amount: &f{value}"
-give-needs-target-from-console: "&cConsole must specify a target player: &e/tcp give <preset> <player> [amount]"
+give-needs-target-from-console: "&cConsole must specify a target player: &e/trial give <preset> <player> [amount]"
 give-build-failed: "&cFailed to build item for preset &f{preset}&c: {error}"
 give-inventory-full: "&eInventory full — overflow dropped at your feet."
 
-# Pagination (shared by /tcp list, /tcp snapshot missing). The *-active values keep the
+# Pagination (shared by /trial list, /trial snapshot missing). The *-active values keep the
 # clickable <click:run_command:'{command}'> tag — do not remove it when translating.
 pagination-list-item: "{prev} <gray>|</gray> {next}"
 pagination-prev-active: "<click:run_command:'{command}'><green>« Prev</green></click>"
@@ -277,16 +277,16 @@ pagination-prev-disabled: "<dark_gray>« Prev</dark_gray>"
 pagination-next-active: "<click:run_command:'{command}'><green>Next »</green></click>"
 pagination-next-disabled: "<dark_gray>Next »</dark_gray>"
 
-# /tcp list
-list-page-header: "<gold>Chambers <gray>(page <yellow>{page}</yellow>/<yellow>{maxPage}</yellow>, <yellow>{total}</yellow> total) — <i>/tcp list current</i> to locate"
-chamber-list-item-interactive: "<click:copy_to_clipboard:'{chamber}'><hover:show_text:'<gray>Click to copy <yellow>{chamber}'><yellow>{chamber}</yellow></hover></click> <gray>— {world} ({volume} blocks)</gray> <click:run_command:'/tcp menu {chamber}'><hover:show_text:'<gray>Open <yellow>{chamber}</yellow> in the GUI'><aqua>[menu]</aqua></hover></click>"
+# /trial list
+list-page-header: "<gold>Chambers <gray>(page <yellow>{page}</yellow>/<yellow>{maxPage}</yellow>, <yellow>{total}</yellow> total) — <i>/trial list current</i> to locate"
+chamber-list-item-interactive: "<click:copy_to_clipboard:'{chamber}'><hover:show_text:'<gray>Click to copy <yellow>{chamber}'><yellow>{chamber}</yellow></hover></click> <gray>— {world} ({volume} blocks)</gray> <click:run_command:'/trial menu {chamber}'><hover:show_text:'<gray>Open <yellow>{chamber}</yellow> in the GUI'><aqua>[menu]</aqua></hover></click>"
 list-current-inside: "<green>You are inside <yellow>{chamber}</yellow> <gray>(volume {volume})"
 list-current-none: "<gray>No chambers found in this world."
 list-current-nearest: "<gold>Nearest chamber: <yellow>{chamber}</yellow> <gray>~{distance}m at <white>{x} {y} {z}</white> <click:suggest_command:'/tp {x} {y} {z}'><aqua>[/tp]</aqua></click>"
 
-# /tcp snapshot create all / missing
+# /trial snapshot create all / missing
 snapshot-all-none-registered: "<yellow>No chambers are registered yet."
-snapshot-all-covered: "<green>All <yellow>{count}</yellow> registered chambers already have a snapshot. <gray>(use <yellow>/tcp snapshot create all force</yellow> to re-capture them)"
+snapshot-all-covered: "<green>All <yellow>{count}</yellow> registered chambers already have a snapshot. <gray>(use <yellow>/trial snapshot create all force</yellow> to re-capture them)"
 snapshot-all-start: "<gold>Snapshotting <yellow>{count}</yellow> chamber(s) {mode} <gray>— one every 20 ticks; this can take a while…"
 snapshot-all-mode-force: "<gray>(force — re-capturing all)</gray>"
 snapshot-all-mode-missing: "<gray>(missing only)</gray>"
@@ -294,55 +294,55 @@ snapshot-all-progress-list-item: "<gray>… <yellow>{done}</yellow>/<yellow>{tot
 snapshot-all-complete: "<green>Snapshot backfill complete: <yellow>{created}</yellow> created{failed}<green>."
 snapshot-all-failed-part: "<gray>, <red>{failed} failed</red> (see console)"
 snapshot-missing-none: "<green>Every registered chamber has a snapshot. ✔"
-snapshot-missing-page-header: "<gold>Chambers missing a snapshot <gray>(page <yellow>{page}</yellow>/<yellow>{maxPage}</yellow>, <yellow>{total}</yellow> total)</gray> <click:run_command:'/tcp snapshot create all'><hover:show_text:'<gray>Snapshot all of them now (staggered)'><green>[Create all]</green></hover></click>"
-snapshot-missing-list-item: "<gray>• <yellow>{chamber}</yellow> <gray>— {world}</gray> <click:run_command:'/tcp snapshot create {chamber}'><hover:show_text:'<gray>Create snapshot for <yellow>{chamber}'><green>[Create]</green></hover></click>"
-snapshot-missing-list-item-console: "<gray>• <yellow>{chamber}</yellow> <gray>— {world} <dark_gray>(/tcp snapshot create {chamber})"
-snapshot-reminder: "<gold>[TCP] <yellow>{count}</yellow> discovered chamber(s) have no snapshot — <gray>{chambers}</gray> <click:run_command:'/tcp snapshot missing'><hover:show_text:'<gray>List chambers missing a snapshot'><aqua>[list]</aqua></hover></click> <click:run_command:'/tcp snapshot create all'><hover:show_text:'<gray>Snapshot all of them now (staggered)'><green>[create all]</green></hover></click>"
+snapshot-missing-page-header: "<gold>Chambers missing a snapshot <gray>(page <yellow>{page}</yellow>/<yellow>{maxPage}</yellow>, <yellow>{total}</yellow> total)</gray> <click:run_command:'/trial snapshot create all'><hover:show_text:'<gray>Snapshot all of them now (staggered)'><green>[Create all]</green></hover></click>"
+snapshot-missing-list-item: "<gray>• <yellow>{chamber}</yellow> <gray>— {world}</gray> <click:run_command:'/trial snapshot create {chamber}'><hover:show_text:'<gray>Create snapshot for <yellow>{chamber}'><green>[Create]</green></hover></click>"
+snapshot-missing-list-item-console: "<gray>• <yellow>{chamber}</yellow> <gray>— {world} <dark_gray>(/trial snapshot create {chamber})"
+snapshot-reminder: "<gold>[BTC] <yellow>{count}</yellow> discovered chamber(s) have no snapshot — <gray>{chambers}</gray> <click:run_command:'/trial snapshot missing'><hover:show_text:'<gray>List chambers missing a snapshot'><aqua>[list]</aqua></hover></click> <click:run_command:'/trial snapshot create all'><hover:show_text:'<gray>Snapshot all of them now (staggered)'><green>[create all]</green></hover></click>"
 
-# /tcp reset confirmation queue (global.reset-require-confirmation)
+# /trial reset confirmation queue (global.reset-require-confirmation)
 reset-pending-empty: "<gray>No chambers are awaiting reset confirmation."
-reset-pending-page-header: "<gold>Awaiting reset confirmation ({count}): <click:run_command:'/tcp reset confirm all'><green>[confirm all]</green></click>"
-reset-pending-list-item: "<gray>• <yellow>{chamber}</yellow> <click:run_command:'/tcp reset confirm {chamber}'><green>[confirm]</green></click>"
-reset-confirm-usage: "<red>Usage: /tcp reset confirm <chamber|all>"
+reset-pending-page-header: "<gold>Awaiting reset confirmation ({count}): <click:run_command:'/trial reset confirm all'><green>[confirm all]</green></click>"
+reset-pending-list-item: "<gray>• <yellow>{chamber}</yellow> <click:run_command:'/trial reset confirm {chamber}'><green>[confirm]</green></click>"
+reset-confirm-usage: "<red>Usage: /trial reset confirm <chamber|all>"
 reset-confirm-all: "<green>Confirmed <yellow>{count}</yellow> reset(s) — they'll run staggered."
 reset-confirm-all-none: "<gray>No chambers were awaiting confirmation."
 reset-confirmed: "<green>Confirmed reset for <yellow>{chamber}</yellow>."
 reset-confirm-not-pending: "<gray><yellow>{chamber}</yellow> wasn't awaiting confirmation."
-reset-ready-notify: "<gold>[TCP] <yellow>{chamber}</yellow> is ready to reset — <click:run_command:'/tcp reset confirm {chamber}'><green>[confirm]</green></click> <click:run_command:'/tcp reset pending'><aqua>[list all]</aqua></click>"
+reset-ready-notify: "<gold>[BTC] <yellow>{chamber}</yellow> is ready to reset — <click:run_command:'/trial reset confirm {chamber}'><green>[confirm]</green></click> <click:run_command:'/trial reset pending'><aqua>[list all]</aqua></click>"
 
-# /tcp debug
-debug-usage: "<yellow>/tcp debug schema <gray>- Print each database table's actual columns"
+# /trial debug
+debug-usage: "<yellow>/trial debug schema <gray>- Print each database table's actual columns"
 debug-schema-reading: "<gray>Reading database schema…"
-debug-schema-page-header: "<gold>TCP database schema <gray>({type}):"
+debug-schema-page-header: "<gold>BTC database schema <gray>({type}):"
 debug-schema-missing-list-item: "<red>{table}<gray>: (missing table)"
 debug-schema-table-list-item: "{flag}{table}<gray>: {columns}"
 
-# /tcp claims
-claims-usage: "<yellow>/tcp claims scan <gray>- Scan registered chambers for land-claim conflicts"
+# /trial claims
+claims-usage: "<yellow>/trial claims scan <gray>- Scan registered chambers for land-claim conflicts"
 claims-no-integration: "<yellow>No land-claim integration is active. Install Residence, Lands, or GriefPrevention and enable it under <gray>protection.*-integration<yellow> in config.yml."
 claims-scanning: "<gray>Scanning chambers for claim conflicts…"
 claims-conflicts-found: "<red>Found {count} chamber(s) overlapping existing claims — see the console for details."
 claims-no-conflicts: "<green>No claim conflicts found."
 
-# /tcp dungeon
-dungeon-usage: "<gold>/tcp dungeon</gold> <gray>— pos1 | pos2 | capture <id> [roles…] | generate <name> [seed] | list | delete <id> | import <file|folder|zip> [tags…]</gray>"
+# /trial dungeon
+dungeon-usage: "<gold>/trial dungeon</gold> <gray>— pos1 | pos2 | capture <id> [roles…] | generate <name> [seed] | list | delete <id> | import <file|folder|zip> [tags…]</gray>"
 dungeon-pos-set: "<green>Dungeon pos{label} set to <yellow>{x}, {y}, {z}</yellow>."
-dungeon-usage-capture: "<red>Usage: /tcp dungeon capture <id> [roles…]"
+dungeon-usage-capture: "<red>Usage: /trial dungeon capture <id> [roles…]"
 dungeon-need-positions: "<red>Set pos1 and pos2 (same world) first."
 dungeon-capturing: "<gray>Capturing room <yellow>{id}</yellow>…"
 dungeon-captured: "<green>Captured <yellow>{id}</yellow>: {blocks} blocks, {connectors} connector(s), tags={tags}."
 dungeon-capture-failed: "<red>Capture failed: {error}"
-dungeon-usage-generate: "<red>Usage: /tcp dungeon generate <name> [seed]"
+dungeon-usage-generate: "<red>Usage: /trial dungeon generate <name> [seed]"
 dungeon-generating: "<gray>Generating dungeon <yellow>{name}</yellow> (seed {seed})…"
 dungeon-generated: "<green>Dungeon <yellow>{name}</yellow> generated and registered as a chamber."
 dungeon-generate-failed-console: "<red>Generation failed — see console (no templates / start room / required tags?)."
 dungeon-generate-failed: "<red>Generation failed: {error}"
 dungeon-list-empty: "<gray>No room templates captured yet."
 dungeon-list-page-header: "<gold>Room templates:</gold> <yellow>{templates}</yellow>"
-dungeon-usage-delete: "<red>Usage: /tcp dungeon delete <id>"
+dungeon-usage-delete: "<red>Usage: /trial dungeon delete <id>"
 dungeon-deleted: "<green>Deleted room template <yellow>{id}</yellow>."
 dungeon-delete-not-found: "<red>No such room template: {id}"
-dungeon-usage-import: "<red>Usage: /tcp dungeon import <file|folder|zip> [tags…]"
+dungeon-usage-import: "<red>Usage: /trial dungeon import <file|folder|zip> [tags…]"
 dungeon-import-bad-path: "<red>Path must be inside dungeon/import/."
 dungeon-import-not-found: "<red>Not found: dungeon/import/{file} <gray>(drop .nbt files, folders or datapack .zips there)"
 dungeon-importing: "<gray>Importing <yellow>{file}</yellow>…"
@@ -350,34 +350,34 @@ dungeon-import-unsupported: "<red>Unsupported file type '{extension}' — use .n
 dungeon-import-empty: "<red>No structure templates found in {file}."
 dungeon-import-complete: "<green>Imported <yellow>{count}</yellow> room(s), {connectors} connector(s) total. <gray>Rooms without connectors can't be stitched."
 dungeon-import-list-item: "<gray> - <yellow>{id}</yellow>: {blocks} blocks, {connectors} connector(s), tags={tags}"
-dungeon-import-more-list-item: "<gray> … and {count} more (see /tcp dungeon list)"
+dungeon-import-more-list-item: "<gray> … and {count} more (see /trial dungeon list)"
 dungeon-import-note: "<gray>Note: imported rooms are literal — worldgen processor randomizers aren't applied; vertical jigsaws are walls."
 dungeon-import-failed: "<red>Import failed: {error}"
 
-# /tcp container (admin CLI)
-container-usage: "<gold>/tcp container</gold> <gray>— list | materialize | reset | resetone <#> | clearcopies | tp <#> | edit <#> <white><chamber></white></gray>"
-container-usage-action: "<red>Usage: /tcp container {action} <chamber>"
+# /trial container (admin CLI)
+container-usage: "<gold>/trial container</gold> <gray>— list | materialize | reset | resetone <#> | clearcopies | tp <#> | edit <#> <white><chamber></white></gray>"
+container-usage-action: "<red>Usage: /trial container {action} <chamber>"
 container-list-page-header: "<gold>Container loot — <yellow>{chamber}</yellow></gold> <gray>(per-player-loot: {state}<gray>)"
 container-state-on: "<green>on"
 container-state-off: "<red>off"
 container-list-stats: "<gray>Templates: <yellow>{templates}</yellow>  ·  Player copies: <yellow>{copies}</yellow>"
 container-list-item: "<gray> #{index} <white>{x}, {y}, {z}</white> <dark_gray>— <yellow>{items}<gray> item stack(s)"
 container-list-more: "<dark_gray>…and {count} more."
-container-list-empty-hint: "<gray>No templates yet — run <yellow>/tcp container materialize {chamber}</yellow> or open a container in-world."
-container-usage-index: "<red>Usage: /tcp container {action} {chamber} <#>  (index from /tcp container list)"
+container-list-empty-hint: "<gray>No templates yet — run <yellow>/trial container materialize {chamber}</yellow> or open a container in-world."
+container-usage-index: "<red>Usage: /trial container {action} {chamber} <#>  (index from /trial container list)"
 container-no-template: "<red>No template #{index} — there are {count}."
 container-resetone-success: "<green>Reverted container #{index} to vanilla — it rolls fresh loot per player on each open."
 container-resetone-failed: "<red>Couldn't revert container #{index}."
 container-world-not-loaded: "<red>Chamber world isn't loaded."
 container-teleported: "<green>Teleported to template #{index} (<yellow>{x}, {y}, {z}</yellow>)."
 
-# /tcp loot audit
+# /trial loot audit
 loot-audit-clean: "<green>No legacy loot entries found."
 loot-audit-found: "<yellow>{count}</yellow> legacy loot entries:"
 loot-audit-group-list-item: "<gray>{group}"
 loot-audit-entry-list-item: "  <dark_gray>•</dark_gray> <white>{kind}[{index}]</white> <gray>{material}</gray> <dark_gray>—</dark_gray> <yellow>{reason}"
 loot-audit-more-list-item: "<gray>… and {count} more."
-loot-audit-hint: "<gray>Re-add each entry via <click:run_command:'/tcp menu'><aqua>/tcp menu</aqua></click> → Loot to restore full enchantments/NBT."
+loot-audit-hint: "<gray>Re-add each entry via <click:run_command:'/trial menu'><aqua>/trial menu</aqua></click> → Loot to restore full enchantments/NBT."
 
 # Loot deposit chest (bulk add)
 gui-loot-deposit-added: "<green>Added <yellow>{count}</yellow> item(s) to the loot draft — remember to <yellow>Save</yellow>."
@@ -390,35 +390,35 @@ loot-received: "&aYou received: {item}"
 loot-money-received: "&aYou received &e{amount}&a!"
 
 # Command Usage Messages
-usage-scan: "&cUsage: /tcp scan <chamber> &7(or &c/tcp scan add <chamber>&7 to grow bounds into missed sections)"
-usage-setexit: "&cUsage: /tcp setexit <chamber>"
-usage-snapshot: "&cUsage: /tcp snapshot <create|update|restore|missing> [chamber] &7(omit the name to use the chamber you're standing in; &echamber&7 may be &eall&7 to backfill every chamber missing one)"
-usage-delete: "&cUsage: /tcp delete <chamber>"
-usage-pause: "&cUsage: /tcp pause <chamber>"
-usage-resume: "&cUsage: /tcp resume <chamber>"
-usage-rename: "&cUsage: /tcp rename <chamber> <display name>  &7(use 'none' to clear)"
-usage-generate-value-save: "&cUsage: /tcp generate value save <varName>"
-usage-generate-value-delete: "&cUsage: /tcp generate value delete <varName>"
-usage-generate-value: "&cUsage: /tcp generate value <varName> [chamberName]"
-usage-generate-value-extra: "&7Extra: /tcp generate value save|list|delete ..."
-usage-generate-coords: "&cUsage: /tcp generate coords <x1,y1,z1> <x2,y2,z2> [world] <name>"
-usage-generate-coords-legacy: "&7(legacy supported: /tcp generate coords <x1,y1,z1-x2,y2,z2> [world] <name>)"
-usage-generate-wand: "&cUsage: /tcp generate wand <name>"
-usage-generate-blocks: "&cUsage: /tcp generate blocks <amount> [name] [roundingAllowance]"
-usage-generate: "&cUsage: /tcp generate <value|coords|wand|blocks> ..."
-usage-generate-help-value: "&cUsage: /tcp generate value <name>"
-usage-generate-help-or-coords: "&cOr: /tcp generate coords <x1,y1,z1> <x2,y2,z2> [world] <name>"
-usage-generate-help-or-wand: "&cOr: /tcp generate wand <name>"
-usage-generate-help-or-blocks: "&cOr: /tcp generate blocks <amount> [name] [roundingAllowance]"
-usage-vault-reset: "&cUsage: /tcp vault reset <chamber> <player> [normal|ominous]"
-usage-key-give: "&cUsage: /tcp key give <player> <amount> [normal|ominous]"
-usage-key-check: "&cUsage: /tcp key check <player>"
-usage-key: "&cUsage: /tcp key <give|check>"
-usage-reset: "&cUsage: /tcp reset <chamber>"
-usage-loot-set: "&cUsage: /tcp loot set <chamber> <normal|ominous> <table>"
-usage-loot-clear: "&cUsage: /tcp loot clear <chamber> [normal|ominous|all]"
-usage-loot-info: "&cUsage: /tcp loot info <chamber>"
-usage-loot: "&cUsage: /tcp loot <set|clear|info|list|reload>"
+usage-scan: "&cUsage: /trial scan <chamber> &7(or &c/trial scan add <chamber>&7 to grow bounds into missed sections)"
+usage-setexit: "&cUsage: /trial setexit <chamber>"
+usage-snapshot: "&cUsage: /trial snapshot <create|update|restore|missing> [chamber] &7(omit the name to use the chamber you're standing in; &echamber&7 may be &eall&7 to backfill every chamber missing one)"
+usage-delete: "&cUsage: /trial delete <chamber>"
+usage-pause: "&cUsage: /trial pause <chamber>"
+usage-resume: "&cUsage: /trial resume <chamber>"
+usage-rename: "&cUsage: /trial rename <chamber> <display name>  &7(use 'none' to clear)"
+usage-generate-value-save: "&cUsage: /trial generate value save <varName>"
+usage-generate-value-delete: "&cUsage: /trial generate value delete <varName>"
+usage-generate-value: "&cUsage: /trial generate value <varName> [chamberName]"
+usage-generate-value-extra: "&7Extra: /trial generate value save|list|delete ..."
+usage-generate-coords: "&cUsage: /trial generate coords <x1,y1,z1> <x2,y2,z2> [world] <name>"
+usage-generate-coords-legacy: "&7(legacy supported: /trial generate coords <x1,y1,z1-x2,y2,z2> [world] <name>)"
+usage-generate-wand: "&cUsage: /trial generate wand <name>"
+usage-generate-blocks: "&cUsage: /trial generate blocks <amount> [name] [roundingAllowance]"
+usage-generate: "&cUsage: /trial generate <value|coords|wand|blocks> ..."
+usage-generate-help-value: "&cUsage: /trial generate value <name>"
+usage-generate-help-or-coords: "&cOr: /trial generate coords <x1,y1,z1> <x2,y2,z2> [world] <name>"
+usage-generate-help-or-wand: "&cOr: /trial generate wand <name>"
+usage-generate-help-or-blocks: "&cOr: /trial generate blocks <amount> [name] [roundingAllowance]"
+usage-vault-reset: "&cUsage: /trial vault reset <chamber> <player> [normal|ominous]"
+usage-key-give: "&cUsage: /trial key give <player> <amount> [normal|ominous]"
+usage-key-check: "&cUsage: /trial key check <player>"
+usage-key: "&cUsage: /trial key <give|check>"
+usage-reset: "&cUsage: /trial reset <chamber>"
+usage-loot-set: "&cUsage: /trial loot set <chamber> <normal|ominous> <table>"
+usage-loot-clear: "&cUsage: /trial loot clear <chamber> [normal|ominous|all]"
+usage-loot-info: "&cUsage: /trial loot info <chamber>"
+usage-loot: "&cUsage: /trial loot <set|clear|info|list|reload>"
 
 # Command Error Messages
 error-chamber-creation-failed: "&cFailed to create chamber. Check console for errors."
@@ -433,12 +433,12 @@ error-ominous-key-unavailable: "&cOminous Trial Keys are not available in this s
 error-menu-failed: "&cFailed to open menu: {error}"
 error-loot-set-failed: "&cFailed to set loot table. Check console for errors."
 error-no-loot-tables: "&cNo loot tables found in loot.yml"
-error-invalid-coordinates: "&cInvalid coordinates. Usage: /tcp paste <schematic> [x y z]"
+error-invalid-coordinates: "&cInvalid coordinates. Usage: /trial paste <schematic> [x y z]"
 
 # WorldEdit/Schematic Messages
 worldedit-not-available: "&cWorldEdit/FAWE not found - schematic features are disabled"
 schematic-usage: "&eAvailable schematics: {list}"
-schematic-usage-hint: "&eUsage: /tcp paste <schematic> [x y z]"
+schematic-usage-hint: "&eUsage: /trial paste <schematic> [x y z]"
 schematic-not-found: "&cSchematic '{name}' not found."
 schematic-no-schematics: "&cNo schematics available."
 
@@ -447,7 +447,7 @@ generate-rounding-note: "&eNote: Requested {requested} blocks, but minimum viabl
 generate-rounding-info: "&7Rounded up to {volume} blocks (over by {overhead}) to fit minimum dimensions."
 
 # System Messages
-plugin-starting-up: "&eTrialChamberPro is still starting up. Please try again in a moment..."
+plugin-starting-up: "&eBetterTrialChambers is still starting up. Please try again in a moment..."
 
 # Info Display Format
 info-exit-location-set: "&a{x}, {y}, {z}"
@@ -460,7 +460,7 @@ config-reloading: "&eReloading configuration..."
 config-reloaded: "&aConfiguration reloaded!"
 
 # Vault Management GUI Messages
-vault-reset-usage-hint: "&eUse: /tcp vault reset {chamber} <player>"
+vault-reset-usage-hint: "&eUse: /trial vault reset {chamber} <player>"
 vault-reset-all-start: "&eResetting all vault cooldowns for {chamber}..."
 vault-reset-all-complete: "&aReset cooldowns on {count} vaults!"
 vault-reset-single-start: "&eResetting cooldowns for vault #{id}..."
@@ -519,11 +519,11 @@ gui-loot-changes-saved: "&aLoot table changes saved!"
 gui-loot-pool-saved: "&aPool '{pool}' changes saved!"
 
 # GUI Info Messages - Pool Selector
-gui-pool-create-hint: "&eTo add a new pool, edit loot.yml directly and /tcp reload"
+gui-pool-create-hint: "&eTo add a new pool, edit loot.yml directly and /trial reload"
 gui-pool-create-coming-soon: "&7GUI pool creation coming soon!"
 
-# Plugin Info (/tcp info without arguments)
-plugin-info-header: "&6=== TrialChamberPro Plugin Info ==="
+# Plugin Info (/trial info without arguments)
+plugin-info-header: "&6=== BetterTrialChambers Plugin Info ==="
 plugin-info-version: "&eVersion: &f{version}"
 plugin-info-authors: "&eAuthors: &f{authors}"
 plugin-info-database: "&eDatabase: &f{type}"
@@ -557,12 +557,12 @@ gui-mob-remove-missing: "&cMob id &e{id}&c is not in the list."
 gui-mob-removed: "&aRemoved &e{id}&a."
 gui-mob-remove-failed: "&cFailed to remove mob id."
 
-# v1.3.0 — /tcp mobs command
-mobs-usage-root: "&cUsage: /tcp mobs <chamber> <provider|add|remove|list>"
-mobs-usage-providers: "&7       /tcp mobs providers"
-mobs-usage-chamber: "&cUsage: /tcp mobs {chamber} <provider|add|remove|list> [...]"
-mobs-usage-provider: "&cUsage: /tcp mobs {chamber} provider <id|vanilla|none>"
-mobs-usage-addremove: "&cUsage: /tcp mobs {chamber} {action} <normal|ominous> <mobId>"
+# v1.3.0 — /trial mobs command
+mobs-usage-root: "&cUsage: /trial mobs <chamber> <provider|add|remove|list>"
+mobs-usage-providers: "&7       /trial mobs providers"
+mobs-usage-chamber: "&cUsage: /trial mobs {chamber} <provider|add|remove|list> [...]"
+mobs-usage-provider: "&cUsage: /trial mobs {chamber} provider <id|vanilla|none>"
+mobs-usage-addremove: "&cUsage: /trial mobs {chamber} {action} <normal|ominous> <mobId>"
 mobs-providers-header: "&6Registered Trial Mob Providers:"
 mobs-providers-entry: "  &7- &e{id} &8({name}) &7[{status}]"
 mobs-status-available: "&aavailable"
@@ -572,7 +572,7 @@ mobs-list-normal: "&7  Normal mobs:   &f{mobs}"
 mobs-list-ominous: "&7  Ominous mobs: &f{mobs}"
 mobs-list-empty: "(none)"
 mobs-list-falls-back: "(falls back to normal)"
-mobs-provider-unknown: "&cUnknown provider '{provider}'. Use /tcp mobs providers to list."
+mobs-provider-unknown: "&cUnknown provider '{provider}'. Use /trial mobs providers to list."
 mobs-provider-set: "&aProvider set to &e{provider}&a."
 mobs-provider-update-failed: "&cFailed to update provider."
 mobs-bad-wave-type: "&cWave type must be 'normal' or 'ominous'."
@@ -581,7 +581,7 @@ mobs-not-present: "&eMob id '{id}' is not in the {wave} list."
 mobs-added: "&aAdded &e{id} &ato {wave} list for &e{chamber}&a."
 mobs-removed: "&aRemoved &e{id} &afrom {wave} list for &e{chamber}&a."
 mobs-update-failed: "&cFailed to update mob list."
-mobs-vanilla-warning: "&7Note: chamber is still using the vanilla provider. Set one with &e/tcp mobs {chamber} provider <id>&7."
+mobs-vanilla-warning: "&7Note: chamber is still using the vanilla provider. Set one with &e/trial mobs {chamber} provider <id>&7."
 mobs-unknown-action: "&cUnknown action '{action}'. Use provider|add|remove|list."
 
 # =====================================================================
@@ -747,18 +747,18 @@ gui:
     title: "Help & Information"
     header-name: "&a&lHelp & Information"
     header-lore:
-      - "&7Every &f/tcp&7 subcommand at a glance."
+      - "&7Every &f/trial&7 subcommand at a glance."
       - ""
       - "&7Each tile groups related commands."
       - "&eHover any tile to read the details."
     commands-name: "&6&lAll Commands"
     commands-lore:
-      - "&7The plugin's main command is &f/tcp&7."
+      - "&7The plugin's main command is &f/trial&7."
       - ""
-      - "&7Type &f/tcp help &7in chat for the same"
+      - "&7Type &f/trial help &7in chat for the same"
       - "&7list as below, in scrollable form."
       - ""
-      - "&8Aliases: /tcp, /trialchamberpro"
+      - "&8Aliases: /btc, /tcp, /chamber"
     permissions-name: "&b&lPermissions"
     permissions-lore:
       - "&7Admin"
@@ -782,7 +782,7 @@ gui:
       - "&8• &7tcp.discovery.notify &8- &7Auto-discovery alerts"
     about-name: "&d&lAbout"
     about-lore:
-      - "&fTrialChamberPro &7v{version}"
+      - "&fBetterTrialChambers &7v{version}"
       - ""
       - "&7Turns Trial Chambers into renewable,"
       - "&7multiplayer-friendly content with"
@@ -793,37 +793,37 @@ gui:
     chambers-cmd-lore:
       - "&7Browse and manage existing chambers."
       - ""
-      - "&e/tcp list &8- &7List all chambers"
-      - "&e/tcp info [name] &8- &7Plugin or chamber info"
-      - "&e/tcp setexit <name> &8- &7Set exit teleport"
-      - "&e/tcp reset <name> &8- &7Force a reset now"
-      - "&e/tcp delete <name> &8- &7Unregister a chamber"
+      - "&e/trial list &8- &7List all chambers"
+      - "&e/trial info [name] &8- &7Plugin or chamber info"
+      - "&e/trial setexit <name> &8- &7Set exit teleport"
+      - "&e/trial reset <name> &8- &7Force a reset now"
+      - "&e/trial delete <name> &8- &7Unregister a chamber"
     loot-cmd-name: "&6&lLoot"
     loot-cmd-lore:
       - "&7View or override per-chamber loot."
       - ""
-      - "&e/tcp loot list &8- &7List loot tables"
-      - "&e/tcp loot info <chamber> &8- &7Show overrides"
-      - "&e/tcp loot set <chamber> <type> <table>"
+      - "&e/trial loot list &8- &7List loot tables"
+      - "&e/trial loot info <chamber> &8- &7Show overrides"
+      - "&e/trial loot set <chamber> <type> <table>"
       - "&7  Override a chamber's loot table"
-      - "&e/tcp loot clear <chamber> <type>"
+      - "&e/trial loot clear <chamber> <type>"
       - "&7  Clear an override (use default)"
     vault-cmd-name: "&a&lVaults & Keys"
     vault-cmd-lore:
       - "&7Manage vault cooldowns and keys."
       - ""
-      - "&e/tcp vault reset <chamber> <player> [type]"
+      - "&e/trial vault reset <chamber> <player> [type]"
       - "&7  Clear a player's vault cooldown"
       - "&7  type = normal | ominous (default both)"
       - ""
-      - "&e/tcp key give <player> <amount> [type]"
+      - "&e/trial key give <player> <amount> [type]"
       - "&7  Give trial keys"
     stats-cmd-name: "&d&lStats & Leaderboards"
     stats-cmd-lore:
       - "&7View player stats and leaderboards."
       - ""
-      - "&e/tcp stats [player] &8- &7View stats"
-      - "&e/tcp leaderboard <type> &8- &7Top 10"
+      - "&e/trial stats [player] &8- &7View stats"
+      - "&e/trial leaderboard <type> &8- &7Top 10"
       - "&7  Aliases: lb, top"
       - ""
       - "&7Types: &fchambers, normal, ominous, mobs, time"
@@ -831,10 +831,10 @@ gui:
     snapshot-cmd-lore:
       - "&7Save and restore chamber blocks."
       - ""
-      - "&e/tcp snapshot create <chamber>"
+      - "&e/trial snapshot create <chamber>"
       - "&7  Save the current block state"
       - ""
-      - "&e/tcp snapshot restore <chamber>"
+      - "&e/trial snapshot restore <chamber>"
       - "&7  Roll back to the saved state"
       - ""
       - "&8Snapshots are used by automatic resets."
@@ -842,45 +842,45 @@ gui:
     admin-cmd-lore:
       - "&7Plugin maintenance commands."
       - ""
-      - "&e/tcp menu &8- &7Open this admin GUI"
-      - "&e/tcp reload &8- &7Reload all config files"
-      - "&e/tcp scan <chamber> &8- &7Re-scan vaults & spawners"
+      - "&e/trial menu &8- &7Open this admin GUI"
+      - "&e/trial reload &8- &7Reload all config files"
+      - "&e/trial scan <chamber> &8- &7Re-scan vaults & spawners"
     generate-cmd-name: "&e&lCreate / Generate"
     generate-cmd-lore:
-      - "&7Register a new chamber so TCP can manage it."
+      - "&7Register a new chamber so BTC can manage it."
       - ""
-      - "&e/tcp generate wand <name>"
+      - "&e/trial generate wand <name>"
       - "&7  From your WorldEdit selection"
-      - "&e/tcp generate coords <name> <x1 y1 z1> <x2 y2 z2>"
+      - "&e/trial generate coords <name> <x1 y1 z1> <x2 y2 z2>"
       - "&7  From explicit coordinates"
-      - "&e/tcp generate value <name> <savedRegion>"
+      - "&e/trial generate value <name> <savedRegion>"
       - "&7  From a saved WorldEdit region"
-      - "&e/tcp generate blocks <name> <count>"
+      - "&e/trial generate blocks <name> <count>"
       - "&7  Around you, sized by block count"
       - ""
-      - "&e/tcp paste <schematic>"
+      - "&e/trial paste <schematic>"
       - "&7  Paste a Trial Chamber schematic"
     mobs-cmd-name: "&5&lCustom Mobs"
     mobs-cmd-lore:
       - "&7Swap a chamber's spawner mobs for ones"
       - "&7from MythicMobs, EliteMobs, and others."
       - ""
-      - "&e/tcp mobs providers"
+      - "&e/trial mobs providers"
       - "&7  List installed providers + status"
-      - "&e/tcp mobs <chamber> list"
+      - "&e/trial mobs <chamber> list"
       - "&7  Show current setup for a chamber"
-      - "&e/tcp mobs <chamber> provider <id>"
+      - "&e/trial mobs <chamber> provider <id>"
       - "&7  Pick the provider (vanilla, mythicmobs...)"
-      - "&e/tcp mobs <chamber> add <id> [normal|ominous]"
+      - "&e/trial mobs <chamber> add <id> [normal|ominous]"
       - "&7  Add a mob id to the wave pool"
-      - "&e/tcp mobs <chamber> remove <id> [normal|ominous]"
+      - "&e/trial mobs <chamber> remove <id> [normal|ominous]"
       - "&7  Remove an id from the wave pool"
     give-cmd-name: "&3&lSpawner Presets"
     give-cmd-lore:
       - "&7Hand out preconfigured trial spawner items"
       - "&7defined in &fspawner_presets.yml&7."
       - ""
-      - "&e/tcp give <preset> [player] [amount]"
+      - "&e/trial give <preset> [player] [amount]"
       - "&7  Defaults to yourself, amount 1"
       - ""
       - "&8Place the item to drop a configured spawner."
@@ -915,13 +915,13 @@ gui:
     create-lore:
       - "&7To create a new chamber:"
       - ""
-      - "&e/tcp generate wand <name>"
+      - "&e/trial generate wand <name>"
       - "&7  Use WorldEdit selection"
       - ""
-      - "&e/tcp generate coords ..."
+      - "&e/trial generate coords ..."
       - "&7  Use coordinates"
       - ""
-      - "&e/tcp paste <schematic>"
+      - "&e/trial paste <schematic>"
       - "&7  Paste a schematic"
     duration-due-now: "due now"
     empty-name: "&7&lNo Chambers Registered"
@@ -929,9 +929,9 @@ gui:
       - "&7No trial chambers exist yet."
       - ""
       - "&eCreate one with:"
-      - "&f/tcp generate wand <name>"
-      - "&f/tcp generate coords <name> ..."
-      - "&f/tcp paste <schematic>"
+      - "&f/trial generate wand <name>"
+      - "&f/trial generate coords <name> ..."
+      - "&f/trial paste <schematic>"
 
   chambers-overview:
     title: "Trial Chambers Overview"
@@ -949,7 +949,7 @@ gui:
     empty-lore:
       - "&7No trial chambers exist yet."
       - ""
-      - "&eUse /tcp generate to create one."
+      - "&eUse /trial generate to create one."
 
   chamber-detail:
     title: "Chamber: {chamber}"
@@ -1041,7 +1041,7 @@ gui:
       - "&chere, then click again to expand."
       - ""
       - "&8Disappears after one scan. Or use"
-      - "&8/tcp scan add <chamber>."
+      - "&8/trial scan add <chamber>."
     teleport-name: "&b&lTeleport"
     teleport-lore:
       - "&7Teleport to this chamber"
@@ -1226,7 +1226,7 @@ gui:
       - "&7Reset cooldowns for a specific player"
       - ""
       - "&eUse command:"
-      - "&f/tcp vault reset {chamber} <player>"
+      - "&f/trial vault reset {chamber} <player>"
     vault-name-normal: "&a&lVault #{id}"
     vault-name-ominous: "&5&lVault #{id}"
     vault-lore:
@@ -1245,7 +1245,7 @@ gui:
     empty-lore:
       - "&7This chamber has no vault blocks."
       - ""
-      - "&eRun &f/tcp scan {chamber}&e to detect"
+      - "&eRun &f/trial scan {chamber}&e to detect"
       - "&evaults inside the chamber bounds."
 
   custom-mob:
@@ -1285,7 +1285,7 @@ gui:
       - "&cClick to remove"
     overflow-name: "&7+{extra} more"
     overflow-lore:
-      - "&8Use /tcp mobs list to see all entries"
+      - "&8Use /trial mobs list to see all entries"
     empty-name: "&7No mob ids configured"
     empty-lore:
       - "&7Click the &a+ Add&7 button to add"
@@ -1322,14 +1322,14 @@ gui:
       - ""
       - "&e1. Edit loot.yml"
       - "&e2. Add a new table section"
-      - "&e3. Run /tcp reload"
+      - "&e3. Run /trial reload"
     empty-name: "&7&lNo Loot Tables"
     empty-lore:
       - "&7loot.yml has no tables loaded."
       - ""
       - "&eCheck loot.yml for syntax errors"
       - "&e(TAB characters break YAML)."
-      - "&eThen run /tcp reload."
+      - "&eThen run /trial reload."
 
   pool-selector:
     title-chamber-normal: "{chamber}: Select Normal Pool"
@@ -1451,8 +1451,8 @@ gui:
       - "&eto include it as a weighted drop."
 
   main-menu:
-    title: "TrialChamberPro Admin"
-    header-name: "&6&lTrialChamberPro"
+    title: "BetterTrialChambers Admin"
+    header-name: "&6&lBetterTrialChambers"
     header-lore:
       - "&7Version &f{version}"
       - ""
@@ -1613,27 +1613,27 @@ gui:
       - "&7Avg Vaults per Chamber: &f{avg}"
 
 
-# ── /tcp setup — the opt-in settings tour (v1.6.0) ───────────────────────────
+# ── /trial setup — the opt-in settings tour (v1.6.0) ───────────────────────────
 # Step titles + descriptions are mostly plain English (the tour adds structure/colour);
 # inline MiniMessage is used for emphasis (Enabled/Disabled, Recommended) and the one
 # command reference. Each desc line is a complete thought so the Dialog wraps it cleanly.
 # CPU-impact badges and the "Currently" line are added by the renderer, not here.
 setup:
   intro:
-    - "<gold><bold>Welcome to TrialChamberPro setup!</bold>"
+    - "<gold><bold>Welcome to BetterTrialChambers setup!</bold>"
     - "<gray>We'll go through the main settings one at a time. For each one, read what it does, then choose <green>Enable</green>, <gray>Skip</gray>, or <red>Disable</red>. Nothing is forced — you can pause or stop at any point."
   complete:
     - "<green><bold>All done!</bold>"
-    - "<gray>You've been through the main settings. Re-run <yellow>/tcp setup</yellow> anytime, or fine-tune everything in <color:#e8d3a0>config.yml</color>."
-    - "<dark_gray>Tip: a few changes take effect on the next chamber reset or /tcp reload."
-  reminder: "<yellow>New to TrialChamberPro? Take a quick, friendly tour of the main settings — nothing is forced. <click:run_command:'/tcp setup'><hover:show_text:'<gray>Opens the setup tour'><green><bold>[Start /tcp setup]</bold></green></hover></click>"
-  reminder-resume: "<yellow>You started the setup tour but didn't finish. <click:run_command:'/tcp setup continue'><hover:show_text:'<gray>Pick up where you left off'><green><bold>[Resume setup]</bold></green></hover></click>"
-  usage: "<red>Usage: <yellow>/tcp setup [start|continue]"
+    - "<gray>You've been through the main settings. Re-run <yellow>/trial setup</yellow> anytime, or fine-tune everything in <color:#e8d3a0>config.yml</color>."
+    - "<dark_gray>Tip: a few changes take effect on the next chamber reset or /trial reload."
+  reminder: "<yellow>New to BetterTrialChambers? Take a quick, friendly tour of the main settings — nothing is forced. <click:run_command:'/trial setup'><hover:show_text:'<gray>Opens the setup tour'><green><bold>[Start /trial setup]</bold></green></hover></click>"
+  reminder-resume: "<yellow>You started the setup tour but didn't finish. <click:run_command:'/trial setup continue'><hover:show_text:'<gray>Pick up where you left off'><green><bold>[Resume setup]</bold></green></hover></click>"
+  usage: "<red>Usage: <yellow>/trial setup [start|continue]"
   missing-option: "<red>Missing option."
   invalid-step: "<red>Invalid setup step."
   requires-plugin: "<gray>That option needs the <yellow>{plugin}</yellow> plugin, which isn't installed."
-  paused: "<yellow>Setup paused. <click:run_command:'/tcp setup continue'><hover:show_text:'<gray>Pick up where you left off'><gold>[Resume]</gold></hover></click>"
-  stopped: "<gray>Setup stopped. Restart at any time using <click:run_command:'/tcp setup'><hover:show_text:'<gray>Start the tour again'><yellow>/tcp setup</yellow></hover></click>."
+  paused: "<yellow>Setup paused. <click:run_command:'/trial setup continue'><hover:show_text:'<gray>Pick up where you left off'><gold>[Resume]</gold></hover></click>"
+  stopped: "<gray>Setup stopped. Restart at any time using <click:run_command:'/trial setup'><hover:show_text:'<gray>Start the tour again'><yellow>/trial setup</yellow></hover></click>."
   steps:
     discovery:
       title: "Auto-discover Trial Chambers?"
@@ -1655,7 +1655,7 @@ setup:
     reset-confirm:
       title: "Confirm before chambers reset?"
       desc:
-        - "Holds chambers that are due for a reset in a queue and waits for an admin to approve them with;<newline><color:#e8d3a0>/tcp reset confirm</color><newline>Handy if you want a human to OK big resets."
+        - "Holds chambers that are due for a reset in a queue and waits for an admin to approve them with;<newline><color:#e8d3a0>/trial reset confirm</color><newline>Handy if you want a human to OK big resets."
         - "<green>Enabled</green> = resets wait for approval."
         - "<red>Disabled</red> = chambers reset automatically when their timer is up."
     fawe:

@@ -1,16 +1,16 @@
 # Localization
 
-Every user-visible string in TrialChamberPro lives in `plugins/TrialChamberPro/messages.yml` and can be overridden — including the entire admin GUI as of v1.3.0. This page covers how to translate, the key naming conventions, and the placeholder syntax.
+Every user-visible string in BetterTrialChambers lives in `plugins/BetterTrialChambers/messages.yml` and can be overridden — including the entire admin GUI as of v1.3.0. This page covers how to translate, the key naming conventions, and the placeholder syntax.
 
 {% hint style="info" %}
-**TL;DR**: edit `messages.yml`, run `/tcp reload`, and you're done. The plugin never overwrites this file once it exists, so your translations survive plugin updates.
+**TL;DR**: edit `messages.yml`, run `/trial reload`, and you're done. The plugin never overwrites this file once it exists, so your translations survive plugin updates.
 {% endhint %}
 
 ## File location and reload
 
-* **Path:** `plugins/TrialChamberPro/messages.yml`
+* **Path:** `plugins/BetterTrialChambers/messages.yml`
 * **Generated on first run** — copy from the bundled defaults, then never touched again.
-* **Reload after editing:** `/tcp reload` rereads `config.yml`, `loot.yml`, and `messages.yml` together. No restart required.
+* **Reload after editing:** `/trial reload` rereads `config.yml`, `loot.yml`, and `messages.yml` together. No restart required.
 
 ## Top-level structure
 
@@ -29,8 +29,8 @@ gui:
     # ... shared toggle/lore templates ...
 
   main-menu:
-    title: "TrialChamberPro Admin"
-    header-name: "&6&lTrialChamberPro"
+    title: "BetterTrialChambers Admin"
+    header-name: "&6&lBetterTrialChambers"
     header-lore:
       - "&7Version &f{version}"
       - ""
@@ -77,7 +77,7 @@ Some placeholder **values** used to be hardcoded English. The `{type}` label is 
 
 | Key                                                | Default                           | Used in                                                         |
 | -------------------------------------------------- | --------------------------------- | --------------------------------------------------------------- |
-| `vault-type-normal` / `vault-type-ominous`         | `Normal` / `Ominous`              | vault messages (open / locked / reopen) **and** `/tcp key give` |
+| `vault-type-normal` / `vault-type-ominous`         | `Normal` / `Ominous`              | vault messages (open / locked / reopen) **and** `/trial key give` |
 | `wave-type-normal` / `wave-type-ominous`           | `Trial` / `Ominous`               | the "{type} Spawner wave complete!" message                     |
 | `wave-boss-type-normal` / `wave-boss-type-ominous` | `Trial Spawner` / `Ominous Trial` | the spawner-wave boss-bar progress line                         |
 
@@ -122,7 +122,7 @@ Within a section, key suffixes follow a consistent pattern:
 * `empty-name` / `empty-lore` — placeholder when a list/grid view has zero entries
 * `title` — `ChestGui` title
 
-Keys under `gui.*` automatically skip the chat prefix — the GUI doesn't want `[TCP]` prepended to every item name.
+Keys under `gui.*` automatically skip the chat prefix — the GUI doesn't want `[BTC]` prepended to every item name.
 
 ## Shared toggle templates
 
@@ -162,18 +162,18 @@ Translate the templates once, translate per-toggle labels/descs, and the result 
 
 Everything user-visible:
 
-* Chat messages, command output, error messages — as of 1.7.1 this includes every admin command (`/tcp dungeon`, `/tcp container`, `/tcp claims`, `/tcp debug`, the reset-confirmation queue, snapshot listings, `/tcp list`, loot audit) and the shared `pagination-*` Prev/Next line
+* Chat messages, command output, error messages — as of 1.7.1 this includes every admin command (`/trial dungeon`, `/trial container`, `/trial claims`, `/trial debug`, the reset-confirmation queue, snapshot listings, `/trial list`, loot audit) and the shared `pagination-*` Prev/Next line
 * Time durations ("2d 3h 5m", "5m ago") via the `time-*` keys (actually applied since 1.7.1)
 * Boss bar text on trial spawner waves
 * Every name, lore line, and button label in the admin GUI
-* `/tcp help` and `/tcp info` output
+* `/trial help` and `/trial info` output
 * Tab-completer suggestions are not translated (those are internal command tokens, not display text)
 
 Logger output (server console) is intentionally English — those messages are read by server admins and bug reports, not players, and consistency makes triage easier.
 
 ## Reset to defaults
 
-The plugin doesn't ship a `/tcp reset-messages` command. To restore the bundled defaults: rename or delete `messages.yml` and run `/tcp reload` — a fresh copy will be written from the JAR.
+The plugin doesn't ship a `/trial reset-messages` command. To restore the bundled defaults: rename or delete `messages.yml` and run `/trial reload` — a fresh copy will be written from the JAR.
 
 ## Reporting translation issues
 

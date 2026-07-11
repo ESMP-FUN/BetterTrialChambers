@@ -8,7 +8,7 @@ Transform Minecraft's Trial Chambers from single-use dungeons into renewable, mu
 
 Vanilla Trial Chambers weren't designed for multiplayer. The first player takes everything, vaults stay locked forever, and griefers can destroy spawners. On a server with more than one player, chambers become single-use content almost immediately.
 
-TrialChamberPro fixes all of that: every player gets their own loot roll, chambers reset on a schedule, spawners are protected, and progression is tracked. The plugin can find and manage natural chambers automatically — no WorldEdit, no commands per chamber.
+BetterTrialChambers fixes all of that: every player gets their own loot roll, chambers reset on a schedule, spawners are protected, and progression is tracked. The plugin can find and manage natural chambers automatically — no WorldEdit, no commands per chamber.
 
 ***
 
@@ -20,7 +20,7 @@ TrialChamberPro fixes all of that: every player gets their own loot roll, chambe
 * **Statistics & leaderboards** — track vaults opened, mobs killed, chambers completed, time spent.
 * **Custom loot** — multi-pool tables, command rewards, potions, tipped arrows, custom plugin items (Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible), resource-pack items via `custom-model-data`.
 * **Auto-discovery** — opt-in; the plugin finds and registers every natural chamber on its own.
-* **Admin GUI** — `/tcp menu` handles everything. No YAML editing required.
+* **Admin GUI** — `/trial menu` handles everything. No YAML editing required.
 * **Spawner wave tracking** — boss bar shows progress as players fight.
 * **Spectator mode** — dead players can watch teammates finish the chamber.
 * **PlaceholderAPI** — 20+ placeholders for scoreboards, holograms, tab lists.
@@ -41,7 +41,7 @@ TrialChamberPro fixes all of that: every player gets their own loot roll, chambe
 
 [installation.md](getting-started/installation.md) -> Install the JAR and get the server running. Two minutes.
 
-[quick-start.md](getting-started/quick-start.md) -> **Start here.** Run `/tcp setup`, turn on auto-discovery, and TCP manages every natural Trial Chamber for you — no per-chamber work.
+[quick-start.md](getting-started/quick-start.md) -> **Start here.** Run `/trial setup`, turn on auto-discovery, and BTC manages every natural Trial Chamber for you — no per-chamber work.
 
 [basic-configuration.md](getting-started/basic-configuration.md) -> Walk through the config settings most servers actually tweak.
 
@@ -57,19 +57,19 @@ TrialChamberPro fixes all of that: every player gets their own loot roll, chambe
 
 ## Premium add-ons
 
-TrialChamberPro is the free foundation. Two premium modules extend it further:
+BetterTrialChambers is the free foundation. Two premium modules extend it further:
 
-[**TCP-WildSpawners**](https://esmp.fun/) — Place trial spawners anywhere on the survival map, not just inside registered chambers. Players receive spawner items via shop plugins or staff commands, place them wherever they like, and custom-plugin mobs (MythicMobs, EliteMobs, etc.) spawn correctly. Includes configurable mining-and-redeploy (no Silk Touch required), per-spawner holograms, griefing protection, and a full in-game preset editor.
+[**Wild Spawners**](https://esmp.fun/) — Place trial spawners anywhere on the survival map, not just inside registered chambers. Players receive spawner items via shop plugins or staff commands, place them wherever they like, and custom-plugin mobs (MythicMobs, EliteMobs, etc.) spawn correctly. Includes configurable mining-and-redeploy (no Silk Touch required), per-spawner holograms, griefing protection, and a full in-game preset editor.
 
-[**TCP-VaultCrates**](https://esmp.fun/) — Turn any vanilla Vault block into a loot crate. Players open crates with keys earned in-game or purchased in a shop. Supports two-tier crates (normal / ominous), weighted loot pools, per-player and server-wide reset modes, and crate-key drops from TCP-WildSpawners mob kills. Full in-game editor included.
+[**Vault Crates**](https://esmp.fun/) — Turn any vanilla Vault block into a loot crate. Players open crates with keys earned in-game or purchased in a shop. Supports two-tier crates (normal / ominous), weighted loot pools, per-player and server-wide reset modes, and crate-key drops from Wild Spawners mob kills. Full in-game editor included.
 
-Both modules require TrialChamberPro and are available on [Voxel.shop](https://voxel.shop/) and [esmp.fun](https://esmp.fun/) (Stripe + crypto, for regions where Voxel's payment processors don't operate).
+Both modules require BetterTrialChambers and are available on [Voxel.shop](https://voxel.shop/) and [esmp.fun](https://esmp.fun/) (Stripe + crypto, for regions where Voxel's payment processors don't operate).
 
 ***
 
 ## Support
 
-* [**GitHub Issues**](https://github.com/darkstarworks/TrialChamberPro/issues) — bug reports, feature requests
+* [**GitHub Issues**](https://github.com/ESMP-FUN/BetterTrialChambers/issues) — bug reports, feature requests
 * [**Discord**](https://discord.gg/qwYcTpHsNC) — community support, announcements
 * [**Modrinth**](https://modrinth.com/plugin/trialchamberpro) — downloads and release notes
 

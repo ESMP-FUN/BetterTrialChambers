@@ -1,13 +1,16 @@
 <black>.
+<aqua>[2.0.0] <gray>- <white>2026-07-11
+<lime>+ <white>NEW NAME: <green>TrialChamberPro is now <yellow>Better Trial Chambers<green> — same free plugin, clearer name. Your data migrates automatically on first start.
+<lime>+ <white>NEW: <green>Main command is <yellow>/trial<green> (aliases <yellow>/btc<green>, <yellow>/chamber<green>); the old <yellow>/tcp<green> still works. Permissions are now <yellow>btc.*<green> with legacy <yellow>tcp.*<green> aliases; placeholders are <yellow>%btc_*%<green> with <yellow>%tcp_*%<green> kept.
 <aqua>[1.8.1] <gray>- <white>2026-07-10
 <lime>+ <white>NEW: <green>World exclusion — list worlds under <yellow>global.excluded-worlds<green> in config.yml to keep TCP fully inactive there (no auto-discovery, no generation, no wild-spawner boss bars). Handy for a second overworld you want to leave vanilla.
 <lime>+ <white>NEW: <green>Bundled updater upgraded to PluginPulse v0.8.0 — configurable source check order, authenticated private-repo updates, and a Jenkins CI update source.
 <aqua>[1.8.0] <gray>- <white>2026-07-05
-<lime>+ <white>NEW: <green>Built-in updater — <yellow>/tcp update<green> checks Modrinth/GitHub and (opt-in) downloads a checksum-verified jar staged to install on your next restart, with automatic backup and <yellow>/tcp update restore<green> rollback. Configure with the new <yellow>update<green> section in config.yml.
-<lime>+ <white>NEW: <green>Optional no-restart updates — with <yellow>update.allow-hot-reload: true<green>, <yellow>/tcp update apply<green> swaps the new version in live (Paper only, off by default).
+<lime>+ <white>NEW: <green>Built-in updater — <yellow>/trial update<green> checks Modrinth/GitHub and (opt-in) downloads a checksum-verified jar staged to install on your next restart, with automatic backup and <yellow>/trial update restore<green> rollback. Configure with the new <yellow>update<green> section in config.yml.
+<lime>+ <white>NEW: <green>Optional no-restart updates — with <yellow>update.allow-hot-reload: true<green>, <yellow>/trial update apply<green> swaps the new version in live (Paper only, off by default).
 <lime>+ <white>NEW: <green>1.7.3 fix included: spawner-wave counters can no longer stall when a custom-mob provider fails mid-replacement.
 <aqua>[1.7.2] <gray>- <white>2026-07-03
-<lime>+ <white>FIX: <green>Chamber resets no longer erase decorations — signs, player heads, banners, lecterns, jukeboxes, bookshelves and suspicious-block items now survive snapshots and resets (re-run <yellow>/tcp snapshot create<green> on decorated chambers).
+<lime>+ <white>FIX: <green>Chamber resets no longer erase decorations — signs, player heads, banners, lecterns, jukeboxes, bookshelves and suspicious-block items now survive snapshots and resets (re-run <yellow>/trial snapshot create<green> on decorated chambers).
 <lime>+ <white>FIX: <green>Vault keys are consumed from the slot that held them at click time — scrolling your hotbar mid-open can no longer eat the wrong item; key-to-reopen also validates the loot table before taking payment.
 <lime>+ <white>FIX: <green>Logging out or crashing while spectating no longer strands you in spectator mode — your gamemode and position are restored on quit or next join.
 <lime>+ <white>FIX: <green>Statistics increment atomically in the database — no more lost counts on shared-MySQL networks; plus Folia-safe vault loot ejection and chamber-deletion cleanup.

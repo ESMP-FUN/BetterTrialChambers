@@ -1,9 +1,9 @@
 # Commands
 
-All commands start with `/tcp` (short for TrialChamberPro). Most require specific permissions—check the [Permissions](permissions.md) page for details.
+All commands start with `/trial` (short for BetterTrialChambers). Most require specific permissions—check the [Permissions](permissions.md) page for details.
 
 {% hint style="info" %}
-**Aliases:** `/tcp`, `/trialchamberpro`, `/tcpro`
+**Aliases:** `/btc`, `/tcp`, `/bettertrialchambers`
 
 **Tab completion:** Available for all commands! Press `Tab` while typing for suggestions.
 {% endhint %}
@@ -14,44 +14,44 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 
 | Command                                                                          | Description                                                                                                                                      | Permission                      |
 | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- |
-| `/tcp help`                                                                      | Show command list                                                                                                                                | None                            |
-| `/tcp setup`                                                                     | Guided, opt-in tour of the main settings (Dialog UI, or clickable chat on older servers)                                                         | `tcp.admin.setup`               |
-| `/tcp menu [chamber]`                                                            | Open admin GUI (with a chamber name: jump straight to that chamber's detail view)                                                                | `tcp.admin.menu`                |
-| `/tcp generate <value\|coords\|wand\|blocks>`                                    | Register chamber from saved var, coords, WE wand, or by block amount                                                                             | `tcp.admin.generate`            |
-| `/tcp scan <chamber>`                                                            | Scan for vaults/spawners                                                                                                                         | `tcp.admin.scan`                |
-| `/tcp scan add <chamber>`                                                        | Grow a chamber's bounds into sections discovery clipped, then re-scan                                                                            | `tcp.admin.scan`                |
-| `/tcp setexit <chamber>`                                                         | Set exit location                                                                                                                                | `tcp.admin.create`              |
-| `/tcp snapshot <create\|update\|restore> [chamber]`                              | Manage snapshots (omit the name to target the chamber you're standing in)                                                                        | `tcp.admin.snapshot`            |
-| `/tcp snapshot create all [force]`                                               | Backfill snapshots for all chambers missing one (staggered); `force` re-does all                                                                 | `tcp.admin.snapshot`            |
-| `/tcp snapshot missing [page]`                                                   | List chambers with no snapshot, with clickable `[Create]`                                                                                        | `tcp.admin.snapshot`            |
-| `/tcp reset <chamber>`                                                           | Force chamber reset                                                                                                                              | `tcp.admin.reset`               |
-| `/tcp reset pending`                                                             | List chambers awaiting reset confirmation                                                                                                        | `tcp.admin.reset`               |
-| `/tcp reset confirm <chamber\|all>`                                              | Confirm queued reset(s) (when confirmation mode is on)                                                                                           | `tcp.admin.reset`               |
-| `/tcp list [page\|current]`                                                      | List chambers (paginated, interactive: click a name to copy it, click `[menu]` to open its GUI); `current` finds the chamber you're in / nearest | `tcp.admin`                     |
-| `/tcp dungeon <pos1\|pos2\|capture\|generate\|list\|delete>`                     | Procedural dungeon generation from room templates                                                                                                | `tcp.admin.generate`            |
-| `/tcp info [chamber]`                                                            | Show plugin info, or chamber details if specified                                                                                                | `tcp.admin`                     |
-| `/tcp delete <chamber>`                                                          | Delete a chamber                                                                                                                                 | `tcp.admin.create`              |
-| `/tcp loot set <chamber> <normal\|ominous> <table>`                              | Override a chamber's loot table                                                                                                                  | `tcp.admin.loot`                |
-| `/tcp loot clear <chamber> [normal\|ominous\|all]`                               | Remove per-chamber loot override                                                                                                                 | `tcp.admin.loot`                |
-| `/tcp loot audit`                                                                | List pre-1.5.0 loot entries that lost their NBT                                                                                                  | `tcp.admin.loot`                |
-| `/tcp container <list\|materialize\|reset\|resetone\|clearcopies\|tp\|edit> <chamber> [#]` | Manage per-player container loot (list, edit overrides, revert to vanilla)                                                                | `tcp.admin.containers`          |
-| `/tcp mobs providers`                                                            | List registered mob providers and their availability                                                                                             | `tcp.admin.mobs`                |
-| `/tcp mobs <chamber> provider <id\|vanilla\|none>`                               | Set a chamber's custom mob provider                                                                                                              | `tcp.admin.mobs`                |
-| `/tcp mobs <chamber> add normal\|ominous <mobId>`                                | Add a mob id to a chamber's pool                                                                                                                 | `tcp.admin.mobs`                |
-| `/tcp mobs <chamber> remove normal\|ominous <mobId>`                             | Remove a mob id from a chamber's pool                                                                                                            | `tcp.admin.mobs`                |
-| `/tcp mobs <chamber> list`                                                       | Show a chamber's mob provider config                                                                                                             | `tcp.admin.mobs`                |
-| `/tcp give <preset> [player] [amount]`                                           | Give a preconfigured trial-spawner item — see [spawner\_presets.yml](../configuration/spawner-presets.yml.md)                                    | `tcp.give`                      |
-| `/tcp pause <chamber>`                                                           | Pause a chamber (suspends resets, protection, vault interactions)                                                                                | `tcp.admin.pause`               |
-| `/tcp resume <chamber>`                                                          | Resume a paused chamber                                                                                                                          | `tcp.admin.pause`               |
-| `/tcp vault reset <chamber> <player>`                                            | Reset vault cooldowns                                                                                                                            | `tcp.admin.vault`               |
-| `/tcp key give <player> <amount>`                                                | Give trial keys                                                                                                                                  | `tcp.admin.key`                 |
-| `/tcp key check <player>`                                                        | Check player's keys                                                                                                                              | `tcp.admin.key`                 |
-| `/tcp stats [player]`                                                            | View statistics                                                                                                                                  | `tcp.stats` / `tcp.admin.stats` |
-| `/tcp leaderboard <type>`                                                        | View leaderboards                                                                                                                                | `tcp.leaderboard`               |
-| `/tcp claims scan`                                                               | Log chambers that overlap existing land-claim plugin claims                                                                                      | `tcp.admin.reload`              |
-| `/tcp debug schema`                                                              | Print each database table's actual columns (diagnostics)                                                                                         | `tcp.admin.reload`              |
-| `/tcp reload`                                                                    | Reload configuration                                                                                                                             | `tcp.admin.reload`              |
-| `/tcp update [check\|download\|apply\|restore\|status]`                          | Check for and install plugin updates                                                                                                             | `tcp.admin`                     |
+| `/trial help`                                                                      | Show command list                                                                                                                                | None                            |
+| `/trial setup`                                                                     | Guided, opt-in tour of the main settings (Dialog UI, or clickable chat on older servers)                                                         | `tcp.admin.setup`               |
+| `/trial menu [chamber]`                                                            | Open admin GUI (with a chamber name: jump straight to that chamber's detail view)                                                                | `tcp.admin.menu`                |
+| `/trial generate <value\|coords\|wand\|blocks>`                                    | Register chamber from saved var, coords, WE wand, or by block amount                                                                             | `tcp.admin.generate`            |
+| `/trial scan <chamber>`                                                            | Scan for vaults/spawners                                                                                                                         | `tcp.admin.scan`                |
+| `/trial scan add <chamber>`                                                        | Grow a chamber's bounds into sections discovery clipped, then re-scan                                                                            | `tcp.admin.scan`                |
+| `/trial setexit <chamber>`                                                         | Set exit location                                                                                                                                | `tcp.admin.create`              |
+| `/trial snapshot <create\|update\|restore> [chamber]`                              | Manage snapshots (omit the name to target the chamber you're standing in)                                                                        | `tcp.admin.snapshot`            |
+| `/trial snapshot create all [force]`                                               | Backfill snapshots for all chambers missing one (staggered); `force` re-does all                                                                 | `tcp.admin.snapshot`            |
+| `/trial snapshot missing [page]`                                                   | List chambers with no snapshot, with clickable `[Create]`                                                                                        | `tcp.admin.snapshot`            |
+| `/trial reset <chamber>`                                                           | Force chamber reset                                                                                                                              | `tcp.admin.reset`               |
+| `/trial reset pending`                                                             | List chambers awaiting reset confirmation                                                                                                        | `tcp.admin.reset`               |
+| `/trial reset confirm <chamber\|all>`                                              | Confirm queued reset(s) (when confirmation mode is on)                                                                                           | `tcp.admin.reset`               |
+| `/trial list [page\|current]`                                                      | List chambers (paginated, interactive: click a name to copy it, click `[menu]` to open its GUI); `current` finds the chamber you're in / nearest | `tcp.admin`                     |
+| `/trial dungeon <pos1\|pos2\|capture\|generate\|list\|delete>`                     | Procedural dungeon generation from room templates                                                                                                | `tcp.admin.generate`            |
+| `/trial info [chamber]`                                                            | Show plugin info, or chamber details if specified                                                                                                | `tcp.admin`                     |
+| `/trial delete <chamber>`                                                          | Delete a chamber                                                                                                                                 | `tcp.admin.create`              |
+| `/trial loot set <chamber> <normal\|ominous> <table>`                              | Override a chamber's loot table                                                                                                                  | `tcp.admin.loot`                |
+| `/trial loot clear <chamber> [normal\|ominous\|all]`                               | Remove per-chamber loot override                                                                                                                 | `tcp.admin.loot`                |
+| `/trial loot audit`                                                                | List pre-1.5.0 loot entries that lost their NBT                                                                                                  | `tcp.admin.loot`                |
+| `/trial container <list\|materialize\|reset\|resetone\|clearcopies\|tp\|edit> <chamber> [#]` | Manage per-player container loot (list, edit overrides, revert to vanilla)                                                                | `tcp.admin.containers`          |
+| `/trial mobs providers`                                                            | List registered mob providers and their availability                                                                                             | `tcp.admin.mobs`                |
+| `/trial mobs <chamber> provider <id\|vanilla\|none>`                               | Set a chamber's custom mob provider                                                                                                              | `tcp.admin.mobs`                |
+| `/trial mobs <chamber> add normal\|ominous <mobId>`                                | Add a mob id to a chamber's pool                                                                                                                 | `tcp.admin.mobs`                |
+| `/trial mobs <chamber> remove normal\|ominous <mobId>`                             | Remove a mob id from a chamber's pool                                                                                                            | `tcp.admin.mobs`                |
+| `/trial mobs <chamber> list`                                                       | Show a chamber's mob provider config                                                                                                             | `tcp.admin.mobs`                |
+| `/trial give <preset> [player] [amount]`                                           | Give a preconfigured trial-spawner item — see [spawner\_presets.yml](../configuration/spawner-presets.yml.md)                                    | `tcp.give`                      |
+| `/trial pause <chamber>`                                                           | Pause a chamber (suspends resets, protection, vault interactions)                                                                                | `tcp.admin.pause`               |
+| `/trial resume <chamber>`                                                          | Resume a paused chamber                                                                                                                          | `tcp.admin.pause`               |
+| `/trial vault reset <chamber> <player>`                                            | Reset vault cooldowns                                                                                                                            | `tcp.admin.vault`               |
+| `/trial key give <player> <amount>`                                                | Give trial keys                                                                                                                                  | `tcp.admin.key`                 |
+| `/trial key check <player>`                                                        | Check player's keys                                                                                                                              | `tcp.admin.key`                 |
+| `/trial stats [player]`                                                            | View statistics                                                                                                                                  | `tcp.stats` / `tcp.admin.stats` |
+| `/trial leaderboard <type>`                                                        | View leaderboards                                                                                                                                | `tcp.leaderboard`               |
+| `/trial claims scan`                                                               | Log chambers that overlap existing land-claim plugin claims                                                                                      | `tcp.admin.reload`              |
+| `/trial debug schema`                                                              | Print each database table's actual columns (diagnostics)                                                                                         | `tcp.admin.reload`              |
+| `/trial reload`                                                                    | Reload configuration                                                                                                                             | `tcp.admin.reload`              |
+| `/trial update [check\|download\|apply\|restore\|status]`                          | Check for and install plugin updates                                                                                                             | `tcp.admin`                     |
 
 ***
 
@@ -59,14 +59,14 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 
 <details>
 
-<summary><code>/tcp help</code></summary>
+<summary><code>/trial help</code></summary>
 
 Shows a list of all available commands.
 
 **Usage:**
 
 ```
-/tcp help
+/trial help
 ```
 
 **Permission:** None (everyone can use this)
@@ -74,7 +74,7 @@ Shows a list of all available commands.
 **Example:**
 
 ```
-/tcp help
+/trial help
 ```
 
 {% hint style="info" %}
@@ -85,7 +85,7 @@ Only shows commands you have permission to use!
 
 <details>
 
-<summary><code>/tcp setup</code></summary>
+<summary><code>/trial setup</code></summary>
 
 A friendly, **opt-in** tour of the major settings — built for operators who install the plugin and never open a YAML file. It walks the main options **one at a time**, each with a plain-English explanation, its current state, and **Enable / Skip / Disable** buttons (plus **← Prev**, **Pause Setup** and **Stop Setup**). Nothing is forced and no default is changed; you only apply what you choose.
 
@@ -94,8 +94,8 @@ On Paper **1.21.7+** the tour renders in the native **Dialog** UI. On older or n
 **Usage:**
 
 ```
-/tcp setup           # start (or restart) the tour
-/tcp setup continue  # resume a tour you paused
+/trial setup           # start (or restart) the tour
+/trial setup continue  # resume a tour you paused
 ```
 
 **Permission:** `tcp.admin.setup` (OP by default)
@@ -108,22 +108,22 @@ On Paper **1.21.7+** the tour renders in the native **Dialog** UI. On older or n
 * A gentle reminder appears for ops who haven't run setup yet — at most once a week, three times — and stops for good once you've taken the tour.
 
 {% hint style="info" %}
-The reminder can be turned off with `setup.reminder.enabled: false` in `config.yml`. Running the tour is always optional — TCP works fine on its defaults.
+The reminder can be turned off with `setup.reminder.enabled: false` in `config.yml`. Running the tour is always optional — BTC works fine on its defaults.
 {% endhint %}
 
 </details>
 
 <details>
 
-<summary><code>/tcp menu [chamber]</code></summary>
+<summary><code>/trial menu [chamber]</code></summary>
 
-Opens the admin GUI for managing all aspects of TrialChamberPro without command line. With a chamber name _(1.5.7+)_, jumps straight into that chamber's detail view — this is what the `[menu]` button on `/tcp list` lines uses.
+Opens the admin GUI for managing all aspects of BetterTrialChambers without command line. With a chamber name _(1.5.7+)_, jumps straight into that chamber's detail view — this is what the `[menu]` button on `/trial list` lines uses.
 
 **Usage:**
 
 ```
-/tcp menu
-/tcp menu <chamber_name>
+/trial menu
+/trial menu <chamber_name>
 ```
 
 **Permission:** `tcp.admin.menu`
@@ -131,7 +131,7 @@ Opens the admin GUI for managing all aspects of TrialChamberPro without command 
 **Example:**
 
 ```
-/tcp menu
+/trial menu
 ```
 
 **GUI Screens (v1.2.8+):**
@@ -180,20 +180,20 @@ The admin GUI provides 14 different views organized into categories:
 
 <details>
 
-<summary><code>/tcp generate &lt;value|coords|wand|blocks&gt;</code></summary>
+<summary><code>/trial generate &lt;value|coords|wand|blocks&gt;</code></summary>
 
 Registers a chamber using either a saved WorldEdit variable (named region), your current WorldEdit selection, explicit coordinates, or by a desired block amount at your current facing.
 
 **Usage:**
 
 ```
-/tcp generate value save <varName>
-/tcp generate value list
-/tcp generate value delete <varName>
-/tcp generate value <varName> [chamberName]
-/tcp generate coords <x1,y1,z1> <x2,y2,z2> [world] <chamberName>
-/tcp generate wand <chamberName>
-/tcp generate blocks <amount> [chamberName] [roundingAllowance]
+/trial generate value save <varName>
+/trial generate value list
+/trial generate value delete <varName>
+/trial generate value <varName> [chamberName]
+/trial generate coords <x1,y1,z1> <x2,y2,z2> [world] <chamberName>
+/trial generate wand <chamberName>
+/trial generate blocks <amount> [chamberName] [roundingAllowance]
 ```
 
 **Permission:** `tcp.admin.generate`
@@ -219,15 +219,15 @@ Registers a chamber using either a saved WorldEdit variable (named region), your
 
 <details>
 
-<summary><code>/tcp scan &lt;chamber&gt;</code></summary>
+<summary><code>/trial scan &lt;chamber&gt;</code></summary>
 
 Scans a chamber to detect vaults, trial spawners, and decorated pots within its **current bounds**.
 
 **Usage:**
 
 ```
-/tcp scan <chamber_name>
-/tcp scan add <chamber_name>
+/trial scan <chamber_name>
+/trial scan add <chamber_name>
 ```
 
 **Permission:** `tcp.admin.scan`
@@ -240,8 +240,8 @@ Scans a chamber to detect vaults, trial spawners, and decorated pots within its 
 **Examples:**
 
 ```
-/tcp scan MainChamber
-/tcp scan add auto_world_5503_1336
+/trial scan MainChamber
+/trial scan add auto_world_5503_1336
 ```
 
 **What it finds:**
@@ -253,15 +253,15 @@ Scans a chamber to detect vaults, trial spawners, and decorated pots within its 
 **Output example:**
 
 ```
-[TCP] Scanning chamber MainChamber...
-[TCP] Scanning complete! Found 8 vaults, 12 spawners, 24 decorated pots.
+[BTC] Scanning chamber MainChamber...
+[BTC] Scanning complete! Found 8 vaults, 12 spawners, 24 decorated pots.
 ```
 
-**`/tcp scan add` — repair a clipped chamber** _(added in 1.6.3)_
+**`/trial scan add` — repair a clipped chamber** _(added in 1.6.3)_
 
-Auto-discovery floods outward from a vault/spawner. If neighbouring chunks were still loading when the chamber was first detected (or the chamber was big enough to hit the flood's node cap), the bounding box can be **clipped at a chunk boundary** — leaving part of the chamber, and its chests/vaults/spawners, outside the registered region. A plain `/tcp scan` only looks **inside the existing bounds**, so it can't recover the missing part.
+Auto-discovery floods outward from a vault/spawner. If neighbouring chunks were still loading when the chamber was first detected (or the chamber was big enough to hit the flood's node cap), the bounding box can be **clipped at a chunk boundary** — leaving part of the chamber, and its chests/vaults/spawners, outside the registered region. A plain `/trial scan` only looks **inside the existing bounds**, so it can't recover the missing part.
 
-`/tcp scan add <chamber>` re-floods from the chamber's known vaults (now that chunks are loaded), **grows the bounds** to absorb the missed sections, then re-scans and re-snapshots — the same merge auto-discovery uses, just operator-triggered. **Stand inside the chamber** when you run it so the relevant chunks are loaded. New chambers also get one automatic expand pass on discovery (`discovery.expand-on-discover`), and the chamber GUI offers a one-time **Travel & Expand** button that teleports you there first. To reach a wing nobody has visited without travelling, enable `discovery.expand-force-load` (opt-in, Paper-only).
+`/trial scan add <chamber>` re-floods from the chamber's known vaults (now that chunks are loaded), **grows the bounds** to absorb the missed sections, then re-scans and re-snapshots — the same merge auto-discovery uses, just operator-triggered. **Stand inside the chamber** when you run it so the relevant chunks are loaded. New chambers also get one automatic expand pass on discovery (`discovery.expand-on-discover`), and the chamber GUI offers a one-time **Travel & Expand** button that teleports you there first. To reach a wing nobody has visited without travelling, enable `discovery.expand-force-load` (opt-in, Paper-only).
 
 {% hint style="warning" %}
 **Re-scanning overwrites previous data!** If you modified your chamber and re-scan, old vault/spawner data is replaced.
@@ -271,14 +271,14 @@ Auto-discovery floods outward from a vault/spawner. If neighbouring chunks were 
 
 <details>
 
-<summary><code>/tcp setexit &lt;chamber&gt;</code></summary>
+<summary><code>/trial setexit &lt;chamber&gt;</code></summary>
 
 Sets the exit location for a chamber. Players inside when the chamber resets will teleport here.
 
 **Usage:**
 
 ```
-/tcp setexit <chamber_name>
+/trial setexit <chamber_name>
 ```
 
 **Permission:** `tcp.admin.create`
@@ -294,7 +294,7 @@ Sets the exit location for a chamber. Players inside when the chamber resets wil
 **Examples:**
 
 ```
-/tcp setexit MainChamber
+/trial setexit MainChamber
 ```
 
 Stand where you want players to teleport (usually just outside the entrance), then run the command. Your exact position and look direction are saved.
@@ -303,24 +303,24 @@ Stand where you want players to teleport (usually just outside the entrance), th
 
 * Set the exit OUTSIDE the chamber boundaries
 * Face the direction you want players to look when teleported
-* Test it with `/tcp reset <chamber>` to see where players go
+* Test it with `/trial reset <chamber>` to see where players go
 
 </details>
 
 <details>
 
-<summary><code>/tcp snapshot &lt;action&gt; [chamber]</code></summary>
+<summary><code>/trial snapshot &lt;action&gt; [chamber]</code></summary>
 
 Manage chamber snapshots (saved states for resets).
 
 **Usage:**
 
 ```
-/tcp snapshot create [chamber_name]
-/tcp snapshot update [chamber_name]
-/tcp snapshot restore [chamber_name]
-/tcp snapshot create all [force]
-/tcp snapshot missing [page]
+/trial snapshot create [chamber_name]
+/trial snapshot update [chamber_name]
+/trial snapshot restore [chamber_name]
+/trial snapshot create all [force]
+/trial snapshot missing [page]
 ```
 
 The chamber name is **optional on `create` / `update` / `restore`** _(1.5.5+; previously only `update`)_: omit it while standing inside a registered chamber and the command targets that chamber. Handy on servers with many chambers.
@@ -331,13 +331,13 @@ The chamber name is **optional on `create` / `update` / `restore`** _(1.5.5+; pr
 
 If you registered chambers with `global.auto-snapshot-on-register` turned off, they have no snapshot and **can't be reset** until one is captured. These two commands fix a backlog without doing it one-by-one:
 
-* **`/tcp snapshot create all`** captures a snapshot for every registered chamber that's _missing_ one. It runs them **sequentially, waiting 20 ticks after each finishes** before the next — a single capture is one heavy main-thread pass over the whole chamber, so this stagger keeps TPS healthy on a big backlog. Progress is reported every 10 chambers. Add **`force`** (`/tcp snapshot create all force`) to re-capture **all** chambers, including ones that already have a snapshot.
-* **`/tcp snapshot missing`** lists the chambers with no snapshot, 10 per page, each with a clickable **`[Create]`** button (and a **`[Create all]`** header button). This is also where the periodic "chambers have no snapshot" reminder's `[list]` link now points.
+* **`/trial snapshot create all`** captures a snapshot for every registered chamber that's _missing_ one. It runs them **sequentially, waiting 20 ticks after each finishes** before the next — a single capture is one heavy main-thread pass over the whole chamber, so this stagger keeps TPS healthy on a big backlog. Progress is reported every 10 chambers. Add **`force`** (`/trial snapshot create all force`) to re-capture **all** chambers, including ones that already have a snapshot.
+* **`/trial snapshot missing`** lists the chambers with no snapshot, 10 per page, each with a clickable **`[Create]`** button (and a **`[Create all]`** header button). This is also where the periodic "chambers have no snapshot" reminder's `[list]` link now points.
 
 ```
-/tcp snapshot create all          # snapshot the 62 chambers missing one, staggered
-/tcp snapshot create all force     # re-snapshot every chamber
-/tcp snapshot missing 2            # page 2 of the missing list
+/trial snapshot create all          # snapshot the 62 chambers missing one, staggered
+/trial snapshot create all force     # re-snapshot every chamber
+/trial snapshot missing 2            # page 2 of the missing list
 ```
 
 **Actions:**
@@ -349,7 +349,7 @@ Scans the chamber and saves every block to a compressed snapshot file.
 **Example:**
 
 ```
-/tcp snapshot create MainChamber
+/trial snapshot create MainChamber
 ```
 
 **What happens:**
@@ -361,17 +361,17 @@ Scans the chamber and saves every block to a compressed snapshot file.
 **Time:** 5-30 seconds depending on chamber size
 
 {% hint style="success" %}
-**Update snapshots anytime!** Made changes to your chamber? Run `/tcp snapshot create` again to update.
+**Update snapshots anytime!** Made changes to your chamber? Run `/trial snapshot create` again to update.
 {% endhint %}
 
 **`restore` - Restore Snapshot**
 
-Immediately resets the chamber from its snapshot (same as `/tcp reset`).
+Immediately resets the chamber from its snapshot (same as `/trial reset`).
 
 **Example:**
 
 ```
-/tcp snapshot restore MainChamber
+/trial snapshot restore MainChamber
 ```
 
 Useful for testing or forcing manual resets.
@@ -380,23 +380,23 @@ Useful for testing or forcing manual resets.
 
 <details>
 
-<summary><code>/tcp dungeon &lt;pos1|pos2|capture|generate|list|delete|import&gt;</code></summary>
+<summary><code>/trial dungeon &lt;pos1|pos2|capture|generate|list|delete|import&gt;</code></summary>
 
 Assembles chambers on demand from modular room pieces you build yourself. Configure in [dungeon.yml](../configuration/dungeon.yml.md).
 
 **Authoring a room:** build it in WorldEdit with **complete, solid walls**. At each spot a doorway could be, place a `minecraft:jigsaw` block flush in the wall with its **front facing outward** (orientations `north_up` / `east_up` / `south_up` / `west_up`). Don't pre-cut the opening — the generator carves a standard doorway only where two rooms actually join, and leaves unused connectors as walls. Standardise your door size across rooms.
 
 ```
-/tcp dungeon pos1                     # stand at one corner
-/tcp dungeon pos2                     # stand at the opposite corner
-/tcp dungeon capture <id> [roles…]    # save the selection (roles → tags, e.g. entrance / vault / boss)
-/tcp dungeon generate <name> [seed]   # stitch a dungeon at your feet, registered as a chamber
-/tcp dungeon list                     # list saved room templates
-/tcp dungeon delete <id>              # delete a room template
-/tcp dungeon import <file|folder|zip> [tags…]  # v1.7.0: import vanilla .nbt structure templates
+/trial dungeon pos1                     # stand at one corner
+/trial dungeon pos2                     # stand at the opposite corner
+/trial dungeon capture <id> [roles…]    # save the selection (roles → tags, e.g. entrance / vault / boss)
+/trial dungeon generate <name> [seed]   # stitch a dungeon at your feet, registered as a chamber
+/trial dungeon list                     # list saved room templates
+/trial dungeon delete <id>              # delete a room template
+/trial dungeon import <file|folder|zip> [tags…]  # v1.7.0: import vanilla .nbt structure templates
 ```
 
-**Importing (v1.7.0):** drop `.nbt` structure templates — or a whole datapack `.zip` (e.g. a "crazy chambers"-style pack) — into `plugins/TrialChamberPro/dungeon/import/` and import them as rooms; jigsaw blocks become connectors automatically. See [dungeon.yml](../configuration/dungeon.yml.md#importing-datapack-rooms-v170) for details and limits.
+**Importing (v1.7.0):** drop `.nbt` structure templates — or a whole datapack `.zip` (e.g. a "crazy chambers"-style pack) — into `plugins/BetterTrialChambers/dungeon/import/` and import them as rooms; jigsaw blocks become connectors automatically. See [dungeon.yml](../configuration/dungeon.yml.md#importing-datapack-rooms-v170) for details and limits.
 
 Rooms are matched on opposite-facing connectors across all four rotations, placed without overlap, and the result is snapshotted + registered like any other chamber (so resets, loot and protection all apply). `required-tags` in `dungeon.yml` guarantee e.g. one entrance and at least one vault.
 
@@ -404,14 +404,14 @@ Rooms are matched on opposite-facing connectors across all four rotations, place
 
 <details>
 
-<summary><code>/tcp reset &lt;chamber&gt;</code></summary>
+<summary><code>/trial reset &lt;chamber&gt;</code></summary>
 
 Forces an immediate chamber reset.
 
 **Usage:**
 
 ```
-/tcp reset <chamber_name>
+/trial reset <chamber_name>
 ```
 
 **Permission:** `tcp.admin.reset`
@@ -423,8 +423,8 @@ Forces an immediate chamber reset.
 **Examples:**
 
 ```
-/tcp reset MainChamber
-/tcp reset NetherChamber1
+/trial reset MainChamber
+/trial reset NetherChamber1
 ```
 
 **What it does:**
@@ -449,14 +449,14 @@ Forces an immediate chamber reset.
 
 <details>
 
-<summary><code>/tcp list</code></summary>
+<summary><code>/trial list</code></summary>
 
 Lists all registered chambers.
 
 **Usage:**
 
 ```
-/tcp list
+/trial list
 ```
 
 **Permission:** `tcp.admin`
@@ -464,10 +464,10 @@ Lists all registered chambers.
 **Example output:**
 
 ```
-[TCP] === Registered Chambers ===
-[TCP] MainChamber - world (12,847 blocks)
-[TCP] NetherChamber1 - world_nether (8,521 blocks)
-[TCP] OceanChamber - world (15,392 blocks)
+[BTC] === Registered Chambers ===
+[BTC] MainChamber - world (12,847 blocks)
+[BTC] NetherChamber1 - world_nether (8,521 blocks)
+[BTC] OceanChamber - world (15,392 blocks)
 ```
 
 Shows chamber name, world, and total block count.
@@ -476,15 +476,15 @@ Shows chamber name, world, and total block count.
 
 <details>
 
-<summary><code>/tcp info [chamber]</code></summary>
+<summary><code>/trial info [chamber]</code></summary>
 
 Shows plugin information (when used without arguments) or detailed chamber information (when a chamber name is provided).
 
 **Usage:**
 
 ```
-/tcp info
-/tcp info <chamber_name>
+/trial info
+/trial info <chamber_name>
 ```
 
 **Permission:** `tcp.admin`
@@ -496,8 +496,8 @@ Shows plugin information (when used without arguments) or detailed chamber infor
 **Examples:**
 
 ```
-/tcp info
-/tcp info MainChamber
+/trial info
+/trial info MainChamber
 ```
 
 **Plugin Info (no arguments)**
@@ -507,22 +507,22 @@ When used without arguments, shows plugin-wide information:
 **Example output:**
 
 ```
-[TCP] === TrialChamberPro Plugin Info ===
-[TCP] Version: 1.2.22
-[TCP] Authors: DarkStarWorks
-[TCP] Database: SQLITE
-[TCP] Registered Chambers: 5
-[TCP] Platform: Paper/Spigot
-[TCP] --- Integrations ---
-[TCP]   WorldEdit/FAWE: ✓
-[TCP]   WorldGuard: ✗
-[TCP]   PlaceholderAPI: ✓
-[TCP]   Vault: ✗
-[TCP] --- Features ---
-[TCP]   Per-Player Loot: ✓
-[TCP]   Spawner Waves: ✓
-[TCP]   Spectator Mode: ✓
-[TCP]   Statistics: ✓
+[BTC] === BetterTrialChambers Plugin Info ===
+[BTC] Version: 1.2.22
+[BTC] Authors: DarkStarWorks
+[BTC] Database: SQLITE
+[BTC] Registered Chambers: 5
+[BTC] Platform: Paper/Spigot
+[BTC] --- Integrations ---
+[BTC]   WorldEdit/FAWE: ✓
+[BTC]   WorldGuard: ✗
+[BTC]   PlaceholderAPI: ✓
+[BTC]   Vault: ✗
+[BTC] --- Features ---
+[BTC]   Per-Player Loot: ✓
+[BTC]   Spawner Waves: ✓
+[BTC]   Spectator Mode: ✓
+[BTC]   Statistics: ✓
 ```
 
 **Info shown:**
@@ -541,14 +541,14 @@ When used with a chamber name, shows detailed chamber information:
 **Example output:**
 
 ```
-[TCP] === Chamber Info: MainChamber ===
-[TCP] World: world
-[TCP] Bounds: -150,-20,400 to -50,40,500
-[TCP] Volume: 12,847 blocks
-[TCP] Exit: -145, 65, 395
-[TCP] Reset Interval: 48 hours
-[TCP] Last Reset: 2 hours ago
-[TCP] Snapshot: Created
+[BTC] === Chamber Info: MainChamber ===
+[BTC] World: world
+[BTC] Bounds: -150,-20,400 to -50,40,500
+[BTC] Volume: 12,847 blocks
+[BTC] Exit: -145, 65, 395
+[BTC] Reset Interval: 48 hours
+[BTC] Last Reset: 2 hours ago
+[BTC] Snapshot: Created
 ```
 
 **Info shown:**
@@ -565,15 +565,15 @@ When used with a chamber name, shows detailed chamber information:
 
 <details>
 
-<summary><code>/tcp pause &lt;chamber&gt;</code> / <code>/tcp resume &lt;chamber&gt;</code></summary>
+<summary><code>/trial pause &lt;chamber&gt;</code> / <code>/trial resume &lt;chamber&gt;</code></summary>
 
 Pause or resume a registered chamber.
 
 **Usage:**
 
 ```
-/tcp pause <chamber_name>
-/tcp resume <chamber_name>
+/trial pause <chamber_name>
+/trial resume <chamber_name>
 ```
 
 **Permission:** `tcp.admin.pause`
@@ -602,9 +602,9 @@ Pause or resume a registered chamber.
 
 <details id="tcp-container-action-chamber">
 
-<summary><code>/tcp container &lt;action&gt; &lt;chamber&gt; [#]</code></summary>
+<summary><code>/trial container &lt;action&gt; &lt;chamber&gt; [#]</code></summary>
 
-Manage per-player container loot ([`chests.per-player-loot`](../configuration/config.yml.md#per-player-chamber-container-loot)) for a chamber. CLI parity with the chamber GUI's **Container Loot** screen (`/tcp menu <chamber>` → Container Loot). _(Added in 1.5.9; reworked in 1.6.3.)_
+Manage per-player container loot ([`chests.per-player-loot`](../configuration/config.yml.md#per-player-chamber-container-loot)) for a chamber. CLI parity with the chamber GUI's **Container Loot** screen (`/trial menu <chamber>` → Container Loot). _(Added in 1.5.9; reworked in 1.6.3.)_
 
 Untouched containers roll **fresh loot per player** on every open (and again after each reset). Editing a container creates an **override** that all players then receive a copy of; reverting drops the override. There is no in-world editing — use this command or the GUI.
 
@@ -621,24 +621,24 @@ Untouched containers roll **fresh loot per player** on every open (and again aft
 | `tp <chamber> <#>`        | Teleport to a container (index from `list`).                                                                                       |
 
 ```
-/tcp container list MainChamber
-/tcp container materialize MainChamber
-/tcp container edit MainChamber 3
-/tcp container resetone MainChamber 3
+/trial container list MainChamber
+/trial container materialize MainChamber
+/trial container edit MainChamber 3
+/trial container resetone MainChamber 3
 ```
 
 </details>
 
 <details id="tcp-delete-chamber">
 
-<summary><code>/tcp delete &lt;chamber&gt;</code></summary>
+<summary><code>/trial delete &lt;chamber&gt;</code></summary>
 
 Permanently deletes a chamber and all associated data.
 
 **Usage:**
 
 ```
-/tcp delete <chamber_name>
+/trial delete <chamber_name>
 ```
 
 **Permission:** `tcp.admin.create`
@@ -650,8 +650,8 @@ Permanently deletes a chamber and all associated data.
 **Examples:**
 
 ```
-/tcp delete OldChamber
-/tcp delete TestChamber
+/trial delete OldChamber
+/trial delete TestChamber
 ```
 
 {% hint style="danger" %}
@@ -670,14 +670,14 @@ Permanently deletes a chamber and all associated data.
 
 <details>
 
-<summary><code>/tcp vault reset &lt;chamber&gt; &lt;player&gt; [type]</code></summary>
+<summary><code>/trial vault reset &lt;chamber&gt; &lt;player&gt; [type]</code></summary>
 
 Resets a player's vault cooldowns for a specific chamber.
 
 **Usage:**
 
 ```
-/tcp vault reset <chamber_name> <player_name> [normal|ominous]
+/trial vault reset <chamber_name> <player_name> [normal|ominous]
 ```
 
 **Permission:** `tcp.admin.vault`
@@ -691,9 +691,9 @@ Resets a player's vault cooldowns for a specific chamber.
 **Examples:**
 
 ```
-/tcp vault reset MainChamber Steve
-/tcp vault reset MainChamber Alex normal
-/tcp vault reset OceanChamber Bob ominous
+/trial vault reset MainChamber Steve
+/trial vault reset MainChamber Alex normal
+/trial vault reset OceanChamber Bob ominous
 ```
 
 **What it does:**
@@ -721,14 +721,14 @@ Resets a player's vault cooldowns for a specific chamber.
 
 <details>
 
-<summary><code>/tcp key give &lt;player&gt; &lt;amount&gt; [type]</code></summary>
+<summary><code>/trial key give &lt;player&gt; &lt;amount&gt; [type]</code></summary>
 
 Gives trial keys to a player.
 
 **Usage:**
 
 ```
-/tcp key give <player_name> <amount> [normal|ominous]
+/trial key give <player_name> <amount> [normal|ominous]
 ```
 
 **Permission:** `tcp.admin.key`
@@ -742,9 +742,9 @@ Gives trial keys to a player.
 **Examples:**
 
 ```
-/tcp key give Steve 5
-/tcp key give Alex 10 normal
-/tcp key give Bob 3 ominous
+/trial key give Steve 5
+/trial key give Alex 10 normal
+/trial key give Bob 3 ominous
 ```
 
 **Use cases:**
@@ -762,14 +762,14 @@ Gives trial keys to a player.
 
 <details>
 
-<summary><code>/tcp key check &lt;player&gt;</code></summary>
+<summary><code>/trial key check &lt;player&gt;</code></summary>
 
 Checks how many trial keys a player has.
 
 **Usage:**
 
 ```
-/tcp key check <player_name>
+/trial key check <player_name>
 ```
 
 **Permission:** `tcp.admin.key`
@@ -781,13 +781,13 @@ Checks how many trial keys a player has.
 **Examples:**
 
 ```
-/tcp key check Steve
+/trial key check Steve
 ```
 
 **Example output:**
 
 ```
-[TCP] Steve has 5 Normal Key(s) and 2 Ominous Key(s).
+[BTC] Steve has 5 Normal Key(s) and 2 Ominous Key(s).
 ```
 
 Counts ALL keys in the player's inventory (all slots combined).
@@ -796,15 +796,15 @@ Counts ALL keys in the player's inventory (all slots combined).
 
 <details>
 
-<summary><code>/tcp stats [player]</code></summary>
+<summary><code>/trial stats [player]</code></summary>
 
 View player statistics for Trial Chamber activity.
 
 **Usage:**
 
 ```
-/tcp stats
-/tcp stats <player_name>
+/trial stats
+/trial stats <player_name>
 ```
 
 **Permission:**
@@ -819,20 +819,20 @@ View player statistics for Trial Chamber activity.
 **Examples:**
 
 ```
-/tcp stats
-/tcp stats Steve
+/trial stats
+/trial stats Steve
 ```
 
 **Example output:**
 
 ```
-[TCP] === Statistics for Steve ===
-[TCP] Chambers Completed: 12
-[TCP] Normal Vaults Opened: 45
-[TCP] Ominous Vaults Opened: 18
-[TCP] Mobs Killed: 324
-[TCP] Deaths: 7
-[TCP] Time Spent: 5h 32m
+[BTC] === Statistics for Steve ===
+[BTC] Chambers Completed: 12
+[BTC] Normal Vaults Opened: 45
+[BTC] Ominous Vaults Opened: 18
+[BTC] Mobs Killed: 324
+[BTC] Deaths: 7
+[BTC] Time Spent: 5h 32m
 ```
 
 {% hint style="info" %}
@@ -852,16 +852,16 @@ View player statistics for Trial Chamber activity.
 
 <details>
 
-<summary><code>/tcp leaderboard &lt;type&gt;</code></summary>
+<summary><code>/trial leaderboard &lt;type&gt;</code></summary>
 
 View top players for a specific statistic.
 
 **Usage:**
 
 ```
-/tcp leaderboard <type>
-/tcp lb <type>
-/tcp top <type>
+/trial leaderboard <type>
+/trial lb <type>
+/trial top <type>
 ```
 
 **Permission:** `tcp.stats`
@@ -881,20 +881,20 @@ View top players for a specific statistic.
 **Examples:**
 
 ```
-/tcp leaderboard chambers
-/tcp lb normal
-/tcp top time
+/trial leaderboard chambers
+/trial lb normal
+/trial top time
 ```
 
 **Example output:**
 
 ```
-[TCP] === Top Players - Chambers Completed ===
-[TCP] #1 Steve: 47
-[TCP] #2 Alex: 42
-[TCP] #3 Bob: 38
-[TCP] #4 Charlie: 35
-[TCP] #5 Diana: 31
+[BTC] === Top Players - Chambers Completed ===
+[BTC] #1 Steve: 47
+[BTC] #2 Alex: 42
+[BTC] #3 Bob: 38
+[BTC] #4 Charlie: 35
+[BTC] #5 Diana: 31
 ```
 
 **Configuration:**
@@ -910,14 +910,14 @@ View top players for a specific statistic.
 
 <details>
 
-<summary><code>/tcp claims scan</code></summary>
+<summary><code>/trial claims scan</code></summary>
 
 Checks every registered chamber against existing claims from any installed land-claim plugin (**Residence**, **Lands**, **GriefPrevention**) and logs a warning to the console for each overlap. Use it to find chambers that were registered on top of — or had a claim made inside them before — the [claim integrations](../configuration/config.yml.md#residence-integration-lands-integration-griefprevention-integration) existed. _(Added in 1.5.15.)_
 
 **Usage:**
 
 ```
-/tcp claims scan
+/trial claims scan
 ```
 
 **Permission:** `tcp.admin.reload`
@@ -928,7 +928,7 @@ Checks every registered chamber against existing claims from any installed land-
 *   Logs one line per conflict to the **server console**, e.g.:
 
     ```
-    [TCP] Claim conflict: chamber 'arena3' (world 120,-44,310) overlaps GriefPrevention claim(s): Steve
+    [BTC] Claim conflict: chamber 'arena3' (world 120,-44,310) overlaps GriefPrevention claim(s): Steve
     ```
 * Replies in chat with the total number of conflicting chambers (or "No claim conflicts found.").
 
@@ -938,22 +938,22 @@ This also runs automatically on startup unless you set [`protection.claim-confli
 
 1. Note the chamber name, the location, and the claim owner from the log line.
 2. Decide which should win that space:
-   * **Keep the chamber:** remove or resize the claim in the claim plugin (e.g. Residence `/res remove`, Lands `/unclaim`, GriefPrevention claim resize/abandon), then re-run `/tcp claims scan` to confirm it's clear.
-   * **Keep the claim:** [delete the chamber](#tcp-delete-chamber) (`/tcp delete <chamber>`) or move/re-register it elsewhere.
+   * **Keep the chamber:** remove or resize the claim in the claim plugin (e.g. Residence `/res remove`, Lands `/unclaim`, GriefPrevention claim resize/abandon), then re-run `/trial claims scan` to confirm it's clear.
+   * **Keep the claim:** [delete the chamber](#tcp-delete-chamber) (`/trial delete <chamber>`) or move/re-register it elsewhere.
 3. New claims can no longer be made into chambers, so once existing conflicts are cleared they won't reappear (except for players with the relevant `tcp.bypass.*` permission).
 
 </details>
 
 <details>
 
-<summary><code>/tcp reload</code></summary>
+<summary><code>/trial reload</code></summary>
 
 Reloads the plugin configuration without restarting the server.
 
 **Usage:**
 
 ```
-/tcp reload
+/trial reload
 ```
 
 **Permission:** `tcp.admin.reload`
@@ -961,7 +961,7 @@ Reloads the plugin configuration without restarting the server.
 **Example:**
 
 ```
-/tcp reload
+/trial reload
 ```
 
 **What gets reloaded:**
@@ -985,14 +985,14 @@ Reloads the plugin configuration without restarting the server.
 
 <details>
 
-<summary><code>/tcp update</code></summary>
+<summary><code>/trial update</code></summary>
 
-_(Added in 1.8.0.)_ Check for, download, and install TrialChamberPro updates. Updates are looked up on Modrinth (with GitHub Releases as a fallback).
+_(Added in 1.8.0.)_ Check for, download, and install BetterTrialChambers updates. Updates are looked up on Modrinth (with GitHub Releases as a fallback).
 
 **Usage:**
 
 ```
-/tcp update [check|download|apply|ignore <version>|unignore <version>|restore|status]
+/trial update [check|download|apply|ignore <version>|unignore <version>|restore|status]
 ```
 
 **Permission:** `tcp.admin`
@@ -1002,7 +1002,7 @@ _(Added in 1.8.0.)_ Check for, download, and install TrialChamberPro updates. Up
 * `check` (default when no argument is given) — check now and report the result.
 * `status` — show the last known result without making a network call.
 * `download` — download the latest release, verify its checksum, back up the current jar, and stage the new one for install on the **next restart**. Requires `update.mode: download` or `auto-stage`.
-* `apply` — hot-swap a staged update into place **without a restart**. Requires `update.allow-hot-reload: true` (and is refused on Folia or when other plugins depend on TCP). See below.
+* `apply` — hot-swap a staged update into place **without a restart**. Requires `update.allow-hot-reload: true` (and is refused on Folia or when other plugins depend on BTC). See below.
 * `restore` — stage the most recent backup for install on the next restart, rolling back a bad update.
 * `ignore <version>` — stop notifications for a specific version until a newer one is released.
 * `unignore <version>` — undo `ignore` for a version.
@@ -1012,8 +1012,8 @@ _(Added in 1.8.0.)_ Check for, download, and install TrialChamberPro updates. Up
 **Typical restart-based flow:**
 
 ```
-/tcp update check       # see what's available
-/tcp update download    # verify + stage it
+/trial update check       # see what's available
+/trial update download    # verify + stage it
 # restart the server — the new jar installs on boot
 ```
 
@@ -1037,22 +1037,22 @@ _(Added in 1.8.0.)_ Check for, download, and install TrialChamberPro updates. Up
 # (left-click + right-click corners)
 
 # 2. Register chamber
-/tcp generate wand MyChamber
+/trial generate wand MyChamber
 
 # 3. Scan is automatic, but you can re-scan if needed
-/tcp scan MyChamber
+/trial scan MyChamber
 
 # 4. Set exit location (stand outside chamber)
-/tcp setexit MyChamber
+/trial setexit MyChamber
 
 # 5. Snapshot is automatic, but you can update it
-/tcp snapshot create MyChamber
+/trial snapshot create MyChamber
 
 # 6. Check chamber info
-/tcp info MyChamber
+/trial info MyChamber
 
 # 7. Test the reset
-/tcp reset MyChamber
+/trial reset MyChamber
 ```
 
 </details>
@@ -1063,16 +1063,16 @@ _(Added in 1.8.0.)_ Check for, download, and install TrialChamberPro updates. Up
 
 ```bash
 # Player accidentally used all keys
-/tcp key give Steve 5 normal
+/trial key give Steve 5 normal
 
 # Player's vaults stuck on cooldown (bug)
-/tcp vault reset MainChamber Steve
+/trial vault reset MainChamber Steve
 
 # Check player's statistics
-/tcp stats Steve
+/trial stats Steve
 
 # Check player's key inventory
-/tcp key check Steve
+/trial key check Steve
 ```
 
 </details>
@@ -1083,16 +1083,16 @@ _(Added in 1.8.0.)_ Check for, download, and install TrialChamberPro updates. Up
 
 ```bash
 # Give all online players keys for event
-/tcp key give Player1 10
-/tcp key give Player2 10
-/tcp key give Player3 10
+/trial key give Player1 10
+/trial key give Player2 10
+/trial key give Player3 10
 
 # After event, check leaderboards
-/tcp leaderboard chambers
-/tcp leaderboard time
+/trial leaderboard chambers
+/trial leaderboard time
 
 # Reset chamber immediately for next group
-/tcp reset EventChamber
+/trial reset EventChamber
 ```
 
 </details>
@@ -1103,18 +1103,18 @@ _(Added in 1.8.0.)_ Check for, download, and install TrialChamberPro updates. Up
 
 ```bash
 # List all chambers
-/tcp list
+/trial list
 
 # Check each chamber's status
-/tcp info MainChamber
-/tcp info NetherChamber
+/trial info MainChamber
+/trial info NetherChamber
 
 # Update snapshots after building changes
-/tcp snapshot create MainChamber
-/tcp snapshot create NetherChamber
+/trial snapshot create MainChamber
+/trial snapshot create NetherChamber
 
 # Reload config after edits
-/tcp reload
+/trial reload
 ```
 
 </details>
@@ -1128,7 +1128,7 @@ _(Added in 1.8.0.)_ Check for, download, and install TrialChamberPro updates. Up
 {% endhint %}
 
 {% hint style="info" %}
-**Aliases:** All leaderboard commands work with `/tcp lb` and `/tcp top` for quick access.
+**Aliases:** All leaderboard commands work with `/trial lb` and `/trial top` for quick access.
 {% endhint %}
 
 {% hint style="warning" %}
@@ -1136,7 +1136,7 @@ _(Added in 1.8.0.)_ Check for, download, and install TrialChamberPro updates. Up
 {% endhint %}
 
 {% hint style="info" %}
-**Offline player support:** Most commands work with offline players (like `/tcp vault reset`), but `/tcp key give` requires the player to be online.
+**Offline player support:** Most commands work with offline players (like `/trial vault reset`), but `/trial key give` requires the player to be online.
 {% endhint %}
 
 ***
@@ -1176,7 +1176,7 @@ tcp.stats       # Can view own stats
 
 * Check spelling (use tab completion!)
 * Verify you have permission for that command
-* Run `/tcp help` to see available commands
+* Run `/trial help` to see available commands
 
 **"You don't have permission to use this command"**
 
@@ -1185,7 +1185,7 @@ tcp.stats       # Can view own stats
 
 **"Chamber not found"**
 
-* Use `/tcp list` to see all chambers
+* Use `/trial list` to see all chambers
 * Chamber names are case-sensitive
 * Use tab completion to avoid typos
 
@@ -1197,14 +1197,14 @@ tcp.stats       # Can view own stats
 
 **"Player not found or not online"**
 
-* Player must be online for `/tcp key give` and `/tcp key check`
-* For offline players, use `/tcp vault reset` (works offline)
+* Player must be online for `/trial key give` and `/trial key check`
+* For offline players, use `/trial vault reset` (works offline)
 
 **"Snapshot operation failed"**
 
 * Check console for detailed error
 * Ensure disk space is available
-* Verify file permissions on `plugins/TrialChamberPro/snapshots/` folder
+* Verify file permissions on `plugins/BetterTrialChambers/snapshots/` folder
 
 ***
 
