@@ -1,9 +1,9 @@
 # Events
 
-TrialChamberPro fires Bukkit events at the key points in its lifecycle so other plugins can hook in without forking. All events live under `io.github.darkstarworks.trialChamberPro.api.events` and follow the standard Bukkit `Event` / `Cancellable` contracts — register a listener with `@EventHandler` and you're done.
+BetterTrialChambers fires Bukkit events at the key points in its lifecycle so other plugins can hook in without forking. All events live under `com.esmpfun.bettertrialchambers.api.events` and follow the standard Bukkit `Event` / `Cancellable` contracts — register a listener with `@EventHandler` and you're done.
 
 {% hint style="info" %}
-**Threading note**: every TrialChamberPro event reports `isAsynchronous() == !Bukkit.isPrimaryThread()` at construction. On Paper, vault and key-drop events fire from the main/region thread (sync); reset and discovery events fire from coroutine-IO threads (async). On Folia, all of them are dispatched as async events because Folia has no single primary thread. **Listeners that touch the Bukkit API must schedule themselves onto the appropriate region thread, not assume sync delivery.**
+**Threading note**: every BetterTrialChambers event reports `isAsynchronous() == !Bukkit.isPrimaryThread()` at construction. On Paper, vault and key-drop events fire from the main/region thread (sync); reset and discovery events fire from coroutine-IO threads (async). On Folia, all of them are dispatched as async events because Folia has no single primary thread. **Listeners that touch the Bukkit API must schedule themselves onto the appropriate region thread, not assume sync delivery.**
 {% endhint %}
 
 ## Events
@@ -112,7 +112,7 @@ fun onChamberEntered(event: ChamberEnteredEvent) {
 ```
 
 {% hint style="warning" %}
-These events fire from a coroutine off the player's region thread. Don't call Bukkit API directly in the handler — schedule onto the entity's thread first (see example). This is the signal TCP-MythicTrials uses to drive its in-chamber HUD.
+These events fire from a coroutine off the player's region thread. Don't call Bukkit API directly in the handler — schedule onto the entity's thread first (see example). This is the signal Mythic Trials uses to drive its in-chamber HUD.
 {% endhint %}
 
 ### `ChamberDiscoveredEvent` (cancellable)
@@ -214,7 +214,7 @@ class MyTcpListener : Listener {
 }
 ```
 
-If your project pulls in TrialChamberPro as a soft dependency, gate listener registration behind a `pluginManager.getPlugin("TrialChamberPro") != null` check — the API classes won't be on the classpath if TCP isn't installed, so referencing them eagerly will `ClassNotFoundException`.
+If your project pulls in BetterTrialChambers as a soft dependency, gate listener registration behind a `pluginManager.getPlugin("BetterTrialChambers") != null` check — the API classes won't be on the classpath if BTC isn't installed, so referencing them eagerly will `ClassNotFoundException`.
 
 ## Versioning
 

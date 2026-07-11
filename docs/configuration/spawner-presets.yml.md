@@ -2,7 +2,7 @@
 
 **Added in v1.3.1.**
 
-Named templates for `minecraft:trial_spawner` items. Each preset can be handed out via `/tcp give <preset>` to produce a real, placeable trial-spawner block with a custom mob configuration baked in.
+Named templates for `minecraft:trial_spawner` items. Each preset can be handed out via `/trial give <preset>` to produce a real, placeable trial-spawner block with a custom mob configuration baked in.
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
@@ -16,13 +16,13 @@ Named templates for `minecraft:trial_spawner` items. Each preset can be handed o
 
 1. You (or a datapack author) define mob configurations in a Minecraft datapack — see the [Trial Spawner wiki](https://minecraft.wiki/w/Trial_Spawner#Spawner_configuration) for the JSON format.
 2. You list named presets in `spawner_presets.yml`, each pointing at one of those datapack configs.
-3. `/tcp give <preset>` hands the player a `trial_spawner` item with `block_entity_data` baked in. Placing it produces a working spawner with the configured normal/ominous pools, cooldown, and player range.
+3. `/trial give <preset>` hands the player a `trial_spawner` item with `block_entity_data` baked in. Placing it produces a working spawner with the configured normal/ominous pools, cooldown, and player range.
 
-The plugin does **not** generate the datapack for you — that's the part Mojang made data-driven, and it's the admin's job. TCP just packages the deployment side.
+The plugin does **not** generate the datapack for you — that's the part Mojang made data-driven, and it's the admin's job. BTC just packages the deployment side.
 
 <div data-gb-custom-block data-tag="hint" data-style="warning">
 
-**Trial spawners only.** The YAML schema has no `material:` field — every preset always produces a `TRIAL_SPAWNER`. This is deliberate. Custom crate keys and vault crate items are managed by the [TCP-VaultCrates](https://esmp.fun/) premium module, not this file.
+**Trial spawners only.** The YAML schema has no `material:` field — every preset always produces a `TRIAL_SPAWNER`. This is deliberate. Custom crate keys and vault crate items are managed by the [Vault Crates](https://esmp.fun/) premium module, not this file.
 
 </div>
 
@@ -79,7 +79,7 @@ At least one of `normal-config` or `ominous-config` must be set, or the preset i
 
 <div data-gb-custom-block data-tag="hint" data-style="warning">
 
-**`normal-config` and `ominous-config` are resource locations, not inline configs.** They must point at a config defined in a datapack on the server. Inline compound NBT is not supported here. If your datapack isn't installed when a player places the spawner, the spawner will error in the console at activation time — not at `/tcp give`.
+**`normal-config` and `ominous-config` are resource locations, not inline configs.** They must point at a config defined in a datapack on the server. Inline compound NBT is not supported here. If your datapack isn't installed when a player places the spawner, the spawner will error in the console at activation time — not at `/trial give`.
 
 </div>
 
@@ -88,7 +88,7 @@ At least one of `normal-config` or `ominous-config` must be set, or the preset i
 ## Using the command
 
 ```
-/tcp give <preset> [player] [amount]
+/trial give <preset> [player] [amount]
 ```
 
 | Argument | Required? | Default |
@@ -102,9 +102,9 @@ At least one of `normal-config` or `ominous-config` must be set, or the preset i
 **Examples:**
 
 ```
-/tcp give super_zombie                    # gives self 1 spawner
-/tcp give super_zombie Notch              # gives Notch 1 spawner
-/tcp give boss_arena Notch 5              # gives Notch 5 spawners
+/trial give super_zombie                    # gives self 1 spawner
+/trial give super_zombie Notch              # gives Notch 1 spawner
+/trial give boss_arena Notch 5              # gives Notch 5 spawners
 ```
 
 If the player's inventory is full, overflow drops at their feet rather than vanishing.
@@ -116,16 +116,16 @@ If the player's inventory is full, overflow drops at their feet rather than vani
 After editing `spawner_presets.yml`, run:
 
 ```
-/tcp reload
+/trial reload
 ```
 
-The preset map is hot-swapped atomically; in-flight `/tcp give` calls are not affected.
+The preset map is hot-swapped atomically; in-flight `/trial give` calls are not affected.
 
 ---
 
 ## Tips
 
-- **Tab completion** lists every loaded preset id when you press `Tab` after `/tcp give`.
+- **Tab completion** lists every loaded preset id when you press `Tab` after `/trial give`.
 - **Preset ids are case-insensitive** in lookups — `Super_Zombie`, `super_zombie`, and `SUPER_ZOMBIE` all resolve to the same preset.
 - **Datapack authoring** is documented at the [Minecraft Wiki — Trial Spawner page](https://minecraft.wiki/w/Trial_Spawner#Spawner_configuration). The relevant data folder is `data/<namespace>/trial_spawner/<config_name>.json`.
 - **Validate quickly**: copy your `/give` test command into the preset (just the config strings + numbers) and verify the produced item matches the same NBT in F3+H tooltips.
@@ -136,18 +136,18 @@ The preset map is hot-swapped atomically; in-flight `/tcp give` calls are not af
 
 ### Custom Mob Providers do NOT apply to preset-spawned spawners
 
-TrialChamberPro's [Custom Mob Providers](custom-mobs.md) (MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens) only intercept trial-spawner spawns **inside a registered chamber**. Spawners placed from `/tcp give` exist as standalone blocks in the world — they are not tied to a chamber — so the provider intercept does not run on them.
+BetterTrialChambers's [Custom Mob Providers](custom-mobs.md) (MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens) only intercept trial-spawner spawns **inside a registered chamber**. Spawners placed from `/trial give` exist as standalone blocks in the world — they are not tied to a chamber — so the provider intercept does not run on them.
 
 This means:
 
 - A spawner placed from a preset will spawn whatever entity its datapack config specifies (vanilla mob types only — `minecraft:zombie`, `minecraft:skeleton`, etc., heavily customizable via NBT but always vanilla entity ids).
-- You **cannot** spawn MythicMobs / EliteMobs / etc. creatures from a preset-built spawner placed in the wild, because the datapack JSON has no field for non-vanilla entity ids and TCP's provider intercept is chamber-scoped.
+- You **cannot** spawn MythicMobs / EliteMobs / etc. creatures from a preset-built spawner placed in the wild, because the datapack JSON has no field for non-vanilla entity ids and BTC's provider intercept is chamber-scoped.
 
-**If you need custom-plugin mobs to spawn from a preset spawner**, place the spawner inside a registered chamber and configure that chamber's custom mob provider (`/tcp mobs <chamber> provider <id>`). The chamber's provider will then intercept the preset spawner's wave the same way it intercepts vanilla-generated spawners in that chamber.
+**If you need custom-plugin mobs to spawn from a preset spawner**, place the spawner inside a registered chamber and configure that chamber's custom mob provider (`/trial mobs <chamber> provider <id>`). The chamber's provider will then intercept the preset spawner's wave the same way it intercepts vanilla-generated spawners in that chamber.
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
-This is by design for the free tier. If your use case is deploying placeable trial spawners that work with custom-plugin mobs anywhere on a survival map — not confined to a registered chamber — that's exactly what the [TCP-WildSpawners](https://esmp.fun/) premium add-on provides.
+This is by design for the free tier. If your use case is deploying placeable trial spawners that work with custom-plugin mobs anywhere on a survival map — not confined to a registered chamber — that's exactly what the [Wild Spawners](https://esmp.fun/) premium add-on provides.
 
 </div>
 
@@ -156,10 +156,10 @@ This is by design for the free tier. If your use case is deploying placeable tri
 ## Troubleshooting
 
 **Placed a preset spawner outside a chamber and can't mine it back**
-As of v1.4.5, TCP-preset spawners placed outside any registered chamber can be retrieved using a **Silk Touch** tool. Without Silk Touch the break is blocked and a hint message appears. Mining without Silk Touch (no tool requirement) is available for wild-preset spawners managed by [TCP-WildSpawners](https://esmp.fun/).
+As of v1.4.5, BTC-preset spawners placed outside any registered chamber can be retrieved using a **Silk Touch** tool. Without Silk Touch the break is blocked and a hint message appears. Mining without Silk Touch (no tool requirement) is available for wild-preset spawners managed by [Wild Spawners](https://esmp.fun/).
 
-**"Unknown preset" when running `/tcp give`**
-The preset id wasn't loaded. Check the server log on startup or after `/tcp reload` — parse failures and missing-config skips both log a warning.
+**"Unknown preset" when running `/trial give`**
+The preset id wasn't loaded. Check the server log on startup or after `/trial reload` — parse failures and missing-config skips both log a warning.
 
 **Spawner places fine but spawns nothing**
 The datapack referenced by `normal-config` / `ominous-config` isn't installed (or the resource location is mistyped). Check the server console when a player approaches the spawner.
@@ -168,4 +168,4 @@ The datapack referenced by `normal-config` / `ominous-config` isn't installed (o
 The SNBT produced from the preset failed Paper's `ItemFactory` parse. Most likely cause: a stray quote or backslash in `normal-config` / `ominous-config`. Use plain `namespace:config_id` strings.
 
 **File not appearing in plugin folder**
-`spawner_presets.yml` is created on first plugin load. If it's missing, ensure you ran the server with v1.3.1+ at least once and check write permissions on `plugins/TrialChamberPro/`.
+`spawner_presets.yml` is created on first plugin load. If it's missing, ensure you ran the server with v1.3.1+ at least once and check write permissions on `plugins/BetterTrialChambers/`.

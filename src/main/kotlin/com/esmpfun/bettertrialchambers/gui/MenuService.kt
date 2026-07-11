@@ -1,0 +1,566 @@
+package com.esmpfun.bettertrialchambers.gui
+
+import com.esmpfun.bettertrialchambers.BetterTrialChambers
+import com.esmpfun.bettertrialchambers.models.Chamber
+import com.esmpfun.bettertrialchambers.models.LootEditorDraft
+import org.bukkit.entity.Player
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+
+/**
+ * Central service to open and navigate the TCP admin GUI and to preserve
+ * per-player session state so reopening /trial menu restores the last window.
+ *
+ * Overhauled in v1.2.8 to support comprehensive admin interface with:
+ * - Main menu hub
+ * - Paginated chamber list
+ * - Chamber settings and vault management
+ * - Global settings and protection toggles
+ * - Statistics and leaderboards
+ */
+class MenuService(private val plugin: BetterTrialChambers) {
+
+    /**
+     * Session state for a player's GUI navigation.
+     */
+    data class Session(
+        var screen: Screen = Screen.MAIN_MENU,
+        var chamberId: Int? = null,
+        var lootKind: LootKind? = null,
+        var poolName: String? = null,
+        var itemIndex: Int? = null,
+        var isWeighted: Boolean? = null,
+
+        // Pagination
+        var currentPage: Int = 0,
+
+        // Statistics
+        var leaderboardType: String? = null,
+        var targetPlayerUuid: UUID? = null,
+
+        // Loot table direct editing (without chamber context)
+        var lootTableName: String? = null,
+
+        // When true, current LOOT_EDITOR/POOL_SELECT/AMOUNT_EDITOR screens are
+        // editing a global table (use lootTableName) instead of a chamber.
+        var globalLootEdit: Boolean = false,
+
+        // Draft editors per loot kind per chamber per pool
+        val drafts: MutableMap<String, LootEditorDraft> = mutableMapOf()
+    )
+
+    /**
+     * All available screens in the GUI system.
+     */
+    enum class Screen {
+        // Main
+        MAIN_MENU,
+
+        // Chambers
+        CHAMBER_LIST,
+        CHAMBER_DETAIL,
+        CHAMBER_SETTINGS,
+        VAULT_MANAGEMENT,
+        CONTAINER_LOOT,
+
+        // Loot (existing + new)
+        LOOT_TABLE_LIST,
+        POOL_SELECT,
+        LOOT_EDITOR,
+        AMOUNT_EDITOR,
+
+        // Stats
+        STATS_MENU,
+        LEADERBOARD,
+        PLAYER_STATS,
+
+        // Settings (top-level — no intermediate menu since v1.4.x)
+        GLOBAL_SETTINGS,
+        PROTECTION_MENU,
+        CUSTOM_MOB_PROVIDER,
+
+        // Help
+        HELP_MENU
+    }
+
+    enum class LootKind { NORMAL, OMINOUS }
+
+    /**
+     * When a loot editor screen is opened for a global (non-chamber) table, this flag
+     * in the session indicates we should restore via the global flow instead of the
+     * chamber flow. Uses the existing `lootTableName` field as the table name.
+     */
+
+    private val sessions = ConcurrentHashMap<UUID, Session>()
+
+    /** Soft cap to protect against leaks if any code path forgets to [clearSession]. */
+    private val maxSessions: Int = 500
+
+    fun getOrCreateSession(playerId: UUID): Session {
+        if (sessions.size >= maxSessions && !sessions.containsKey(playerId)) {
+            // Evict any one offline player's session to make room. Cheap bound;
+            // normal operation is PlayerQuitEvent -> clearSession keeping the map small.
+            val offline = sessions.keys.firstOrNull { uuid ->
+                plugin.server.getPlayer(uuid)?.isOnline != true
+            }
+            if (offline != null) sessions.remove(offline)
+        }
+        return sessions.computeIfAbsent(playerId) { Session() }
+    }
+
+    /** Drop a player's session (called from [MenuSessionCleanupListener] on quit). */
+    fun clearSession(playerId: UUID) {
+        sessions.remove(playerId)
+    }
+
+    /** Total active sessions. Exposed for diagnostics. */
+    fun sessionCount(): Int = sessions.size
+
+    /**
+     * Opens the GUI for a player, restoring their last viewed screen.
+     */
+    fun openFor(player: Player) {
+        val s = getOrCreateSession(player.uniqueId)
+        when (s.screen) {
+            Screen.MAIN_MENU -> openMainMenu(player)
+            Screen.CHAMBER_LIST -> openChamberList(player, s.currentPage)
+            Screen.CHAMBER_DETAIL -> {
+                val chamber = s.chamberId?.let { plugin.chamberManager.getCachedChamberById(it) }
+                if (chamber != null) openChamberDetail(player, chamber) else openMainMenu(player)
+            }
+            Screen.CHAMBER_SETTINGS -> {
+                val chamber = s.chamberId?.let { plugin.chamberManager.getCachedChamberById(it) }
+                if (chamber != null) openChamberSettings(player, chamber) else openMainMenu(player)
+            }
+            Screen.VAULT_MANAGEMENT -> {
+                val chamber = s.chamberId?.let { plugin.chamberManager.getCachedChamberById(it) }
+                if (chamber != null) openVaultManagement(player, chamber) else openMainMenu(player)
+            }
+            Screen.CONTAINER_LOOT -> {
+                val chamber = s.chamberId?.let { plugin.chamberManager.getCachedChamberById(it) }
+                if (chamber != null) openContainerLoot(player, chamber) else openMainMenu(player)
+            }
+            Screen.LOOT_TABLE_LIST -> openLootTableList(player)
+            Screen.POOL_SELECT -> {
+                if (s.globalLootEdit) {
+                    val t = s.lootTableName
+                    if (t != null) openGlobalPoolSelect(player, t) else openLootTableList(player)
+                } else {
+                    val chamber = s.chamberId?.let { plugin.chamberManager.getCachedChamberById(it) }
+                    val kind = s.lootKind
+                    if (chamber != null && kind != null) openPoolSelect(player, chamber, kind) else openMainMenu(player)
+                }
+            }
+            Screen.LOOT_EDITOR -> {
+                if (s.globalLootEdit) {
+                    val t = s.lootTableName
+                    if (t != null) openGlobalLootEditor(player, t, s.poolName) else openLootTableList(player)
+                } else {
+                    val chamber = s.chamberId?.let { plugin.chamberManager.getCachedChamberById(it) }
+                    val kind = s.lootKind
+                    val poolName = s.poolName
+                    if (chamber != null && kind != null) {
+                        openLootEditor(player, chamber, kind, poolName)
+                    } else {
+                        openMainMenu(player)
+                    }
+                }
+            }
+            Screen.AMOUNT_EDITOR -> {
+                val itemIndex = s.itemIndex
+                val isWeighted = s.isWeighted
+                if (s.globalLootEdit) {
+                    val t = s.lootTableName
+                    if (t != null && itemIndex != null && isWeighted != null) {
+                        openGlobalAmountEditor(player, t, s.poolName, itemIndex, isWeighted)
+                    } else {
+                        openLootTableList(player)
+                    }
+                } else {
+                    val chamber = s.chamberId?.let { plugin.chamberManager.getCachedChamberById(it) }
+                    val kind = s.lootKind
+                    if (chamber != null && kind != null && itemIndex != null && isWeighted != null) {
+                        openAmountEditor(player, chamber, kind, itemIndex, isWeighted)
+                    } else {
+                        openMainMenu(player)
+                    }
+                }
+            }
+            Screen.STATS_MENU -> openStatsMenu(player)
+            Screen.LEADERBOARD -> openLeaderboard(player, s.leaderboardType ?: "vaults")
+            Screen.PLAYER_STATS -> {
+                val targetUuid = s.targetPlayerUuid
+                if (targetUuid != null) openPlayerStats(player, targetUuid) else openStatsMenu(player)
+            }
+            Screen.GLOBAL_SETTINGS -> openGlobalSettings(player)
+            Screen.PROTECTION_MENU -> openProtectionMenu(player)
+            Screen.HELP_MENU -> openHelpMenu(player)
+            Screen.CUSTOM_MOB_PROVIDER -> {
+                val chamber = s.chamberId?.let { plugin.chamberManager.getCachedChamberById(it) }
+                if (chamber != null) openCustomMobProvider(player, chamber) else openMainMenu(player)
+            }
+        }
+    }
+
+    fun openCustomMobProvider(player: Player, chamber: Chamber) {
+        val view = CustomMobProviderView(plugin, this, chamber)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.CUSTOM_MOB_PROVIDER
+            chamberId = chamber.id
+        }
+        view.open(player)
+    }
+
+    // ==================== Main Menu ====================
+
+    fun openMainMenu(player: Player) {
+        val view = MainMenuView(plugin, this)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.MAIN_MENU
+        }
+        view.open(player)
+    }
+
+    // ==================== Chamber Screens ====================
+
+    fun openChamberList(player: Player, page: Int = 0) {
+        // Warm vault counts cache
+        warmVaultCountsCache()
+
+        // v1.5.0 — VcGui pattern.
+        val view = ChamberListView(plugin, this, player, page)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.CHAMBER_LIST
+            currentPage = page
+        }
+        view.open(player)
+    }
+
+    fun openChamberDetail(player: Player, chamber: Chamber) {
+        // v1.5.0 — VcGui pattern.
+        val view = ChamberDetailView(plugin, this, chamber)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.CHAMBER_DETAIL
+            chamberId = chamber.id
+            lootKind = null
+            poolName = null
+        }
+        view.open(player)
+    }
+
+    fun openChamberSettings(player: Player, chamber: Chamber) {
+        val view = ChamberSettingsView(plugin, this, chamber)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.CHAMBER_SETTINGS
+            chamberId = chamber.id
+        }
+        view.open(player)
+    }
+
+    fun openVaultManagement(player: Player, chamber: Chamber) {
+        val view = VaultManagementView(plugin, this, chamber)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.VAULT_MANAGEMENT
+            chamberId = chamber.id
+        }
+        view.open(player)
+    }
+
+    fun openContainerLoot(player: Player, chamber: Chamber, page: Int = 0) {
+        val view = ContainerLootView(plugin, this, chamber, page)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.CONTAINER_LOOT
+            chamberId = chamber.id
+            currentPage = page
+        }
+        view.open(player)
+    }
+
+    // ==================== Loot Screens ====================
+
+    fun openLootTableList(player: Player) {
+        // v1.5.0 — VcGui pattern.
+        val view = LootTableListView(plugin, this)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.LOOT_TABLE_LIST
+            // Leave globalLootEdit state alone — the list itself isn't a loot editor
+            // screen, and the flag governs restoration of editor/pool/amount screens.
+        }
+        view.open(player)
+    }
+
+    fun openPoolSelect(player: Player, chamber: Chamber, kind: LootKind) {
+        // Short-circuit for legacy/missing tables — open the editor directly
+        // (the old IF view returned an empty ChestGui in this case, which the
+        // VcGui rewrite can't do cleanly from super(...)).
+        val tableName = when (kind) {
+            LootKind.NORMAL -> "chamber-${chamber.name.lowercase()}"
+            LootKind.OMINOUS -> "ominous-${chamber.name.lowercase()}"
+        }
+        val table = plugin.lootManager.getTable(tableName)
+        if (table == null || table.isLegacyFormat()) {
+            openLootEditor(player, chamber, kind, null)
+            return
+        }
+        val view = PoolSelectorView(plugin, this, chamber, kind)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.POOL_SELECT
+            chamberId = chamber.id
+            lootKind = kind
+            poolName = null
+            globalLootEdit = false
+        }
+        view.open(player)
+    }
+
+    fun openLootEditor(player: Player, chamber: Chamber, kind: LootKind, poolName: String? = null) {
+        val key = draftKey(chamber.id, kind, poolName)
+        val draft = sessions[player.uniqueId]?.drafts?.get(key)
+        // v1.5.0 — VcGui pattern: construct + open in one step, no separate build/show.
+        val view = LootEditorView(plugin, this, chamber, kind, poolName, existingDraft = draft)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.LOOT_EDITOR
+            chamberId = chamber.id
+            lootKind = kind
+            this.poolName = poolName
+            globalLootEdit = false
+        }
+        view.open(player)
+    }
+
+    fun openAmountEditor(player: Player, chamber: Chamber, kind: LootKind, itemIndex: Int, isWeighted: Boolean) {
+        val session = getOrCreateSession(player.uniqueId)
+        val poolName = session.poolName
+        val key = draftKey(chamber.id, kind, poolName)
+        val draft = session.drafts[key]
+        if (draft == null) {
+            openLootEditor(player, chamber, kind, poolName)
+            return
+        }
+        val view = AmountEditorView(plugin, this, chamber, kind, poolName, itemIndex, isWeighted, draft)
+        session.apply {
+            screen = Screen.AMOUNT_EDITOR
+            chamberId = chamber.id
+            lootKind = kind
+            this.itemIndex = itemIndex
+            this.isWeighted = isWeighted
+            globalLootEdit = false
+        }
+        view.open(player)
+    }
+
+    // ==================== Global (non-chamber) Loot Editing ====================
+
+    fun openGlobalPoolSelect(player: Player, tableName: String) {
+        // Use OMINOUS kind hint for ominous-prefixed tables so any icon heuristics still work;
+        // this value is ignored in global flow.
+        val kindHint = if (tableName.startsWith("ominous", ignoreCase = true)) LootKind.OMINOUS else LootKind.NORMAL
+        // Short-circuit for legacy/missing tables (see openPoolSelect for rationale).
+        val table = plugin.lootManager.getTable(tableName)
+        if (table == null || table.isLegacyFormat()) {
+            openGlobalLootEditor(player, tableName)
+            return
+        }
+        val view = PoolSelectorView(plugin, this, chamber = null, kind = kindHint, globalTableName = tableName)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.POOL_SELECT
+            chamberId = null
+            lootKind = kindHint
+            poolName = null
+            lootTableName = tableName
+            globalLootEdit = true
+        }
+        view.open(player)
+    }
+
+    fun openGlobalLootEditor(player: Player, tableName: String, poolName: String? = null) {
+        val kindHint = if (tableName.startsWith("ominous", ignoreCase = true)) LootKind.OMINOUS else LootKind.NORMAL
+        val key = globalDraftKey(tableName, poolName)
+        val draft = sessions[player.uniqueId]?.drafts?.get(key)
+        // v1.5.0 — VcGui pattern: construct + open in one step.
+        val view = LootEditorView(
+            plugin, this,
+            chamber = null,
+            kind = kindHint,
+            poolName = poolName,
+            existingDraft = draft,
+            globalTableName = tableName
+        )
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.LOOT_EDITOR
+            chamberId = null
+            lootKind = kindHint
+            this.poolName = poolName
+            lootTableName = tableName
+            globalLootEdit = true
+        }
+        view.open(player)
+    }
+
+    fun openGlobalAmountEditor(
+        player: Player,
+        tableName: String,
+        poolName: String?,
+        itemIndex: Int,
+        isWeighted: Boolean
+    ) {
+        val session = getOrCreateSession(player.uniqueId)
+        val key = globalDraftKey(tableName, poolName)
+        val draft = session.drafts[key]
+        if (draft == null) {
+            openGlobalLootEditor(player, tableName, poolName)
+            return
+        }
+        val kindHint = if (tableName.startsWith("ominous", ignoreCase = true)) LootKind.OMINOUS else LootKind.NORMAL
+        val view = AmountEditorView(
+            plugin,
+            this,
+            chamber = null,
+            kind = kindHint,
+            poolName = poolName,
+            itemIndex = itemIndex,
+            isWeighted = isWeighted,
+            draft = draft,
+            globalTableName = tableName
+        )
+        session.apply {
+            screen = Screen.AMOUNT_EDITOR
+            chamberId = null
+            lootKind = kindHint
+            this.poolName = poolName
+            this.itemIndex = itemIndex
+            this.isWeighted = isWeighted
+            lootTableName = tableName
+            globalLootEdit = true
+        }
+        view.open(player)
+    }
+
+    fun saveGlobalDraft(player: Player, tableName: String, poolName: String?, draft: LootEditorDraft) {
+        val key = globalDraftKey(tableName, poolName)
+        getOrCreateSession(player.uniqueId).drafts[key] = draft
+    }
+
+    private fun globalDraftKey(tableName: String, poolName: String? = null): String {
+        return if (poolName != null) "global:${tableName}:${poolName}" else "global:${tableName}"
+    }
+
+    // ==================== Stats Screens ====================
+
+    fun openStatsMenu(player: Player) {
+        val view = StatsMenuView(plugin, this, player)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.STATS_MENU
+        }
+        view.open(player)
+    }
+
+    fun openLeaderboard(player: Player, type: String) {
+        // v1.5.0 — VcGui pattern.
+        val view = LeaderboardView(plugin, this, player, type)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.LEADERBOARD
+            leaderboardType = type
+        }
+        view.open(player)
+    }
+
+    fun openPlayerStats(player: Player, targetUuid: UUID) {
+        val view = PlayerStatsView(plugin, this, targetUuid)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.PLAYER_STATS
+            targetPlayerUuid = targetUuid
+        }
+        view.open(player)
+    }
+
+    // ==================== Settings Screens ====================
+    // SettingsMenuView was removed in v1.4.x; Global Settings, Protection
+    // Settings, Performance Info and Reload Configuration are all reachable
+    // directly from the main menu.
+
+    fun openGlobalSettings(player: Player) {
+        val view = GlobalSettingsView(plugin, this)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.GLOBAL_SETTINGS
+        }
+        view.open(player)
+    }
+
+    fun openProtectionMenu(player: Player) {
+        val view = ProtectionMenuView(plugin, this)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.PROTECTION_MENU
+        }
+        view.open(player)
+    }
+
+    // ==================== Help Screen ====================
+
+    fun openHelpMenu(player: Player) {
+        val view = HelpMenuView(plugin, this)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.HELP_MENU
+        }
+        view.open(player)
+    }
+
+    // ==================== Utility Methods ====================
+
+    fun saveDraft(player: Player, chamber: Chamber, kind: LootKind, poolName: String?, draft: LootEditorDraft) {
+        val key = draftKey(chamber.id, kind, poolName)
+        getOrCreateSession(player.uniqueId).drafts[key] = draft
+    }
+
+    /** Current in-memory draft for a chamber loot screen, or null if none is open. */
+    fun getDraft(player: Player, chamber: Chamber, kind: LootKind, poolName: String?): LootEditorDraft? =
+        sessions[player.uniqueId]?.drafts?.get(draftKey(chamber.id, kind, poolName))
+
+    /** Current in-memory draft for a global loot table, or null if none is open. */
+    fun getGlobalDraft(player: Player, tableName: String, poolName: String?): LootEditorDraft? =
+        sessions[player.uniqueId]?.drafts?.get(globalDraftKey(tableName, poolName))
+
+    /** Opens the bulk loot-deposit chest (drag items in to add them faithfully). */
+    fun openLootDeposit(player: Player, chamber: Chamber?, kind: LootKind, poolName: String?, globalTableName: String?) {
+        // v1.5.0 — VcGui-backed; close handling lives in LootDepositView.handleClose.
+        LootDepositView(plugin, this, chamber, kind, poolName, globalTableName).open(player)
+    }
+
+    private fun draftKey(chamberId: Int, kind: LootKind, poolName: String? = null): String {
+        return if (poolName != null) {
+            "${chamberId}:${kind.name}:${poolName}"
+        } else {
+            "${chamberId}:${kind.name}"
+        }
+    }
+
+    /**
+     * Pre-warms the vault counts cache to prevent DB queries during GUI rendering.
+     */
+    private fun warmVaultCountsCache() {
+        try {
+            val chambers = plugin.chamberManager.getCachedChambers()
+            chambers.forEachIndexed { index, chamber ->
+                plugin.scheduler.runTaskLater(Runnable {
+                    plugin.vaultManager.refreshVaultCountsAsync(chamber.id)
+                }, (index * 1L))
+            }
+        } catch (_: Exception) { /* ignore */ }
+    }
+
+    // ==================== Legacy Compatibility ====================
+
+    /**
+     * Legacy method for backward compatibility.
+     * @deprecated Use openChamberList instead
+     */
+    @Deprecated("Use openChamberList", ReplaceWith("openChamberList(player)"))
+    fun openOverview(player: Player) = openChamberList(player)
+
+    /**
+     * Legacy method for backward compatibility.
+     * @deprecated Use openChamberDetail instead
+     */
+    @Deprecated("Use openChamberDetail", ReplaceWith("openChamberDetail(player, chamber)"))
+    fun openLootKindSelect(player: Player, chamber: Chamber) = openChamberDetail(player, chamber)
+}

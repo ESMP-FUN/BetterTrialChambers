@@ -1,128 +1,280 @@
-name: TrialChamberPro
+name: BetterTrialChambers
 version: ${version}
-main: io.github.darkstarworks.trialChamberPro.TrialChamberPro
+main: com.esmpfun.bettertrialchambers.BetterTrialChambers
 api-version: '26.1'
-prefix: TCP
+prefix: BTC
 load: POSTWORLD
 authors: [ darkstarworks ]
 description: Advanced Trial Chamber management for multiplayer servers with automatic resets, per-player vault loot, and custom rewards
-website: https://github.com/darkstarworks/TrialChamberPro
+website: https://github.com/ESMP-FUN/BetterTrialChambers
 folia-supported: true
 
 softdepend: [Vault, WorldGuard, WorldEdit, PlaceholderAPI, Residence, Lands, GriefPrevention, AdvancedEnchantments, MythicMobs, EliteMobs, Eco, EcoMobs, LevelledMobs, InfernalMobs, Citizens]
 
 commands:
-  tcp:
-    description: Main TrialChamberPro command
+  trial:
+    description: Main Better Trial Chambers command
     usage: /<command> [args]
-    aliases: [trialchamberpro, tcpro, chamber]
+    aliases: [btc, tcp, bettertrialchambers, chamber]
 
 permissions:
-  tcp.admin.*:
+  btc.admin.*:
     description: All admin permissions
     default: op
     children:
-      tcp.admin.scan: true
-      tcp.admin.snapshot: true
-      tcp.admin.reset: true
-      tcp.admin.key: true
-      tcp.admin.vault: true
-      tcp.admin.reload: true
-      tcp.admin.stats: true
-      tcp.admin.generate: true
-      tcp.admin.create: true
-      tcp.admin.menu: true
-      tcp.admin.pause: true
-      tcp.admin.loot: true
-      tcp.admin.containers: true
-      tcp.admin.mobs: true
-      tcp.admin.setup: true
-      tcp.admin: true
-      tcp.give: true
-  tcp.admin:
-    description: General admin access (/tcp list, /tcp info, update notifications)
+      btc.admin.scan: true
+      btc.admin.snapshot: true
+      btc.admin.reset: true
+      btc.admin.key: true
+      btc.admin.vault: true
+      btc.admin.reload: true
+      btc.admin.stats: true
+      btc.admin.generate: true
+      btc.admin.create: true
+      btc.admin.menu: true
+      btc.admin.pause: true
+      btc.admin.loot: true
+      btc.admin.containers: true
+      btc.admin.mobs: true
+      btc.admin.setup: true
+      btc.admin: true
+      btc.give: true
+  btc.admin:
+    description: General admin access (/trial list, /trial info, update notifications)
     default: op
-  tcp.admin.setup:
-    description: Run the /tcp setup settings tour and receive its reminder
+  btc.admin.setup:
+    description: Run the /trial setup settings tour and receive its reminder
     default: op
-  tcp.admin.scan:
+  btc.admin.scan:
     description: Scan for chambers
     default: op
-  tcp.admin.snapshot:
+  btc.admin.snapshot:
     description: Manage snapshots
     default: op
-  tcp.admin.reset:
+  btc.admin.reset:
     description: Force-reset chambers
     default: op
-  tcp.admin.key:
+  btc.admin.key:
     description: Manage trial keys
     default: op
-  tcp.admin.vault:
+  btc.admin.vault:
     description: Manage vaults
     default: op
-  tcp.admin.reload:
+  btc.admin.reload:
     description: Reload configuration
     default: op
-  tcp.admin.stats:
+  btc.admin.stats:
     description: View other player's statistics
     default: op
-  tcp.admin.generate:
+  btc.admin.generate:
     description: Register chambers from coordinates or blocks
     default: op
-  tcp.admin.create:
-    description: Delete chambers and set chamber exit points (/tcp delete, /tcp setexit)
+  btc.admin.create:
+    description: Delete chambers and set chamber exit points (/trial delete, /trial setexit)
     default: op
-  tcp.admin.menu:
+  btc.admin.menu:
     description: Open the admin GUI menu
     default: op
-  tcp.admin.pause:
-    description: Pause or resume chambers via /tcp pause and /tcp resume
+  btc.admin.pause:
+    description: Pause or resume chambers via /trial pause and /trial resume
     default: op
-  tcp.stats:
+  btc.stats:
     description: View own statistics
     default: true
-  tcp.leaderboard:
+  btc.leaderboard:
     description: View leaderboards
     default: true
-  tcp.bypass.cooldown:
+  btc.bypass.cooldown:
     description: Bypass vault cooldowns
     default: op
-  tcp.bypass.protection:
+  btc.bypass.protection:
     description: Bypass chamber protection
     default: op
-  tcp.bypass.droplock:
+  btc.bypass.droplock:
     description: Bypass owner-only pickup restrictions on vault loot and spawner key drops
     default: op
-  tcp.bypass.vaultplace:
+  btc.bypass.vaultplace:
     description: Place VAULT blocks outside registered chambers (crate setup, creative builds)
     default: op
-  tcp.bypass.residence:
+  btc.bypass.residence:
     description: Create or expand Residence claims that overlap a registered Trial Chamber
     default: op
-  tcp.bypass.lands:
+  btc.bypass.lands:
     description: Create or expand Lands claims that overlap a registered Trial Chamber
     default: op
-  tcp.bypass.griefprevention:
+  btc.bypass.griefprevention:
     description: Create or expand GriefPrevention claims that overlap a registered Trial Chamber
     default: op
-  tcp.bypass.entry:
+  btc.bypass.entry:
     description: Enter chambers when entry/teleport restrictions are on (prevent-teleport-into-chamber / prevent-entry-without-permission)
     default: op
-  tcp.admin.loot:
-    description: Manage per-chamber loot tables (/tcp loot set/clear/audit)
+  btc.admin.loot:
+    description: Manage per-chamber loot tables (/trial loot set/clear/audit)
     default: op
-  tcp.admin.containers:
-    description: Edit per-player container loot templates (sneak-click in-world, /tcp container, and the GUI)
+  btc.admin.containers:
+    description: Edit per-player container loot templates (sneak-click in-world, /trial container, and the GUI)
     default: op
-  tcp.admin.mobs:
+  btc.admin.mobs:
     description: Manage per-chamber custom mob provider configuration
     default: op
-  tcp.spectate:
+  btc.spectate:
     description: Use spectator mode after death in chambers
     default: true
-  tcp.give:
-    description: Receive preconfigured trial-spawner items via /tcp give
+  btc.give:
+    description: Receive preconfigured trial-spawner items via /trial give
     default: op
-  tcp.discovery.notify:
+  btc.discovery.notify:
     description: Receive notifications when auto-discovery registers a new chamber
     default: op
+
+  # ==== Legacy permission aliases (pre-2.0 'tcp.*' nodes grant their 'btc.*' counterparts) ====
+  tcp.admin.*:
+    description: Legacy alias of btc.admin.*
+    default: false
+    children:
+      btc.admin.*: true
+  tcp.admin:
+    description: Legacy alias of btc.admin
+    default: false
+    children:
+      btc.admin: true
+  tcp.admin.setup:
+    description: Legacy alias of btc.admin.setup
+    default: false
+    children:
+      btc.admin.setup: true
+  tcp.admin.scan:
+    description: Legacy alias of btc.admin.scan
+    default: false
+    children:
+      btc.admin.scan: true
+  tcp.admin.snapshot:
+    description: Legacy alias of btc.admin.snapshot
+    default: false
+    children:
+      btc.admin.snapshot: true
+  tcp.admin.reset:
+    description: Legacy alias of btc.admin.reset
+    default: false
+    children:
+      btc.admin.reset: true
+  tcp.admin.key:
+    description: Legacy alias of btc.admin.key
+    default: false
+    children:
+      btc.admin.key: true
+  tcp.admin.vault:
+    description: Legacy alias of btc.admin.vault
+    default: false
+    children:
+      btc.admin.vault: true
+  tcp.admin.reload:
+    description: Legacy alias of btc.admin.reload
+    default: false
+    children:
+      btc.admin.reload: true
+  tcp.admin.stats:
+    description: Legacy alias of btc.admin.stats
+    default: false
+    children:
+      btc.admin.stats: true
+  tcp.admin.generate:
+    description: Legacy alias of btc.admin.generate
+    default: false
+    children:
+      btc.admin.generate: true
+  tcp.admin.create:
+    description: Legacy alias of btc.admin.create
+    default: false
+    children:
+      btc.admin.create: true
+  tcp.admin.menu:
+    description: Legacy alias of btc.admin.menu
+    default: false
+    children:
+      btc.admin.menu: true
+  tcp.admin.pause:
+    description: Legacy alias of btc.admin.pause
+    default: false
+    children:
+      btc.admin.pause: true
+  tcp.stats:
+    description: Legacy alias of btc.stats
+    default: false
+    children:
+      btc.stats: true
+  tcp.leaderboard:
+    description: Legacy alias of btc.leaderboard
+    default: false
+    children:
+      btc.leaderboard: true
+  tcp.bypass.cooldown:
+    description: Legacy alias of btc.bypass.cooldown
+    default: false
+    children:
+      btc.bypass.cooldown: true
+  tcp.bypass.protection:
+    description: Legacy alias of btc.bypass.protection
+    default: false
+    children:
+      btc.bypass.protection: true
+  tcp.bypass.droplock:
+    description: Legacy alias of btc.bypass.droplock
+    default: false
+    children:
+      btc.bypass.droplock: true
+  tcp.bypass.vaultplace:
+    description: Legacy alias of btc.bypass.vaultplace
+    default: false
+    children:
+      btc.bypass.vaultplace: true
+  tcp.bypass.residence:
+    description: Legacy alias of btc.bypass.residence
+    default: false
+    children:
+      btc.bypass.residence: true
+  tcp.bypass.lands:
+    description: Legacy alias of btc.bypass.lands
+    default: false
+    children:
+      btc.bypass.lands: true
+  tcp.bypass.griefprevention:
+    description: Legacy alias of btc.bypass.griefprevention
+    default: false
+    children:
+      btc.bypass.griefprevention: true
+  tcp.bypass.entry:
+    description: Legacy alias of btc.bypass.entry
+    default: false
+    children:
+      btc.bypass.entry: true
+  tcp.admin.loot:
+    description: Legacy alias of btc.admin.loot
+    default: false
+    children:
+      btc.admin.loot: true
+  tcp.admin.containers:
+    description: Legacy alias of btc.admin.containers
+    default: false
+    children:
+      btc.admin.containers: true
+  tcp.admin.mobs:
+    description: Legacy alias of btc.admin.mobs
+    default: false
+    children:
+      btc.admin.mobs: true
+  tcp.spectate:
+    description: Legacy alias of btc.spectate
+    default: false
+    children:
+      btc.spectate: true
+  tcp.give:
+    description: Legacy alias of btc.give
+    default: false
+    children:
+      btc.give: true
+  tcp.discovery.notify:
+    description: Legacy alias of btc.discovery.notify
+    default: false
+    children:
+      btc.discovery.notify: true

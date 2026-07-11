@@ -1,10 +1,10 @@
-<img width="723" alt="TrialChamberPro Banner" src="https://raw.githubusercontent.com/darkstarworks/TrialChamberPro/master/tcp-banner-dark-sm.png" />
+<img width="723" alt="Better Trial Chambers Banner" src="https://raw.githubusercontent.com/ESMP-FUN/BetterTrialChambers/master/tcp-banner-dark-sm.png" />
 
-# TrialChamberPro
+# BetterTrialChambers
 
 ### The most complete Trial Chamber plugin... that's free!?
 
-**Please share your "If it would do [THING], I would use it" feedback!** [<img src="https://raw.githubusercontent.com/darkstarworks/TrialChamberPro/master/dc.png" width="30" alt="Join Discord Server">](https://discord.gg/qwYcTpHsNC)
+**Please share your "If it would do [THING], I would use it" feedback!** [<img src="https://raw.githubusercontent.com/ESMP-FUN/BetterTrialChambers/master/dc.png" width="30" alt="Join Discord Server">](https://discord.gg/qwYcTpHsNC)
 
 <br>
 
@@ -13,20 +13,20 @@
 **New in 1.7.0:**
 
 - **Tunnel-breaking** — solves the "how do players even get in?" problem. Let players mine into a walled chamber through the tuff-brick shell, with drops always suppressed so the endlessly-restoring blocks can't be farmed. A shell-depth limit stops them strip-mining the interior, and every tunnel heals on the next reset. Opt-in via `protection.tunnel-breaking`.
-- **Import datapack rooms** — `/tcp dungeon import <file|folder|zip>` turns vanilla `.nbt` structure templates (the format "crazy chambers"-style datapacks use) into rooms for TCP's procedural dungeon engine. Jigsaw blocks become doorway connectors automatically, and generated dungeons get resets, loot, and protection like any chamber.
+- **Import datapack rooms** — `/trial dungeon import <file|folder|zip>` turns vanilla `.nbt` structure templates (the format "crazy chambers"-style datapacks use) into rooms for BTC's procedural dungeon engine. Jigsaw blocks become doorway connectors automatically, and generated dungeons get resets, loot, and protection like any chamber.
 - **Datapack-enlarged chambers discover correctly** — auto-discovery now asks the game for a chamber's exact structure bounds, so chambers enlarged by datapacks register at full size in one pass. Player-built chambers still discover via the block scan.
-- **Configurable database table prefix** — all TCP tables are now `tcp_`-prefixed (`database.table-prefix`) so they can't collide with other plugins on a shared database. Existing installs migrate automatically and safely on first start.
+- **Configurable database table prefix** — all BTC tables are now `tcp_`-prefixed (`database.table-prefix`) so they can't collide with other plugins on a shared database. Existing installs migrate automatically and safely on first start.
 - **Built for huge chambers** — scanning, snapshotting, and spawner resets are now batched across ticks, so even multi-million-block datapack chambers never freeze the server.
 
 **And from recent releases:**
 
-- **A guided setup tour** — run `/tcp setup` for a friendly, one-setting-at-a-time walkthrough of the main options (**Enable / Skip / Disable**, nothing forced). Native Dialog UI on Paper 1.21.7+, with an automatic clickable-chat fallback on older servers.
+- **A guided setup tour** — run `/trial setup` for a friendly, one-setting-at-a-time walkthrough of the main options (**Enable / Skip / Disable**, nothing forced). Native Dialog UI on Paper 1.21.7+, with an automatic clickable-chat fallback on older servers.
 
-  <img src="https://raw.githubusercontent.com/darkstarworks/TrialChamberPro/master/setup-chat.png" alt="The /tcp setup clickable-chat prompt in-game" width="600" />
+  <img src="https://raw.githubusercontent.com/ESMP-FUN/BetterTrialChambers/master/setup-chat.png" alt="The /trial setup clickable-chat prompt in-game" width="600" />
 
   <details>
   <summary>See the native Dialog UI (Paper 1.21.7+)</summary>
-  <img src="https://raw.githubusercontent.com/darkstarworks/TrialChamberPro/master/setup-dialog.png" alt="The /tcp setup tour rendered as a native Dialog popup" width="320" />
+  <img src="https://raw.githubusercontent.com/ESMP-FUN/BetterTrialChambers/master/setup-dialog.png" alt="The /trial setup tour rendered as a native Dialog popup" width="320" />
   </details>
 
 - **The whole chamber is per-player** — vaults *and* chests / barrels / dispensers / droppers each hand every player their own Lootr-style copy that resets with the chamber (decorated pots refill too).
@@ -41,9 +41,9 @@
 
 ---
 
-## Why TrialChamberPro?
+## Why BetterTrialChambers?
 
-Vanilla Trial Chambers weren't designed for multiplayer. The first player takes everything, vaults stay locked forever, and griefers destroy spawners. **TrialChamberPro fixes all of that.**
+Vanilla Trial Chambers weren't designed for multiplayer. The first player takes everything, vaults stay locked forever, and griefers destroy spawners. **BetterTrialChambers fixes all of that.**
 
 | Problem | Solution |
 |---------|----------|
@@ -63,7 +63,7 @@ Vanilla Trial Chambers weren't designed for multiplayer. The first player takes 
 For most servers, the only thing you need to configure is this:
 
 ```yaml
-# plugins/TrialChamberPro/config.yml
+# plugins/BetterTrialChambers/config.yml
 discovery:
   enabled: true        # find natural trial chambers automatically
   auto-snapshot: true  # capture blocks so resets can restore them
@@ -73,7 +73,7 @@ Restart once. Fly or walk through your world — every natural trial chamber reg
 
 > Why it's opt-in: on **old** worlds that pre-date 1.21, players sometimes build decorative structures out of tuff and copper blocks. The auto-detector could register those as chambers. On fresh worlds there's no risk. [More details in the docs →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/configuration#auto-discovery-of-natural-trial-chambers)
 
-Prefer manual control? You can still register chambers with WorldEdit (`/tcp generate wand MyChamber`) or by coordinates — see [Your First Chamber](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/your-first-chamber). And `/tcp setup` walks you through the main settings either way.
+Prefer manual control? You can still register chambers with WorldEdit (`/trial generate wand MyChamber`) or by coordinates — see [Your First Chamber](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/your-first-chamber). And `/trial setup` walks you through the main settings either way.
 
 ---
 
@@ -86,10 +86,10 @@ Prefer manual control? You can still register chambers with WorldEdit (`/tcp gen
 - **Per-Player Vaults** — everyone gets their own loot with separate cooldowns, plus optional pay-keys-to-reopen.
 - **Per-Player Chests & Barrels** *(opt-in)* — Lootr-style private container copies that re-roll fresh after every reset, so the whole chamber is per-player.
 - **Tunnel-Breaking** *(opt-in)* — players can mine into a sealed chamber through the shell; broken blocks drop nothing and heal on reset.
-- **Procedural Dungeons** — build modular rooms with jigsaw-block doorways (or import them from datapacks) and `/tcp dungeon generate` stitches them into brand-new chambers.
+- **Procedural Dungeons** — build modular rooms with jigsaw-block doorways (or import them from datapacks) and `/trial dungeon generate` stitches them into brand-new chambers.
 - **Full Protection** — block break/place, container access, mob griefing, claim conflicts, wild-vault placement. WorldGuard-aware.
 - **Statistics & Leaderboards** — vaults opened, mobs killed, time spent, with PlaceholderAPI support.
-- **Admin GUI** — `/tcp menu` does everything. No YAML editing required — and `/tcp list` deep-links into it.
+- **Admin GUI** — `/trial menu` does everything. No YAML editing required — and `/trial list` deep-links into it.
 
 <details>
 
@@ -97,7 +97,7 @@ Prefer manual control? You can still register chambers with WorldEdit (`/tcp gen
 
 - **Multi-Pool Tables** — common / rare / unique pools like vanilla, fully configurable. [Docs →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/configuration/loot.yml)
 - **Per-Chamber Overrides** — assign a different loot table to any specific chamber.
-- **GUI Editing** — open `/tcp menu` → Loot Tables, click a table, and edit it. Changes save to `loot.yml` instantly.
+- **GUI Editing** — open `/trial menu` → Loot Tables, click a table, and edit it. Changes save to `loot.yml` instantly.
 - **Custom Plugin Items** — drop Nexo, ItemsAdder, or Oraxen items directly from vaults:
   ```yaml
   - type: CUSTOM_ITEM
@@ -138,7 +138,7 @@ Prefer manual control? You can still register chambers with WorldEdit (`/tcp gen
 - **Async Architecture** — Kotlin coroutines, zero main-thread blocking; big chambers scan and snapshot in tick-friendly batches.
 - **Dual Database** — SQLite (default) or MySQL with connection pooling and a configurable table prefix for shared databases.
 - **Self-Updating Configs** — new options and message keys merge into your existing files on every update (with a backup).
-- **Fully Translatable** — every player-facing string lives in `messages.yml`. Edit one file, `/tcp reload`, done.
+- **Fully Translatable** — every player-facing string lives in `messages.yml`. Edit one file, `/trial reload`, done.
 - **WorldEdit / FAWE** — optional; used for selection-based chamber creation and near-instant resets.
 
 </details>
@@ -147,11 +147,11 @@ Prefer manual control? You can still register chambers with WorldEdit (`/tcp gen
 
 ## Premium Add-on Modules
 
-TrialChamberPro is, and always will be, **completely free**. For servers that want to push further, three optional paid modules are available at **[esmp.fun/plugins](https://esmp.fun/plugins)**:
+BetterTrialChambers is, and always will be, **completely free**. For servers that want to push further, three optional paid modules are available at **[esmp.fun/plugins](https://esmp.fun/plugins)**:
 
-- **TCP-MythicTrials** — per-player chamber progression. Every clear bumps each participant's personal difficulty tier (T1–T20, then Mythic M1–M5): mobs scale in stats, gear, and tactics while rewards scale with them. HUD, leaderboards, and seasons included.
-- **TCP-WildSpawners** — place TCP preset spawners anywhere on the map, no Trial Chamber required. Hand them out via shops or crates; includes a GUI editor, holograms, and griefing protection.
-- **TCP-VaultCrates** — a crate plugin that uses vanilla Trial Vaults instead of chests: built-in per-player state, two visual tiers, a key mechanic, and a dramatic open animation with no resource pack.
+- **Mythic Trials** — per-player chamber progression. Every clear bumps each participant's personal difficulty tier (T1–T20, then Mythic M1–M5): mobs scale in stats, gear, and tactics while rewards scale with them. HUD, leaderboards, and seasons included.
+- **Wild Spawners** — place BTC preset spawners anywhere on the map, no Trial Chamber required. Hand them out via shops or crates; includes a GUI editor, holograms, and griefing protection.
+- **Vault Crates** — a crate plugin that uses vanilla Trial Vaults instead of chests: built-in per-player state, two visual tiers, a key mechanic, and a dramatic open animation with no resource pack.
 
 ---
 
@@ -190,8 +190,8 @@ Prefer not to use auto-discovery? The classic workflow still works:
 1. Drop the JAR in your plugins folder
 2. Start your server
 3. Select a Trial Chamber with WorldEdit (//wand)
-4. Run: /tcp generate wand MyChamber
-5. Run: /tcp snapshot create MyChamber   (enables auto-reset)
+4. Run: /trial generate wand MyChamber
+5. Run: /trial snapshot create MyChamber   (enables auto-reset)
 6. Done!
 ```
 
@@ -203,18 +203,18 @@ Prefer not to use auto-discovery? The classic workflow still works:
 
 | Command | Description |
 |---------|-------------|
-| `/tcp setup` | Guided, opt-in settings tour (native Dialog UI, or clickable chat on older servers) |
-| `/tcp menu [chamber]` | Open the admin GUI (does everything); with a name, jump straight to that chamber |
-| `/tcp list [page\|current]` | Interactive chamber list — click to copy names or open the GUI |
-| `/tcp generate wand <name>` | Register chamber from WorldEdit selection |
-| `/tcp reset <chamber>` | Force immediate reset |
-| `/tcp snapshot create [chamber]` | Enable automatic resets (omit the name while standing inside) |
-| `/tcp dungeon generate <name>` | Stitch a procedural chamber from your room templates |
-| `/tcp dungeon import <file>` | Import `.nbt` structure templates (or a datapack zip) as rooms |
-| `/tcp loot set <chamber> <normal\|ominous> <table>` | Override loot for a chamber |
-| `/tcp stats [player]` | View statistics |
-| `/tcp leaderboard <type>` | View top players |
-| `/tcp reload` | Reload config & loot tables |
+| `/trial setup` | Guided, opt-in settings tour (native Dialog UI, or clickable chat on older servers) |
+| `/trial menu [chamber]` | Open the admin GUI (does everything); with a name, jump straight to that chamber |
+| `/trial list [page\|current]` | Interactive chamber list — click to copy names or open the GUI |
+| `/trial generate wand <name>` | Register chamber from WorldEdit selection |
+| `/trial reset <chamber>` | Force immediate reset |
+| `/trial snapshot create [chamber]` | Enable automatic resets (omit the name while standing inside) |
+| `/trial dungeon generate <name>` | Stitch a procedural chamber from your room templates |
+| `/trial dungeon import <file>` | Import `.nbt` structure templates (or a datapack zip) as rooms |
+| `/trial loot set <chamber> <normal\|ominous> <table>` | Override loot for a chamber |
+| `/trial stats [player]` | View statistics |
+| `/trial leaderboard <type>` | View top players |
+| `/trial reload` | Reload config & loot tables |
 
 [Full command reference →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/commands)
 
@@ -274,7 +274,7 @@ discovery:
 
 <summary><strong>PlaceholderAPI</strong> — 30+ placeholders</summary>
 
-Placeholders for player stats (`%tcp_vaults_opened%`, `%tcp_mobs_killed%`, `%tcp_kdr%`, `%tcp_time_spent%`), current state (`%tcp_current_chamber%`, `%tcp_current_chamber_reset%`, `%tcp_chamber_count%`), leaderboard rank (`%tcp_leaderboard_vaults%`), and top-10 boards (`%tcp_top_vaults_1_name%` … `_value%` for vaults/chambers/time/mobs). Built-in caching (stats 30 s, leaderboards 60 s).
+Placeholders for player stats (`%btc_vaults_opened%`, `%btc_mobs_killed%`, `%btc_kdr%`, `%btc_time_spent%`), current state (`%btc_current_chamber%`, `%btc_current_chamber_reset%`, `%btc_chamber_count%`), leaderboard rank (`%btc_leaderboard_vaults%`), and top-10 boards (`%btc_top_vaults_1_name%` … `_value%` for vaults/chambers/time/mobs). Built-in caching (stats 30 s, leaderboards 60 s).
 
 [Full placeholder list →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/placeholders)
 
@@ -286,8 +286,8 @@ Placeholders for player stats (`%tcp_vaults_opened%`, `%tcp_mobs_killed%`, `%tcp
 
 - **[Documentation](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation)** — setup guides, configuration reference, troubleshooting. **Please check here first!** Most questions are already answered.
 - **[Discord](https://discord.gg/qwYcTpHsNC)** — community support, announcements, feature requests. Not everyone's a reader — that's fine, come chat.
-- **[GitHub Issues](https://github.com/darkstarworks/TrialChamberPro/issues)** — bug reports.
-- **[Source Code](https://github.com/darkstarworks/TrialChamberPro)** — open source under CC-BY-NC-ND 4.0.
+- **[GitHub Issues](https://github.com/ESMP-FUN/BetterTrialChambers/issues)** — bug reports.
+- **[Source Code](https://github.com/ESMP-FUN/BetterTrialChambers)** — open source under CC-BY-NC-ND 4.0.
 
 ---
 
