@@ -3,7 +3,7 @@
 All commands start with `/trial` (short for BetterTrialChambers). Most require specific permissions—check the [Permissions](permissions.md) page for details.
 
 {% hint style="info" %}
-**Aliases:** `/btc`, `/tcp`, `/bettertrialchambers`
+**Aliases:** `/btc`, `/tcp`, `/bettertrialchambers`, `/chamber`
 
 **Tab completion:** Available for all commands! Press `Tab` while typing for suggestions.
 {% endhint %}
@@ -15,43 +15,43 @@ All commands start with `/trial` (short for BetterTrialChambers). Most require s
 | Command                                                                          | Description                                                                                                                                      | Permission                      |
 | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- |
 | `/trial help`                                                                      | Show command list                                                                                                                                | None                            |
-| `/trial setup`                                                                     | Guided, opt-in tour of the main settings (Dialog UI, or clickable chat on older servers)                                                         | `tcp.admin.setup`               |
-| `/trial menu [chamber]`                                                            | Open admin GUI (with a chamber name: jump straight to that chamber's detail view)                                                                | `tcp.admin.menu`                |
-| `/trial generate <value\|coords\|wand\|blocks>`                                    | Register chamber from saved var, coords, WE wand, or by block amount                                                                             | `tcp.admin.generate`            |
-| `/trial scan <chamber>`                                                            | Scan for vaults/spawners                                                                                                                         | `tcp.admin.scan`                |
-| `/trial scan add <chamber>`                                                        | Grow a chamber's bounds into sections discovery clipped, then re-scan                                                                            | `tcp.admin.scan`                |
-| `/trial setexit <chamber>`                                                         | Set exit location                                                                                                                                | `tcp.admin.create`              |
-| `/trial snapshot <create\|update\|restore> [chamber]`                              | Manage snapshots (omit the name to target the chamber you're standing in)                                                                        | `tcp.admin.snapshot`            |
-| `/trial snapshot create all [force]`                                               | Backfill snapshots for all chambers missing one (staggered); `force` re-does all                                                                 | `tcp.admin.snapshot`            |
-| `/trial snapshot missing [page]`                                                   | List chambers with no snapshot, with clickable `[Create]`                                                                                        | `tcp.admin.snapshot`            |
-| `/trial reset <chamber>`                                                           | Force chamber reset                                                                                                                              | `tcp.admin.reset`               |
-| `/trial reset pending`                                                             | List chambers awaiting reset confirmation                                                                                                        | `tcp.admin.reset`               |
-| `/trial reset confirm <chamber\|all>`                                              | Confirm queued reset(s) (when confirmation mode is on)                                                                                           | `tcp.admin.reset`               |
-| `/trial list [page\|current]`                                                      | List chambers (paginated, interactive: click a name to copy it, click `[menu]` to open its GUI); `current` finds the chamber you're in / nearest | `tcp.admin`                     |
-| `/trial dungeon <pos1\|pos2\|capture\|generate\|list\|delete>`                     | Procedural dungeon generation from room templates                                                                                                | `tcp.admin.generate`            |
-| `/trial info [chamber]`                                                            | Show plugin info, or chamber details if specified                                                                                                | `tcp.admin`                     |
-| `/trial delete <chamber>`                                                          | Delete a chamber                                                                                                                                 | `tcp.admin.create`              |
-| `/trial loot set <chamber> <normal\|ominous> <table>`                              | Override a chamber's loot table                                                                                                                  | `tcp.admin.loot`                |
-| `/trial loot clear <chamber> [normal\|ominous\|all]`                               | Remove per-chamber loot override                                                                                                                 | `tcp.admin.loot`                |
-| `/trial loot audit`                                                                | List pre-1.5.0 loot entries that lost their NBT                                                                                                  | `tcp.admin.loot`                |
-| `/trial container <list\|materialize\|reset\|resetone\|clearcopies\|tp\|edit> <chamber> [#]` | Manage per-player container loot (list, edit overrides, revert to vanilla)                                                                | `tcp.admin.containers`          |
-| `/trial mobs providers`                                                            | List registered mob providers and their availability                                                                                             | `tcp.admin.mobs`                |
-| `/trial mobs <chamber> provider <id\|vanilla\|none>`                               | Set a chamber's custom mob provider                                                                                                              | `tcp.admin.mobs`                |
-| `/trial mobs <chamber> add normal\|ominous <mobId>`                                | Add a mob id to a chamber's pool                                                                                                                 | `tcp.admin.mobs`                |
-| `/trial mobs <chamber> remove normal\|ominous <mobId>`                             | Remove a mob id from a chamber's pool                                                                                                            | `tcp.admin.mobs`                |
-| `/trial mobs <chamber> list`                                                       | Show a chamber's mob provider config                                                                                                             | `tcp.admin.mobs`                |
-| `/trial give <preset> [player] [amount]`                                           | Give a preconfigured trial-spawner item — see [spawner\_presets.yml](../configuration/spawner-presets.yml.md)                                    | `tcp.give`                      |
-| `/trial pause <chamber>`                                                           | Pause a chamber (suspends resets, protection, vault interactions)                                                                                | `tcp.admin.pause`               |
-| `/trial resume <chamber>`                                                          | Resume a paused chamber                                                                                                                          | `tcp.admin.pause`               |
-| `/trial vault reset <chamber> <player>`                                            | Reset vault cooldowns                                                                                                                            | `tcp.admin.vault`               |
-| `/trial key give <player> <amount>`                                                | Give trial keys                                                                                                                                  | `tcp.admin.key`                 |
-| `/trial key check <player>`                                                        | Check player's keys                                                                                                                              | `tcp.admin.key`                 |
-| `/trial stats [player]`                                                            | View statistics                                                                                                                                  | `tcp.stats` / `tcp.admin.stats` |
-| `/trial leaderboard <type>`                                                        | View leaderboards                                                                                                                                | `tcp.leaderboard`               |
-| `/trial claims scan`                                                               | Log chambers that overlap existing land-claim plugin claims                                                                                      | `tcp.admin.reload`              |
-| `/trial debug schema`                                                              | Print each database table's actual columns (diagnostics)                                                                                         | `tcp.admin.reload`              |
-| `/trial reload`                                                                    | Reload configuration                                                                                                                             | `tcp.admin.reload`              |
-| `/trial update [check\|download\|apply\|restore\|status]`                          | Check for and install plugin updates                                                                                                             | `tcp.admin`                     |
+| `/trial setup`                                                                     | Guided, opt-in tour of the main settings (Dialog UI, or clickable chat on older servers)                                                         | `btc.admin.setup`               |
+| `/trial menu [chamber]`                                                            | Open admin GUI (with a chamber name: jump straight to that chamber's detail view)                                                                | `btc.admin.menu`                |
+| `/trial generate <value\|coords\|wand\|blocks>`                                    | Register chamber from saved var, coords, WE wand, or by block amount                                                                             | `btc.admin.generate`            |
+| `/trial scan <chamber>`                                                            | Scan for vaults/spawners                                                                                                                         | `btc.admin.scan`                |
+| `/trial scan add <chamber>`                                                        | Grow a chamber's bounds into sections discovery clipped, then re-scan                                                                            | `btc.admin.scan`                |
+| `/trial setexit <chamber>`                                                         | Set exit location                                                                                                                                | `btc.admin.create`              |
+| `/trial snapshot <create\|update\|restore> [chamber]`                              | Manage snapshots (omit the name to target the chamber you're standing in)                                                                        | `btc.admin.snapshot`            |
+| `/trial snapshot create all [force]`                                               | Backfill snapshots for all chambers missing one (staggered); `force` re-does all                                                                 | `btc.admin.snapshot`            |
+| `/trial snapshot missing [page]`                                                   | List chambers with no snapshot, with clickable `[Create]`                                                                                        | `btc.admin.snapshot`            |
+| `/trial reset <chamber>`                                                           | Force chamber reset                                                                                                                              | `btc.admin.reset`               |
+| `/trial reset pending`                                                             | List chambers awaiting reset confirmation                                                                                                        | `btc.admin.reset`               |
+| `/trial reset confirm <chamber\|all>`                                              | Confirm queued reset(s) (when confirmation mode is on)                                                                                           | `btc.admin.reset`               |
+| `/trial list [page\|current]`                                                      | List chambers (paginated, interactive: click a name to copy it, click `[menu]` to open its GUI); `current` finds the chamber you're in / nearest | `btc.admin`                     |
+| `/trial dungeon <pos1\|pos2\|capture\|generate\|list\|delete>`                     | Procedural dungeon generation from room templates                                                                                                | `btc.admin.generate`            |
+| `/trial info [chamber]`                                                            | Show plugin info, or chamber details if specified                                                                                                | `btc.admin`                     |
+| `/trial delete <chamber>`                                                          | Delete a chamber                                                                                                                                 | `btc.admin.create`              |
+| `/trial loot set <chamber> <normal\|ominous> <table>`                              | Override a chamber's loot table                                                                                                                  | `btc.admin.loot`                |
+| `/trial loot clear <chamber> [normal\|ominous\|all]`                               | Remove per-chamber loot override                                                                                                                 | `btc.admin.loot`                |
+| `/trial loot audit`                                                                | List pre-1.5.0 loot entries that lost their NBT                                                                                                  | `btc.admin.loot`                |
+| `/trial container <list\|materialize\|reset\|resetone\|clearcopies\|tp\|edit> <chamber> [#]` | Manage per-player container loot (list, edit overrides, revert to vanilla)                                                                | `btc.admin.containers`          |
+| `/trial mobs providers`                                                            | List registered mob providers and their availability                                                                                             | `btc.admin.mobs`                |
+| `/trial mobs <chamber> provider <id\|vanilla\|none>`                               | Set a chamber's custom mob provider                                                                                                              | `btc.admin.mobs`                |
+| `/trial mobs <chamber> add normal\|ominous <mobId>`                                | Add a mob id to a chamber's pool                                                                                                                 | `btc.admin.mobs`                |
+| `/trial mobs <chamber> remove normal\|ominous <mobId>`                             | Remove a mob id from a chamber's pool                                                                                                            | `btc.admin.mobs`                |
+| `/trial mobs <chamber> list`                                                       | Show a chamber's mob provider config                                                                                                             | `btc.admin.mobs`                |
+| `/trial give <preset> [player] [amount]`                                           | Give a preconfigured trial-spawner item — see [spawner\_presets.yml](../configuration/spawner-presets.yml.md)                                    | `btc.give`                      |
+| `/trial pause <chamber>`                                                           | Pause a chamber (suspends resets, protection, vault interactions)                                                                                | `btc.admin.pause`               |
+| `/trial resume <chamber>`                                                          | Resume a paused chamber                                                                                                                          | `btc.admin.pause`               |
+| `/trial vault reset <chamber> <player>`                                            | Reset vault cooldowns                                                                                                                            | `btc.admin.vault`               |
+| `/trial key give <player> <amount>`                                                | Give trial keys                                                                                                                                  | `btc.admin.key`                 |
+| `/trial key check <player>`                                                        | Check player's keys                                                                                                                              | `btc.admin.key`                 |
+| `/trial stats [player]`                                                            | View statistics                                                                                                                                  | `btc.stats` / `btc.admin.stats` |
+| `/trial leaderboard <type>`                                                        | View leaderboards                                                                                                                                | `btc.leaderboard`               |
+| `/trial claims scan`                                                               | Log chambers that overlap existing land-claim plugin claims                                                                                      | `btc.admin.reload`              |
+| `/trial debug schema`                                                              | Print each database table's actual columns (diagnostics)                                                                                         | `btc.admin.reload`              |
+| `/trial reload`                                                                    | Reload configuration                                                                                                                             | `btc.admin.reload`              |
+| `/trial update [check\|download\|apply\|restore\|status]`                          | Check for and install plugin updates                                                                                                             | `btc.admin`                     |
 
 ***
 
@@ -98,7 +98,7 @@ On Paper **1.21.7+** the tour renders in the native **Dialog** UI. On older or n
 /trial setup continue  # resume a tour you paused
 ```
 
-**Permission:** `tcp.admin.setup` (OP by default)
+**Permission:** `btc.admin.setup` (OP by default)
 
 **Good to know:**
 
@@ -126,7 +126,7 @@ Opens the admin GUI for managing all aspects of BetterTrialChambers without comm
 /trial menu <chamber_name>
 ```
 
-**Permission:** `tcp.admin.menu`
+**Permission:** `btc.admin.menu`
 
 **Example:**
 
@@ -196,7 +196,7 @@ Registers a chamber using either a saved WorldEdit variable (named region), your
 /trial generate blocks <amount> [chamberName] [roundingAllowance]
 ```
 
-**Permission:** `tcp.admin.generate`
+**Permission:** `btc.admin.generate`
 
 **Behavior:**
 
@@ -230,7 +230,7 @@ Scans a chamber to detect vaults, trial spawners, and decorated pots within its 
 /trial scan add <chamber_name>
 ```
 
-**Permission:** `tcp.admin.scan`
+**Permission:** `btc.admin.scan`
 
 **Arguments:**
 
@@ -281,7 +281,7 @@ Sets the exit location for a chamber. Players inside when the chamber resets wil
 /trial setexit <chamber_name>
 ```
 
-**Permission:** `tcp.admin.create`
+**Permission:** `btc.admin.create`
 
 **Requirements:**
 
@@ -325,7 +325,7 @@ Manage chamber snapshots (saved states for resets).
 
 The chamber name is **optional on `create` / `update` / `restore`** _(1.5.5+; previously only `update`)_: omit it while standing inside a registered chamber and the command targets that chamber. Handy on servers with many chambers.
 
-**Permission:** `tcp.admin.snapshot`
+**Permission:** `btc.admin.snapshot`
 
 **`create all` / `missing` — Backfill missing snapshots _(1.5.22+)_**
 
@@ -414,7 +414,7 @@ Forces an immediate chamber reset.
 /trial reset <chamber_name>
 ```
 
-**Permission:** `tcp.admin.reset`
+**Permission:** `btc.admin.reset`
 
 **Arguments:**
 
@@ -459,7 +459,7 @@ Lists all registered chambers.
 /trial list
 ```
 
-**Permission:** `tcp.admin`
+**Permission:** `btc.admin`
 
 **Example output:**
 
@@ -487,7 +487,7 @@ Shows plugin information (when used without arguments) or detailed chamber infor
 /trial info <chamber_name>
 ```
 
-**Permission:** `tcp.admin`
+**Permission:** `btc.admin`
 
 **Arguments:**
 
@@ -576,7 +576,7 @@ Pause or resume a registered chamber.
 /trial resume <chamber_name>
 ```
 
-**Permission:** `tcp.admin.pause`
+**Permission:** `btc.admin.pause`
 
 **What pausing does:**
 
@@ -608,7 +608,7 @@ Manage per-player container loot ([`chests.per-player-loot`](../configuration/co
 
 Untouched containers roll **fresh loot per player** on every open (and again after each reset). Editing a container creates an **override** that all players then receive a copy of; reverting drops the override. There is no in-world editing — use this command or the GUI.
 
-**Permission:** `tcp.admin.containers`
+**Permission:** `btc.admin.containers`
 
 | Action                    | Effect                                                                                                                            |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
@@ -641,7 +641,7 @@ Permanently deletes a chamber and all associated data.
 /trial delete <chamber_name>
 ```
 
-**Permission:** `tcp.admin.create`
+**Permission:** `btc.admin.create`
 
 **Arguments:**
 
@@ -680,7 +680,7 @@ Resets a player's vault cooldowns for a specific chamber.
 /trial vault reset <chamber_name> <player_name> [normal|ominous]
 ```
 
-**Permission:** `tcp.admin.vault`
+**Permission:** `btc.admin.vault`
 
 **Arguments:**
 
@@ -731,7 +731,7 @@ Gives trial keys to a player.
 /trial key give <player_name> <amount> [normal|ominous]
 ```
 
-**Permission:** `tcp.admin.key`
+**Permission:** `btc.admin.key`
 
 **Arguments:**
 
@@ -772,7 +772,7 @@ Checks how many trial keys a player has.
 /trial key check <player_name>
 ```
 
-**Permission:** `tcp.admin.key`
+**Permission:** `btc.admin.key`
 
 **Arguments:**
 
@@ -809,8 +809,8 @@ View player statistics for Trial Chamber activity.
 
 **Permission:**
 
-* `tcp.stats` - View own stats
-* `tcp.admin.stats` - View other players' stats
+* `btc.stats` - View own stats
+* `btc.admin.stats` - View other players' stats
 
 **Arguments:**
 
@@ -864,7 +864,7 @@ View top players for a specific statistic.
 /trial top <type>
 ```
 
-**Permission:** `tcp.stats`
+**Permission:** `btc.stats`
 
 **Arguments:**
 
@@ -920,7 +920,7 @@ Checks every registered chamber against existing claims from any installed land-
 /trial claims scan
 ```
 
-**Permission:** `tcp.admin.reload`
+**Permission:** `btc.admin.reload`
 
 **What it does:**
 
@@ -940,7 +940,7 @@ This also runs automatically on startup unless you set [`protection.claim-confli
 2. Decide which should win that space:
    * **Keep the chamber:** remove or resize the claim in the claim plugin (e.g. Residence `/res remove`, Lands `/unclaim`, GriefPrevention claim resize/abandon), then re-run `/trial claims scan` to confirm it's clear.
    * **Keep the claim:** [delete the chamber](#tcp-delete-chamber) (`/trial delete <chamber>`) or move/re-register it elsewhere.
-3. New claims can no longer be made into chambers, so once existing conflicts are cleared they won't reappear (except for players with the relevant `tcp.bypass.*` permission).
+3. New claims can no longer be made into chambers, so once existing conflicts are cleared they won't reappear (except for players with the relevant `btc.bypass.*` permission).
 
 </details>
 
@@ -956,7 +956,7 @@ Reloads the plugin configuration without restarting the server.
 /trial reload
 ```
 
-**Permission:** `tcp.admin.reload`
+**Permission:** `btc.admin.reload`
 
 **Example:**
 
@@ -995,7 +995,7 @@ _(Added in 1.8.0.)_ Check for, download, and install BetterTrialChambers updates
 /trial update [check|download|apply|ignore <version>|unignore <version>|restore|status]
 ```
 
-**Permission:** `tcp.admin`
+**Permission:** `btc.admin`
 
 **Subcommands:**
 
@@ -1150,22 +1150,22 @@ For a complete list of all permissions (including per-command permissions), see 
 **Full Admin:**
 
 ```yaml
-tcp.admin
-tcp.admin.*
+btc.admin
+btc.admin.*
 ```
 
 **Statistics Access:**
 
 ```yaml
-tcp.stats
-tcp.admin.stats
+btc.stats
+btc.admin.stats
 ```
 
 **Read-only Access:**
 
 ```yaml
-tcp.admin       # Can view chambers
-tcp.stats       # Can view own stats
+btc.admin       # Can view chambers
+btc.stats       # Can view own stats
 ```
 
 ***

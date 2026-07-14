@@ -226,14 +226,14 @@ Prefer not to use auto-discovery? The classic workflow still works:
 
 | Permission | Description | Default |
 |------------|-------------|---------|
-| `tcp.admin` | Full admin access | OP |
-| `tcp.stats` · `tcp.leaderboard` | View own stats / leaderboards | Everyone |
-| `tcp.spectate` | Use spectator mode after death | Everyone |
-| `tcp.bypass.cooldown` | Ignore vault cooldowns (careful: removes progression!) | OP |
-| `tcp.bypass.protection` | Build in protected chambers | OP |
-| `tcp.discovery.notify` | Get notified when auto-discovery registers a chamber | OP |
+| `btc.admin` | Full admin access | OP |
+| `btc.stats` · `btc.leaderboard` | View own stats / leaderboards | Everyone |
+| `btc.spectate` | Use spectator mode after death | Everyone |
+| `btc.bypass.cooldown` | Ignore vault cooldowns (careful: removes progression!) | OP |
+| `btc.bypass.protection` | Build in protected chambers | OP |
+| `btc.discovery.notify` | Get notified when auto-discovery registers a chamber | OP |
 
-> **Heads up:** `tcp.bypass.cooldown` is granted to OPs by default. If you're testing cooldowns as an OP, they'll appear broken — either test as a non-OP or explicitly negate the permission.
+> **Heads up:** `btc.bypass.cooldown` is granted to OPs by default. If you're testing cooldowns as an OP, they'll appear broken — either test as a non-OP or explicitly negate the permission.
 
 [Full permissions guide with rank examples →](https://esmp-fun.gitbook.io/plugins/better-trial-chambers/reference/permissions)
 
