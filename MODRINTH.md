@@ -287,7 +287,7 @@ Placeholders for player stats (`%btc_vaults_opened%`, `%btc_mobs_killed%`, `%btc
 - **[Documentation](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation)** — setup guides, configuration reference, troubleshooting. **Please check here first!** Most questions are already answered.
 - **[Discord](https://discord.gg/qwYcTpHsNC)** — community support, announcements, feature requests. Not everyone's a reader — that's fine, come chat.
 - **[GitHub Issues](https://github.com/ESMP-FUN/BetterTrialChambers/issues)** — bug reports.
-- **[Source Code](https://github.com/ESMP-FUN/BetterTrialChambers)** — open source under CC-BY-NC-ND 4.0.
+- **[Source Code](https://github.com/ESMP-FUN/BetterTrialChambers)** — source-available (free to use, no redistribution).
 
 ---
 
