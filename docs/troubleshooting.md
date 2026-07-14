@@ -16,7 +16,7 @@ If nothing here matches, jump to [Reporting Bugs](troubleshooting.md#reporting-b
 
 **The likely cause:** you're testing as an OP.
 
-Operators have **every** permission by default, including `tcp.bypass.cooldown`. That permission intentionally skips cooldown checks so staff can test chambers. It's working as designed — but it's confusing the first time you hit it.
+Operators have **every** permission by default, including `btc.bypass.cooldown`. That permission intentionally skips cooldown checks so staff can test chambers. It's working as designed — but it's confusing the first time you hit it.
 
 **Fix one of three ways:**
 
@@ -24,11 +24,11 @@ Operators have **every** permission by default, including `tcp.bypass.cooldown`.
 2.  Explicitly negate the permission on your OP user:
 
     ```
-    /lp user <yourname> permission set tcp.bypass.cooldown false
+    /lp user <yourname> permission set btc.bypass.cooldown false
     ```
 3. Temporarily deop yourself: `/deop <yourname>`, test, re-op with `/op <yourname>`.
 
-**To confirm this is your issue:** set `debug.verbose-logging: true` in `config.yml`, `/trial reload`, then open a vault. If the log shows `[Vault API] Player X has tcp.bypass.cooldown permission - SKIPPING cooldown check!` — that's it.
+**To confirm this is your issue:** set `debug.verbose-logging: true` in `config.yml`, `/trial reload`, then open a vault. If the log shows `[Vault API] Player X has btc.bypass.cooldown permission - SKIPPING cooldown check!` — that's it.
 
 </details>
 
@@ -169,10 +169,10 @@ Also: don't reset multiple large chambers at the same clock minute. Stagger thei
 
 Usually a permission inheritance problem. Check:
 
-1.  **Does the affected player / group have `tcp.bypass.cooldown`?** Often picked up via a default permission pack or a copy-pasted permission group.
+1.  **Does the affected player / group have `btc.bypass.cooldown`?** Often picked up via a default permission pack or a copy-pasted permission group.
 
     ```
-    /lp user <player> permission check tcp.bypass.cooldown
+    /lp user <player> permission check btc.bypass.cooldown
     ```
 2. **Is the player in creative or spectator?** Creative players bypass cooldowns regardless of permissions (vanilla vault behaviour).
 3. **Did you recently clear vault data in the database?** If you wiped `player_vault_data` but not the native `rewarded_players` on the vault block (v1.2.21+ stores both), the native block state still remembers them. Use `/trial vault reset <chamber> <player>` — it clears both.
@@ -185,13 +185,13 @@ Usually a permission inheritance problem. Check:
 
 You enabled `prevent-teleport-into-chamber`, `prevent-entry-without-permission`, `allow-pvp: false`, or `block-advanced-enchantments`, but players (or you) still get through. Work down this list:
 
-1.  **Are you testing as an OP?** This is the #1 cause. OPs have **every** `tcp.bypass.*` permission by default — including `tcp.bypass.entry` and `tcp.bypass.protection` — so you exempt yourself without realising. **Test with a non-OP account**, or negate the permission:
+1.  **Are you testing as an OP?** This is the #1 cause. OPs have **every** `btc.bypass.*` permission by default — including `btc.bypass.entry` and `btc.bypass.protection` — so you exempt yourself without realising. **Test with a non-OP account**, or negate the permission:
 
     ```
-    /lp user <yourname> permission set tcp.bypass.entry false
+    /lp user <yourname> permission set btc.bypass.entry false
     ```
 2. **Turn on `debug.verbose-logging: true`** and `/trial reload`, then reproduce. The console tells you exactly what happened, e.g.:
-   * `[Protection] teleport into 'X' allowed for Steve: has tcp.bypass.entry (note: OPs have this by default)` → permission exemption (see #1).
+   * `[Protection] teleport into 'X' allowed for Steve: has btc.bypass.entry (note: OPs have this by default)` → permission exemption (see #1).
    * `[Protection] teleport into 'X' allowed for Steve: SPECTATOR mode is exempt` → spectators/creative are always exempt.
    * `[Protection] BLOCKED teleport into 'X' for Steve (cause COMMAND)` → it **is** working.
    * **No `[Protection]` line at all** when teleporting in → the destination isn't inside a _registered_ chamber (wrong world, chamber not registered, or bounds don't reach where you landed). Check `/trial list` / `/trial info <chamber>`.

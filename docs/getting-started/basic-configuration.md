@@ -139,11 +139,11 @@ Creative/build server:
 ```yaml
 protection:
   enabled: false  # Let admins build freely
-  # Or keep enabled and use tcp.bypass.protection permission
+  # Or keep enabled and use btc.bypass.protection permission
 ```
 
 {% hint style="warning" %}
-**Don't disable protection on public survival servers!** Players will grief your chambers. Use `tcp.bypass.protection` permission for staff instead.
+**Don't disable protection on public survival servers!** Players will grief your chambers. Use `btc.bypass.protection` permission for staff instead.
 {% endhint %}
 
 **Controlling who can get&#x20;**_**in**_**&#x20;(1.5.20+).** Two optional, off-by-default toggles gate chamber entry — useful if players try to skip the intended way in:
@@ -151,10 +151,10 @@ protection:
 ```yaml
 protection:
   prevent-teleport-into-chamber: true   # block /tpa, /home, /warp, ender pearls, chorus fruit, etc. into a chamber
-  prevent-entry-without-permission: true # only players with tcp.bypass.entry can walk in (rank-gated chambers)
+  prevent-entry-without-permission: true # only players with btc.bypass.entry can walk in (rank-gated chambers)
 ```
 
-`prevent-teleport-into-chamber` stops _every_ kind of teleport into a chamber (it hooks the teleport itself, not specific commands). `prevent-entry-without-permission` makes a chamber rank-only via the `tcp.bypass.entry` permission (default: op). Spectators and creative-mode players are exempt from both. See the [protection config reference](../configuration/config.yml.md#prevent-teleport-into-chamber) for details.
+`prevent-teleport-into-chamber` stops _every_ kind of teleport into a chamber (it hooks the teleport itself, not specific commands). `prevent-entry-without-permission` makes a chamber rank-only via the `btc.bypass.entry` permission (default: op). Spectators and creative-mode players are exempt from both. See the [protection config reference](../configuration/config.yml.md#prevent-teleport-into-chamber) for details.
 
 **Mass block-breakers (AdvancedEnchantments, vein miners).** Standard vein miners are blocked automatically inside chambers; effect-based enchants like AE _Blast Mining_ need `protection.block-advanced-enchantments: true`. See [that section](../configuration/config.yml.md#block-advanced-enchantments) for the why.
 

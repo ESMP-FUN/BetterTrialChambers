@@ -97,7 +97,7 @@ At least one of `normal-config` or `ominous-config` must be set, or the preset i
 | `[player]` | no — must be present if sender is the console | sender |
 | `[amount]` | no | `1` |
 
-**Permission:** `tcp.give` (default: op). Included in the `tcp.admin.*` aggregate.
+**Permission:** `btc.give` (default: op). Included in the `btc.admin.*` aggregate.
 
 **Examples:**
 

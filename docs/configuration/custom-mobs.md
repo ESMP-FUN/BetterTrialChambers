@@ -77,7 +77,7 @@ reset:
 ```
 {% endhint %}
 
-Players with permission `tcp.bypass.droplock` (default: op) can pick up keys regardless of owner.
+Players with permission `btc.bypass.droplock` (default: op) can pick up keys regardless of owner.
 
 ***
 
