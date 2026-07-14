@@ -37,7 +37,7 @@
 
 <br>
 
-**Full documentation:** https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation — most questions are answered there.
+**Full documentation:** https://github.com/ESMP-FUN/BetterTrialChambers/tree/master/docs — most questions are answered there.
 
 ---
 
@@ -71,9 +71,9 @@ discovery:
 
 Restart once. Fly or walk through your world — every natural trial chamber registers itself as its chunks load, with per-player loot, protection, and automatic resets already active. Done.
 
-> Why it's opt-in: on **old** worlds that pre-date 1.21, players sometimes build decorative structures out of tuff and copper blocks. The auto-detector could register those as chambers. On fresh worlds there's no risk. [More details in the docs →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/configuration#auto-discovery-of-natural-trial-chambers)
+> Why it's opt-in: on **old** worlds that pre-date 1.21, players sometimes build decorative structures out of tuff and copper blocks. The auto-detector could register those as chambers. On fresh worlds there's no risk. [More details in the docs →](https://github.com/ESMP-FUN/BetterTrialChambers/blob/master/docs/configuration/config.yml.md)
 
-Prefer manual control? You can still register chambers with WorldEdit (`/trial generate wand MyChamber`) or by coordinates — see [Your First Chamber](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/your-first-chamber). And `/trial setup` walks you through the main settings either way.
+Prefer manual control? You can still register chambers with WorldEdit (`/trial generate wand MyChamber`) or by coordinates — see [Your First Chamber](https://github.com/ESMP-FUN/BetterTrialChambers/blob/master/docs/getting-started/your-first-chamber.md). And `/trial setup` walks you through the main settings either way.
 
 ---
 
@@ -95,7 +95,7 @@ Prefer manual control? You can still register chambers with WorldEdit (`/trial g
 
 <summary><strong>Advanced Loot</strong> — multi-pool tables, custom plugin items, command & vanilla-table rewards</summary>
 
-- **Multi-Pool Tables** — common / rare / unique pools like vanilla, fully configurable. [Docs →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/configuration/loot.yml)
+- **Multi-Pool Tables** — common / rare / unique pools like vanilla, fully configurable. [Docs →](https://github.com/ESMP-FUN/BetterTrialChambers/blob/master/docs/configuration/loot.yml.md)
 - **Per-Chamber Overrides** — assign a different loot table to any specific chamber.
 - **GUI Editing** — open `/trial menu` → Loot Tables, click a table, and edit it. Changes save to `loot.yml` instantly.
 - **Custom Plugin Items** — drop Nexo, ItemsAdder, or Oraxen items directly from vaults:
@@ -216,7 +216,7 @@ Prefer not to use auto-discovery? The classic workflow still works:
 | `/trial leaderboard <type>` | View top players |
 | `/trial reload` | Reload config & loot tables |
 
-[Full command reference →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/commands)
+[Full command reference →](https://github.com/ESMP-FUN/BetterTrialChambers/blob/master/docs/reference/commands.md)
 
 </details>
 
@@ -235,7 +235,7 @@ Prefer not to use auto-discovery? The classic workflow still works:
 
 > **Heads up:** `tcp.bypass.cooldown` is granted to OPs by default. If you're testing cooldowns as an OP, they'll appear broken — either test as a non-OP or explicitly negate the permission.
 
-[Full permissions guide with rank examples →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/permissions)
+[Full permissions guide with rank examples →](https://github.com/ESMP-FUN/BetterTrialChambers/blob/master/docs/reference/permissions.md)
 
 </details>
 
@@ -266,7 +266,7 @@ discovery:
   auto-snapshot: true              # Allow auto-discovered chambers to restore on reset.
 ```
 
-[Full config.yml reference →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/configuration) · [loot.yml reference →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/configuration/loot.yml)
+[Full config.yml reference →](https://github.com/ESMP-FUN/BetterTrialChambers/blob/master/docs/configuration/config.yml.md) · [loot.yml reference →](https://github.com/ESMP-FUN/BetterTrialChambers/blob/master/docs/configuration/loot.yml.md)
 
 </details>
 
@@ -276,7 +276,7 @@ discovery:
 
 Placeholders for player stats (`%btc_vaults_opened%`, `%btc_mobs_killed%`, `%btc_kdr%`, `%btc_time_spent%`), current state (`%btc_current_chamber%`, `%btc_current_chamber_reset%`, `%btc_chamber_count%`), leaderboard rank (`%btc_leaderboard_vaults%`), and top-10 boards (`%btc_top_vaults_1_name%` … `_value%` for vaults/chambers/time/mobs). Built-in caching (stats 30 s, leaderboards 60 s).
 
-[Full placeholder list →](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation/getting-started/placeholders)
+[Full placeholder list →](https://github.com/ESMP-FUN/BetterTrialChambers/blob/master/docs/getting-started/placeholders.md)
 
 </details>
 
@@ -284,7 +284,7 @@ Placeholders for player stats (`%btc_vaults_opened%`, `%btc_mobs_killed%`, `%btc
 
 ## Support
 
-- **[Documentation](https://darkstarworks.gitbook.io/plugins/mc/tcp-documentation)** — setup guides, configuration reference, troubleshooting. **Please check here first!** Most questions are already answered.
+- **[Documentation](https://github.com/ESMP-FUN/BetterTrialChambers/tree/master/docs)** — setup guides, configuration reference, troubleshooting. **Please check here first!** Most questions are already answered.
 - **[Discord](https://discord.gg/qwYcTpHsNC)** — community support, announcements, feature requests. Not everyone's a reader — that's fine, come chat.
 - **[GitHub Issues](https://github.com/ESMP-FUN/BetterTrialChambers/issues)** — bug reports.
 - **[Source Code](https://github.com/ESMP-FUN/BetterTrialChambers)** — source-available (free to use, no redistribution).
