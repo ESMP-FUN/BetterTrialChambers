@@ -574,7 +574,7 @@ vaults:
 * **`drop-loot-owner-only`** (default `true`) — only the player who opened the vault can pick up its dropped items.
 * **`drop-loot-owner-grace-seconds`** (default `30`) — how long owner-only enforcement lasts. After this window anyone can pick the items up, so they don't linger forever if the opener logs off. `0` = owner-locked until the item despawns naturally.
 
-Players with **`tcp.bypass.droplock`** (default: op) can always pick up dropped loot. `drop-loot-at-vault` is off by default; the direct-to-inventory flow is used when it's disabled.
+Players with **`btc.bypass.droplock`** (default: op) can always pick up dropped loot. `drop-loot-at-vault` is off by default; the direct-to-inventory flow is used when it's disabled.
 
 </details>
 
@@ -661,7 +661,7 @@ Set to `true` if you have admin chests inside chambers that shouldn't be touched
 
 **Default:** `true` _(implemented in 1.5.19)_
 
-Allow player-vs-player combat inside registered chambers. When `false`, BTC cancels player-on-player damage — both melee and player-shot projectiles — inside a chamber, and tells the attacker. `true` keeps vanilla behaviour (PvP follows your world/server rules). Players with `tcp.bypass.protection` are exempt; mob damage and self-damage are never affected.
+Allow player-vs-player combat inside registered chambers. When `false`, BTC cancels player-on-player damage — both melee and player-shot projectiles — inside a chamber, and tells the attacker. `true` keeps vanilla behaviour (PvP follows your world/server rules). Players with `btc.bypass.protection` are exempt; mob damage and self-damage are never affected.
 
 </details>
 
@@ -691,7 +691,7 @@ If WorldGuard is installed, **respect its regions**: when a WorldGuard region co
 
 **Default:** `true` _(added in 1.5.15)_
 
-If the matching land-claim plugin is installed, **stop players claiming a registered chamber**: BTC cancels that plugin's claim-create and claim-expand actions when the claimed area overlaps a chamber, and tells the player. This prevents someone fencing off a chamber and changing its claim flags to interfere with resets, loot, or protection. Each plugin has its own toggle and its own bypass permission (`tcp.bypass.residence` / `tcp.bypass.lands` / `tcp.bypass.griefprevention`, default op). Servers without the plugin are unaffected — the integration only activates when the plugin is present. Existing claims aren't removed; see the conflict scan below.
+If the matching land-claim plugin is installed, **stop players claiming a registered chamber**: BTC cancels that plugin's claim-create and claim-expand actions when the claimed area overlaps a chamber, and tells the player. This prevents someone fencing off a chamber and changing its claim flags to interfere with resets, loot, or protection. Each plugin has its own toggle and its own bypass permission (`btc.bypass.residence` / `btc.bypass.lands` / `btc.bypass.griefprevention`, default op). Servers without the plugin are unaffected — the integration only activates when the plugin is present. Existing claims aren't removed; see the conflict scan below.
 
 </details>
 
@@ -721,7 +721,7 @@ How long (in milliseconds) to wait before re-showing a "you can't break / place 
 
 **Default:** `false` _(added in 1.5.18)_
 
-If [AdvancedEnchantments](https://www.spigotmc.org/resources/76519/) is installed, its custom enchants (e.g. _Blast Mining_) break blocks through their own effect path that **ignores BTC's block-break cancel** — so they can bypass chamber protection. Turn this on to make BTC cancel AE enchant activations that affect a registered chamber, stopping the effect (no break, no spam). Players with `tcp.bypass.protection` are exempt, and enchants in `advanced-enchantments-allowlist` are still permitted. Off by default, so AE behaves normally until you opt in. Reflection-based — nothing happens on servers without AE.
+If [AdvancedEnchantments](https://www.spigotmc.org/resources/76519/) is installed, its custom enchants (e.g. _Blast Mining_) break blocks through their own effect path that **ignores BTC's block-break cancel** — so they can bypass chamber protection. Turn this on to make BTC cancel AE enchant activations that affect a registered chamber, stopping the effect (no break, no spam). Players with `btc.bypass.protection` are exempt, and enchants in `advanced-enchantments-allowlist` are still permitted. Off by default, so AE behaves normally until you opt in. Reflection-based — nothing happens on servers without AE.
 
 Since **1.5.21** this also catches mining a chamber wall from **just outside** it (Blast Mining the wall, AoE reaching across the boundary), not only when the player stands inside — see [`advanced-enchantments-block-radius`](config.yml.md#advanced-enchantments-block-radius) to tune the reach.
 
@@ -776,7 +776,7 @@ Note this only affects the thin shell of blocks just outside a chamber; normal m
 
 **Default:** `false` _(added in 1.5.20)_
 
-Stop players **teleporting into** a registered chamber from outside it, so they can't skip the intended entrance. Because it hooks the teleport itself rather than specific commands, it catches every method — `/tpa`, `/tpahere`, `/home`, `/warp`, `/tp`, ender pearls, chorus fruit, plugin teleports — in one place. Walking in on foot is unaffected. Players with **`tcp.bypass.entry`** (default: op), spectators, and creative-mode players are exempt (the gamemode exemption also covers BTC's own spectator-mode entry teleport). Off by default.
+Stop players **teleporting into** a registered chamber from outside it, so they can't skip the intended entrance. Because it hooks the teleport itself rather than specific commands, it catches every method — `/tpa`, `/tpahere`, `/home`, `/warp`, `/tp`, ender pearls, chorus fruit, plugin teleports — in one place. Walking in on foot is unaffected. Players with **`btc.bypass.entry`** (default: op), spectators, and creative-mode players are exempt (the gamemode exemption also covers BTC's own spectator-mode entry teleport). Off by default.
 
 </details>
 
@@ -786,7 +786,7 @@ Stop players **teleporting into** a registered chamber from outside it, so they 
 
 **Default:** `false` _(added in 1.5.20)_
 
-Gate **walking into** a chamber by rank: when `true`, only players with **`tcp.bypass.entry`** (default: op) can enter a chamber on foot — everyone else is stopped at the boundary. Use it to make chambers rank-restricted (e.g. a VIP dungeon). Pair it with `prevent-teleport-into-chamber` to close the teleport route as well. Spectators and creative-mode players are exempt. Off by default. _(This check runs on player movement; it's lightweight — only firing on a block change while the toggle is on — but only enable it if you actually need rank-gated entry.)_
+Gate **walking into** a chamber by rank: when `true`, only players with **`btc.bypass.entry`** (default: op) can enter a chamber on foot — everyone else is stopped at the boundary. Use it to make chambers rank-restricted (e.g. a VIP dungeon). Pair it with `prevent-teleport-into-chamber` to close the teleport route as well. Spectators and creative-mode players are exempt. Off by default. _(This check runs on player movement; it's lightweight — only firing on a block change while the toggle is on — but only enable it if you actually need rank-gated entry.)_
 
 </details>
 
@@ -796,7 +796,7 @@ Gate **walking into** a chamber by rank: when `true`, only players with **`tcp.b
 
 **Default:** `true` _(added in 1.5.7)_
 
-Cancels placing functioning VAULT blocks **outside** registered chambers. A wild vault is a permanent vanilla loot dispenser the plugin can't manage — no per-player tracking, no resets, no loot tables. Players holding `tcp.bypass.vaultplace` (default: op) can always place them, so creative builds and crate setups are unaffected. Inside registered chambers the normal protection rules apply instead.
+Cancels placing functioning VAULT blocks **outside** registered chambers. A wild vault is a permanent vanilla loot dispenser the plugin can't manage — no per-player tracking, no resets, no loot tables. Players holding `btc.bypass.vaultplace` (default: op) can always place them, so creative builds and crate setups are unaffected. Inside registered chambers the normal protection rules apply instead.
 
 </details>
 
@@ -806,7 +806,7 @@ Cancels placing functioning VAULT blocks **outside** registered chambers. A wild
 
 **Default:** `false`
 
-When `true`, a MONITOR-priority observer counts vault and trial spawner destructions inside each chamber. Once the count reaches `auto-pause-threshold`, the chamber is automatically paused and all ops with `tcp.discovery.notify` permission receive a notification. The counter resets every time the chamber is paused, resumed, or reset.
+When `true`, a MONITOR-priority observer counts vault and trial spawner destructions inside each chamber. Once the count reaches `auto-pause-threshold`, the chamber is automatically paused and all ops with `btc.discovery.notify` permission receive a notification. The counter resets every time the chamber is paused, resumed, or reset.
 
 Designed for **hardcore/anarchy servers** where `prevent-block-break` is intentionally disabled. On servers with protection enabled, this setting is redundant (blocks can't be broken in the first place).
 
@@ -1339,7 +1339,7 @@ discovery:
   min-vaults-plus-spawners: 2      # Reject regions with fewer total vaults + spawners
   max-center-y: 10                 # Reject if AABB center Y > this (chambers gen deep underground)
   auto-snapshot: false             # Snapshot on registration (expensive; enable if you want resets to work)
-  notify-ops: true                 # Broadcast registration to tcp.discovery.notify holders
+  notify-ops: true                 # Broadcast registration to btc.discovery.notify holders
   cooldown-seconds: 300            # Per-region debounce after a successful or failed discovery
   pending-retry-seconds: 30        # How long to keep a partial-load seed pending while adjacent chunks load
   merge-distance-blocks: 250       # Merge a new region into an existing chamber within this distance
@@ -1427,7 +1427,7 @@ Requires **1.5.6+** to function: older builds wrote the snapshot file but never 
 
 **Default:** `true`
 
-Broadcast a message to anyone with the `tcp.discovery.notify` permission when a chamber is registered.
+Broadcast a message to anyone with the `btc.discovery.notify` permission when a chamber is registered.
 
 </details>
 
@@ -1473,7 +1473,7 @@ Set **`expand-force-load: true`** _(opt-in, Paper-only)_ to let both the auto pa
 
 **Defaults:** `enabled: true`, `on-join: true`, `interval-minutes: 30` _(added in 1.5.1)_
 
-Auto-discovered chambers without a snapshot silently can't be reset. This pings admins holding `tcp.admin.snapshot` — once on login and as a periodic coalesced console/chat summary — whenever any chamber is missing its snapshot. Set `interval-minutes: 0` to disable only the periodic ping.
+Auto-discovered chambers without a snapshot silently can't be reset. This pings admins holding `btc.admin.snapshot` — once on login and as a periodic coalesced console/chat summary — whenever any chamber is missing its snapshot. Set `interval-minutes: 0` to disable only the periodic ping.
 
 {% hint style="info" %}
 **Plug-and-play setup:** if you want the plugin to "just work" on every chamber in your world without running any commands, set:
@@ -1558,7 +1558,7 @@ Updates are checked on **Modrinth** first, falling back to **GitHub Releases**. 
 How far the updater is allowed to go on its own. Each mode includes everything the one above it does:
 
 * `check-only` — check silently; results are only visible via `/trial update status`.
-* `notify` — additionally announce available updates in the console and to admins on join (holders of `tcp.admin`).
+* `notify` — additionally announce available updates in the console and to admins on join (holders of `btc.admin`).
 * `download` — additionally allow `/trial update download` to fetch a new release, verify it, and stage it for install on the next restart.
 * `auto-stage` — automatically download, verify and stage new releases as they appear.
 

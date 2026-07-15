@@ -177,4 +177,4 @@ The plugin doesn't ship a `/trial reset-messages` command. To restore the bundle
 
 ## Reporting translation issues
 
-If a placeholder is missing, a key is missing from the bundled defaults, or a string can't be sensibly translated due to baked-in word order, [open an issue](https://github.com/darkstarworks/trialchamberpro/issues). Translation contributions are welcome.
+If a placeholder is missing, a key is missing from the bundled defaults, or a string can't be sensibly translated due to baked-in word order, [open an issue](https://github.com/ESMP-FUN/BetterTrialChambers/issues). Translation contributions are welcome.

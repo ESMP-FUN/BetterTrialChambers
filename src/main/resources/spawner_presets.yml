@@ -42,7 +42,9 @@ presets:
   #     - "&7A custom trial spawner."
   #     - "&7Place to deploy."
 
-  # Optional fields you can add to any preset (all are vanilla NBT):
+  # Optional fields you can add to any preset. They OVERRIDE the values from
+  # the datapack config and are applied to the spawner block when it is
+  # placed (vanilla defaults shown):
   #   total-mobs: 6
   #   simultaneous-mobs: 2
   #   total-mobs-added-per-player: 2.0

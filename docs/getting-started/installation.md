@@ -105,7 +105,7 @@ If you already use WorldGuard, BetterTrialChambers can integrate with it for pro
 
 **Purpose:** Stop players claiming registered Trial Chambers _(1.5.15+)_ **Required?** No — only matters if you run one of these land-claim plugins **Download:** [Residence](https://www.spigotmc.org/resources/11480/) · [Lands](https://www.spigotmc.org/resources/53313/) · [GriefPrevention](https://github.com/GriefPrevention/GriefPrevention)
 
-If any of these is installed, BetterTrialChambers blocks claim creation/expansion that overlaps a chamber and can scan for pre-existing conflicts (`/trial claims scan`). Enabled by default per plugin; see [protection config](../configuration/config.yml.md) and the `tcp.bypass.*` [permissions](../reference/permissions.md).
+If any of these is installed, BetterTrialChambers blocks claim creation/expansion that overlaps a chamber and can scan for pre-existing conflicts (`/trial claims scan`). Enabled by default per plugin; see [protection config](../configuration/config.yml.md) and the `btc.bypass.*` [permissions](../reference/permissions.md).
 
 ### AdvancedEnchantments
 

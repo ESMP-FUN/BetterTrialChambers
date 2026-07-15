@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [2.0.0] - 2026-07-11
+## [2.0.0] - 2026-07-15
 ### Changed
 - **The plugin is now Better Trial Chambers.** Same plugin, new name — TrialChamberPro was always 100% free, and the name kept suggesting otherwise. The project now lives at https://github.com/ESMP-FUN/BetterTrialChambers.
 - Main command is now `/trial` (aliases: `/btc`, `/bettertrialchambers`, `/chamber`). The old `/tcp` still works as a legacy alias.
@@ -14,6 +14,12 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ### Added
 - **Automatic upgrade from TrialChamberPro.** On first start, if `plugins/TrialChamberPro/` exists, its config, database, snapshots and dungeon templates are copied to `plugins/BetterTrialChambers/` automatically. The old folder is kept as a backup. World data (spawner presets, vault drop ownership) and database tables are untouched and keep working as-is.
+
+### Fixed
+- **Spawner presets: `total-mobs`, `simultaneous-mobs`, `total-mobs-added-per-player`, `simultaneous-mobs-added-per-player`, `ticks-between-spawn` and `spawn-range` were silently ignored.** These six fields were written at the top level of the item's `block_entity_data`, but vanilla only reads them from *inside* the trial spawner configuration compound (`normal_config`/`ominous_config`) — and a preset's config is a datapack reference string that can't carry per-field overrides, so they can't be expressed in item NBT at all. Preset spawners therefore always ran with the datapack/vanilla values (6 total mobs, 2 simultaneous, 40-tick spawn interval, 4-block range). `SpawnerPresetPlaceListener` now applies the overrides to the placed block via Paper's `TrialSpawnerConfiguration` API, layered on top of the resolved datapack config. Works retroactively for preset items handed out before this fix (the place-time lookup uses the item's preset tag); spawners placed *before* updating need to be broken and re-placed once.
+- **Spawner presets: `reset.wild-spawner-cooldown-minutes` no longer overrides a preset spawner's `target-cooldown-length`.** Preset spawners placed outside a registered chamber count as wild spawners, so when the server-wide wild cooldown was enabled (≥ 0) it silently replaced the cooldown the preset had explicitly configured — both at wave start and at wave completion. Both paths now skip spawners carrying the preset tag; a preset's cooldown is governed solely by its `target-cooldown-length`.
+- **Spawner presets: chamber resets no longer override a preset spawner's `target-cooldown-length` either.** `ResetManager` applied the per-chamber / `reset.spawner-cooldown-minutes` cooldown to every trial spawner in the chamber, including preset-sourced ones — the same silent override as the wild-spawner case above. Preset-tagged spawners now keep their configured cooldown length; tracked-player clearing and the one-shot post-reset cooldown clear still apply to them so chamber resets behave normally.
+- **Trial spawners restored into a recreated block entity no longer come back dead.** Snapshots only captured `ominous` / cooldown / player range, so whenever the restore had to recreate the block entity from scratch — the spawner block was destroyed before the reset, or a dungeon room template was stamped into what used to be air — the spawner came back with the vanilla default configuration: empty spawn potentials (permanently inactive) and no preset tag. Snapshots now also capture both spawner configurations (spawn potentials, mob counts, spawn interval/range, reward loot tables) and the preset tag; the restore rebuilds them **only** when the live block entity has lost its configuration, so surviving spawners keep their full vanilla data (including `equipment`, which Bukkit's `SpawnerEntry` can't round-trip). Existing snapshot files keep working — re-create a chamber's snapshot to pick up the richer capture.
 
 ## [1.8.1] - 2026-07-10
 ### Added
@@ -1577,6 +1583,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[2.0.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.8.1...v2.0.0
 [1.8.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.7.3...v1.8.0

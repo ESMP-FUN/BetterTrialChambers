@@ -14,6 +14,14 @@ package com.esmpfun.bettertrialchambers.models
  *
  * Introduced in v1.3.1.
  *
+ * The optional config-scoped fields ([totalMobs], [simultaneousMobs],
+ * [totalMobsAddedPerPlayer], [simultaneousMobsAddedPerPlayer],
+ * [ticksBetweenSpawn], [spawnRange]) override the referenced datapack
+ * config's values. Vanilla only reads these from inside the configuration
+ * compound (not the block-entity top level), so they are NOT baked into the
+ * item NBT — `SpawnerPresetPlaceListener` applies them to the block at place
+ * time via Paper's `TrialSpawnerConfiguration` API.
+ *
  * Note: the preset can ONLY produce `Material.TRIAL_SPAWNER` items by design;
  * there is no `material` field in the YAML schema. Other block types (vaults,
  * etc.) are out of scope for the free tier — they belong to a separate
