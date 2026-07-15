@@ -254,6 +254,18 @@ class SpawnerWaveListener(private val plugin: BetterTrialChambers) : Listener {
         val wildCooldownMinutes = plugin.config.getInt("reset.wild-spawner-cooldown-minutes", -1)
         if (wildCooldownMinutes == -1) return // Use vanilla default
 
+        // Preset-sourced spawners configure their own cooldown explicitly
+        // (spawner_presets.yml `target-cooldown-length`); the server-wide wild
+        // cooldown must not silently override the per-preset value.
+        if (readPresetIdTag(block) != null) {
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.info("[WildSpawner] Skipping cooldown override - spawner at " +
+                    "${block.location.blockX},${block.location.blockY},${block.location.blockZ} " +
+                    "is preset-sourced (uses its preset's target-cooldown-length)")
+            }
+            return
+        }
+
         // Check if we've already configured this spawner in this wave
         // Only configure once per wave start to avoid repeated state.update() calls
         val existingWave = plugin.spawnerWaveManager.getWaveAt(block.location)

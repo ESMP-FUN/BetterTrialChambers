@@ -68,6 +68,14 @@ presets:
 | `simultaneous-mobs-added-per-player` | float | _(datapack)_ | Extra concurrent cap per additional player. |
 | `ticks-between-spawn` | int | _(datapack)_ | Tick delay between individual spawns. |
 | `spawn-range` | int | _(datapack)_ | Radius (blocks) around the spawner where mobs can appear. |
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
+The six datapack-override fields (`total-mobs` through `spawn-range`) are applied to the spawner **when the block is placed**, layered on top of the datapack config. If you edit them in `spawner_presets.yml`, run `/trial reload` and then **break and re-place** the spawner (a `/trial give` item placed after the reload picks up the new values — already-placed blocks keep the old ones).
+
+A preset spawner's cooldown always comes from its `target-cooldown-length`; the server-wide `reset.wild-spawner-cooldown-minutes` setting does not apply to preset-sourced spawners.
+
+</div>
 | `display-name` | string | _(none)_ | Item name shown in inventory. Supports `&` colour codes. |
 | `lore` | list of strings | _(empty)_ | Item lore lines. Supports `&` colour codes. |
 
