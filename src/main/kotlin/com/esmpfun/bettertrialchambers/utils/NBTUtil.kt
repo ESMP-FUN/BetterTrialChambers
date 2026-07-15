@@ -50,22 +50,77 @@ object NBTUtil {
         }
     }
 
+    /** Key of the `trialchamberpro:preset_id` tag written by SpawnerPresetPlaceListener. */
+    private val presetIdKey = NamespacedKey(
+        "trialchamberpro",
+        com.esmpfun.bettertrialchambers.managers.SpawnerPresetManager.PRESET_ID_KEY_NAME
+    )
+
     /**
      * Captures Trial Spawner NBT data.
      * Stores cooldown settings and ominous state for proper restoration.
+     *
+     * v2.0.1: also captures both spawner *configurations* (spawn potentials,
+     * mob counts, spawn interval/range, reward tables) and the preset tag.
+     * A restore into a RECREATED block entity (spawner block destroyed before
+     * the reset, or a dungeon room template stamped into air) starts from
+     * vanilla defaults with EMPTY spawn potentials — without this capture the
+     * spawner came back permanently inactive.
      */
     private fun captureTrialSpawner(spawner: TrialSpawner): Map<String, Any> {
         return try {
-            mapOf(
+            val map = mutableMapOf<String, Any>(
                 "type" to "TRIAL_SPAWNER",
                 "ominous" to spawner.isOminous,
                 "cooldownLength" to spawner.cooldownLength,
                 "requiredPlayerRange" to spawner.requiredPlayerRange
             )
+            runCatching { captureSpawnerConfig(spawner.normalConfiguration) }
+                .getOrNull()?.let { map["normalConfig"] = it }
+            runCatching { captureSpawnerConfig(spawner.ominousConfiguration) }
+                .getOrNull()?.let { map["ominousConfig"] = it }
+            // Preserve the preset tag across block-entity recreation so
+            // orphan mining / WildSpawnerResolver keep working after repair.
+            spawner.persistentDataContainer
+                .get(presetIdKey, org.bukkit.persistence.PersistentDataType.STRING)
+                ?.let { map["presetId"] = it }
+            map
         } catch (_: Exception) {
             // Fallback if API methods not available
             mapOf("type" to "TRIAL_SPAWNER")
         }
+    }
+
+    /**
+     * Flattens one [org.bukkit.spawner.TrialSpawnerConfiguration] into plain
+     * JDK-serializable values (snapshot maps are Java-serialized). Spawn
+     * potentials are stored as entity SNBT via [org.bukkit.entity.EntitySnapshot.getAsString].
+     *
+     * Known API gap: `SpawnerEntry` does not round-trip the vanilla `equipment`
+     * sub-compound, which is why the restore side only uses this data when the
+     * live block entity has lost its configuration entirely.
+     */
+    private fun captureSpawnerConfig(cfg: org.bukkit.spawner.TrialSpawnerConfiguration): Map<String, Any> {
+        val potentials = cfg.potentialSpawns.map { entry ->
+            val potential = mutableMapOf<String, Any>(
+                "snbt" to entry.snapshot.asString,
+                "weight" to entry.spawnWeight
+            )
+            entry.spawnRule?.let { rule ->
+                potential["rule"] = listOf(rule.minBlockLight, rule.maxBlockLight, rule.minSkyLight, rule.maxSkyLight)
+            }
+            potential
+        }
+        return mapOf(
+            "spawnRange" to cfg.spawnRange,
+            "totalMobs" to cfg.baseSpawnsBeforeCooldown,
+            "simultaneousMobs" to cfg.baseSimultaneousEntities,
+            "totalMobsPerPlayer" to cfg.additionalSpawnsBeforeCooldown,
+            "simultaneousMobsPerPlayer" to cfg.additionalSimultaneousEntities,
+            "delay" to cfg.delay,
+            "potentials" to potentials,
+            "rewards" to cfg.possibleRewards.entries.associate { (table, weight) -> table.key.toString() to weight }
+        )
     }
 
     /**
@@ -509,12 +564,86 @@ object NBTUtil {
                 spawner.requiredPlayerRange = requiredRange
             }
 
+            // v2.0.1: if the block entity was RECREATED (spawner block destroyed
+            // before the reset, or a dungeon room template stamped into air), the
+            // live configuration is the vanilla default with EMPTY spawn
+            // potentials — the spawner would restore permanently inactive.
+            // Rebuild both configurations from the captured data in that case.
+            // A surviving block entity keeps its own (richer) config untouched:
+            // SpawnerEntry can't round-trip the `equipment` sub-compound, so we
+            // never overwrite a live configuration with the flattened capture.
+            val configLost = runCatching {
+                spawner.normalConfiguration.potentialSpawns.isEmpty() &&
+                    spawner.ominousConfiguration.potentialSpawns.isEmpty()
+            }.getOrDefault(false)
+            if (configLost) {
+                @Suppress("UNCHECKED_CAST")
+                (data["normalConfig"] as? Map<String, Any>)?.let {
+                    restoreSpawnerConfig(spawner.normalConfiguration, it)
+                }
+                @Suppress("UNCHECKED_CAST")
+                (data["ominousConfig"] as? Map<String, Any>)?.let {
+                    restoreSpawnerConfig(spawner.ominousConfiguration, it)
+                }
+            }
+
+            // Re-apply the preset tag (no-op when the block entity survived).
+            (data["presetId"] as? String)?.let { id ->
+                spawner.persistentDataContainer.set(
+                    presetIdKey, org.bukkit.persistence.PersistentDataType.STRING, id
+                )
+            }
+
             // Commit the changes
             spawner.update(true, false)
             true
         } catch (e: Exception) {
             // Log but don't fail - BlockData restoration still works
             false
+        }
+    }
+
+    /**
+     * Rebuilds one trial spawner configuration from the flattened capture
+     * produced by [captureSpawnerConfig]. Only called when the live block
+     * entity lost its configuration (see [restoreTrialSpawner]). Every field
+     * is best-effort: entries that fail to parse are skipped rather than
+     * aborting the restore.
+     */
+    private fun restoreSpawnerConfig(cfg: org.bukkit.spawner.TrialSpawnerConfiguration, data: Map<String, Any>) {
+        (data["spawnRange"] as? Int)?.let { runCatching { cfg.spawnRange = it } }
+        (data["totalMobs"] as? Float)?.let { cfg.baseSpawnsBeforeCooldown = it }
+        (data["simultaneousMobs"] as? Float)?.let { cfg.baseSimultaneousEntities = it }
+        (data["totalMobsPerPlayer"] as? Float)?.let { cfg.additionalSpawnsBeforeCooldown = it }
+        (data["simultaneousMobsPerPlayer"] as? Float)?.let { cfg.additionalSimultaneousEntities = it }
+        (data["delay"] as? Int)?.let { runCatching { cfg.delay = it } }
+
+        val entries = (data["potentials"] as? List<*>)?.mapNotNull { raw ->
+            val potential = raw as? Map<*, *> ?: return@mapNotNull null
+            val snbt = potential["snbt"] as? String ?: return@mapNotNull null
+            val weight = (potential["weight"] as? Int)?.coerceAtLeast(1) ?: 1
+            val rule = (potential["rule"] as? List<*>)
+                ?.mapNotNull { it as? Int }
+                ?.takeIf { it.size == 4 }
+                ?.let { r -> runCatching { org.bukkit.block.spawner.SpawnRule(r[0], r[1], r[2], r[3]) }.getOrNull() }
+            runCatching {
+                org.bukkit.block.spawner.SpawnerEntry(
+                    Bukkit.getEntityFactory().createEntitySnapshot(snbt), weight, rule
+                )
+            }.getOrNull()
+        }.orEmpty()
+        if (entries.isNotEmpty()) {
+            runCatching { cfg.setPotentialSpawns(entries) }
+        }
+
+        val rewards = (data["rewards"] as? Map<*, *>)?.entries?.mapNotNull { (rawKey, rawWeight) ->
+            val key = (rawKey as? String)?.let { NamespacedKey.fromString(it) } ?: return@mapNotNull null
+            val table = Bukkit.getLootTable(key) ?: return@mapNotNull null
+            val weight = (rawWeight as? Int)?.takeIf { it >= 1 } ?: return@mapNotNull null
+            table to weight
+        }?.toMap().orEmpty()
+        if (rewards.isNotEmpty()) {
+            runCatching { cfg.setPossibleRewards(rewards) }
         }
     }
 

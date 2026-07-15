@@ -784,6 +784,19 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
 
             val state = block.state
             if (state is org.bukkit.block.TrialSpawner) {
+                // Preset-sourced spawners configure their own cooldown explicitly
+                // (spawner_presets.yml `target-cooldown-length`); the server-wide
+                // wild cooldown must not silently override the per-preset value.
+                val presetKey = org.bukkit.NamespacedKey("trialchamberpro",
+                    com.esmpfun.bettertrialchambers.managers.SpawnerPresetManager.PRESET_ID_KEY_NAME)
+                if (state.persistentDataContainer.has(presetKey, org.bukkit.persistence.PersistentDataType.STRING)) {
+                    if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                        plugin.logger.info("[WildSpawner] Skipping cooldown override at completion - " +
+                            "spawner is preset-sourced (uses its preset's target-cooldown-length)")
+                    }
+                    return
+                }
+
                 val cooldownTicks = if (wildCooldownMinutes == 0) {
                     1 // Minimum 1 tick to avoid potential issues
                 } else {

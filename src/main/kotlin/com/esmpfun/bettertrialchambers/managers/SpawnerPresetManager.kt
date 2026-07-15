@@ -150,6 +150,16 @@ class SpawnerPresetManager(private val plugin: BetterTrialChambers) {
         // rather than reaching for NMS — Paper exposes no Bukkit-API path to
         // construct an arbitrary CompoundTag for the BLOCK_ENTITY_DATA component,
         // and ItemFactory.createItemStack happily accepts the SNBT string form.
+        //
+        // Only fields vanilla reads at the TOP level of the block entity go here:
+        // normal_config / ominous_config / required_player_range /
+        // target_cooldown_length. The config-scoped fields (total_mobs,
+        // simultaneous_mobs, the per-player scaling pair, ticks_between_spawn,
+        // spawn_range) live INSIDE the trial spawner configuration compound —
+        // and since our configs are datapack *references* (strings), those
+        // overrides can't be expressed in item NBT at all. They are applied at
+        // place time by SpawnerPresetPlaceListener.applyConfigOverrides on top
+        // of the resolved config instead.
         val parts = mutableListOf<String>()
         parts += """id:"trial_spawner""""
         preset.normalConfig?.takeIf { it.isNotBlank() }?.let {
@@ -160,12 +170,6 @@ class SpawnerPresetManager(private val plugin: BetterTrialChambers) {
         }
         parts += "required_player_range:${preset.requiredPlayerRange}"
         parts += "target_cooldown_length:${preset.targetCooldownLength}"
-        preset.totalMobs?.let { parts += "total_mobs:$it" }
-        preset.simultaneousMobs?.let { parts += "simultaneous_mobs:$it" }
-        preset.totalMobsAddedPerPlayer?.let { parts += "total_mobs_added_per_player:${it}f" }
-        preset.simultaneousMobsAddedPerPlayer?.let { parts += "simultaneous_mobs_added_per_player:${it}f" }
-        preset.ticksBetweenSpawn?.let { parts += "ticks_between_spawn:$it" }
-        preset.spawnRange?.let { parts += "spawn_range:$it" }
         return "{" + parts.joinToString(",") + "}"
     }
 
