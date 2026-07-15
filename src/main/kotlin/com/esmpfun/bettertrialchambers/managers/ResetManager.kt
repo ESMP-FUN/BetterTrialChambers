@@ -651,6 +651,16 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                                         if (state is org.bukkit.block.TrialSpawner) {
                                             val oldCooldown = state.cooldownLength
 
+                                            // Preset-sourced spawners configure their own cooldown explicitly
+                                            // (spawner_presets.yml `target-cooldown-length`); the chamber/global
+                                            // spawner-cooldown setting must not silently override it. Same rule
+                                            // as the wild-spawner cooldown paths. Tracking/state clearing below
+                                            // still applies — only the cooldown LENGTH override is skipped.
+                                            val isPresetSpawner = state.persistentDataContainer.has(
+                                                org.bukkit.NamespacedKey("trialchamberpro", SpawnerPresetManager.PRESET_ID_KEY_NAME),
+                                                org.bukkit.persistence.PersistentDataType.STRING
+                                            )
+
                                             // Clear tracked players - KEY fix for trial key drops!
                                             state.trackedPlayers.forEach { player ->
                                                 state.stopTrackingPlayer(player)
@@ -670,7 +680,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                                             // -1 = vanilla default (don't change)
                                             // 0 = no cooldown (immediate reactivation)
                                             // >0 = custom cooldown in minutes
-                                            if (cooldownMinutes >= 0) {
+                                            if (cooldownMinutes >= 0 && !isPresetSpawner) {
                                                 val cooldownTicks = cooldownMinutes * 60 * 20 // minutes to ticks
                                                 state.cooldownLength = cooldownTicks
 
@@ -678,6 +688,9 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                                                     plugin.logger.info("[SpawnerReset] Spawner at ${block.x},${block.y},${block.z}: " +
                                                         "cooldown $oldCooldown -> $cooldownTicks ticks (${cooldownMinutes}m)")
                                                 }
+                                            } else if (isPresetSpawner && verboseLogging && cooldownMinutes >= 0) {
+                                                plugin.logger.info("[SpawnerReset] Spawner at ${block.x},${block.y},${block.z}: " +
+                                                    "preset-sourced, keeping its target-cooldown-length ($oldCooldown ticks)")
                                             }
 
                                             // Clear the LEFTOVER active cooldown + pending spawn timer so the spawner
@@ -699,7 +712,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                                             state.update(true, false)
 
                                             // Verify the change was applied (debug)
-                                            if (verboseLogging && cooldownMinutes >= 0) {
+                                            if (verboseLogging && cooldownMinutes >= 0 && !isPresetSpawner) {
                                                 val newState = block.state as? org.bukkit.block.TrialSpawner
                                                 val actualCooldown = newState?.cooldownLength ?: -1
                                                 val cooldownTicks = cooldownMinutes * 60 * 20
