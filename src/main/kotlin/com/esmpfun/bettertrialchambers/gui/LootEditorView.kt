@@ -55,6 +55,7 @@ class LootEditorView(
 
     private var draft: LootEditorDraft = existingDraft?.let { cloneDraft(it) } ?: loadInitialDraft()
     private var discardRequested: Boolean = false
+    private var page: Int = 0
 
     init {
         refreshContent()
@@ -122,29 +123,35 @@ class LootEditorView(
         )
     }
 
-    /** Repaint the loot-entries region (rows 0–3, slots 0..35). */
+    /** One pageable loot entry: its absolute index into the draft list it lives in. */
+    private data class Entry(val index: Int, val weighted: Boolean, val item: LootItem)
+
+    private fun entries(): List<Entry> =
+        draft.weighted.mapIndexed { i, li -> Entry(i, weighted = true, li) } +
+            draft.guaranteed.mapIndexed { i, li -> Entry(i, weighted = false, li) }
+
+    private fun totalPages(): Int =
+        maxOf(1, (entries().size + ENTRIES_PER_PAGE - 1) / ENTRIES_PER_PAGE)
+
+    /** Repaint the loot-entries region (rows 0–3, slots 0..35) for the current page. */
     private fun refreshContent() {
         // Clear the entries region (rows 0..3 inclusive).
         for (s in 0..35) set(s, null)
 
         val totalWeight = draft.weighted.filter { it.enabled }.sumOf { it.weight }
-        var slot = 0
-        draft.weighted.forEachIndexed { idx, li ->
-            if (slot > 35) return@forEachIndexed
-            val item = renderLootItem(li, weighted = true, totalWeight)
-            set(slot++, VcGuiItem.wrap(item) { ctx ->
-                handleItemClick(idx, weighted = true, ctx.click, ctx.player)
-            })
-        }
-        draft.guaranteed.forEachIndexed { idx, li ->
-            if (slot > 35) return@forEachIndexed
-            val item = renderLootItem(li, weighted = false, 0.0)
-            set(slot++, VcGuiItem.wrap(item) { ctx ->
-                handleItemClick(idx, weighted = false, ctx.click, ctx.player)
+        val all = entries()
+        page = page.coerceIn(0, totalPages() - 1)
+        val from = page * ENTRIES_PER_PAGE
+        val onPage = all.subList(from, minOf(from + ENTRIES_PER_PAGE, all.size))
+
+        onPage.forEachIndexed { slot, entry ->
+            val item = renderLootItem(entry.item, entry.weighted, if (entry.weighted) totalWeight else 0.0)
+            set(slot, VcGuiItem.wrap(item) { ctx ->
+                handleItemClick(entry.index, entry.weighted, ctx.click, ctx.player)
             })
         }
 
-        if (draft.weighted.isEmpty() && draft.guaranteed.isEmpty()) {
+        if (all.isEmpty()) {
             val empty = GuiComponents.infoItem(plugin, Material.BARRIER,
                 "gui.loot-editor.empty-name", "gui.loot-editor.empty-lore")
             set(13, VcGuiItem.wrap(empty))
@@ -258,8 +265,26 @@ class LootEditorView(
         // Clear controls region.
         for (s in 36..53) set(s, null)
 
-        // Row 5 (slots 45..53) — bottom-area controls. Row 4 is left empty as a
-        // visual gap between the loot-entry grid (rows 0-3) and the action row.
+        // Row 4 (slots 36..44) — page navigation, drawn only when the entries
+        // overflow one page; otherwise the row stays empty as a visual gap
+        // between the loot-entry grid (rows 0-3) and the action row.
+        val totalPages = totalPages()
+        if (totalPages > 1) {
+            set(39, GuiComponents.prevPageVcItem(plugin, page, totalPages) {
+                page--
+                refreshContent()
+                buildControls()
+                update()
+            })
+            set(41, GuiComponents.nextPageVcItem(plugin, page, totalPages) {
+                page++
+                refreshContent()
+                buildControls()
+                update()
+            })
+        }
+
+        // Row 5 (slots 45..53) — bottom-area controls.
         // Save at (0, 5) = slot 45
         val saveLoreKey = if (draft.dirty) "gui.loot-editor.save-lore-dirty" else "gui.loot-editor.save-lore-clean"
         val save = GuiComponents.infoItem(plugin, Material.GREEN_CONCRETE,
@@ -410,6 +435,11 @@ class LootEditorView(
         v >= 10.0 -> String.format("%.0f", v)
         v >= 1.0 -> String.format("%.1f", v)
         else -> String.format("%.2f", v)
+    }
+
+    companion object {
+        /** Entries per page — the full 4-row grid (slots 0..35). */
+        private const val ENTRIES_PER_PAGE = 36
     }
 }
 
