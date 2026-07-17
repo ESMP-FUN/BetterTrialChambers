@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [2.0.1] - 2026-07-17
+### Fixed
+- **Loot editor: tables with more than 36 entries are now paginated.** The editor only ever rendered the first 36 entries (weighted first, then guaranteed) and silently hid the rest — they stayed in the loot table and kept dropping in-game, but couldn't be viewed or edited from the GUI. When a table overflows one page, Previous/Next arrows now appear in the gap row above the action buttons.
+
 ## [2.0.0] - 2026-07-15
 ### Changed
 - **The plugin is now Better Trial Chambers.** Same plugin, new name — TrialChamberPro was always 100% free, and the name kept suggesting otherwise. The project now lives at https://github.com/ESMP-FUN/BetterTrialChambers.
