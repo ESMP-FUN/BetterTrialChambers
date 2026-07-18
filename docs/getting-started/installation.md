@@ -21,7 +21,6 @@ Grab the latest version from one of these sources:
 
 * [GitHub Releases](https://github.com/ESMP-FUN/BetterTrialChambers/releases) (recommended)
 * [Modrinth](https://modrinth.com/plugin/trialchamberpro)
-* [SpigotMC](https://www.spigotmc.org/resources/trialchamberpro)
 
 Look for the file named something like `BetterTrialChambers-<version>.jar`.
 
