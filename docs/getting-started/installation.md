@@ -6,7 +6,8 @@ Getting BetterTrialChambers up and running is easier than finding diamonds at Y=
 
 Before you start, make sure you have:
 
-* **Paper 1.21.x** (or forks like Purpur, Pufferfish, Folia)
+* **Paper 1.21.x** (or forks like Purpur, Pufferfish, Folia) — on
+  Minecraft 26.x, use the `-mc26` build (Java 25)
 * **Java 21** or newer
 * **WorldEdit** (optional but highly recommended for chamber creation)
 
