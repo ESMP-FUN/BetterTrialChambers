@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [2.0.3] - 2026-07-19
+### Fixed
+- **Choosing a different loot table for a chamber now actually does something.** If you used "Loot Table Overrides" to point a chamber at another table, the chamber's Normal/Ominous Loot buttons carried on showing — and editing — the chamber's own `chamber-<name>` table instead. So your edits went into a table nothing was using, and the vaults kept handing out whatever the override pointed at. It looked like the plugin had glued a table to the chamber based on its name and refused to let go. Both buttons now follow the override, so what you see on the button is what the vaults actually give out. Nothing changes for chambers without an override.
+
+### Changed
+- **The loot buttons now tell you when a chamber is sharing a table.** When a chamber has been pointed at another loot table, its Normal/Ominous Loot buttons say so, and warn that other chambers may be using that same table — editing it there changes it for all of them. The "Loot Table Overrides" button also explains in plain words what it does, and that leaving it on `(default)` gives the chamber its own private loot table.
+
 ## [2.0.2] - 2026-07-17
 ### Added
 - **Independent drop-chance loot mode.** Loot pools can now roll in one of two modes. The classic **weighted** mode (default, unchanged) makes a set number of draws per opening and picks one item per draw by relative weight. The new **independent** mode gives every item its own absolute 0-100% drop chance — each item rolls on its own, chances don't have to add up to 100%, and an optional **Max Items** cap limits how many drop per opening. Much easier to reason about for large tables (e.g. 100+ items) where balancing relative weights is impractical. Set per table/pool with `mode: independent` (and optional `max-items: N`) in loot.yml, or toggle it in the loot editor GUI. Existing tables are untouched and keep behaving exactly as before.

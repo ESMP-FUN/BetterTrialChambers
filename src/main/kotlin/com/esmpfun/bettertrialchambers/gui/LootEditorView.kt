@@ -89,10 +89,10 @@ class LootEditorView(
         val baseName: String
         val source: LootTable?
         if (chamber != null) {
-            baseName = when (kind) {
-                MenuService.LootKind.NORMAL -> "chamber-${chamber.name.lowercase()}"
-                MenuService.LootKind.OMINOUS -> "ominous-${chamber.name.lowercase()}"
-            }
+            // Edit whatever the chamber's vaults actually roll — an override points
+            // them at a different table, and writing to `chamber-<name>` instead
+            // would save into a table nothing reads (v2.0.3).
+            baseName = MenuService.effectiveTableName(chamber, kind)
             val fallback = when (kind) {
                 MenuService.LootKind.NORMAL -> "default"
                 MenuService.LootKind.OMINOUS -> "ominous-default"
