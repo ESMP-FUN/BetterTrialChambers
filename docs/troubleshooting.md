@@ -74,6 +74,27 @@ You can check the current value in-game with `/trial info` — look at the **Per
 
 <details>
 
+<summary><strong>I picked a different loot table for a chamber, but my edits don't show up</strong></summary>
+
+**The symptom:** you set a chamber's loot table to another table, but the chamber's **Normal Loot** button keeps showing `chamber-<name>`, and anything you edit through it has no effect in-game. It looks like the plugin has glued a loot table to the chamber based on its name and won't let you switch.
+
+**The cause:** a bug in 2.0.2 and earlier — **fixed in 2.0.3**. The Normal/Ominous Loot buttons ignored the override and always opened the chamber's own `chamber-<name>` table, so your edits were saved into a table the vaults weren't reading.
+
+**Fix:** update to 2.0.3 or newer. Nothing to reconfigure — the buttons now follow the override, and the table shown on the button is the one the vaults actually hand out.
+
+**While you're here — the two buttons do different things:**
+
+* **Loot Table Overrides** picks _which_ table the chamber's vaults use.
+* **Normal Loot** / **Ominous Loot** edit _the contents_ of whichever table it's currently using.
+
+So if you point a chamber at a shared table, editing it from that chamber changes it for **every** chamber using it — the button now warns you when that's the case. Want a chamber to have loot nobody else shares? Leave its override on `(default)`; it then gets its own private `chamber-<name>` table.
+
+If you're on 2.0.2 or older and can't update yet, edits made through the button went into `chamber-<name>` — that table still exists in `loot.yml`, so nothing was lost. Either clear the override (`/trial loot clear <chamber> all`) to start using it, or copy what you wrote into the table you actually pointed the chamber at.
+
+</details>
+
+<details>
+
 <summary><strong>Do I need WorldEdit? Does this work without manually registering every chamber?</strong></summary>
 
 **No, you don't need WorldEdit — and yes, it works automatically.**

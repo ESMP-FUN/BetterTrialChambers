@@ -170,26 +170,37 @@ class ChamberDetailView(
         )
     }
 
-    private fun createNormalLootItem(): ItemStack {
-        val tableName = "chamber-${chamber.name.lowercase()}"
-        val tableExists = plugin.lootManager.getTable(tableName) != null
-        val loreKey = if (tableExists)
-            "gui.chamber-detail.normal-loot-lore-custom" else "gui.chamber-detail.normal-loot-lore-default"
-        return GuiComponents.infoItem(
-            plugin, Material.GREEN_WOOL,
-            "gui.chamber-detail.normal-loot-name", loreKey,
-            "table" to tableName
-        )
-    }
+    private fun createNormalLootItem(): ItemStack = createLootItem(
+        MenuService.LootKind.NORMAL, Material.GREEN_WOOL, "normal", chamber.normalLootTable
+    )
 
-    private fun createOminousLootItem(): ItemStack {
-        val tableName = "ominous-${chamber.name.lowercase()}"
-        val tableExists = plugin.lootManager.getTable(tableName) != null
-        val loreKey = if (tableExists)
-            "gui.chamber-detail.ominous-loot-lore-custom" else "gui.chamber-detail.ominous-loot-lore-default"
+    private fun createOminousLootItem(): ItemStack = createLootItem(
+        MenuService.LootKind.OMINOUS, Material.PURPLE_WOOL, "ominous", chamber.ominousLootTable
+    )
+
+    /**
+     * Three lore states, not two. The override state gets its own wording because
+     * it's the one that confused admins: the chamber has been pointed at a table
+     * that other chambers may share, so an edit here reaches further than the
+     * chamber you're standing in. Saying that on the item is the only warning most
+     * operators will ever see — they don't read changelogs.
+     */
+    private fun createLootItem(
+        kind: MenuService.LootKind,
+        material: Material,
+        keyPrefix: String,
+        override: String?,
+    ): ItemStack {
+        val tableName = MenuService.effectiveTableName(chamber, kind)
+        val state = when {
+            override != null -> "override"
+            plugin.lootManager.getTable(tableName) != null -> "custom"
+            else -> "default"
+        }
         return GuiComponents.infoItem(
-            plugin, Material.PURPLE_WOOL,
-            "gui.chamber-detail.ominous-loot-name", loreKey,
+            plugin, material,
+            "gui.chamber-detail.$keyPrefix-loot-name",
+            "gui.chamber-detail.$keyPrefix-loot-lore-$state",
             "table" to tableName
         )
     }
@@ -304,10 +315,7 @@ class ChamberDetailView(
     // ==================== Click Handlers (verbatim from IF version) ====================
 
     private fun handleLootKindClick(player: Player, kind: MenuService.LootKind) {
-        val tableName = when (kind) {
-            MenuService.LootKind.NORMAL -> "chamber-${chamber.name.lowercase()}"
-            MenuService.LootKind.OMINOUS -> "ominous-${chamber.name.lowercase()}"
-        }
+        val tableName = MenuService.effectiveTableName(chamber, kind)
         val table = plugin.lootManager.getTable(tableName)
         if (table != null && !table.isLegacyFormat()) {
             menu.openPoolSelect(player, chamber, kind)
