@@ -54,6 +54,26 @@ Same rule applies to `config.yml` and `messages.yml`. If any of the three go qui
 
 <details>
 
+<summary><strong>Vaults give plain vanilla loot and ignore my custom loot table</strong></summary>
+
+**The symptom:** loot tables load fine (no console errors, vaults register correctly), but opening a vault gives vanilla Minecraft items — crossbows, poison arrows, wind charges — instead of your custom loot.
+
+**The likely cause:** `per-player-loot` is turned **off** in `config.yml`.
+
+That option is the master switch for plugin-managed vaults. When it's `false`, BetterTrialChambers doesn't touch vaults at all — they open with pure vanilla loot, and every custom loot table is ignored.
+
+**Fix:**
+
+1. Open `plugins/BetterTrialChambers/config.yml`.
+2. Under `vaults:`, set `per-player-loot: true`.
+3. `/trial reload`.
+
+You can check the current value in-game with `/trial info` — look at the **Per-Player Loot** line. Full explanation: [config.yml → per-player-loot](configuration/config.yml.md#vault-settings).
+
+</details>
+
+<details>
+
 <summary><strong>Do I need WorldEdit? Does this work without manually registering every chamber?</strong></summary>
 
 **No, you don't need WorldEdit — and yes, it works automatically.**
