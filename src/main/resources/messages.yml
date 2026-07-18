@@ -1409,12 +1409,19 @@ gui:
     item-amount: "&7Amount: {min}-{max}"
     item-chance: "&eChance: {percent}% &7per draw"
     item-weight: "&eWeight: {weight}"
+    # Weighted mode: raw weight AND the derived per-draw chance shown together, so
+    # the weight number stays visible while the entry is enabled.
+    item-weight-chance: "&eWeight: {weight} &7(≈{percent}% per draw)"
+    # Independent mode: the weight IS the item's own absolute drop chance.
+    item-drop-chance: "&eDrop chance: {percent}%"
     item-expected: "&7Expected: &f≈{count} &7per vault opening"
     item-enabled: "&a✓ Enabled"
     item-disabled: "&c✗ Disabled"
     item-controls-header: "&8━━━ Controls ━━━"
-    item-controls-shift-left: "&7Shift+Left: Higher Drop Chance"
-    item-controls-shift-right: "&7Shift+Right: Lower Drop Chance"
+    item-controls-shift-left: "&7Shift+Left: +1 weight"
+    item-controls-shift-right: "&7Shift+Right: -1 weight"
+    item-controls-shift-left-pct: "&7Shift+Left: +1% chance"
+    item-controls-shift-right-pct: "&7Shift+Right: -1% chance"
     item-controls-right: "&bRight Click: Edit Amounts"
     item-controls-middle: "&7Middle Click: Toggle"
     save-name: "&aSave"
@@ -1443,6 +1450,35 @@ gui:
       - "&7  Left: +1  |  Right: -1"
       - "&bMax draws: &f{max}"
       - "&7  Shift+Left: +1  |  Shift+Right: -1"
+    # Roll-mode toggle. The name line is suffixed at runtime with the active mode
+    # label (mode-weighted / mode-independent).
+    mode-name: "&eRoll Mode: "
+    mode-weighted: "&aWeighted"
+    mode-independent: "&bIndependent"
+    mode-lore-weighted:
+      - "&7Each opening makes a set number of draws;"
+      - "&7each draw picks ONE item by relative weight."
+      - "&7Weights are relative — only their ratio matters."
+      - ""
+      - "&7Best for small/medium tables."
+      - ""
+      - "&eClick to switch to Independent"
+    mode-lore-independent:
+      - "&7Every item rolls its OWN chance (0-100%)."
+      - "&7Chances are independent and need not total 100%."
+      - "&7Use &fMax Items&7 to cap how many drop."
+      - ""
+      - "&7Best for large tables (many items)."
+      - ""
+      - "&eClick to switch to Weighted"
+    max-items-name: "&eMax Items: &f{value}"
+    max-items-lore:
+      - "&7Independent mode only."
+      - ""
+      - "&7Caps how many passing items are kept"
+      - "&7per opening. &f∞&7 = no cap (all winners drop)."
+      - ""
+      - "&7Left: +1  |  Right: -1"
     empty-name: "&7&lNo Loot Items"
     empty-lore:
       - "&7This pool has no items yet."

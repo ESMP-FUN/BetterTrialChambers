@@ -103,8 +103,40 @@ data class EconomyReward(
 )
 
 /**
+ * How a pool draws its weighted items.
+ *
+ * - [WEIGHTED] (default, legacy behaviour): the pool makes `min-rolls..max-rolls`
+ *   draws per opening; each draw picks exactly ONE item with probability
+ *   `item.weight / (sum of enabled weights)`. Weights are *relative* — only their
+ *   ratio matters, and duplicates are possible across draws.
+ * - [INDEPENDENT]: each enabled weighted item rolls once on its own, dropping when
+ *   `random(0..100) < item.weight` — i.e. `weight` is read as a standalone 0-100%
+ *   chance. Chances are absolute and need not sum to 100. `min-rolls`/`max-rolls`
+ *   (and the LUCK bonus) are ignored; instead an optional `max-items` cap keeps at
+ *   most N of the winners (chosen at random) when more than N pass. Practical for
+ *   large tables where hand-tuning relative weights is unwieldy.
+ */
+enum class LootRollMode {
+    WEIGHTED,
+    INDEPENDENT;
+
+    companion object {
+        /** Case-insensitive parse; null/blank/unknown → [WEIGHTED] (with the caller free to warn). */
+        fun fromConfig(raw: String?): LootRollMode =
+            entries.firstOrNull { it.name.equals(raw?.trim(), ignoreCase = true) } ?: WEIGHTED
+
+        fun isKnown(raw: String?): Boolean =
+            raw != null && entries.any { it.name.equals(raw.trim(), ignoreCase = true) }
+    }
+}
+
+/**
  * Represents a loot pool within a loot table.
  * Each pool rolls independently (like vanilla's common/rare/unique).
+ *
+ * @property rollMode How weighted items are drawn — see [LootRollMode].
+ * @property maxItems In [LootRollMode.INDEPENDENT] mode only, the maximum number of
+ *   passing weighted items to keep per opening (0 = uncapped). Ignored in WEIGHTED mode.
  */
 data class LootPool(
     val name: String,
@@ -113,7 +145,9 @@ data class LootPool(
     val guaranteedItems: List<LootItem> = emptyList(),
     val weightedItems: List<LootItem> = emptyList(),
     val commandRewards: List<CommandReward> = emptyList(),
-    val economyRewards: List<EconomyReward> = emptyList()
+    val economyRewards: List<EconomyReward> = emptyList(),
+    val rollMode: LootRollMode = LootRollMode.WEIGHTED,
+    val maxItems: Int = 0
 )
 
 /**
@@ -133,6 +167,11 @@ data class LootTable(
     val weightedItems: List<LootItem> = emptyList(),
     val commandRewards: List<CommandReward> = emptyList(),
     val economyRewards: List<EconomyReward> = emptyList(),
+    // Roll mode + independent-mode cap for the legacy single-pool format. Carried
+    // into the synthesized "main" pool by getEffectivePools(). Ignored when `pools`
+    // is used (each pool carries its own).
+    val rollMode: LootRollMode = LootRollMode.WEIGHTED,
+    val maxItems: Int = 0,
     // New multi-pool format
     val pools: List<LootPool> = emptyList()
 ) {
@@ -155,7 +194,9 @@ data class LootTable(
                     guaranteedItems = guaranteedItems,
                     weightedItems = weightedItems,
                     commandRewards = commandRewards,
-                    economyRewards = economyRewards
+                    economyRewards = economyRewards,
+                    rollMode = rollMode,
+                    maxItems = maxItems
                 )
             )
         } else {

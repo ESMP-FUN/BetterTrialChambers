@@ -16,8 +16,13 @@ package com.esmpfun.bettertrialchambers.models
  * @property guaranteed Items that always drop in this pool/table.
  * @property weighted   Weighted-roll items. Their `weight` field is the relative
  *                      probability for a single roll.
- * @property minRolls   Minimum number of weighted rolls per vault open.
- * @property maxRolls   Maximum number of weighted rolls per vault open.
+ * @property minRolls   Minimum number of weighted rolls per vault open (WEIGHTED mode).
+ * @property maxRolls   Maximum number of weighted rolls per vault open (WEIGHTED mode).
+ * @property rollMode   How weighted items are drawn — see [LootRollMode]. In
+ *                      INDEPENDENT mode each item's `weight` is read as its own
+ *                      0-100% drop chance and min/max rolls don't apply.
+ * @property maxItems   INDEPENDENT-mode cap on how many passing items to keep
+ *                      per opening (0 = uncapped). Ignored in WEIGHTED mode.
  * @property dirty      Set whenever the draft is mutated through any editor;
  *                      used by the loot editor to decorate the Save button and
  *                      by the close handler to skip the auto-save when the user
@@ -29,5 +34,7 @@ data class LootEditorDraft(
     val weighted: MutableList<LootItem>,
     var minRolls: Int,
     var maxRolls: Int,
+    var rollMode: LootRollMode = LootRollMode.WEIGHTED,
+    var maxItems: Int = 0,
     var dirty: Boolean = false
 )

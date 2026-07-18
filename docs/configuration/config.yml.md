@@ -428,10 +428,15 @@ vaults:
 
 **Default:** `true`
 
-The big one! Each player gets their own loot and cooldowns. If `false`, vaults work like vanilla (one-time use, everyone shares).
+The big one — think of it as the **master ON/OFF switch** for everything BetterTrialChambers does with vaults.
 
-{% hint style="warning" %}
-**Setting this to false** removes per-player cooldowns. Vaults become first-come-first-served. Usually not what you want for managed chambers!
+* **`true` (recommended):** BTC handles vaults. Each player gets their own loot roll from your **custom loot tables**, their own cooldown, and everything else in this plugin.
+* **`false`:** BTC **leaves vaults completely alone**. They open with **plain vanilla Minecraft loot** (crossbows, wind charges, etc.) — your custom loot tables are **ignored**, and there are no per-player cooldowns. Only turn this off if you genuinely want vanilla vault behaviour.
+
+{% hint style="danger" %}
+**Custom loot table being ignored? Getting vanilla items instead?** This is the #1 cause. If `per-player-loot` is set to `false`, none of your loot tables apply — the vault just does its vanilla thing. Set it back to `true` and run `/trial reload`.
+
+You can check the current setting in-game with `/trial info` — look at the **Per-Player Loot** line.
 {% endhint %}
 
 </details>

@@ -70,7 +70,7 @@ Both modules require BetterTrialChambers and are available on [Voxel.shop](https
 ## Support
 
 * [**GitHub Issues**](https://github.com/ESMP-FUN/BetterTrialChambers/issues) — bug reports, feature requests
-* [**Discord**](https://discord.gg/qwYcTpHsNC) — community support, announcements
+* [**Discord**](https://dc.esmp.fun) — community support, announcements
 * [**Modrinth**](https://modrinth.com/plugin/trialchamberpro) — downloads and release notes
 
 Source-available — free to use, no redistribution (see [LICENSE](https://github.com/ESMP-FUN/BetterTrialChambers/blob/master/LICENSE)). Made with Kotlin by [darkstarworks](https://github.com/darkstarworks).

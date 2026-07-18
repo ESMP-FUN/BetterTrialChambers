@@ -2,7 +2,7 @@
 
 Most problems fall into one of the buckets below. Scan headings first — if you recognise the symptom, click it to expand the fix.
 
-If nothing here matches, jump to [Reporting Bugs](troubleshooting.md#reporting-bugs) or ask in [Discord](https://discord.gg/qwYcTpHsNC).
+If nothing here matches, jump to [Reporting Bugs](troubleshooting.md#reporting-bugs) or ask in [Discord](https://dc.esmp.fun).
 
 {% hint style="info" %}
 **Looking for specific text?** Browser **Ctrl/⌘ + F won't find text inside collapsed sections** on this page. Use the documentation **search bar at the top of the page** ↗ (or press **Ctrl/⌘ + K**) instead — it searches the full text of every section, expanded or not.
@@ -49,6 +49,26 @@ YAML is strict about indentation. Mixing tabs and spaces — or using tabs at al
 5. `/trial menu` → Loot Tables — your tables should be listed.
 
 Same rule applies to `config.yml` and `messages.yml`. If any of the three go quiet after an edit, tabs are the first suspect.
+
+</details>
+
+<details>
+
+<summary><strong>Vaults give plain vanilla loot and ignore my custom loot table</strong></summary>
+
+**The symptom:** loot tables load fine (no console errors, vaults register correctly), but opening a vault gives vanilla Minecraft items — crossbows, poison arrows, wind charges — instead of your custom loot.
+
+**The likely cause:** `per-player-loot` is turned **off** in `config.yml`.
+
+That option is the master switch for plugin-managed vaults. When it's `false`, BetterTrialChambers doesn't touch vaults at all — they open with pure vanilla loot, and every custom loot table is ignored.
+
+**Fix:**
+
+1. Open `plugins/BetterTrialChambers/config.yml`.
+2. Under `vaults:`, set `per-player-loot: true`.
+3. `/trial reload`.
+
+You can check the current value in-game with `/trial info` — look at the **Per-Player Loot** line. Full explanation: [config.yml → per-player-loot](configuration/config.yml.md#vault-settings).
 
 </details>
 
@@ -304,6 +324,6 @@ If you've hit something not covered here, a good bug report includes:
 5. **Relevant log excerpt** — run with `debug.verbose-logging: true` to get detailed output, then paste the lines around the error.
 6. **Your config.yml and loot.yml** (redact MySQL credentials first!) if they're relevant.
 
-File at [GitHub Issues](https://github.com/ESMP-FUN/BetterTrialChambers/issues) or post in the `#support` channel on [Discord](https://discord.gg/qwYcTpHsNC).
+File at [GitHub Issues](https://github.com/ESMP-FUN/BetterTrialChambers/issues) or post in the `#support` channel on [Discord](https://dc.esmp.fun).
 
 "Can't reproduce" is a real answer — sometimes a bug depends on state that's hard to observe. If we ask for more detail, it's because we're trying to track it down, not brushing it off.

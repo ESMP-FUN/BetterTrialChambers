@@ -6,7 +6,8 @@ Getting BetterTrialChambers up and running is easier than finding diamonds at Y=
 
 Before you start, make sure you have:
 
-* **Paper 1.21.x** (or forks like Purpur, Pufferfish, Folia)
+* **Paper 1.21.x** (or forks like Purpur, Pufferfish, Folia) — on
+  Minecraft 26.x, use the `-mc26` build (Java 25)
 * **Java 21** or newer
 * **WorldEdit** (optional but highly recommended for chamber creation)
 
@@ -18,9 +19,8 @@ Before you start, make sure you have:
 
 Grab the latest version from one of these sources:
 
-* [GitHub Releases](https://github.com/ESMP-FUN/BetterTrialChambers/releases) (recommended)
-* [Modrinth](https://modrinth.com/plugin/trialchamberpro)
-* [SpigotMC](https://www.spigotmc.org/resources/trialchamberpro)
+* [Modrinth](https://modrinth.com/plugin/trialchamberpro) (recommended)
+* [GitHub Releases](https://github.com/ESMP-FUN/BetterTrialChambers/releases)
 
 Look for the file named something like `BetterTrialChambers-<version>.jar`.
 
