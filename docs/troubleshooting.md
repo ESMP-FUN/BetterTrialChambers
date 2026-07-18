@@ -2,7 +2,7 @@
 
 Most problems fall into one of the buckets below. Scan headings first — if you recognise the symptom, click it to expand the fix.
 
-If nothing here matches, jump to [Reporting Bugs](troubleshooting.md#reporting-bugs) or ask in [Discord](https://discord.gg/qwYcTpHsNC).
+If nothing here matches, jump to [Reporting Bugs](troubleshooting.md#reporting-bugs) or ask in [Discord](https://dc.esmp.fun).
 
 {% hint style="info" %}
 **Looking for specific text?** Browser **Ctrl/⌘ + F won't find text inside collapsed sections** on this page. Use the documentation **search bar at the top of the page** ↗ (or press **Ctrl/⌘ + K**) instead — it searches the full text of every section, expanded or not.
@@ -304,6 +304,6 @@ If you've hit something not covered here, a good bug report includes:
 5. **Relevant log excerpt** — run with `debug.verbose-logging: true` to get detailed output, then paste the lines around the error.
 6. **Your config.yml and loot.yml** (redact MySQL credentials first!) if they're relevant.
 
-File at [GitHub Issues](https://github.com/ESMP-FUN/BetterTrialChambers/issues) or post in the `#support` channel on [Discord](https://discord.gg/qwYcTpHsNC).
+File at [GitHub Issues](https://github.com/ESMP-FUN/BetterTrialChambers/issues) or post in the `#support` channel on [Discord](https://dc.esmp.fun).
 
 "Can't reproduce" is a real answer — sometimes a bug depends on state that's hard to observe. If we ask for more detail, it's because we're trying to track it down, not brushing it off.
