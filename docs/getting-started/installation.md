@@ -19,8 +19,8 @@ Before you start, make sure you have:
 
 Grab the latest version from one of these sources:
 
-* [GitHub Releases](https://github.com/ESMP-FUN/BetterTrialChambers/releases) (recommended)
-* [Modrinth](https://modrinth.com/plugin/trialchamberpro)
+* [Modrinth](https://modrinth.com/plugin/trialchamberpro) (recommended)
+* [GitHub Releases](https://github.com/ESMP-FUN/BetterTrialChambers/releases)
 
 Look for the file named something like `BetterTrialChambers-<version>.jar`.
 
