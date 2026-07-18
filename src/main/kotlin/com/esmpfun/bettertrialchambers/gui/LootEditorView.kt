@@ -9,6 +9,7 @@ import com.esmpfun.bettertrialchambers.gui.framework.VcGuiItem
 import com.esmpfun.bettertrialchambers.models.Chamber
 import com.esmpfun.bettertrialchambers.models.LootEditorDraft
 import com.esmpfun.bettertrialchambers.models.LootItem
+import com.esmpfun.bettertrialchambers.models.LootRollMode
 import com.esmpfun.bettertrialchambers.models.LootTable
 import com.esmpfun.bettertrialchambers.models.VaultType
 import net.kyori.adventure.text.Component
@@ -79,6 +80,8 @@ class LootEditorView(
         weighted = source.weighted.toMutableList(),
         minRolls = source.minRolls,
         maxRolls = source.maxRolls,
+        rollMode = source.rollMode,
+        maxItems = source.maxItems,
         dirty = source.dirty
     )
 
@@ -108,7 +111,9 @@ class LootEditorView(
                     guaranteed = pool.guaranteedItems.toMutableList(),
                     weighted = pool.weightedItems.toMutableList(),
                     minRolls = pool.minRolls,
-                    maxRolls = pool.maxRolls
+                    maxRolls = pool.maxRolls,
+                    rollMode = pool.rollMode,
+                    maxItems = pool.maxItems
                 )
             }
         }
@@ -119,7 +124,9 @@ class LootEditorView(
             guaranteed = table.guaranteedItems.toMutableList(),
             weighted = table.weightedItems.toMutableList(),
             minRolls = table.minRolls,
-            maxRolls = table.maxRolls
+            maxRolls = table.maxRolls,
+            rollMode = table.rollMode,
+            maxItems = table.maxItems
         )
     }
 
@@ -170,11 +177,24 @@ class LootEditorView(
         lore += plugin.getGuiText("gui.loot-editor.item-amount",
             "min" to li.amountMin, "max" to li.amountMax)
         val avgAmount = (li.amountMin + li.amountMax) / 2.0
+        val independent = draft.rollMode == LootRollMode.INDEPENDENT
         if (weighted) {
-            if (totalWeight > 0.0 && li.enabled) {
+            if (independent) {
+                // weight IS the absolute 0-100% drop chance in this mode.
+                val chance = li.weight.coerceIn(0.0, 100.0)
+                lore += plugin.getGuiText("gui.loot-editor.item-drop-chance",
+                    "percent" to String.format("%.1f", chance))
+                if (li.enabled) {
+                    lore += plugin.getGuiText("gui.loot-editor.item-expected",
+                        "count" to formatExpected(chance / 100.0 * avgAmount))
+                }
+            } else if (totalWeight > 0.0 && li.enabled) {
+                // WEIGHTED mode: show the raw weight AND the derived per-draw % so the
+                // number stays visible while the entry is live (no need to disable it).
                 val chancePerDraw = li.weight / totalWeight
-                val pct = String.format("%.1f", chancePerDraw * 100.0)
-                lore += plugin.getGuiText("gui.loot-editor.item-chance", "percent" to pct)
+                lore += plugin.getGuiText("gui.loot-editor.item-weight-chance",
+                    "weight" to String.format("%.1f", li.weight),
+                    "percent" to String.format("%.1f", chancePerDraw * 100.0))
 
                 val avgDraws = (draft.minRolls + draft.maxRolls) / 2.0
                 val expected = avgDraws * chancePerDraw * avgAmount
@@ -197,8 +217,13 @@ class LootEditorView(
         lore += Component.empty()
         lore += plugin.getGuiText("gui.loot-editor.item-controls-header")
         if (weighted) {
-            lore += plugin.getGuiText("gui.loot-editor.item-controls-shift-left")
-            lore += plugin.getGuiText("gui.loot-editor.item-controls-shift-right")
+            if (independent) {
+                lore += plugin.getGuiText("gui.loot-editor.item-controls-shift-left-pct")
+                lore += plugin.getGuiText("gui.loot-editor.item-controls-shift-right-pct")
+            } else {
+                lore += plugin.getGuiText("gui.loot-editor.item-controls-shift-left")
+                lore += plugin.getGuiText("gui.loot-editor.item-controls-shift-right")
+            }
         }
         lore += plugin.getGuiText("gui.loot-editor.item-controls-right")
         lore += plugin.getGuiText("gui.loot-editor.item-controls-middle")
@@ -221,6 +246,12 @@ class LootEditorView(
         val item = list[index]
         var modified = false
 
+        // In INDEPENDENT mode `weight` is a 0-100% chance; in WEIGHTED mode it's an
+        // unbounded relative weight (min 0.1 so it still drops).
+        val independent = draft.rollMode == LootRollMode.INDEPENDENT
+        val maxWeight = if (independent) 100.0 else 9999.0
+        val minWeight = if (independent) 0.0 else 0.1
+
         when (clickType) {
             ClickType.DROP, ClickType.CONTROL_DROP -> {
                 list.removeAt(index); modified = true
@@ -230,13 +261,13 @@ class LootEditorView(
                 list[index] = item.copy(enabled = !item.enabled); modified = true
             }
             ClickType.SHIFT_LEFT -> if (weighted) {
-                list[index] = item.copy(weight = (item.weight + 1.0).coerceAtMost(9999.0)); modified = true
+                list[index] = item.copy(weight = (item.weight + 1.0).coerceAtMost(maxWeight)); modified = true
             }
             ClickType.SHIFT_RIGHT -> if (weighted) {
-                list[index] = item.copy(weight = (item.weight - 1.0).coerceAtLeast(0.1)); modified = true
+                list[index] = item.copy(weight = (item.weight - 1.0).coerceAtLeast(minWeight)); modified = true
             }
             ClickType.LEFT, ClickType.WINDOW_BORDER_LEFT -> if (weighted) {
-                list[index] = item.copy(weight = (item.weight + 1.0).coerceAtMost(9999.0)); modified = true
+                list[index] = item.copy(weight = (item.weight + 1.0).coerceAtMost(maxWeight)); modified = true
             }
             ClickType.RIGHT, ClickType.WINDOW_BORDER_RIGHT -> {
                 // Persist current draft so the AmountEditor sees the same state.
@@ -303,26 +334,73 @@ class LootEditorView(
             }
         })
 
-        // Rolls at (2, 5) = slot 47
-        val rolls = GuiComponents.infoItem(plugin, Material.PAPER,
-            "gui.loot-editor.rolls-name", "gui.loot-editor.rolls-lore",
-            "min" to draft.minRolls, "max" to draft.maxRolls)
-        set(47, VcGuiItem.wrap(rolls) { ctx ->
-            val left = ctx.click == ClickType.LEFT || ctx.click == ClickType.SHIFT_LEFT
-            val right = ctx.click == ClickType.RIGHT || ctx.click == ClickType.SHIFT_RIGHT
-            val shift = ctx.click == ClickType.SHIFT_LEFT || ctx.click == ClickType.SHIFT_RIGHT
-            var changed = false
-            if (!shift && left) { draft.minRolls = (draft.minRolls + 1).coerceAtMost(64); changed = true }
-            if (!shift && right) { draft.minRolls = (draft.minRolls - 1).coerceAtLeast(0); changed = true }
-            if (shift && left) { draft.maxRolls = (draft.maxRolls + 1).coerceAtMost(64); changed = true }
-            if (shift && right) { draft.maxRolls = (draft.maxRolls - 1).coerceAtLeast(draft.minRolls); changed = true }
-            if (draft.maxRolls < draft.minRolls) draft.maxRolls = draft.minRolls
-            if (changed) {
-                draft.dirty = true
-                buildControls()
-                update()
-            }
+        // Roll-mode toggle at (1, 5) = slot 46
+        val modeIndependent = draft.rollMode == LootRollMode.INDEPENDENT
+        val modeLoreKey = if (modeIndependent) "gui.loot-editor.mode-lore-independent"
+            else "gui.loot-editor.mode-lore-weighted"
+        val modeName = plugin.getGuiText(
+            if (modeIndependent) "gui.loot-editor.mode-independent" else "gui.loot-editor.mode-weighted"
+        )
+        val modeItem = GuiComponents.infoItem(plugin, Material.COMPARATOR,
+            "gui.loot-editor.mode-name", modeLoreKey)
+        modeItem.itemMeta = modeItem.itemMeta?.apply {
+            // Splice the current mode label into the name line.
+            displayName(plugin.getGuiText("gui.loot-editor.mode-name").append(modeName))
+        }
+        set(46, VcGuiItem.wrap(modeItem) { ctx ->
+            draft.rollMode = if (modeIndependent) LootRollMode.WEIGHTED else LootRollMode.INDEPENDENT
+            draft.dirty = true
+            refreshContent()   // item lore switches between weight and % display
+            buildControls()
+            update()
         })
+
+        // Slot 47 (2, 5) is context-sensitive:
+        //   WEIGHTED    → "Draws per Opening" (min/max rolls)
+        //   INDEPENDENT → "Max Items" cap (0 = unlimited); rolls don't apply.
+        if (modeIndependent) {
+            val capLabel = if (draft.maxItems <= 0) "∞" else draft.maxItems.toString()
+            val maxItems = GuiComponents.infoItem(plugin, Material.PAPER,
+                "gui.loot-editor.max-items-name", "gui.loot-editor.max-items-lore",
+                "value" to capLabel)
+            set(47, VcGuiItem.wrap(maxItems) { ctx ->
+                var changed = false
+                when (ctx.click) {
+                    ClickType.LEFT, ClickType.SHIFT_LEFT -> {
+                        draft.maxItems = (draft.maxItems + 1).coerceAtMost(64); changed = true
+                    }
+                    ClickType.RIGHT, ClickType.SHIFT_RIGHT -> {
+                        draft.maxItems = (draft.maxItems - 1).coerceAtLeast(0); changed = true
+                    }
+                    else -> {}
+                }
+                if (changed) {
+                    draft.dirty = true
+                    buildControls()
+                    update()
+                }
+            })
+        } else {
+            val rolls = GuiComponents.infoItem(plugin, Material.PAPER,
+                "gui.loot-editor.rolls-name", "gui.loot-editor.rolls-lore",
+                "min" to draft.minRolls, "max" to draft.maxRolls)
+            set(47, VcGuiItem.wrap(rolls) { ctx ->
+                val left = ctx.click == ClickType.LEFT || ctx.click == ClickType.SHIFT_LEFT
+                val right = ctx.click == ClickType.RIGHT || ctx.click == ClickType.SHIFT_RIGHT
+                val shift = ctx.click == ClickType.SHIFT_LEFT || ctx.click == ClickType.SHIFT_RIGHT
+                var changed = false
+                if (!shift && left) { draft.minRolls = (draft.minRolls + 1).coerceAtMost(64); changed = true }
+                if (!shift && right) { draft.minRolls = (draft.minRolls - 1).coerceAtLeast(0); changed = true }
+                if (shift && left) { draft.maxRolls = (draft.maxRolls + 1).coerceAtMost(64); changed = true }
+                if (shift && right) { draft.maxRolls = (draft.maxRolls - 1).coerceAtLeast(draft.minRolls); changed = true }
+                if (draft.maxRolls < draft.minRolls) draft.maxRolls = draft.minRolls
+                if (changed) {
+                    draft.dirty = true
+                    buildControls()
+                    update()
+                }
+            })
+        }
 
         // Add (from hand) at (4, 5) = slot 49
         val add = GuiComponents.infoItem(plugin, Material.LIME_DYE,
@@ -396,7 +474,9 @@ class LootEditorView(
                     pool.copy(
                         minRolls = draft.minRolls, maxRolls = draft.maxRolls,
                         guaranteedItems = draft.guaranteed.toList(),
-                        weightedItems = draft.weighted.toList()
+                        weightedItems = draft.weighted.toList(),
+                        rollMode = draft.rollMode,
+                        maxItems = draft.maxItems
                     )
                 } else pool
             }
@@ -410,7 +490,9 @@ class LootEditorView(
                 commandRewards = existingTable?.commandRewards ?: emptyList(),
                 // Preserve economy rewards across a GUI edit (the editor only
                 // touches items) — otherwise saving would silently drop them.
-                economyRewards = existingTable?.economyRewards ?: emptyList()
+                economyRewards = existingTable?.economyRewards ?: emptyList(),
+                rollMode = draft.rollMode,
+                maxItems = draft.maxItems
             )
         }
         plugin.lootManager.updateTable(table)

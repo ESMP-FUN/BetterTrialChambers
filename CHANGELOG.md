@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [2.0.2] - 2026-07-17
+### Added
+- **Independent drop-chance loot mode.** Loot pools can now roll in one of two modes. The classic **weighted** mode (default, unchanged) makes a set number of draws per opening and picks one item per draw by relative weight. The new **independent** mode gives every item its own absolute 0-100% drop chance — each item rolls on its own, chances don't have to add up to 100%, and an optional **Max Items** cap limits how many drop per opening. Much easier to reason about for large tables (e.g. 100+ items) where balancing relative weights is impractical. Set per table/pool with `mode: independent` (and optional `max-items: N`) in loot.yml, or toggle it in the loot editor GUI. Existing tables are untouched and keep behaving exactly as before.
+### Changed
+- **Loot editor shows the weight number while an item is enabled.** Previously the raw weight was only visible after disabling an entry, so tuning weights meant middle-clicking (which toggles the item off) to see the value. Enabled weighted items now show `Weight: X (≈Y% per draw)` directly, and the weight controls are relabelled to say "weight" (or "% chance" in independent mode). In independent mode each item shows its own drop chance.
+- **Clarified the `vaults.per-player-loot` config option.** Its comment now spells out that it's a master switch — when off, the plugin doesn't manage vaults at all and they open with vanilla Minecraft loot, ignoring custom loot tables. (This was the cause of "my custom loot table is ignored" reports where the setting had been turned off.)
+
 ## [2.0.1] - 2026-07-17
 ### Fixed
 - **Loot editor: tables with more than 36 entries are now paginated.** The editor only ever rendered the first 36 entries (weighted first, then guaranteed) and silently hid the rest — they stayed in the loot table and kept dropping in-game, but couldn't be viewed or edited from the GUI. When a table overflows one page, Previous/Next arrows now appear in the gap row above the action buttons.

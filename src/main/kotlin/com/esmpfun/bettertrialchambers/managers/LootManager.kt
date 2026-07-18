@@ -192,8 +192,23 @@ class LootManager(private val plugin: BetterTrialChambers) {
                 }
             }
 
-            return LootTable(name, minRolls, maxRolls, guaranteedItems, weightedItems, commandRewards, economyRewards)
+            val rollMode = parseRollMode(section.getString("mode"), name)
+            val maxItems = section.getInt("max-items", 0).coerceAtLeast(0)
+
+            return LootTable(name, minRolls, maxRolls, guaranteedItems, weightedItems,
+                commandRewards, economyRewards, rollMode, maxItems)
         }
+    }
+
+    /**
+     * Resolves a pool/table `mode:` string to a [LootRollMode]. Unknown values fall
+     * back to WEIGHTED with a warning so a typo doesn't silently switch behaviour.
+     */
+    private fun parseRollMode(raw: String?, context: String): com.esmpfun.bettertrialchambers.models.LootRollMode {
+        if (raw != null && !com.esmpfun.bettertrialchambers.models.LootRollMode.isKnown(raw)) {
+            plugin.logger.warning("loot.yml: $context has unknown mode '$raw' — using 'weighted'. Valid: weighted, independent.")
+        }
+        return com.esmpfun.bettertrialchambers.models.LootRollMode.fromConfig(raw)
     }
 
     /**
@@ -235,7 +250,11 @@ class LootManager(private val plugin: BetterTrialChambers) {
             parseEconomyReward(item)?.let { economyRewards.add(it) }
         }
 
-        return LootPool(poolName, minRolls, maxRolls, guaranteedItems, weightedItems, commandRewards, economyRewards)
+        val rollMode = parseRollMode(data["mode"] as? String, "pool '$poolName'")
+        val maxItems = ((data["max-items"] as? Number)?.toInt() ?: 0).coerceAtLeast(0)
+
+        return LootPool(poolName, minRolls, maxRolls, guaranteedItems, weightedItems,
+            commandRewards, economyRewards, rollMode, maxItems)
     }
 
     /**
@@ -590,6 +609,28 @@ class LootManager(private val plugin: BetterTrialChambers) {
             items.addAll(expandLootItem(lootItem, player))
         }
 
+        // INDEPENDENT mode: each enabled weighted item rolls its own 0-100% chance;
+        // every item that passes drops, optionally capped by max-items. min/max-rolls
+        // and the LUCK bonus don't apply here (there are no "draws").
+        if (pool.rollMode == com.esmpfun.bettertrialchambers.models.LootRollMode.INDEPENDENT) {
+            var winners = pool.weightedItems.filter { it.enabled && Random.nextDouble() * 100.0 < it.weight }
+            if (pool.maxItems in 1 until winners.size) {
+                winners = winners.shuffled().take(pool.maxItems)
+            }
+            winners.forEach { items.addAll(expandLootItem(it, player)) }
+
+            // Command + economy rewards still fire (they're independent Bernoulli rolls
+            // by design in both modes).
+            pool.commandRewards.forEach { reward ->
+                if (Random.nextDouble() * 100.0 < reward.weight) executeCommandReward(reward, player)
+            }
+            pool.economyRewards.forEach { reward ->
+                if (Random.nextDouble() * 100.0 < reward.weight) applyEconomyReward(reward, player)
+            }
+            return items
+        }
+
+        // WEIGHTED mode (default) ---------------------------------------------------
         // Calculate number of rolls (with optional LUCK bonus)
         var rolls = Random.nextInt(pool.minRolls, pool.maxRolls + 1)
 
@@ -1247,6 +1288,11 @@ class LootManager(private val plugin: BetterTrialChambers) {
                     // Save as legacy single-pool format
                     sec.set("min-rolls", table.minRolls)
                     sec.set("max-rolls", table.maxRolls)
+                    // Only written when non-default so hand-authored weighted tables stay clean.
+                    if (table.rollMode != com.esmpfun.bettertrialchambers.models.LootRollMode.WEIGHTED) {
+                        sec.set("mode", table.rollMode.name.lowercase())
+                    }
+                    if (table.maxItems > 0) sec.set("max-items", table.maxItems)
 
                     // guaranteed-items
                     val guaranteedList = table.guaranteedItems.map { li -> serializeLootItem(li) }
@@ -1274,6 +1320,10 @@ class LootManager(private val plugin: BetterTrialChambers) {
                         poolMap["name"] = pool.name
                         poolMap["min-rolls"] = pool.minRolls
                         poolMap["max-rolls"] = pool.maxRolls
+                        if (pool.rollMode != com.esmpfun.bettertrialchambers.models.LootRollMode.WEIGHTED) {
+                            poolMap["mode"] = pool.rollMode.name.lowercase()
+                        }
+                        if (pool.maxItems > 0) poolMap["max-items"] = pool.maxItems
 
                         if (pool.guaranteedItems.isNotEmpty()) {
                             poolMap["guaranteed-items"] = pool.guaranteedItems.map { serializeLootItem(it) }

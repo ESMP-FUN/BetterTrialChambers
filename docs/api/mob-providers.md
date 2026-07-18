@@ -51,7 +51,7 @@ interface TrialMobProvider {
 A minimal example that integrates a hypothetical "BossPlugin":
 
 ```kotlin
-class BossPluginProvider(private val tcp: BetterTrialChambers) : TrialMobProvider {
+class BossPluginProvider(private val btc: BetterTrialChambers) : TrialMobProvider {
     override val id = "bossplugin"
     override val displayName = "BossPlugin"
 
@@ -70,8 +70,8 @@ class BossPluginProvider(private val tcp: BetterTrialChambers) : TrialMobProvide
             // Whatever your plugin's API looks like:
             BossPlugin.getInstance().spawn(mobId, location)
         } catch (e: Exception) {
-            if (tcp.config.getBoolean("debug.verbose-logging", false)) {
-                tcp.logger.warning("[bossplugin] spawn failed for '$mobId': ${e.message}")
+            if (btc.config.getBoolean("debug.verbose-logging", false)) {
+                btc.logger.warning("[bossplugin] spawn failed for '$mobId': ${e.message}")
             }
             null
         }
@@ -95,12 +95,12 @@ softdepend: [BetterTrialChambers]
 
 ```kotlin
 override fun onEnable() {
-    val tcp = server.pluginManager.getPlugin("BetterTrialChambers") as? BetterTrialChambers
-    if (tcp == null) {
+    val btc = server.pluginManager.getPlugin("BetterTrialChambers") as? BetterTrialChambers
+    if (btc == null) {
         logger.info("BetterTrialChambers not present — skipping provider registration.")
         return
     }
-    tcp.trialMobProviderRegistry.register(BossPluginProvider(tcp))
+    btc.trialMobProviderRegistry.register(BossPluginProvider(btc))
 }
 ```
 
@@ -121,7 +121,7 @@ override fun spawnMob(mobId: String, location: Location, ominous: Boolean): Enti
     } catch (e: ClassNotFoundException) {
         null  // backing plugin missing — caller falls back to vanilla
     } catch (e: NoSuchMethodException) {
-        tcp.logger.warning("[bossplugin] API signature mismatch — version skew?")
+        btc.logger.warning("[bossplugin] API signature mismatch — version skew?")
         null
     }
 }

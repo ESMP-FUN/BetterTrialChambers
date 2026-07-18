@@ -202,6 +202,50 @@ loot-tables:
 #
 # Note: GUI loot editor supports both legacy and multi-pool formats!
 # ============================================
+# ROLL MODE: weighted (default) vs independent   (v2.0.2)
+# ============================================
+# Each table (or each pool) can pick how its weighted-items are drawn, via an
+# optional `mode:` key. Omit it for the classic behaviour.
+#
+#   mode: weighted     (DEFAULT)
+#     Each opening makes min-rolls..max-rolls draws; each draw picks exactly ONE
+#     item with probability weight / (sum of weights). Weights are RELATIVE — only
+#     their ratio matters — and the same item can drop on multiple draws.
+#
+#   mode: independent
+#     Every enabled item rolls ON ITS OWN: it drops when random(0-100) < weight,
+#     so here `weight` is read as that item's absolute 0-100% chance. Chances are
+#     independent and do NOT need to total 100%. min-rolls/max-rolls (and the LUCK
+#     bonus) are ignored. Optionally add `max-items: N` to keep at most N of the
+#     items that passed (chosen at random) — 0 or omitted = no cap. Ideal for large
+#     tables where hand-balancing relative weights is impractical.
+#
+# Example — a 3-item independent pool where each item has its own drop rate and at
+# most 2 can drop per opening:
+#
+#  loot-per-item:
+#    mode: independent
+#    max-items: 2
+#    min-rolls: 1        # ignored in independent mode, but kept for easy switching
+#    max-rolls: 1
+#    weighted-items:
+#      - type: DIAMOND
+#        amount-min: 1
+#        amount-max: 2
+#        weight: 40.0     # 40% chance to drop
+#      - type: NETHERITE_SCRAP
+#        amount-min: 1
+#        amount-max: 1
+#        weight: 10.0     # 10% chance
+#      - type: EMERALD
+#        amount-min: 3
+#        amount-max: 6
+#        weight: 75.0     # 75% chance
+#
+# In the GUI: the loot editor has a "Roll Mode" toggle; in independent mode each
+# item's Shift+Left/Right adjusts its own % and a "Max Items" control replaces
+# "Draws per Opening".
+# ============================================
 # VANILLA-ACCURATE LOOT TABLES (READY TO USE!)
 # ============================================
 # Faithful recreations of Minecraft's vanilla 1.21 Trial Chamber loot,

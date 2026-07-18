@@ -3,7 +3,7 @@
 BetterTrialChambers ships a [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/) expansion so you can show chamber stats, leaderboards, and live state on scoreboards, tab lists, holograms, chat formats, and anywhere else PlaceholderAPI is read.
 
 {% hint style="info" %}
-**Setup:** install PlaceholderAPI, then install BetterTrialChambers — the `tcp` expansion registers itself automatically (it's bundled, no `/papi ecloud download` needed). Verify with `/papi list` (look for `tcp`) or test one with `/papi parse me %btc_vaults_opened%`.
+**Setup:** install PlaceholderAPI, then install BetterTrialChambers — the `btc` expansion registers itself automatically (it's bundled, no `/papi ecloud download` needed). Verify with `/papi list` (look for `btc`) or test one with `/papi parse me %btc_vaults_opened%`. The pre-2.0 `%tcp_*%` forms keep resolving too, so old scoreboards and menus don't break.
 {% endhint %}
 
 All placeholders use the `tcp_` prefix. Unless noted, they resolve for the player the placeholder is parsed against.

@@ -91,6 +91,10 @@ A **loot table** is a collection of possible rewards. When a player opens a vaul
 
 Think of it like rolling dice—higher weight = bigger section of the die.
 
+{% hint style="info" %}
+**That's the default ("weighted") way of rolling.** There's a second, simpler way — **independent mode** — where every item just has its own drop chance (like "40% for a diamond"), instead of competing against each other. It's much easier when you have lots of items. See [Drop Chance Modes: Weighted vs Independent](loot.yml.md#drop-chance-modes-weighted-vs-independent) below.
+{% endhint %}
+
 ***
 
 ## Loot Table Structure
@@ -835,6 +839,73 @@ weighted-items:
 
 ***
 
+## Drop Chance Modes: Weighted vs Independent
+
+_(Added in 2.0.2.)_ There are **two ways** a table (or a pool) can decide what to drop. You pick one with a single `mode:` line. If you don't add that line, you get the classic **weighted** behaviour — nothing changes for existing tables.
+
+### The two modes, in plain English
+
+**Weighted** _(the default)_ — think of it like a **raffle**. Every item gets some tickets (its `weight`), they all go in one bucket, and the vault draws a few tickets per opening (`min-rolls`–`max-rolls`). Items with more tickets come up more often, but they're all **competing against each other**. Add a new item and everything else's share shrinks a little.
+
+**Independent** — think of it like **each item flipping its own coin**. Every item just has its own **drop chance from 0 to 100%** and rolls on its own — a diamond at 40% means "40% chance, every opening," full stop. Items **don't compete**, so the chances **don't have to add up to 100%**. You can optionally cap how many are allowed to drop at once with `max-items`.
+
+{% hint style="success" %}
+**Which should I use?**
+
+* A handful of items and you want that "one prize per opening" feel → **weighted**.
+* Lots of items (say 30, 50, 130…) and you just want to say "this one drops 20% of the time, that one 5%" without doing any mental math → **independent**. This is the easy one for big tables.
+{% endhint %}
+
+### How to use independent mode
+
+Add `mode: independent` to the table (or pool), then give each item a `weight` that now means **its own % chance** (0–100). Optionally add `max-items` to limit how many can drop per opening.
+
+```yaml
+loot-tables:
+  my-big-table:
+    mode: independent      # <-- the only new line that matters
+    max-items: 3           # optional: keep at most 3 of the winners (0 or leave out = no limit)
+    min-rolls: 1           # ignored in independent mode, but kept so you can switch back easily
+    max-rolls: 1
+    weighted-items:
+      - type: DIAMOND
+        amount-min: 1
+        amount-max: 2
+        weight: 40.0       # 40% chance to drop, on its own
+      - type: NETHERITE_SCRAP
+        amount-min: 1
+        amount-max: 1
+        weight: 10.0       # 10% chance
+      - type: EMERALD
+        amount-min: 3
+        amount-max: 6
+        weight: 75.0       # 75% chance
+```
+
+With the table above, every opening: the diamond rolls its own 40%, the scrap its own 10%, the emerald its own 75%. If more than 3 happen to win, 3 are kept at random.
+
+{% hint style="info" %}
+**`weight` is doing double duty on purpose.** In weighted mode it's a raffle-ticket count; in independent mode it's read as a straight 0–100% chance. That's why switching an **existing** table to independent reinterprets each number: an old weight of `10` becomes "10% chance." Anything above 100 just means "always drops" until you lower it. So after switching, glance over your numbers and adjust to taste.
+{% endhint %}
+
+{% hint style="warning" %}
+**`min-rolls` / `max-rolls` don't apply in independent mode** (there's no "draws" — every item rolls once). The LUCK bonus is skipped too. Use `max-items` if you want to cap the haul. Guaranteed items still always drop, in both modes.
+{% endhint %}
+
+### Doing it from the GUI (no YAML needed)
+
+Open `/trial menu` → **Loot Tables** → pick a table. In the editor:
+
+* There's a **Roll Mode** button — click it to flip between Weighted and Independent. The item tooltips update to match.
+* In **weighted** mode, each item now shows its **weight number _and_ the rough % per draw** right on the tooltip — so you can see and tune the weight without having to disable the item first.
+* In **independent** mode, each item shows its own **drop chance %**, Shift-click adjusts that % up/down, and the "Draws per Opening" button becomes a **Max Items** cap.
+
+{% hint style="success" %}
+**Big tables are now easy to browse, too** _(2.0.1+)_: the loot editor is paginated, so tables with more than 36 items get Previous/Next arrows instead of hiding the extras.
+{% endhint %}
+
+***
+
 ## Guaranteed Items
 
 Items in `guaranteed-items` ALWAYS drop, regardless of rolls or weight.
@@ -1389,6 +1460,8 @@ Open 50 vaults, record what you get, calculate actual drop rates. Does it match 
 ## Common Questions
 
 **"My loot tables aren't loading / vaults give no loot!"** Most likely caused by TAB characters in your YAML file. Check the console for `Loot table not found: default (available: )` - if the available list is empty, your entire loot.yml failed to parse. Open the file in an editor that shows whitespace and replace all TABs with spaces. See the warning at the top of this page for more details.
+
+**"My vaults give plain vanilla loot (crossbows, wind charges…) and ignore my custom table!"** Check `per-player-loot` in `config.yml` — if it's set to `false`, BetterTrialChambers leaves vaults completely alone and they open with vanilla loot, ignoring every custom table. Set it back to `true` and run `/trial reload`. You can confirm the current setting with `/trial info` (the **Per-Player Loot** line). See [config.yml → per-player-loot](config.yml.md#vault-settings) for the full explanation.
 
 **"Can I use NBT data for custom items?"** Not directly. Use custom item plugins (ItemsAdder, Oraxen) which handle NBT internally.
 

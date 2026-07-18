@@ -149,6 +149,12 @@ generation:
 
 # Vault settings
 vaults:
+  # MASTER SWITCH for plugin-managed vaults. When true, BetterTrialChambers takes
+  # over vault opening inside registered chambers: custom loot tables, per-player
+  # loot, and per-player cooldowns all apply.
+  # When FALSE, the plugin does NOT touch vaults at all — they open with pure
+  # vanilla Minecraft loot (crossbows, wind charges, etc.) and your custom loot
+  # tables are ignored. Turn this off only if you want vanilla vault behaviour.
   per-player-loot: true
 
   # Separate cooldowns for normal and ominous vaults
