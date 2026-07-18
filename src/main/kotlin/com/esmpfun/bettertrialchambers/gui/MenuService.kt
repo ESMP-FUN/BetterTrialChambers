@@ -85,6 +85,31 @@ class MenuService(private val plugin: BetterTrialChambers) {
 
     enum class LootKind { NORMAL, OMINOUS }
 
+    companion object {
+        /**
+         * The table a chamber's vaults of [kind] will *actually* roll at runtime.
+         *
+         * Mirrors [com.esmpfun.bettertrialchambers.managers.ChamberManager.getEffectiveLootTable]:
+         * a per-chamber override wins, otherwise the conventional per-chamber name.
+         *
+         * Every chamber-scoped loot GUI must resolve through this. Before v2.0.3 the
+         * views hardcoded [conventionalTableName], so setting an override made the
+         * detail view keep showing (and the editor keep writing) `chamber-<name>`
+         * while vaults rolled the override — edits appeared to silently do nothing.
+         */
+        fun effectiveTableName(chamber: Chamber, kind: LootKind): String =
+            when (kind) {
+                LootKind.NORMAL -> chamber.normalLootTable
+                LootKind.OMINOUS -> chamber.ominousLootTable
+            } ?: conventionalTableName(chamber, kind)
+
+        /** The default `chamber-<name>` / `ominous-<name>` table name, ignoring overrides. */
+        fun conventionalTableName(chamber: Chamber, kind: LootKind): String = when (kind) {
+            LootKind.NORMAL -> "chamber-${chamber.name.lowercase()}"
+            LootKind.OMINOUS -> "ominous-${chamber.name.lowercase()}"
+        }
+    }
+
     /**
      * When a loot editor screen is opened for a global (non-chamber) table, this flag
      * in the session indicates we should restore via the global flow instead of the
@@ -293,10 +318,7 @@ class MenuService(private val plugin: BetterTrialChambers) {
         // Short-circuit for legacy/missing tables — open the editor directly
         // (the old IF view returned an empty ChestGui in this case, which the
         // VcGui rewrite can't do cleanly from super(...)).
-        val tableName = when (kind) {
-            LootKind.NORMAL -> "chamber-${chamber.name.lowercase()}"
-            LootKind.OMINOUS -> "ominous-${chamber.name.lowercase()}"
-        }
+        val tableName = effectiveTableName(chamber, kind)
         val table = plugin.lootManager.getTable(tableName)
         if (table == null || table.isLegacyFormat()) {
             openLootEditor(player, chamber, kind, null)

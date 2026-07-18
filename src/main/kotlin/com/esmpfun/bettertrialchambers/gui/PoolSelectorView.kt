@@ -93,10 +93,7 @@ class PoolSelectorView(
 
     private fun getTableName(): String {
         if (chamber == null) return globalTableName!!
-        return when (kind) {
-            MenuService.LootKind.NORMAL -> "chamber-${chamber.name.lowercase()}"
-            MenuService.LootKind.OMINOUS -> "ominous-${chamber.name.lowercase()}"
-        }
+        return MenuService.effectiveTableName(chamber, kind)
     }
 
     private fun createPoolItem(pool: LootPool): ItemStack {
