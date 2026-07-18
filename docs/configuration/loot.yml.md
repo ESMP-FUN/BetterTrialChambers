@@ -1382,7 +1382,9 @@ Then assign the table to a specific chamber with `/trial loot set <chamber> <nor
 
 Clear per-chamber overrides with `/trial loot clear <chamber> [normal|ominous|all]` — after clearing, the chamber falls back to the default tables in `loot.yml`.
 
-You can also set these overrides from the GUI: `/trial menu` → pick the chamber → **Loot** → pick **Normal** or **Ominous**.
+You can also set these overrides from the GUI: `/trial menu` → pick the chamber → **Loot Table Overrides** → left/right-click **Normal** or **Ominous** to cycle through the available tables (shift-right-click clears the override).
+
+> **Two buttons, two different jobs.** On the chamber screen, **Loot Table Overrides** chooses _which_ table the chamber's vaults use. The **Normal Loot** / **Ominous Loot** buttons _edit the contents_ of whichever table it currently uses. If you've set an override, those buttons edit the table you pointed it at — and if other chambers use that same table, your edits reach them too. Leave the override on `(default)` and the chamber gets its own private `chamber-<name>` table that nothing else touches.
 
 ***
 
