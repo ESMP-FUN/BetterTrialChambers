@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [2.0.7] - 2026-07-19
+### Changed
+- **Error reporting is now opt-in, and off by default.** 2.0.6 turned it on for everyone, which was the wrong default for something that sends more than anonymous counters — that's your decision, not ours. Turn it on with `metrics.error-reporting: true` in `config.yml` if you'd like BTC's bugs reported automatically; everything about what gets sent and scrubbed is unchanged from 2.0.6.
+- **If you installed 2.0.6, you are opted back out automatically.** 2.0.6 wrote `error-tracking: true` into your `config.yml`. The setting has been renamed to `error-reporting` specifically so that old line no longer does anything — you don't have to find and change it. The leftover `error-tracking:` line is harmless and can be deleted; BTC prints a one-line reminder at startup if it sees one. **Anonymous usage metrics are unaffected** and still work exactly as in 2.0.5.
+
+### Fixed
+- Corrected a stray tag in the Metrics section of the configuration docs that was added in 2.0.6 — it caused everything after it (Debug Mode onward) to be folded into the wrong collapsible section on the docs site.
+
 ## [2.0.6] - 2026-07-19
 ### Added
 - **Automatic error reporting**, so bugs in BetterTrialChambers get found and fixed without anyone having to notice and report them. (This replaces the "no error reporting" note in 2.0.5 — it's now on by default.) **Only this plugin's own errors are sent** — other plugins' errors are never captured, even when they happen at the same moment. Before anything leaves your server, IP addresses, file paths containing your username, database credentials and player UUIDs are stripped out and replaced with placeholders; player names, chat, inventories and world data are never included. Routine shutdown/reload cancellations are filtered out rather than reported as errors. Turn it off with `metrics.error-tracking: false` in `config.yml` (keeps the usage numbers), or server-wide with `submitErrors=false` in `plugins/faststats/config.properties`.
@@ -1617,6 +1625,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[2.0.7]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.6...v2.0.7
 [2.0.6]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.5...v2.0.6
 [2.0.5]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.4...v2.0.5
 [2.0.4]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.1...v2.0.4
