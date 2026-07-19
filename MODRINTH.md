@@ -314,4 +314,6 @@ If you have questions or would like to just say Hi, come [join the Discord](http
 
 Rather stay silent? (Anonymous) donations are also **VERY** welcome: https://ko-fi.com/darkstarworks
 
+[![Servers](https://img.shields.io/endpoint?url=https%3A%2F%2Ffaststats.dev%2Fapi%2Fshields%2Fbetter-trial-chambers%3Fmetric%3Dservers)](https://faststats.dev/project/better-trial-chambers)
+
 </div>
