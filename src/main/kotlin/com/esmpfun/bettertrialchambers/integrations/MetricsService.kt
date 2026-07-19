@@ -54,11 +54,15 @@ object MetricsService {
         // but two contexts would mean two submission schedulers.
         if (context != null) return "Enabled"
 
-        // Opt-in (v2.0.7). v2.0.6 shipped this as `metrics.error-tracking` defaulting
-        // to true, and the startup config merge wrote that `true` into the files of
-        // anyone who installed it. Flipping the default alone would have left those
-        // servers reporting errors nobody chose to send, so the key was renamed: the
-        // old one is no longer read, which opts those servers back out automatically.
+        // Opt-in by default: sending exception data is a bigger step than anonymous
+        // counters, so it's the owner's call.
+        //
+        // A pre-release build briefly used `metrics.error-tracking` defaulting to true.
+        // That was never published, but mergeYamlDefaults writes new keys into the
+        // deployed config.yml at startup, so any server that ran it still carries a
+        // literal `error-tracking: true` line — a value nobody chose. Renaming the key
+        // rather than just flipping its default means that stale line can't silently
+        // switch reporting on.
         val legacyKey = "metrics.error-tracking"
         if (plugin.config.isSet(legacyKey)) {
             plugin.logger.info(
