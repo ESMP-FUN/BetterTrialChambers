@@ -75,3 +75,7 @@ All modules require BetterTrialChambers and are available [esmp.fun](https://esm
 * **[Modrinth](https://modrinth.com/plugin/trialchamberpro)** — downloads and release notes
 
 Source-available — free to use, no redistribution (see [LICENSE](https://github.com/ESMP-FUN/BetterTrialChambers/blob/master/LICENSE)). Made with Kotlin by [darkstarworks](https://github.com/darkstarworks).
+
+---
+
+[![Servers](https://img.shields.io/endpoint?url=https%3A%2F%2Ffaststats.dev%2Fapi%2Fshields%2Fbetter-trial-chambers%3Fmetric%3Dservers)](https://faststats.dev/project/better-trial-chambers)
