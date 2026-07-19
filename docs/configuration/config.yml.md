@@ -1657,7 +1657,14 @@ metrics:
   enabled: true
 ```
 
-_(Added in 1.5.7.)_ Anonymous aggregate usage metrics via [bStats](https://bstats.org) — database backend, whether discovery is enabled, glow mode, chamber-count bucket, and which premium modules are installed alongside BTC. **No player data is ever collected.** Disable here or server-wide in `plugins/bStats/config.yml`.
+_(Added in 1.5.7. Provider switched from bStats to [FastStats](https://faststats.dev) in 2.0.5.)_ Anonymous aggregate usage metrics — database backend, whether discovery is enabled, glow mode, chamber-count bucket, and which premium modules are installed alongside BTC. **No player data is ever collected**, and error/stack-trace reporting is deliberately left off.
+
+Two ways to turn it off:
+
+* **This plugin only** — set `metrics.enabled: false` here. BTC then never starts the SDK at all, so nothing is sent and no FastStats files are written.
+* **Every FastStats plugin on the server** — set `enabled=false` in `plugins/faststats/config.properties`. This is the direct replacement for the old `plugins/bStats/config.yml`. That file also has narrower switches (`submitMetrics`, `submitErrors`, `submitAdditionalMetrics`) if you'd rather disable only part of it.
+
+**Nothing is sent on the first run.** FastStats writes the opt-out file on its first start and waits until the next server restart before submitting anything, so owners get a chance to opt out first. A brand-new install showing no data for one boot is expected behaviour, not a fault.
 
 ***
 
