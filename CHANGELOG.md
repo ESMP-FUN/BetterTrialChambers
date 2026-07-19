@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [2.0.6] - 2026-07-19
+### Added
+- **Automatic error reporting**, so bugs in BetterTrialChambers get found and fixed without anyone having to notice and report them. (This replaces the "no error reporting" note in 2.0.5 — it's now on by default.) **Only this plugin's own errors are sent** — other plugins' errors are never captured, even when they happen at the same moment. Before anything leaves your server, IP addresses, file paths containing your username, database credentials and player UUIDs are stripped out and replaced with placeholders; player names, chat, inventories and world data are never included. Routine shutdown/reload cancellations are filtered out rather than reported as errors. Turn it off with `metrics.error-tracking: false` in `config.yml` (keeps the usage numbers), or server-wide with `submitErrors=false` in `plugins/faststats/config.properties`.
+
 ## [2.0.5] - 2026-07-19
 ### Changed
 - **Anonymous usage metrics now use [FastStats](https://faststats.dev) instead of bStats.** The same handful of aggregate numbers are collected as before — which database backend you run, whether auto-discovery is on, glow mode, a rough chamber-count bracket, and which premium add-ons are installed. **No player data, and no error or crash reporting.** `metrics.enabled: false` in `config.yml` still switches it off for this plugin, and there's still a server-wide off switch for every plugin that uses it: `enabled=false` in `plugins/faststats/config.properties` (the equivalent of the old `plugins/bStats/config.yml`).
@@ -1613,6 +1617,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[2.0.6]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.5...v2.0.6
 [2.0.5]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.4...v2.0.5
 [2.0.4]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.1...v2.0.4
 [2.0.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.0...v2.0.1
