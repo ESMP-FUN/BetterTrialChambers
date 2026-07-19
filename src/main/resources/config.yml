@@ -51,7 +51,19 @@ global:
   # Common values: 86400 (daily), 172800 (48h), 604800 (weekly)
   default-reset-interval: 172800
   reset-warning-times: [300, 60, 30] # Warnings in seconds before reset
-  reset-complete-alert: true # Set to false to suppress the server-wide broadcast when any chamber finishes resetting
+  reset-complete-alert: true # Set to false to suppress the "chamber has been reset" message entirely
+  # Who gets the "chamber has been reset" message.
+  #   chamber (default) - only the players who were inside that chamber when it reset
+  #   server            - every online player, the pre-2.0.4 behaviour
+  # 'chamber' is the default because the message doesn't say WHICH chamber reset, so
+  # server-wide it's an unidentifiable line of chat for everyone who wasn't in it — and
+  # with lots of auto-discovered chambers, resets are staggered and it becomes a steady
+  # drip of noise. If you switch this to 'server', consider adding {chamber} to the
+  # 'chamber-reset-complete' entry in messages.yml so the line actually names the chamber.
+  reset-complete-audience: chamber
+  # Optional permission node required to receive the message. Leave empty for no gating.
+  # Applies to both audience modes. Example: btc.notify.reset
+  reset-complete-permission: ""
   # Server-wide broadcast when a chamber is fully cleared (every trial spawner in it
   # finished its wave in one run). Uses the chamber's display name + the players who
   # took part — e.g. "Bastion has been cleared by Steve, Alex!". Off by default.

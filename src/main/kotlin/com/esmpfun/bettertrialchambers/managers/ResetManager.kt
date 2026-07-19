@@ -297,6 +297,11 @@ class ResetManager(private val plugin: BetterTrialChambers) {
             scheduledResets.remove(chamber.id)?.cancel()
             warningJobs.remove(chamber.id)?.forEach { it.cancel() }
 
+            // Captured BEFORE Step 1 empties the chamber — by the time the completion
+            // message fires at the end of this method, everyone has been teleported out
+            // and getPlayersInside() returns nothing.
+            val resetAudience = captureResetAudience(chamber)
+
             // Step 0: Strip Trial/Bad Omen from players inside so it doesn't carry into the next
             // cycle. Independent of teleport — works even when players stay in the chamber.
             if (plugin.config.getBoolean("reset.clear-trial-omen-effect", true)) {
@@ -377,12 +382,34 @@ class ResetManager(private val plugin: BetterTrialChambers) {
             // re-roll needed — freshness is inherent to the per-player model (v1.6.3).
             plugin.containerLootManager.clearChamber(chamber.id)
 
-            // Send completion message if broadcasts are enabled globally and for this chamber
+            // Send completion message if broadcasts are enabled globally and for this chamber.
+            //
+            // v2.0.4: this used to go to every online player on the server. The message
+            // carries no chamber name, so for anyone who wasn't in the chamber it was an
+            // unidentifiable line of chat — and on servers with many auto-discovered
+            // chambers the staggered resets turned that into a steady drip of noise.
+            // It now defaults to the players who were actually in the chamber.
             val globalAlerts = plugin.config.getBoolean("global.reset-complete-alert", true)
             if (globalAlerts && chamber.broadcastResetComplete) {
+                val serverWide = plugin.config
+                    .getString("global.reset-complete-audience", "chamber")
+                    .equals("server", ignoreCase = true)
+                val requiredPermission = plugin.config
+                    .getString("global.reset-complete-permission", "")
+                    ?.takeIf { it.isNotBlank() }
+
                 plugin.scheduler.runTask(Runnable {
-                    val message = plugin.getMessageComponent("chamber-reset-complete")
-                    Bukkit.getOnlinePlayers().forEach { it.sendMessage(message) }
+                    // {chamber} is offered even though the shipped default text doesn't use
+                    // it — existing messages.yml files keep their wording, and anyone who
+                    // wants the name (particularly in server-wide mode) can add it.
+                    val message = plugin.getMessageComponent(
+                        "chamber-reset-complete",
+                        "chamber" to chamber.label()
+                    )
+                    Bukkit.getOnlinePlayers()
+                        .filter { serverWide || it.uniqueId in resetAudience }
+                        .filter { requiredPermission == null || it.hasPermission(requiredPermission) }
+                        .forEach { it.sendMessage(message) }
                 })
             }
 
@@ -429,6 +456,28 @@ class ResetManager(private val plugin: BetterTrialChambers) {
             }
         })
     }
+
+    /**
+     * Snapshots who is inside the chamber, as UUIDs, for the completion message.
+     *
+     * Read on the scheduler thread (same as [clearTrialOmen]) rather than straight off
+     * the IO dispatcher this reset runs on — `World.getPlayers()` is Bukkit state and
+     * isn't safe to touch from an arbitrary thread on Folia. UUIDs rather than Player
+     * references, so a player who disconnects mid-reset can't be messaged through a
+     * stale handle.
+     */
+    private suspend fun captureResetAudience(chamber: Chamber): Set<java.util.UUID> =
+        suspendCancellableCoroutine { continuation ->
+            plugin.scheduler.runTask(Runnable {
+                val ids = try {
+                    chamber.getPlayersInside().map { it.uniqueId }.toSet()
+                } catch (e: Exception) {
+                    plugin.logger.warning("Could not capture reset audience for '${chamber.name}': ${e.message}")
+                    emptySet()
+                }
+                continuation.resume(ids) {}
+            })
+        }
 
     /**
      * Teleports all players out of the chamber.
