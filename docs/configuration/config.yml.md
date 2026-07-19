@@ -86,6 +86,8 @@ global:
   default-reset-interval: 172800
   reset-warning-times: [300, 60, 30]
   reset-complete-alert: true
+  reset-complete-audience: chamber
+  reset-complete-permission: ""
   teleport-players-on-reset: true
   teleport-location: EXIT_POINT
   blocks-per-tick: 500
@@ -208,7 +210,40 @@ Automatically create a snapshot when registering a new chamber? Super convenient
 
 **Default:** `true`
 
-Server-wide broadcast when any chamber finishes resetting (e.g. "Bastion has finished resetting!"). Set to `false` to suppress it globally. Can also be overridden per-chamber from the GUI (Chamber Settings), so you can keep the global broadcast off but re-enable it for one flagship chamber.
+Whether the "chamber has been reset" message is sent at all. Set to `false` to suppress it everywhere. Can also be overridden per-chamber from the GUI (Chamber Settings), so you can keep it off globally but re-enable it for one flagship chamber.
+
+Use `reset-complete-audience` below to control **who** receives it.
+
+</details>
+
+<details>
+
+<summary><code>reset-complete-audience</code></summary>
+
+**Default:** `chamber` _(2.0.4+)_
+
+Who receives the reset-complete message.
+
+| Value | Who sees it |
+| ----- | ----------- |
+| `chamber` | Only the players who were inside that chamber when it reset |
+| `server` | Every online player — the behaviour before 2.0.4 |
+
+**Why the default changed:** the shipped message (`chamber-reset-complete`) doesn't name the chamber, so sent server-wide it's an unidentifiable line of chat for everyone who wasn't in it. On servers with many auto-discovered chambers, resets are deliberately staggered to protect TPS — which turned that into a steady drip of repeated messages for the whole server.
+
+If you set this to `server`, add `{chamber}` to the `chamber-reset-complete` entry in `messages.yml` so the line actually says which chamber reset. The placeholder is available in both modes.
+
+</details>
+
+<details>
+
+<summary><code>reset-complete-permission</code></summary>
+
+**Default:** `""` (no gating) _(2.0.4+)_
+
+Optional permission node required to receive the reset-complete message. Applies in both audience modes — with `chamber`, a player must have been inside **and** hold the node.
+
+Leave empty to send to everyone in the chosen audience. Set it to any node you like (e.g. `btc.notify.reset`) and grant it through your permission plugin; it doesn't need to be pre-registered.
 
 </details>
 

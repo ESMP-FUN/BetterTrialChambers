@@ -1223,10 +1223,10 @@ gui:
     # lines from gui.common.toggle-lore-*. So the name must be PLAIN text and the
     # lore a SINGLE-LINE string (a list or embedded &-codes here render raw).
     broadcast-reset-name: "Reset Broadcast"
-    broadcast-reset-lore: "Send a server-wide message when this chamber finishes resetting"
+    broadcast-reset-lore: "Tell the players who were inside when this chamber finishes resetting (audience set in config.yml)"
     broadcast-reset-overridden-lore:
-      - "&7Send a server-wide message when"
-      - "&7this chamber finishes resetting"
+      - "&7Tell the players who were inside"
+      - "&7when this chamber finishes resetting"
       - ""
       - "&c&lDisabled by global config"
       - "&7Set &eglobal.reset-complete-alert: true"
