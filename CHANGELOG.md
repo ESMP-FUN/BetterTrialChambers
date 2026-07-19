@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [2.0.4] - 2026-07-19
+### Changed
+- **"The chamber has been reset!" no longer goes to the whole server.** It now goes to the players who were actually inside that chamber when it reset. The message never said _which_ chamber it meant, so for everyone else it was an unidentifiable line of chat — and on servers with lots of auto-discovered chambers, resets are deliberately spread out to protect performance, which turned it into a steady trickle of repeated messages for everybody. Set `global.reset-complete-audience: server` in `config.yml` to get the old behaviour back (and add `{chamber}` to the `chamber-reset-complete` message in `messages.yml` so it names the chamber). `global.reset-complete-alert: false` still switches the message off entirely.
+
+### Added
+- **Optional permission for the reset message.** Set `global.reset-complete-permission` to any permission node (for example `btc.notify.reset`) and only players with it will receive the message. Works with either audience setting. Empty by default, meaning no permission is needed.
+
 ## [2.0.3] - 2026-07-19
 ### Fixed
 - **Choosing a different loot table for a chamber now actually does something.** If you used "Loot Table Overrides" to point a chamber at another table, the chamber's Normal/Ominous Loot buttons carried on showing — and editing — the chamber's own `chamber-<name>` table instead. So your edits went into a table nothing was using, and the vaults kept handing out whatever the override pointed at. It looked like the plugin had glued a table to the chamber based on its name and refused to let go. Both buttons now follow the override, so what you see on the button is what the vaults actually give out. Nothing changes for chambers without an override.
@@ -1601,6 +1608,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[2.0.4]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.1...v2.0.4
 [2.0.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.8.1...v2.0.0
 [1.8.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.8.0...v1.8.1
