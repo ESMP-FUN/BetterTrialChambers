@@ -1655,6 +1655,7 @@ See [Commands](../reference/commands.md) for the `/trial update` subcommands (`c
 ```yaml
 metrics:
   enabled: true
+  error-reporting: false
 ```
 
 _(Added in 1.5.7. Provider switched from bStats to [FastStats](https://faststats.dev) in 2.0.5.)_ Anonymous aggregate usage metrics — database backend, whether discovery is enabled, glow mode, chamber-count bucket, and which premium modules are installed alongside BTC. **No player data is ever collected.**
@@ -1662,28 +1663,30 @@ _(Added in 1.5.7. Provider switched from bStats to [FastStats](https://faststats
 Ways to turn it off:
 
 * **This plugin only** — set `metrics.enabled: false` here. BTC then never starts the SDK at all, so nothing is sent and no FastStats files are written.
-* **Error reports only** — set `metrics.error-tracking: false` to keep the usage numbers but stop sending crash reports.
+* **Error reports** are a separate, opt-in setting — see `error-reporting` below. They are **off** unless you turn them on.
 * **Every FastStats plugin on the server** — set `enabled=false` in `plugins/faststats/config.properties`. This is the direct replacement for the old `plugins/bStats/config.yml`. That file also has narrower switches (`submitMetrics`, `submitErrors`, `submitAdditionalMetrics`) if you'd rather disable only part of it.
 
 **Nothing is sent on the first run.** FastStats writes the opt-out file on its first start and waits until the next server restart before submitting anything, so owners get a chance to opt out first. A brand-new install showing no data for one boot is expected behaviour, not a fault.
 
-</details>
-
 <details>
 
-<summary><code>error-tracking</code></summary>
+<summary><code>error-reporting</code></summary>
 
-**Default:** `true` _(2.0.6+)_
+**Default:** `false` — opt-in _(2.0.7+; briefly shipped as `error-tracking`, default `true`, in 2.0.6)_
 
-Automatically reports BetterTrialChambers' own errors, so bugs get found and fixed without anyone having to notice and file a report.
+Set to `true` to automatically report BetterTrialChambers' own errors, so bugs get found and fixed without anyone having to notice and file a report. It's off unless you choose it — sending error reports is a bigger step than anonymous counters, so it isn't switched on for you.
 
-**What is and isn't sent:**
+> **Upgrading from 2.0.6?** That release briefly had this on by default under the name `error-tracking`. The key was renamed precisely so that old value stops applying — if you installed 2.0.6, you are now opted **out** again, regardless of what that line says. The leftover `error-tracking:` line is ignored and can be deleted; BTC logs a one-line note at startup if it spots one.
+
+**What is and isn't sent when enabled:**
 
 * **Only this plugin's errors.** The tracker is bound to BTC's own class loader, so exceptions thrown by other plugins are never captured — even if they happen at the same moment.
 * **Scrubbed before sending.** IP addresses (v4 and v6), file paths containing your operating-system username, database credentials, and player UUIDs are all replaced with placeholders. Player names, chat, inventories, coordinates and world data are never part of an error report.
 * **Routine cancellations are filtered out**, so normal shutdown and reload activity doesn't get reported as errors.
 
-Set to `false` to keep the anonymous usage numbers but send no error reports. To disable it for every FastStats plugin at once, set `submitErrors=false` in `plugins/faststats/config.properties`.
+Leaving it `false` keeps the anonymous usage numbers while sending no error reports. If you enable it but want it off across every FastStats plugin at once, set `submitErrors=false` in `plugins/faststats/config.properties`.
+
+</details>
 
 ***
 
