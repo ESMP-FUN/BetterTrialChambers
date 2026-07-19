@@ -13,7 +13,7 @@ plugins {
 }
 
 group = "com.esmpfun"
-version = "2.0.4"
+version = "2.0.5"
 
 repositories {
     mavenCentral()
@@ -28,6 +28,9 @@ repositories {
     }
     maven("https://jitpack.io") {
         name = "jitpack"
+    }
+    maven("https://repo.faststats.dev/releases") {
+        name = "faststatsReleases"
     }
 }
 
@@ -62,8 +65,15 @@ dependencies {
     implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.8.0")
     implementation("com.github.darkstarworks.PluginPulse:pluginpulse-hotreload:v0.8.0")
 
-    // Anonymous usage metrics (relocated below — bStats requires it)
-    implementation("org.bstats:bstats-bukkit:3.2.1")
+    // Anonymous usage metrics (relocated below). Replaced bStats in v2.0.5.
+    // Pulls dev.faststats.metrics:core (+ :config at runtime) transitively.
+    //
+    // core requests gson 2.14.0, but the FAWE BOM below pins gson to 2.11.0 and wins,
+    // so the shaded jar ships 2.11.0. Verified safe: every gson member the FastStats
+    // classes reference (JsonObject/JsonArray/JsonPrimitive/JsonParser, including the
+    // newer isEmpty() and parseString()) exists in 2.11.0. Re-check this if the SDK is
+    // upgraded — a NoSuchMethodError here would surface as silent telemetry failure.
+    implementation("dev.faststats.metrics:bukkit:0.28.0")
 
     // Economy (optional)
     compileOnly("com.github.MilkBowl:VaultAPI:1.7")
@@ -138,8 +148,9 @@ tasks {
         // This avoids NoClassDefFoundError for kotlinx.coroutines.Dispatchers during plugin bootstrap
         // Important: Do NOT relocate org.sqlite, or the sqlite-jdbc native bindings (JNI) will fail to load
         relocate("com.zaxxer.hikari", "com.esmpfun.btc.hikari")
-        // bStats mandates relocation so multiple plugins can shade different versions
-        relocate("org.bstats", "com.esmpfun.btc.bstats")
+        // FastStats recommends relocation so two plugins shading different SDK
+        // versions can't collide on the same package (same rationale bStats had).
+        relocate("dev.faststats", "com.esmpfun.btc.faststats")
         // PluginPulse relocation so other plugins can shade different versions
         relocate("io.github.darkstarworks.pluginpulse", "com.esmpfun.btc.pluginpulse")
         // InventoryFramework relocation removed in v1.5.0 — see dependency comment.

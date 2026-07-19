@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [2.0.5] - 2026-07-19
+### Changed
+- **Anonymous usage metrics now use [FastStats](https://faststats.dev) instead of bStats.** The same handful of aggregate numbers are collected as before — which database backend you run, whether auto-discovery is on, glow mode, a rough chamber-count bracket, and which premium add-ons are installed. **No player data, and no error or crash reporting.** `metrics.enabled: false` in `config.yml` still switches it off for this plugin, and there's still a server-wide off switch for every plugin that uses it: `enabled=false` in `plugins/faststats/config.properties` (the equivalent of the old `plugins/bStats/config.yml`).
+- **Nothing is sent the first time you start up.** FastStats writes its opt-out file on the first run and waits until the next server restart before sending anything, so you get the chance to turn it off first. A new install showing no data for one boot is expected.
+- BTC no longer writes to `plugins/bStats/`. If no other plugin on your server uses bStats, that folder can be deleted.
+
 ## [2.0.4] - 2026-07-19
 ### Changed
 - **"The chamber has been reset!" no longer goes to the whole server.** It now goes to the players who were actually inside that chamber when it reset. The message never said _which_ chamber it meant, so for everyone else it was an unidentifiable line of chat — and on servers with lots of auto-discovered chambers, resets are deliberately spread out to protect performance, which turned it into a steady trickle of repeated messages for everybody. Set `global.reset-complete-audience: server` in `config.yml` to get the old behaviour back (and add `{chamber}` to the `chamber-reset-complete` message in `messages.yml` so it names the chamber). `global.reset-complete-alert: false` still switches the message off entirely.
@@ -1608,6 +1614,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[2.0.5]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.4...v2.0.5
 [2.0.4]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.1...v2.0.4
 [2.0.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v1.8.1...v2.0.0

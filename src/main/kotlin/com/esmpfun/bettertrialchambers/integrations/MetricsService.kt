@@ -1,76 +1,115 @@
 package com.esmpfun.bettertrialchambers.integrations
 
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
-import org.bstats.bukkit.Metrics
-import org.bstats.charts.AdvancedPie
-import org.bstats.charts.SimplePie
+import dev.faststats.bukkit.BukkitContext
+import dev.faststats.data.Metric
 
 /**
- * bStats integration. Anonymous usage metrics that drive feature
- * prioritization: which database backend servers actually run, whether
- * auto-discovery is enabled in the wild, glow-mode adoption, fleet chamber
- * counts, and which premium modules are installed alongside TCP free.
+ * FastStats integration (v2.0.5; replaced bStats). Anonymous usage metrics that
+ * drive feature prioritization: which database backend servers actually run,
+ * whether auto-discovery is enabled in the wild, glow-mode adoption, fleet
+ * chamber counts, and which premium modules are installed alongside BTC free.
  *
  * Respect knobs (either disables collection entirely):
- *  - TCP's own `metrics.enabled` in config.yml
- *  - bStats' global opt-out (`plugins/bStats/config.yml`)
+ *  - BTC's own `metrics.enabled` in config.yml — checked here, and when false the
+ *    context is never constructed, so nothing is sent and no config file is written.
+ *  - FastStats' server-wide opt-out at `plugins/faststats/config.properties`
+ *    (`enabled=false`, or the narrower `submitMetrics` / `submitErrors` flags).
+ *    Equivalent to the old `plugins/bStats/config.yml`.
  *
- * All chart callables are evaluated by bStats on its own submission
- * schedule (~30 min) on the main thread; every supplier below reads
- * cheap in-memory state only.
+ * Note that FastStats deliberately submits **nothing on its first run** — it
+ * writes the opt-out file and waits for the next server start so owners get a
+ * chance to opt out first. A fresh install showing no data for one boot is
+ * expected, not a misconfiguration.
+ *
+ * Error tracking is deliberately NOT enabled. The SDK offers it via
+ * `errorTrackerService(...)`, but that would ship stack traces off-server —
+ * a wider data footprint than bStats ever had, and not something to switch on
+ * as a side effect of changing metrics provider.
+ *
+ * Metric suppliers are [java.util.concurrent.Callable]s evaluated by the SDK on
+ * its own submission schedule; every one below reads cheap in-memory state only.
  */
 object MetricsService {
 
     /**
-     * bStats service id for BetterTrialChambers, registered at
-     * https://bstats.org/plugin/bukkit/BetterTrialChambers/31905.
-     * A value <= 0 disables metrics init entirely.
+     * FastStats project token for BetterTrialChambers. Not a secret — it ships
+     * inside the distributed jar and identifies the project, exactly as the old
+     * bStats service id did. Blank disables metrics init entirely.
      */
-    private const val BSTATS_SERVICE_ID: Int = 31905
+    private const val PROJECT_TOKEN: String = "cd65155a2ad3ff239f18424dc4faf43d"
+
+    @Volatile
+    private var context: BukkitContext? = null
 
     fun init(plugin: BetterTrialChambers): String {
-        if (BSTATS_SERVICE_ID <= 0) return "Disabled (no service id)"
+        if (PROJECT_TOKEN.isBlank()) return "Disabled (no project token)"
         if (!plugin.config.getBoolean("metrics.enabled", true)) return "Disabled (config)"
+        // Guard against a double init (e.g. hot-reload) — ready() warns and ignores,
+        // but two contexts would mean two submission schedulers.
+        if (context != null) return "Enabled"
 
         return try {
-            val metrics = Metrics(plugin, BSTATS_SERVICE_ID)
-
-            metrics.addCustomChart(SimplePie("database_type") {
-                plugin.databaseManager.databaseType.toString().lowercase()
-            })
-
-            metrics.addCustomChart(SimplePie("discovery_enabled") {
-                plugin.config.getBoolean("discovery.enabled", false).toString()
-            })
-
-            metrics.addCustomChart(SimplePie("glow_mode") {
-                if (!plugin.config.getBoolean("spawner-waves.glow-active-spawners", false)) "disabled"
-                else plugin.config.getString("spawner-waves.glow-mode", "wave-active") ?: "wave-active"
-            })
-
-            metrics.addCustomChart(SimplePie("chamber_count") {
-                when (val n = plugin.chamberManager.getCachedChamberNames().size) {
-                    0 -> "0"
-                    in 1..10 -> "1-10"
-                    in 11..50 -> "11-50"
-                    in 51..100 -> "51-100"
-                    else -> if (n <= 250) "101-250" else "250+"
+            val ctx = BukkitContext.Factory(plugin, PROJECT_TOKEN)
+                .metrics { factory ->
+                    factory
+                        .addMetric(Metric.string("database_type") {
+                            plugin.databaseManager.databaseType.toString().lowercase()
+                        })
+                        .addMetric(Metric.string("discovery_enabled") {
+                            plugin.config.getBoolean("discovery.enabled", false).toString()
+                        })
+                        .addMetric(Metric.string("glow_mode") {
+                            if (!plugin.config.getBoolean("spawner-waves.glow-active-spawners", false)) "disabled"
+                            else plugin.config.getString("spawner-waves.glow-mode", "wave-active") ?: "wave-active"
+                        })
+                        .addMetric(Metric.string("chamber_count") {
+                            when (val n = plugin.chamberManager.getCachedChamberNames().size) {
+                                0 -> "0"
+                                in 1..10 -> "1-10"
+                                in 11..50 -> "11-50"
+                                in 51..100 -> "51-100"
+                                else -> if (n <= 250) "101-250" else "250+"
+                            }
+                        })
+                        .addMetric(Metric.numberMap("premium_modules") {
+                            val map = HashMap<String, Number>()
+                            for (name in arrayOf("TCP-VaultCrates", "TCP-WildSpawners", "TCP-MythicTrials")) {
+                                if (plugin.server.pluginManager.getPlugin(name) != null) map[name] = 1
+                            }
+                            if (map.isEmpty()) map["none"] = 1
+                            map
+                        })
+                        .create()
                 }
-            })
+                .create()
 
-            metrics.addCustomChart(AdvancedPie("premium_modules") {
-                val map = HashMap<String, Int>()
-                for (name in arrayOf("TCP-VaultCrates", "TCP-WildSpawners", "TCP-MythicTrials")) {
-                    if (plugin.server.pluginManager.getPlugin(name) != null) map[name] = 1
-                }
-                if (map.isEmpty()) map["none"] = 1
-                map
-            })
-
+            // Must run on the main thread and inside enable — on Paper this also
+            // registers the server exception handlers. Phase 10 already executes
+            // inside scheduler.runTask, so we're on the right thread here.
+            ctx.ready()
+            context = ctx
             "Enabled"
         } catch (e: Exception) {
-            plugin.logger.warning("bStats init failed: ${e.message}")
+            plugin.logger.warning("FastStats init failed: ${e.message}")
             "Failed"
+        }
+    }
+
+    /**
+     * Releases the SDK's submission scheduler. Without this a `/reload` (or any
+     * disable/enable cycle) would leak the previous context's threads — bStats
+     * needed no such call, so this is new in v2.0.5.
+     */
+    fun shutdown() {
+        val ctx = context ?: return
+        context = null
+        try {
+            ctx.shutdown()
+        } catch (e: Exception) {
+            // Never let telemetry teardown break plugin shutdown.
+            java.util.logging.Logger.getLogger("BetterTrialChambers")
+                .warning("FastStats shutdown failed: ${e.message}")
         }
     }
 }
