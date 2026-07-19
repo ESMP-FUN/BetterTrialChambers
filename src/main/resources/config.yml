@@ -542,9 +542,15 @@ chests:
 # plugins/faststats/config.properties (replaces the old plugins/bStats/config.yml).
 # Note: FastStats submits nothing on its first run — it writes that opt-out file
 # and waits until the next restart, so owners get a chance to opt out first.
-# Error tracking is not enabled; only the aggregate values above are sent.
 metrics:
   enabled: true
+  # Automatically report BetterTrialChambers' own errors so bugs get fixed without
+  # anyone having to file a report. Only exceptions thrown by THIS plugin are sent —
+  # other plugins' errors are never captured. Before sending, IP addresses, file
+  # paths containing your username, database credentials and player UUIDs are
+  # stripped out. Set to false to send usage numbers but no error reports.
+  # (Server-wide equivalent: submitErrors=false in plugins/faststats/config.properties.)
+  error-tracking: true
 
 # Debug mode
 debug:
