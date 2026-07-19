@@ -544,13 +544,18 @@ chests:
 # and waits until the next restart, so owners get a chance to opt out first.
 metrics:
   enabled: true
-  # Automatically report BetterTrialChambers' own errors so bugs get fixed without
-  # anyone having to file a report. Only exceptions thrown by THIS plugin are sent —
-  # other plugins' errors are never captured. Before sending, IP addresses, file
-  # paths containing your username, database credentials and player UUIDs are
-  # stripped out. Set to false to send usage numbers but no error reports.
+  # OPT-IN. Set to true to automatically report BetterTrialChambers' own errors,
+  # which helps get bugs fixed without you having to notice and file a report.
+  # Off by default — error reports are a bigger step than anonymous counters, so
+  # it's your call rather than something switched on for you.
+  #
+  # When enabled, only exceptions thrown by THIS plugin are sent; other plugins'
+  # errors are never captured. Before anything leaves your server, IP addresses,
+  # file paths containing your username, database credentials and player UUIDs are
+  # stripped out and replaced with placeholders. Player names, chat, inventories
+  # and world data are never included.
   # (Server-wide equivalent: submitErrors=false in plugins/faststats/config.properties.)
-  error-tracking: true
+  error-reporting: false
 
 # Debug mode
 debug:

@@ -23,12 +23,13 @@ import dev.faststats.data.Metric
  * chance to opt out first. A fresh install showing no data for one boot is
  * expected, not a misconfiguration.
  *
- * Error tracking (v2.0.6) reports BTC's own uncaught exceptions so bugs surface
- * without waiting for someone to open a ticket. Scoped and filtered:
+ * Error reporting is **opt-in** (`metrics.error-reporting`, default false since
+ * v2.0.7). When switched on it reports BTC's own uncaught exceptions so bugs
+ * surface without waiting for someone to open a ticket. Scoped and filtered:
  *  - `contextAware(classLoader)` binds it to THIS plugin's class loader, so other
  *    plugins' exceptions are never captured — only ours.
- *  - Toggle separately with `metrics.error-tracking` in config.yml, or server-wide
- *    with `submitErrors=false` in `plugins/faststats/config.properties`.
+ *  - Server-wide kill switch remains `submitErrors=false` in
+ *    `plugins/faststats/config.properties`.
  *  - Extra anonymisation on top of the SDK's built-ins (see [buildErrorTracker]).
  *
  * Metric suppliers are [java.util.concurrent.Callable]s evaluated by the SDK on
@@ -53,11 +54,23 @@ object MetricsService {
         // but two contexts would mean two submission schedulers.
         if (context != null) return "Enabled"
 
-        val errorTracking = plugin.config.getBoolean("metrics.error-tracking", true)
+        // Opt-in (v2.0.7). v2.0.6 shipped this as `metrics.error-tracking` defaulting
+        // to true, and the startup config merge wrote that `true` into the files of
+        // anyone who installed it. Flipping the default alone would have left those
+        // servers reporting errors nobody chose to send, so the key was renamed: the
+        // old one is no longer read, which opts those servers back out automatically.
+        val legacyKey = "metrics.error-tracking"
+        if (plugin.config.isSet(legacyKey)) {
+            plugin.logger.info(
+                "config.yml: '$legacyKey' is no longer used — error reporting is now opt-in via " +
+                    "'metrics.error-reporting' (default false). The old line is inert and can be deleted."
+            )
+        }
+        val errorReporting = plugin.config.getBoolean("metrics.error-reporting", false)
 
         return try {
             val ctx = BukkitContext.Factory(plugin, PROJECT_TOKEN)
-                .also { if (errorTracking) it.errorTrackerService(buildErrorTracker()) }
+                .also { if (errorReporting) it.errorTrackerService(buildErrorTracker()) }
                 .metrics { factory ->
                     factory
                         .addMetric(Metric.string("database_type") {
