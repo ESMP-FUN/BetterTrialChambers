@@ -1672,11 +1672,9 @@ Ways to turn it off:
 
 <summary><code>error-reporting</code></summary>
 
-**Default:** `false` — opt-in _(2.0.7+; briefly shipped as `error-tracking`, default `true`, in 2.0.6)_
+**Default:** `false` — opt-in _(2.0.7+)_
 
 Set to `true` to automatically report BetterTrialChambers' own errors, so bugs get found and fixed without anyone having to notice and file a report. It's off unless you choose it — sending error reports is a bigger step than anonymous counters, so it isn't switched on for you.
-
-> **Upgrading from 2.0.6?** That release briefly had this on by default under the name `error-tracking`. The key was renamed precisely so that old value stops applying — if you installed 2.0.6, you are now opted **out** again, regardless of what that line says. The leftover `error-tracking:` line is ignored and can be deleted; BTC logs a one-line note at startup if it spots one.
 
 **What is and isn't sent when enabled:**
 
