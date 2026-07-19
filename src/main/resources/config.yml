@@ -536,9 +536,13 @@ setup:
 chests:
   per-player-loot: false
 
-# Anonymous usage metrics (bStats). No player data is collected — just
+# Anonymous usage metrics (FastStats). No player data is collected — just
 # aggregate config/feature usage that guides development priorities.
-# Server-wide opt-out also available in plugins/bStats/config.yml.
+# Server-wide opt-out for ALL FastStats plugins: set enabled=false in
+# plugins/faststats/config.properties (replaces the old plugins/bStats/config.yml).
+# Note: FastStats submits nothing on its first run — it writes that opt-out file
+# and waits until the next restart, so owners get a chance to opt out first.
+# Error tracking is not enabled; only the aggregate values above are sent.
 metrics:
   enabled: true
 
