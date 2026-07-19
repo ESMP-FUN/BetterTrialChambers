@@ -594,7 +594,7 @@ class BetterTrialChambers : JavaPlugin() {
                         com.esmpfun.bettertrialchambers.integrations.MetricsService.init(this@BetterTrialChambers)
                     logger.info("✓ Phase 10 Integrations: Ready")
                     logger.info("  - PlaceholderAPI: $placeholderAPIStatus")
-                    logger.info("  - bStats Metrics: $metricsStatus")
+                    logger.info("  - FastStats Metrics: $metricsStatus")
                     logger.info("✓ Phase 11 Spawner Wave System: Ready")
                     logger.info("  - Wave Manager: Initialized")
                     logger.info("  - Wave Listener: Registered")
@@ -662,6 +662,10 @@ class BetterTrialChambers : JavaPlugin() {
         if (::updater.isInitialized) {
             updater.shutdown()
         }
+
+        // Release the FastStats submission scheduler. bStats needed no teardown;
+        // the FastStats SDK does, or a reload leaks the previous context's threads.
+        com.esmpfun.bettertrialchambers.integrations.MetricsService.shutdown()
 
         // v1.3.3: unload modules FIRST so they can still touch TCP
         // managers / database during their onUnload before everything
