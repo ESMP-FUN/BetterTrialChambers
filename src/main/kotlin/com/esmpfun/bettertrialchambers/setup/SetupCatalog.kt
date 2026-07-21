@@ -36,8 +36,19 @@ object SetupCatalog {
             formatCurrent = ::formatInterval,
         ),
 
+        // Vault loot is a three-way pick, not on/off, so it's a Choice rather than
+        // a Toggle (v2.0.8). See VaultLootMode.
+        SetupStep.Choice(
+            "loot-mode", "vaults.loot-mode",
+            options = listOf(
+                ChoiceOption("per_player", "setup.steps.loot-mode.options.per_player", "PER_PLAYER"),
+                ChoiceOption("shared", "setup.steps.loot-mode.options.shared", "SHARED"),
+                ChoiceOption("vanilla", "setup.steps.loot-mode.options.vanilla", "VANILLA"),
+            ),
+            formatCurrent = ::formatLootMode,
+        ),
+
         // ── Runtime toggles (mirrors GlobalSettingsView) ───────────────────────
-        SetupStep.Toggle("per-player-loot", "vaults.per-player-loot", default = true),
         SetupStep.Toggle("clear-items", "reset.clear-ground-items", default = true),
         SetupStep.Toggle("remove-mobs", "reset.remove-spawner-mobs", default = true),
         SetupStep.Toggle("reset-spawners", "reset.reset-trial-spawners", default = true),
@@ -54,6 +65,13 @@ object SetupCatalog {
 
     /** The interval that ships in config.yml; tagged "(default)" in the Currently line. */
     private const val DEFAULT_INTERVAL = 172_800L
+
+    /** Renders vaults.loot-mode for the "Currently: …" line in plain words. */
+    private fun formatLootMode(value: Any?): String = when (value?.toString()?.uppercase()) {
+        "SHARED" -> "First come, first served"
+        "VANILLA" -> "Leave it to Minecraft"
+        else -> "Everyone's own loot (default)"
+    }
 
     /**
      * Reset-interval seconds → a human duration for the "Currently: …" line, e.g.

@@ -106,6 +106,7 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
         sender.sendMessage(plugin.getMessageComponent("help-mobs"))
         // Players & rewards
         sender.sendMessage(plugin.getMessageComponent("help-vault"))
+        sender.sendMessage(plugin.getMessageComponent("help-vault-unlockall"))
         sender.sendMessage(plugin.getMessageComponent("help-key"))
         sender.sendMessage(plugin.getMessageComponent("help-give"))
         sender.sendMessage(plugin.getMessageComponent("help-stats"))
@@ -185,10 +186,21 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
             return
         }
 
+        val modeBefore = com.esmpfun.bettertrialchambers.models.VaultLootMode.resolve(plugin)
         plugin.reloadPluginConfig()
         plugin.chamberManager.clearCache()
         plugin.vaultManager.clearCache()
         sender.sendMessage(plugin.getMessageComponent("reload-success"))
+
+        // Switching to VANILLA hands vaults back to Minecraft, which still remembers
+        // everyone the plugin recorded as having opened them — so those vaults stay
+        // shut and look broken. Point the owner at the one-command cleanup rather than
+        // silently rewriting every vault block on the server.
+        val modeAfter = com.esmpfun.bettertrialchambers.models.VaultLootMode.resolve(plugin)
+        if (modeAfter != modeBefore &&
+            modeAfter == com.esmpfun.bettertrialchambers.models.VaultLootMode.VANILLA) {
+            sender.sendMessage(plugin.getMessageComponent("vault-mode-vanilla-hint"))
+        }
     }
 
 
@@ -717,12 +729,13 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
 
         // Config status
         sender.sendMessage(plugin.getMessageComponent("plugin-info-config-header"))
-        val perPlayerLoot = if (plugin.config.getBoolean("vaults.per-player-loot", true)) "&a✓" else "&c✗"
+        val lootMode = com.esmpfun.bettertrialchambers.models.VaultLootMode.resolve(plugin)
+        val lootModeText = plugin.rawMessage("gui.global-settings.loot-mode-${lootMode.name.lowercase()}")
         val spawnerWaves = if (plugin.config.getBoolean("spawner-waves.enabled", true)) "&a✓" else "&c✗"
         val spectatorMode = if (plugin.config.getBoolean("spectator-mode.enabled", true)) "&a✓" else "&c✗"
         val statistics = if (plugin.config.getBoolean("statistics.enabled", true)) "&a✓" else "&c✗"
 
-        sender.sendMessage(plugin.getMessageComponent("plugin-info-config-per-player", "status" to perPlayerLoot))
+        sender.sendMessage(plugin.getMessageComponent("plugin-info-config-loot-mode", "mode" to lootModeText))
         sender.sendMessage(plugin.getMessageComponent("plugin-info-config-spawner-waves", "status" to spawnerWaves))
         sender.sendMessage(plugin.getMessageComponent("plugin-info-config-spectator", "status" to spectatorMode))
         sender.sendMessage(plugin.getMessageComponent("plugin-info-config-statistics", "status" to statistics))

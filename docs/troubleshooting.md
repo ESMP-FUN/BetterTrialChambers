@@ -34,6 +34,54 @@ Operators have **every** permission by default, including `btc.bypass.cooldown`.
 
 <details>
 
+<summary><strong>Vaults stopped working completely — they don't open, don't give loot, and don't even take the key</strong></summary>
+
+**The likely cause:** you switched `vaults.loot-mode` to `VANILLA` (or, on older setups, set `vaults.per-player-loot` to `false`).
+
+Minecraft keeps its **own** record of who has opened each vault. While BetterTrialChambers is managing your vaults it writes into that same record. The moment you hand vaults back to Minecraft, it reads that record and refuses to open for anyone who was on it — silently, without consuming the key. Nothing is actually broken; the vaults just think everyone has already been.
+
+**The fix:**
+
+```
+/trial vault unlockall all
+```
+
+That clears the record on every vault in every chamber and opens them all up again. A normal chamber reset does the same thing for that one chamber, so waiting for a reset also works.
+
+{% hint style="warning" %}
+**If what you actually wanted was one reward per vault for the whole server**, `VANILLA` is not the setting for it — plain Minecraft is still one open **per player**, never shared. Use `loot-mode: SHARED` instead. See [loot-mode](configuration/config.yml.md).
+{% endhint %}
+
+{% hint style="info" %}
+**Admins used to trip this by accident.** Before v1.7.3, opening vaults with `btc.bypass.cooldown` (which every OP has) still wrote you into that record, so a few minutes of testing could quietly lock you out of those vaults under plain Minecraft. Bypassing players now leave no trace at all.
+{% endhint %}
+
+</details>
+
+<details>
+
+<summary><strong>My spawner rest time (cooldown) setting seems to be ignored</strong></summary>
+
+**The likely cause:** the spawners came from a preset that sets its own rest time.
+
+If a preset in `spawner_presets.yml` has a `target-cooldown-length` line, spawners placed from it use **that** time and ignore `reset.spawner-cooldown-minutes` in `config.yml`. The reasoning is that if you wrote a number into a preset, you meant it.
+
+**Three ways to sort it:**
+
+1. **Delete the `target-cooldown-length` line** from the preset. Spawners from it will then follow your server-wide setting like any other spawner. This is usually the tidiest answer.
+2. **Set `reset.spawner-cooldown-overrides-presets: true`** in `config.yml` to force every spawner, presets included, onto the server-wide setting.
+3. **Edit the number in the preset** if you want that preset to keep its own time.
+
+Then `/trial reload`. Note that already-placed spawners keep what they were given — break and re-place them, or wait for the chamber to reset.
+
+{% hint style="info" %}
+**Easy to miss:** `36000` ticks is 30 minutes, which is also Minecraft's own default. So a preset spawner and an ordinary one can behave identically and hide the fact that your setting isn't reaching them.
+{% endhint %}
+
+</details>
+
+<details>
+
 <summary><strong>"Loot table not found" / vault opens but no loot drops</strong></summary>
 
 **The likely cause:** TAB characters in your `loot.yml`.
@@ -58,17 +106,21 @@ Same rule applies to `config.yml` and `messages.yml`. If any of the three go qui
 
 **The symptom:** loot tables load fine (no console errors, vaults register correctly), but opening a vault gives vanilla Minecraft items — crossbows, poison arrows, wind charges — instead of your custom loot.
 
-**The likely cause:** `per-player-loot` is turned **off** in `config.yml`.
+**The likely cause:** `vaults.loot-mode` is set to `VANILLA` in `config.yml`.
 
-That option is the master switch for plugin-managed vaults. When it's `false`, BetterTrialChambers doesn't touch vaults at all — they open with pure vanilla loot, and every custom loot table is ignored.
+That setting decides who gets the loot from a vault. On `VANILLA`, BetterTrialChambers doesn't touch vaults at all — they open with pure vanilla loot, and every custom loot table is ignored.
 
 **Fix:**
 
 1. Open `plugins/BetterTrialChambers/config.yml`.
-2. Under `vaults:`, set `per-player-loot: true`.
+2. Under `vaults:`, set `loot-mode: PER_PLAYER` (or `SHARED` if you want one reward per vault for the whole server).
 3. `/trial reload`.
 
-You can check the current value in-game with `/trial info` — look at the **Per-Player Loot** line. Full explanation: [config.yml → per-player-loot](configuration/config.yml.md#vault-settings).
+You can check the current value in-game with `/trial info` — look at the **Vault Loot** line. Full explanation: [config.yml → loot-mode](configuration/config.yml.md#vault-settings).
+
+{% hint style="info" %}
+**On an older config?** If your `config.yml` has no `loot-mode` line, the plugin falls back to the old `vaults.per-player-loot` switch, where `false` does the same thing. Setting it to `true` works, but adding a `loot-mode` line is clearer and gives you the shared option too.
+{% endhint %}
 
 </details>
 

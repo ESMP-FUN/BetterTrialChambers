@@ -503,6 +503,60 @@ class VaultManager(private val plugin: BetterTrialChambers) {
     }
 
     /**
+     * Who currently holds a vault in SHARED mode, and when they claimed it.
+     *
+     * SHARED mode ([com.esmpfun.bettertrialchambers.models.VaultLootMode.SHARED])
+     * locks a vault for the whole server once anybody opens it, so the claim is
+     * simply the EARLIEST recorded open. No extra storage is needed: the existing
+     * per-player open records already carry it, and they're wiped for the vault on
+     * every chamber reset by [resetAllCooldowns] — which is exactly when a shared
+     * vault should become available again.
+     *
+     * @return opener UUID paired with the claim time in milliseconds, or null if unclaimed
+     */
+    suspend fun getSharedClaim(vaultId: Int): Pair<UUID, Long>? = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement(
+                    """
+                    SELECT player_uuid, last_opened FROM ${tables.playerVaults}
+                    WHERE vault_id = ?
+                    ORDER BY last_opened ASC
+                    LIMIT 1
+                    """.trimIndent()
+                ).use { stmt ->
+                    stmt.setInt(1, vaultId)
+                    stmt.executeQuery().use { rs ->
+                        if (rs.next()) {
+                            val uuid = runCatching { UUID.fromString(rs.getString("player_uuid")) }.getOrNull()
+                            if (uuid == null) null else uuid to rs.getLong("last_opened")
+                        } else null
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.warning("Failed to read shared vault claim: ${e.message}")
+            null
+        }
+    }
+
+    /**
+     * Clears every player's hold on every vault in a chamber — both the plugin's
+     * own records and Minecraft's built-in "already rewarded" list.
+     *
+     * Used by `/trial vault unlockall` and offered after switching
+     * `vaults.loot-mode` to VANILLA, because holds written while the plugin was in
+     * charge otherwise keep plain Minecraft vaults shut.
+     *
+     * @return the number of vaults cleared
+     */
+    suspend fun unlockAllVaultsInChamber(chamberId: Int): Int {
+        val vaults = getVaultsForChamber(chamberId)
+        vaults.forEach { resetAllCooldowns(it.id) }
+        return vaults.size
+    }
+
+    /**
      * Gets the count of players who have a lock on a specific vault.
      *
      * @param vaultId Vault ID

@@ -1463,11 +1463,11 @@ Open 50 vaults, record what you get, calculate actual drop rates. Does it match 
 
 **"My loot tables aren't loading / vaults give no loot!"** Most likely caused by TAB characters in your YAML file. Check the console for `Loot table not found: default (available: )` - if the available list is empty, your entire loot.yml failed to parse. Open the file in an editor that shows whitespace and replace all TABs with spaces. See the warning at the top of this page for more details.
 
-**"My vaults give plain vanilla loot (crossbows, wind charges…) and ignore my custom table!"** Check `per-player-loot` in `config.yml` — if it's set to `false`, BetterTrialChambers leaves vaults completely alone and they open with vanilla loot, ignoring every custom table. Set it back to `true` and run `/trial reload`. You can confirm the current setting with `/trial info` (the **Per-Player Loot** line). See [config.yml → per-player-loot](config.yml.md#vault-settings) for the full explanation.
+**"My vaults give plain vanilla loot (crossbows, wind charges…) and ignore my custom table!"** Check `vaults.loot-mode` in `config.yml` — if it's set to `VANILLA`, BetterTrialChambers leaves vaults completely alone and they open with vanilla loot, ignoring every custom table. Set it back to `PER_PLAYER` and run `/trial reload`. You can confirm the current setting with `/trial info` (the **Vault Loot** line). See [config.yml → loot-mode](config.yml.md#vault-settings) for the full explanation.
 
 **"Can I use NBT data for custom items?"** Not directly. Use custom item plugins (ItemsAdder, Oraxen) which handle NBT internally.
 
-**"Can different players get different loot from the same vault?"** Yes! With `per-player-loot: true` in config.yml, each player has their own loot roll.
+**"Can different players get different loot from the same vault?"** Yes! With `vaults.loot-mode: PER_PLAYER` in config.yml (the default), each player has their own loot roll. Set it to `SHARED` if you'd rather only the first player to reach a vault got a reward.
 
 **"What happens if I typo a material name?"** The plugin logs an error and skips that item. Check console after reloading.
 

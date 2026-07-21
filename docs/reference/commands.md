@@ -44,6 +44,7 @@ All commands start with `/trial` (short for BetterTrialChambers). Most require s
 | `/trial pause <chamber>`                                                           | Pause a chamber (suspends resets, protection, vault interactions)                                                                                | `btc.admin.pause`               |
 | `/trial resume <chamber>`                                                          | Resume a paused chamber                                                                                                                          | `btc.admin.pause`               |
 | `/trial vault reset <chamber> <player>`                                            | Reset vault cooldowns                                                                                                                            | `btc.admin.vault`               |
+| `/trial vault unlockall <chamber\|all>`                                            | Open every vault up again, for everyone                                                                                                          | `btc.admin.vault`               |
 | `/trial key give <player> <amount>`                                                | Give trial keys                                                                                                                                  | `btc.admin.key`                 |
 | `/trial key check <player>`                                                        | Check player's keys                                                                                                                              | `btc.admin.key`                 |
 | `/trial stats [player]`                                                            | View statistics                                                                                                                                  | `btc.stats` / `btc.admin.stats` |
@@ -715,6 +716,43 @@ Resets a player's vault cooldowns for a specific chamber.
 
 {% hint style="success" %}
 **v1.2.21+:** This command now properly clears Paper's native Vault `rewarded_players` list in addition to database tracking. This ensures players can truly loot vaults again immediately.
+{% endhint %}
+
+</details>
+
+<details>
+
+<summary><code>/trial vault unlockall &lt;chamber|all&gt;</code></summary>
+
+Opens **every vault** in a chamber up again, for **everyone** — not just one player.
+
+**Usage:**
+
+```
+/trial vault unlockall <chamber_name>
+/trial vault unlockall all
+```
+
+**Permission:** `btc.admin.vault`
+
+**Arguments:**
+
+* `<chamber_name>` — the chamber to clear, or `all` for every registered chamber
+
+**What it does:**
+
+* Clears BTC's own record of who opened each vault
+* Clears Minecraft's built-in "already rewarded" list on each vault block
+* Every player can use every vault in that chamber again straight away
+
+**Use cases:**
+
+* **After switching `vaults.loot-mode` to `VANILLA`.** This is the main one. Minecraft keeps its own record of who opened each vault, and BTC writes into it while managing vaults — so after the switch, players who had already opened a vault find it shut, with no loot and no key taken. It looks exactly like the plugin broke vaults. This command clears that.
+* Events where you want to re-open a whole chamber without waiting for a reset
+* Undoing a batch of admin test opens
+
+{% hint style="info" %}
+A normal chamber reset already does this automatically for that chamber. You only need this command when you want it to happen **without** waiting for a reset.
 {% endhint %}
 
 </details>

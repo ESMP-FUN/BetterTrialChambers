@@ -5,6 +5,7 @@ import com.esmpfun.bettertrialchambers.gui.components.GuiComponents
 import com.esmpfun.bettertrialchambers.gui.framework.BaseHolder
 import com.esmpfun.bettertrialchambers.gui.framework.VcGui
 import com.esmpfun.bettertrialchambers.gui.framework.VcGuiItem
+import com.esmpfun.bettertrialchambers.models.VaultLootMode
 import org.bukkit.Material
 import org.bukkit.entity.Player
 
@@ -26,6 +27,8 @@ class GlobalSettingsView(
         val labelKey: String,
         val descKey: String,
         val slot: Int,
+        /** What the setting counts as when it's missing from config.yml. */
+        val default: Boolean = true,
     )
 
     private val toggles = listOf(
@@ -56,10 +59,13 @@ class GlobalSettingsView(
         ToggleDef("loot.apply-luck-effect",
             "gui.global-settings.luck-effect-label",
             "gui.global-settings.luck-effect-desc", 3 * 9 + 3),         // (3,3) = 30
-        ToggleDef("vaults.per-player-loot",
-            "gui.global-settings.per-player-loot-label",
-            "gui.global-settings.per-player-loot-desc", 3 * 9 + 5),     // (5,3) = 32
+        ToggleDef("reset.spawner-cooldown-overrides-presets",
+            "gui.global-settings.cooldown-overrides-presets-label",
+            "gui.global-settings.cooldown-overrides-presets-desc", 3 * 9 + 7, default = false), // (7,3) = 34
     )
+
+    /** Slot holding the three-way vault loot mode picker (5,3). */
+    private val lootModeSlot = 3 * 9 + 5
 
     init { layout() }
 
@@ -71,11 +77,13 @@ class GlobalSettingsView(
         ))
 
         for (def in toggles) {
-            val enabled = plugin.config.getBoolean(def.configPath, true)
+            val enabled = plugin.config.getBoolean(def.configPath, def.default)
             set(def.slot, VcGuiItem.wrap(
                 GuiComponents.toggleItem(plugin, enabled, def.labelKey, def.descKey)
             ) { ctx -> toggleSetting(def, ctx.player) })
         }
+
+        layoutLootMode()
 
         set(45, GuiComponents.backVcItem(plugin, "gui.common.dest-main-menu") { ctx ->
             menu.openMainMenu(ctx.player)
@@ -83,8 +91,55 @@ class GlobalSettingsView(
         set(53, GuiComponents.closeVcItem(plugin))
     }
 
+    /**
+     * Vault loot mode is three-way, not on/off, so it gets its own click-to-cycle
+     * tile instead of a wool toggle. The icon colour matches how "shared" the loot
+     * is: green = everyone gets their own, orange = first come first served,
+     * gray = the plugin stays out of it. See [VaultLootMode].
+     */
+    private fun layoutLootMode() {
+        val mode = VaultLootMode.resolve(plugin)
+        val material = when (mode) {
+            VaultLootMode.PER_PLAYER -> Material.LIME_WOOL
+            VaultLootMode.SHARED -> Material.ORANGE_WOOL
+            VaultLootMode.VANILLA -> Material.LIGHT_GRAY_WOOL
+        }
+        val currentLabel = plugin.rawMessage("gui.global-settings.loot-mode-${mode.name.lowercase()}")
+        set(lootModeSlot, VcGuiItem.wrap(
+            GuiComponents.infoItem(plugin, material,
+                "gui.global-settings.loot-mode-label",
+                "gui.global-settings.loot-mode-desc",
+                "current" to currentLabel)
+        ) { ctx -> cycleLootMode(ctx.player) })
+    }
+
+    private fun cycleLootMode(player: Player) {
+        val next = when (VaultLootMode.resolve(plugin)) {
+            VaultLootMode.PER_PLAYER -> VaultLootMode.SHARED
+            VaultLootMode.SHARED -> VaultLootMode.VANILLA
+            VaultLootMode.VANILLA -> VaultLootMode.PER_PLAYER
+        }
+        plugin.config.set("vaults.loot-mode", next.name)
+        // Keep the pre-v2.0.8 key in step so a downgrade doesn't silently flip
+        // behaviour, and so nothing reads a stale value from it.
+        plugin.config.set("vaults.per-player-loot", next != VaultLootMode.VANILLA)
+        plugin.saveConfig()
+
+        player.sendMessage(plugin.getMessageComponent("gui.common.setting-toggled",
+            "setting" to plugin.rawMessage("gui.global-settings.loot-mode-label"),
+            "value" to plugin.rawMessage("gui.global-settings.loot-mode-${next.name.lowercase()}")))
+
+        // Same trap as on reload: vaults players already opened stay shut under
+        // plain Minecraft, so hand them the cleanup command up front.
+        if (next == VaultLootMode.VANILLA) {
+            player.sendMessage(plugin.getMessageComponent("vault-mode-vanilla-hint"))
+        }
+
+        menu.openGlobalSettings(player)
+    }
+
     private fun toggleSetting(def: ToggleDef, player: Player) {
-        val newValue = !plugin.config.getBoolean(def.configPath, true)
+        val newValue = !plugin.config.getBoolean(def.configPath, def.default)
         plugin.config.set(def.configPath, newValue)
         plugin.saveConfig()
 
