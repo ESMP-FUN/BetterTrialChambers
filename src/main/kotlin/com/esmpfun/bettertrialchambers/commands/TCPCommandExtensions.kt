@@ -69,6 +69,41 @@ fun handleVault(plugin: BetterTrialChambers, sender: CommandSender, args: Array<
                 ))
             }
         }
+        "unlockall" -> {
+            // Frees every vault in a chamber for everyone: clears our own records AND
+            // Minecraft's built-in "already rewarded" list. Needed after switching
+            // vaults.loot-mode to VANILLA, because holds written while the plugin was in
+            // charge otherwise keep plain Minecraft vaults shut for those players.
+            val chamberName = args.getOrNull(2)
+            if (chamberName == null) {
+                sender.sendMessage(plugin.getMessageComponent("usage-vault-unlockall"))
+                return
+            }
+
+            plugin.launchAsync {
+                if (chamberName.equals("all", ignoreCase = true)) {
+                    val chambers = plugin.chamberManager.getAllChambers()
+                    var vaultCount = 0
+                    chambers.forEach { vaultCount += plugin.vaultManager.unlockAllVaultsInChamber(it.id) }
+                    sender.sendMessage(plugin.getMessageComponent("vault-unlockall-complete",
+                        "chamber" to plugin.rawMessage("vault-unlockall-every-chamber"),
+                        "count" to vaultCount
+                    ))
+                    return@launchAsync
+                }
+
+                val chamber = plugin.chamberManager.getChamber(chamberName)
+                if (chamber == null) {
+                    sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
+                    return@launchAsync
+                }
+                val vaultCount = plugin.vaultManager.unlockAllVaultsInChamber(chamber.id)
+                sender.sendMessage(plugin.getMessageComponent("vault-unlockall-complete",
+                    "chamber" to chamber.name,
+                    "count" to vaultCount
+                ))
+            }
+        }
         else -> {
             sender.sendMessage(plugin.getMessageComponent("usage-vault-reset"))
         }

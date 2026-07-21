@@ -80,6 +80,11 @@ reset-failed: "&cFailed to reset chamber: {error}"
 vault-opened: "&aYou opened a {type} Vault!"
 vault-cooldown: "&cThis {type} Vault is on cooldown for &e{time}&c."
 vault-locked: "&cYou have already opened this {type} Vault! It will unlock when the chamber resets."
+# Shown instead of the two lines above when vaults.loot-mode is SHARED — there,
+# the first player to open a vault takes it and nobody else can, so the message
+# names them to make clear nothing is broken.
+vault-locked-shared: "&c{player} got to this {type} Vault first! It will unlock when the chamber resets."
+vault-cooldown-shared: "&c{player} got to this {type} Vault first! It reopens in &e{time}&c."
 vault-reopened: "&aReopened the {type} Vault for &e{cost}&a key(s)!"
 vault-reopen-need: "&cYou've already opened this {type} Vault. Hold &e{cost}&c matching key(s) in your main hand to open it again."
 vault-reset: "&aVault cooldown reset for &e{player}&a."
@@ -192,6 +197,7 @@ help-delete: "&e/trial delete <chamber> &7- Unregister a chamber"
 help-loot: "&e/trial loot <list|info|set|clear> ... &7- View or override per-chamber loot tables"
 help-mobs: "&e/trial mobs <providers|<chamber> <list|provider|add|remove> ...> &7- Configure custom mob providers per chamber"
 help-vault: "&e/trial vault reset <chamber> <player> [type] &7- Clear a player's vault cooldown"
+help-vault-unlockall: "&e/trial vault unlockall <chamber|all> &7- Open every vault up again for everyone"
 help-key: "&e/trial key give <player> <amount> [type] &7- Give trial keys (normal or ominous)"
 help-give: "&e/trial give <preset> [player] [amount] &7- Give a preconfigured trial spawner item"
 help-stats: "&e/trial stats [player] &7- View your stats or another player's"
@@ -411,6 +417,7 @@ usage-generate-help-or-coords: "&cOr: /trial generate coords <x1,y1,z1> <x2,y2,z
 usage-generate-help-or-wand: "&cOr: /trial generate wand <name>"
 usage-generate-help-or-blocks: "&cOr: /trial generate blocks <amount> [name] [roundingAllowance]"
 usage-vault-reset: "&cUsage: /trial vault reset <chamber> <player> [normal|ominous]"
+usage-vault-unlockall: "&cUsage: /trial vault unlockall <chamber|all>"
 usage-key-give: "&cUsage: /trial key give <player> <amount> [normal|ominous]"
 usage-key-check: "&cUsage: /trial key check <player>"
 usage-key: "&cUsage: /trial key <give|check>"
@@ -465,6 +472,11 @@ vault-reset-all-start: "&eResetting all vault cooldowns for {chamber}..."
 vault-reset-all-complete: "&aReset cooldowns on {count} vaults!"
 vault-reset-single-start: "&eResetting cooldowns for vault #{id}..."
 vault-reset-single-complete: "&aVault cooldowns reset!"
+vault-unlockall-complete: "&aOpened up &e{count}&a vault(s) in &e{chamber}&a again — everyone can use them."
+vault-unlockall-every-chamber: "every chamber"
+# Shown after switching vaults.loot-mode to VANILLA. Vaults players already used
+# stay shut under plain Minecraft, which looks like the plugin broke them.
+vault-mode-vanilla-hint: "&eVaults are now handled by Minecraft itself. Anyone who already opened a vault will still find it shut — run &f/trial vault unlockall all&e to open them all up again."
 
 # GUI Action Messages - Chamber Operations
 gui-chamber-world-not-loaded: "&cChamber world not loaded!"
@@ -535,7 +547,7 @@ plugin-info-integration-worldguard: "  &7WorldGuard: {status}"
 plugin-info-integration-papi: "  &7PlaceholderAPI: {status}"
 plugin-info-integration-vault: "  &7Vault: {status}"
 plugin-info-config-header: "&6--- Features ---"
-plugin-info-config-per-player: "  &7Per-Player Loot: {status}"
+plugin-info-config-loot-mode: "  &7Vault Loot: &f{mode}"
 plugin-info-config-spawner-waves: "  &7Spawner Waves: {status}"
 plugin-info-config-spectator: "  &7Spectator Mode: {status}"
 plugin-info-config-statistics: "  &7Statistics: {status}"
@@ -711,6 +723,28 @@ gui:
     luck-effect-desc: "Luck potion affects loot rolls"
     per-player-loot-label: "Per-Player Loot"
     per-player-loot-desc: "Each player gets their own loot"
+    loot-mode-label: "&bVault Loot"
+    loot-mode-desc:
+      - "&7Who gets the loot from a vault."
+      - ""
+      - "&7Now set to: &f{current}"
+      - ""
+      - "&7&oEveryone's own loot&7 - every player who"
+      - "&7turns up gets their own reward from the"
+      - "&7same vault."
+      - "&7&oFirst come, first served&7 - whoever opens"
+      - "&7a vault takes it, and it stays shut for"
+      - "&7everyone else until the chamber resets."
+      - "&7&oLeave it to Minecraft&7 - vaults behave"
+      - "&7exactly as they do in a normal world and"
+      - "&7your own loot lists are ignored."
+      - ""
+      - "&eClick to switch"
+    loot-mode-per_player: "Everyone's own loot"
+    loot-mode-shared: "First come, first served"
+    loot-mode-vanilla: "Leave it to Minecraft"
+    cooldown-overrides-presets-label: "Spawner Wait Time Wins"
+    cooldown-overrides-presets-desc: "Use your wait time even on preset spawners"
 
   protection-menu:
     title: "Protection Settings"
@@ -1739,6 +1773,15 @@ setup:
         "1d": "Every day"
         "2d": "Every 2 days"
         "7d": "Every week"
+    loot-mode:
+      title: "Who gets the loot from a vault?"
+      desc:
+        - "When a group clears a chamber, should everybody get a reward from the same vault, or only the first person to reach it?"
+        - "Pick one below. You can change this later in <color:#e8d3a0>config.yml</color> or from the settings menu."
+      options:
+        per_player: "Everyone gets their own"
+        shared: "First come, first served"
+        vanilla: "Leave it to Minecraft"
     per-player-loot:
       title: "Give each player their own vault loot?"
       desc:

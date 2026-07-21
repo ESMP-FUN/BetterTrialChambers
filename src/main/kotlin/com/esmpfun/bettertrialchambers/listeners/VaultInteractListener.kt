@@ -2,10 +2,12 @@ package com.esmpfun.bettertrialchambers.listeners
 
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
 import com.esmpfun.bettertrialchambers.models.KeyType
+import com.esmpfun.bettertrialchambers.models.VaultLootMode
 import com.esmpfun.bettertrialchambers.models.VaultType
 import com.esmpfun.bettertrialchambers.utils.AdvancementUtil
 import com.esmpfun.bettertrialchambers.utils.MessageUtil
 import kotlinx.coroutines.*
+import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.Particle
@@ -125,8 +127,10 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
             }
         }
 
-        // Handle per-player vault system
-        if (plugin.config.getBoolean("vaults.per-player-loot", true)) {
+        // Handle plugin-managed vaults. VANILLA mode hands the vault straight back
+        // to Minecraft — we don't cancel, don't take the key, don't roll our loot.
+        val lootMode = VaultLootMode.resolve(plugin)
+        if (lootMode != VaultLootMode.VANILLA) {
             event.isCancelled = true // We'll handle the vault opening ourselves
 
             // CRITICAL: Check the lock SYNCHRONOUSLY before launching async work
@@ -162,7 +166,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
             val keySlot = player.inventory.heldItemSlot
 
             listenerScope.launch(exceptionHandler) {
-                handleVaultOpen(player, block.location, vaultType, keySlot)
+                handleVaultOpen(player, block.location, vaultType, keySlot, lootMode)
             }
         }
     }
@@ -181,7 +185,8 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
         player: org.bukkit.entity.Player,
         location: org.bukkit.Location,
         vaultType: VaultType,
-        keySlot: Int
+        keySlot: Int,
+        lootMode: VaultLootMode
     ) {
         // Get vault data for the specific type (normal or ominous) - needed for loot table resolution
         val vaultData = plugin.vaultManager.getVault(location, vaultType)
@@ -190,12 +195,39 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
             return
         }
 
-        // Check permission bypass - skip cooldown check entirely
+        // Check permission bypass - skip cooldown check entirely.
+        // v2.0.8: a bypassing player also leaves NO trace on the vault. Marking them
+        // used to write into Minecraft's own "already rewarded" list, so an admin who
+        // tested a few vaults silently locked themselves out of them for plain
+        // Minecraft — which is what made switching to VANILLA mode look like it had
+        // broken vaults entirely. In SHARED mode it would also have claimed the vault
+        // for the whole server.
         if (player.hasPermission("btc.bypass.cooldown")) {
             if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-                plugin.logger.info("[Vault API] Player ${player.name} has tcp.bypass.cooldown permission - SKIPPING cooldown check!")
+                plugin.logger.info("[Vault API] Player ${player.name} has btc.bypass.cooldown permission - " +
+                    "SKIPPING cooldown check (and leaving the vault unmarked)")
             }
-            openVault(player, vaultData, vaultType, location, keySlot)
+            openVault(player, vaultData, vaultType, location, keySlot, markUsed = false)
+            return
+        }
+
+        // SHARED mode: the vault belongs to whoever opened it first, and stays shut
+        // for everybody until the chamber resets. The claim is the earliest recorded
+        // open, which chamber reset already clears.
+        if (lootMode == VaultLootMode.SHARED) {
+            val claim = plugin.vaultManager.getSharedClaim(vaultData.id)
+            if (claim == null) {
+                openVault(player, vaultData, vaultType, location, keySlot)
+            } else {
+                handleLockedVault(
+                    player, vaultData, vaultType, location, keySlot,
+                    sharedClaimedAtMs = claim.second,
+                    sharedClaimantName = Bukkit.getOfflinePlayer(claim.first).name
+                ) {
+                    // Unlocking a shared vault frees it for everyone, not just this player.
+                    plugin.vaultManager.resetAllCooldowns(vaultData.id)
+                }
+            }
             return
         }
 
@@ -229,83 +261,124 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
         }
 
         if (hasAlreadyRewarded) {
-            // Determine the configured cooldown. > 0 = timed (reopen N hours
-            // after this player's last open); <= 0 = permanent until the chamber
-            // resets (vanilla). The DB-backed timestamp lives in player_vaults;
-            // the native rewarded flag is cleared on chamber reset, so a reset is
-            // always a full unlock regardless of the timed cooldown.
-            val cooldownHours = when (vaultType) {
-                VaultType.NORMAL -> plugin.config.getLong("vaults.normal-cooldown-hours", 0)
-                VaultType.OMINOUS -> plugin.config.getLong("vaults.ominous-cooldown-hours", 0)
+            handleLockedVault(player, vaultData, vaultType, location, keySlot) {
+                clearNativeRewardedFlag(location, player)
             }
-
-            // Timed cooldown elapsed → free reopen (clear the native flag so
-            // openVault can mark it fresh and re-record the timestamp).
-            var cooldownRemainingMs = 0L
-            if (cooldownHours > 0) {
-                val (canOpen, remaining) = plugin.vaultManager.canOpenVault(player.uniqueId, vaultData)
-                if (canOpen) {
-                    clearNativeRewardedFlag(location, player)
-                    openVault(player, vaultData, vaultType, location, keySlot)
-                    return
-                }
-                cooldownRemainingMs = remaining
-            }
-
-            // v1.5.7: key-to-reopen. With vaults.reopen-cost-keys > 0, a player
-            // can pay that many matching keys to reopen now — an instant paid
-            // alternative to waiting out the cooldown (or to a permanent lock).
-            val reopenCost = plugin.config.getInt("vaults.reopen-cost-keys", 0)
-            if (reopenCost > 0) {
-                // v1.7.2: validate the loot table BEFORE taking payment. tryPayReopenCost
-                // pre-consumes cost-1 keys; openVault refuses only the FINAL key on a
-                // missing table, so a config typo used to burn the pre-consumed keys.
-                val chamberForTable = plugin.chamberManager.getChamberById(vaultData.chamberId)
-                val tableForReopen = plugin.chamberManager.getEffectiveLootTable(
-                    chamberForTable, vaultType, vaultData.lootTable
-                )
-                if (plugin.lootManager.getTable(tableForReopen) == null) {
-                    plugin.logger.warning("Loot table '$tableForReopen' not found! Reopen payment will NOT be taken.")
-                    player.sendMessage(plugin.getMessageComponent("vault-loot-table-missing"))
-                    return
-                }
-                if (tryPayReopenCost(player, vaultType, reopenCost)) {
-                    clearNativeRewardedFlag(location, player)
-                    player.sendMessage(plugin.getMessageComponent("vault-reopened",
-                        "cost" to reopenCost, "type" to plugin.vaultTypeDisplay(vaultType)))
-                    openVault(player, vaultData, vaultType, location, keySlot)
-                    return
-                }
-                // Reopen offered but the player can't afford it — tell them the
-                // price instead of the dead-end "locked" message.
-                routeVaultFeedback(
-                    player, location, false,
-                    plugin.getMessageComponent("vault-reopen-need",
-                        "cost" to reopenCost, "type" to plugin.vaultTypeDisplay(vaultType))
-                ) {
-                    playErrorSound(player)
-                }
-                showCooldownParticles(player, location, vaultType)
-                return
-            }
-
-            // Locked: show the remaining time for a timed cooldown, or the
-            // permanent "unlocks on reset" message otherwise.
-            val feedback = if (cooldownHours > 0 && cooldownRemainingMs > 0 && cooldownRemainingMs != Long.MAX_VALUE) {
-                plugin.getMessageComponent("vault-cooldown",
-                    "type" to plugin.vaultTypeDisplay(vaultType),
-                    "time" to plugin.statisticsManager.formatTime(cooldownRemainingMs / 1000))
-            } else {
-                plugin.getMessageComponent("vault-locked", "type" to plugin.vaultTypeDisplay(vaultType))
-            }
-            routeVaultFeedback(player, location, false, feedback) {
-                playErrorSound(player)
-            }
-            showCooldownParticles(player, location, vaultType)
         } else {
             // Can open the vault - player hasn't been rewarded yet
             openVault(player, vaultData, vaultType, location, keySlot)
         }
+    }
+
+    /**
+     * Shared handling for a vault this player can't just open: works out whether a
+     * timed cooldown has run out, whether they can pay keys to reopen it now, and
+     * otherwise tells them why it's shut.
+     *
+     * [sharedClaimedAtMs] / [sharedClaimantName] are set only in SHARED mode, where
+     * the vault is held by whoever opened it first rather than by this player. In
+     * that case [unlock] frees the vault for everybody; in per-player mode it only
+     * clears this player's hold.
+     */
+    private suspend fun handleLockedVault(
+        player: org.bukkit.entity.Player,
+        vaultData: com.esmpfun.bettertrialchambers.models.VaultData,
+        vaultType: VaultType,
+        location: Location,
+        keySlot: Int,
+        sharedClaimedAtMs: Long? = null,
+        sharedClaimantName: String? = null,
+        unlock: suspend () -> Unit
+    ) {
+        val isShared = sharedClaimedAtMs != null
+
+        // Determine the configured cooldown. > 0 = timed (reopen N hours
+        // after the last open); <= 0 = permanent until the chamber
+        // resets (vanilla). The DB-backed timestamp lives in player_vaults;
+        // the native rewarded flag is cleared on chamber reset, so a reset is
+        // always a full unlock regardless of the timed cooldown.
+        val cooldownHours = when (vaultType) {
+            VaultType.NORMAL -> plugin.config.getLong("vaults.normal-cooldown-hours", 0)
+            VaultType.OMINOUS -> plugin.config.getLong("vaults.ominous-cooldown-hours", 0)
+        }
+
+        // Timed cooldown elapsed → free reopen (clear the hold so
+        // openVault can mark it fresh and re-record the timestamp).
+        var cooldownRemainingMs = 0L
+        if (cooldownHours > 0) {
+            val (canOpen, remaining) = if (isShared) {
+                // Shared vaults time out from the moment they were claimed,
+                // whoever the claimant was.
+                val elapsed = System.currentTimeMillis() - sharedClaimedAtMs
+                val window = cooldownHours * 60 * 60 * 1000
+                (elapsed >= window) to (window - elapsed).coerceAtLeast(0L)
+            } else {
+                plugin.vaultManager.canOpenVault(player.uniqueId, vaultData)
+            }
+            if (canOpen) {
+                unlock()
+                openVault(player, vaultData, vaultType, location, keySlot)
+                return
+            }
+            cooldownRemainingMs = remaining
+        }
+
+        // v1.5.7: key-to-reopen. With vaults.reopen-cost-keys > 0, a player
+        // can pay that many matching keys to reopen now — an instant paid
+        // alternative to waiting out the cooldown (or to a permanent lock).
+        val reopenCost = plugin.config.getInt("vaults.reopen-cost-keys", 0)
+        if (reopenCost > 0) {
+            // v1.7.2: validate the loot table BEFORE taking payment. tryPayReopenCost
+            // pre-consumes cost-1 keys; openVault refuses only the FINAL key on a
+            // missing table, so a config typo used to burn the pre-consumed keys.
+            val chamberForTable = plugin.chamberManager.getChamberById(vaultData.chamberId)
+            val tableForReopen = plugin.chamberManager.getEffectiveLootTable(
+                chamberForTable, vaultType, vaultData.lootTable
+            )
+            if (plugin.lootManager.getTable(tableForReopen) == null) {
+                plugin.logger.warning("Loot table '$tableForReopen' not found! Reopen payment will NOT be taken.")
+                player.sendMessage(plugin.getMessageComponent("vault-loot-table-missing"))
+                return
+            }
+            if (tryPayReopenCost(player, vaultType, reopenCost)) {
+                unlock()
+                player.sendMessage(plugin.getMessageComponent("vault-reopened",
+                    "cost" to reopenCost, "type" to plugin.vaultTypeDisplay(vaultType)))
+                openVault(player, vaultData, vaultType, location, keySlot)
+                return
+            }
+            // Reopen offered but the player can't afford it — tell them the
+            // price instead of the dead-end "locked" message.
+            routeVaultFeedback(
+                player, location, false,
+                plugin.getMessageComponent("vault-reopen-need",
+                    "cost" to reopenCost, "type" to plugin.vaultTypeDisplay(vaultType))
+            ) {
+                playErrorSound(player)
+            }
+            showCooldownParticles(player, location, vaultType)
+            return
+        }
+
+        // Locked: show the remaining time for a timed cooldown, or the
+        // permanent "unlocks on reset" message otherwise. In shared mode we
+        // also name whoever got there first, so it doesn't look broken.
+        val feedback = if (cooldownHours > 0 && cooldownRemainingMs > 0 && cooldownRemainingMs != Long.MAX_VALUE) {
+            plugin.getMessageComponent(
+                if (isShared) "vault-cooldown-shared" else "vault-cooldown",
+                "type" to plugin.vaultTypeDisplay(vaultType),
+                "player" to (sharedClaimantName ?: "?"),
+                "time" to plugin.statisticsManager.formatTime(cooldownRemainingMs / 1000))
+        } else {
+            plugin.getMessageComponent(
+                if (isShared) "vault-locked-shared" else "vault-locked",
+                "type" to plugin.vaultTypeDisplay(vaultType),
+                "player" to (sharedClaimantName ?: "?"))
+        }
+        routeVaultFeedback(player, location, false, feedback) {
+            playErrorSound(player)
+        }
+        showCooldownParticles(player, location, vaultType)
     }
 
     /**
@@ -351,13 +424,19 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
      * CRITICAL FIX: Does NOT consume key if no loot was generated (missing loot table).
      *
      * Uses Paper's native Vault API to mark player as rewarded (addRewardedPlayer).
+     *
+     * @param markUsed when false the vault is left completely untouched — no entry in
+     *   Minecraft's own "already rewarded" list and no open record of our own. Used for
+     *   players opening with `btc.bypass.cooldown` so admin testing can't quietly lock a
+     *   vault for its real owner (or, in SHARED mode, claim it for the whole server).
      */
     private suspend fun openVault(
         player: org.bukkit.entity.Player,
         vaultData: com.esmpfun.bettertrialchambers.models.VaultData,
         vaultType: VaultType,
         location: Location,
-        keySlot: Int
+        keySlot: Int,
+        markUsed: Boolean = true
     ) {
         // Resolve the effective loot table (chamber override > vault default)
         val chamber = plugin.chamberManager.getChamberById(vaultData.chamberId)
@@ -413,8 +492,10 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
         }
 
         // Mark player as rewarded using Paper's native Vault API
-        // This MUST be done on the region thread (before giving items)
-        val rewardMarked = kotlinx.coroutines.suspendCancellableCoroutine<Boolean> { continuation ->
+        // This MUST be done on the region thread (before giving items).
+        // Skipped entirely for bypassing admins (markUsed = false) so the vault is
+        // left exactly as it was found.
+        val rewardMarked = if (!markUsed) true else kotlinx.coroutines.suspendCancellableCoroutine<Boolean> { continuation ->
             plugin.scheduler.runAtLocation(location, Runnable {
                 try {
                     val block = location.block
@@ -451,8 +532,12 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
             return
         }
 
-        // Also record in database for statistics tracking (but not for cooldown - Vault API handles that)
-        plugin.vaultManager.recordOpen(player.uniqueId, vaultData.id)
+        // Also record in database for statistics tracking (but not for cooldown - Vault API
+        // handles that). In SHARED mode this record is ALSO what claims the vault for the
+        // server, so a bypassing admin (markUsed = false) must not write one.
+        if (markUsed) {
+            plugin.vaultManager.recordOpen(player.uniqueId, vaultData.id)
+        }
 
         // Update statistics (for leaderboards and /trial stats)
         plugin.statisticsManager.incrementVaultsOpened(player.uniqueId, vaultData.type)

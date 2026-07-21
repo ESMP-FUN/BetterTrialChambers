@@ -2,7 +2,16 @@
 
 # Database settings
 database:
-  type: SQLITE # SQLITE or MYSQL
+  # Where BetterTrialChambers keeps its data.
+  #   SQLITE - a single file in this folder. Nothing to install, fine for almost
+  #            every server. This is the default and what you want unless you
+  #            specifically need MySQL.
+  #   MYSQL  - your own MySQL/MariaDB server, using the settings below. Worth it
+  #            for very busy servers, or if you run several servers that should
+  #            share one set of chambers and statistics.
+  # Everything needed for both is built into the plugin — there is nothing extra
+  # to download or install either way.
+  type: SQLITE
   # MySQL settings (only used if type is MYSQL)
   host: localhost
   port: 3306
@@ -161,12 +170,30 @@ generation:
 
 # Vault settings
 vaults:
-  # MASTER SWITCH for plugin-managed vaults. When true, BetterTrialChambers takes
-  # over vault opening inside registered chambers: custom loot tables, per-player
-  # loot, and per-player cooldowns all apply.
-  # When FALSE, the plugin does NOT touch vaults at all — they open with pure
-  # vanilla Minecraft loot (crossbows, wind charges, etc.) and your custom loot
-  # tables are ignored. Turn this off only if you want vanilla vault behaviour.
+  # WHO GETS THE LOOT from a vault inside one of your chambers. Pick one:
+  #
+  #   PER_PLAYER  Every player who turns up gets their own reward from the same
+  #               vault. Ten players, ten rewards. Your own loot lists are used.
+  #               This is the normal setting and what most servers want.
+  #
+  #   SHARED      Whoever opens a vault takes it, and it stays shut for everybody
+  #               else until the chamber resets. One vault, one reward, first come
+  #               first served. Your own loot lists are still used.
+  #               Needs reset.reset-vault-cooldowns left on (it is by default),
+  #               otherwise a claimed vault never opens up again.
+  #
+  #   VANILLA     The plugin leaves vaults alone completely. They behave exactly
+  #               as they do in a normal Minecraft world (crossbows, wind charges
+  #               and so on) and YOUR OWN LOOT LISTS ARE IGNORED.
+  #
+  # Careful when switching to VANILLA: Minecraft keeps its own record of who has
+  # opened each vault, so players who already opened one will still find it shut.
+  # Run "/trial vault unlockall all" afterwards to open them all up again.
+  loot-mode: PER_PLAYER
+
+  # Older versions had this instead of loot-mode above. It is still read if
+  # loot-mode is missing (true behaves like PER_PLAYER, false like VANILLA), so
+  # old setups keep working. If loot-mode is set, this line does nothing.
   per-player-loot: true
 
   # Separate cooldowns for normal and ominous vaults
@@ -349,18 +376,37 @@ reset:
   # On reset, remove Trial Omen and Bad Omen from players who were inside the chamber, so
   # leftover omen doesn't carry into the next cycle. Set false to leave omen untouched.
   clear-trial-omen-effect: true
-  reset-vault-cooldowns: true  # Reset player vault cooldowns on chamber reset (REQUIRED for vanilla behavior)
-  # Trial spawner cooldown configuration
-  # This controls how long spawners stay inactive after players complete a wave
-  # Set to -1 to use vanilla default (30 minutes / 36000 ticks)
-  # Set to 0 to disable cooldown (spawners reactivate immediately)
-  # Set to a positive number for custom cooldown in minutes
+  # When a chamber resets, forget who has already opened its vaults, so everyone
+  # can use them again. Leave this on unless you have a good reason not to —
+  # with it off, a vault someone opened stays shut for them forever. If you use
+  # the "first come, first served" vault setting (vaults.loot-mode: SHARED),
+  # turning this off means claimed vaults NEVER open up again for anybody.
+  reset-vault-cooldowns: true
+  # HOW LONG A SPAWNER RESTS after players have beaten its wave, before it can be
+  # used again.
+  #   -1 = leave it as Minecraft has it (30 minutes)
+  #    0 = no rest at all, it can be used again straight away
+  #    any other number = that many minutes
+  #
+  # Does NOT apply to spawners you placed from a preset that sets its own rest
+  # time — see spawner-cooldown-overrides-presets just below.
   spawner-cooldown-minutes: -1
 
-  # Wild spawner cooldown (spawners OUTSIDE of registered chambers)
-  # Same values as spawner-cooldown-minutes:
-  # -1 = vanilla default (30 minutes), 0 = no cooldown, 1-60 = custom minutes
-  # This allows controlling cooldown for unregistered Trial Chambers server-wide
+  # Spawners placed from a preset (spawner_presets.yml) can state their own rest
+  # time. When they do, that time wins and the setting above is ignored for them —
+  # the idea being that if you wrote a time into a preset, you meant it. A preset
+  # that does NOT state a time simply follows the setting above.
+  #
+  # Set this to true if you would rather have ONE rest time for every spawner on
+  # the server, presets included.
+  spawner-cooldown-overrides-presets: false
+
+  # The same rest time, but for spawners OUT IN THE WORLD rather than inside one
+  # of your registered chambers.
+  #   -1 = leave it as Minecraft has it (30 minutes)
+  #    0 = no rest at all
+  #    any other number = that many minutes
+  # The preset rule above applies here too.
   wild-spawner-cooldown-minutes: -1
 
   # v1.3.0 — Custom mob provider spawner-key drops

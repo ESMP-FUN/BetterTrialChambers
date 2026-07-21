@@ -1,4 +1,6 @@
-<img width="723" alt="Better Trial Chambers Banner" src="https://raw.githubusercontent.com/ESMP-FUN/BetterTrialChambers/master/tcp-banner-dark-sm.png" />
+<center>
+
+<img width="750" alt="Better Trial Chambers Banner" src="https://cdn.modrinth.com/data/cached_images/deb2866a173c3b758b82a8c950ea2269d93bcd78_0.webp" />
 
 # BetterTrialChambers
 
@@ -6,7 +8,7 @@
 
 **Please share your "If it would do [THING], I would use it" feedback!** [<img src="https://raw.githubusercontent.com/ESMP-FUN/BetterTrialChambers/master/dc.png" width="30" alt="Join Discord Server">](https://discord.gg/qwYcTpHsNC)
 
-<br>
+<br></center>
 
 ### Recently Added
 
@@ -22,11 +24,11 @@
 
 - **A guided setup tour** — run `/trial setup` for a friendly, one-setting-at-a-time walkthrough of the main options (**Enable / Skip / Disable**, nothing forced). Native Dialog UI on Paper 1.21.7+, with an automatic clickable-chat fallback on older servers.
 
-  <img src="https://raw.githubusercontent.com/ESMP-FUN/BetterTrialChambers/master/setup-chat.png" alt="The /trial setup clickable-chat prompt in-game" width="600" />
+  <img src="https://raw.githubusercontent.com/ESMP-FUN/BetterTrialChambers/master/setup-chat.png" alt="The /trial setup clickable-chat prompt in-game" width="800" />
 
   <details>
   <summary>See the native Dialog UI (Paper 1.21.7+)</summary>
-  <img src="https://raw.githubusercontent.com/ESMP-FUN/BetterTrialChambers/master/setup-dialog.png" alt="The /trial setup tour rendered as a native Dialog popup" width="320" />
+  <img src="https://raw.githubusercontent.com/ESMP-FUN/BetterTrialChambers/master/setup-dialog.png" alt="The /trial setup tour rendered as a native Dialog popup" width="800" />
   </details>
 
 - **The whole chamber is per-player** — vaults *and* chests / barrels / dispensers / droppers each hand every player their own Lootr-style copy that resets with the chamber (decorated pots refill too).
