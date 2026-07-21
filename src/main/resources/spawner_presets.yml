@@ -22,6 +22,23 @@
 # items are out of scope for this file (they belong to the planned premium
 # "Vault Crate" module).
 #
+# ABOUT REST TIMES (`target-cooldown-length`):
+# This is how long a spawner rests after players beat its wave, before it can be
+# used again. It is written in ticks — 20 ticks is one second, so 36000 is
+# 30 minutes, the same as normal Minecraft.
+#
+# If you write a rest time into a preset, spawners placed from that preset use
+# it, and the server-wide setting in config.yml (reset.spawner-cooldown-minutes)
+# is ignored for them. The thinking is that if you took the trouble to write a
+# number here, you meant it.
+#
+# If you LEAVE THE LINE OUT, spawners from that preset simply follow the
+# server-wide setting like any other spawner. That is usually the easier choice —
+# you set the rest time once in config.yml and every spawner obeys it.
+#
+# If you would rather force every spawner onto the server-wide setting, presets
+# included, set reset.spawner-cooldown-overrides-presets to true in config.yml.
+#
 # Reload after edits with:  /trial reload
 # =============================================================================
 
@@ -36,7 +53,9 @@ presets:
   #   normal-config: "namespace:basic_zombie"
   #   ominous-config: "namespace:basic_zombie_o"
   #   required-player-range: 14
-  #   target-cooldown-length: 36000   # ticks (30 min)
+  #   target-cooldown-length: 36000   # optional; 36000 ticks = 30 minutes.
+  #                                   # Leave this line out to follow the
+  #                                   # server-wide setting in config.yml.
   #   display-name: "&6Super Zombie Spawner"
   #   lore:
   #     - "&7A custom trial spawner."

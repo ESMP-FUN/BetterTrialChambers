@@ -61,7 +61,10 @@ class SpawnerPresetManager(private val plugin: BetterTrialChambers) {
                     normalConfig = node.getString("normal-config"),
                     ominousConfig = node.getString("ominous-config"),
                     requiredPlayerRange = node.getInt("required-player-range", 14),
-                    targetCooldownLength = node.getInt("target-cooldown-length", 36000),
+                    // Omitted = follow the global / per-chamber cooldown setting
+                    // instead of pinning this preset to a fixed time (v2.0.8).
+                    targetCooldownLength = if (node.contains("target-cooldown-length"))
+                        node.getInt("target-cooldown-length") else null,
                     totalMobs = if (node.contains("total-mobs")) node.getInt("total-mobs") else null,
                     simultaneousMobs = if (node.contains("simultaneous-mobs")) node.getInt("simultaneous-mobs") else null,
                     totalMobsAddedPerPlayer = if (node.contains("total-mobs-added-per-player"))
@@ -169,7 +172,9 @@ class SpawnerPresetManager(private val plugin: BetterTrialChambers) {
             parts += """ominous_config:${quoteSnbt(it)}"""
         }
         parts += "required_player_range:${preset.requiredPlayerRange}"
-        parts += "target_cooldown_length:${preset.targetCooldownLength}"
+        // Only baked in when the preset actually declares one; otherwise the
+        // spawner keeps vanilla's value and the global cooldown setting applies.
+        preset.targetCooldownLength?.let { parts += "target_cooldown_length:$it" }
         return "{" + parts.joinToString(",") + "}"
     }
 

@@ -391,7 +391,7 @@ global:
   teleport-players-on-reset: true
 
 vaults:
-  per-player-loot: true
+  loot-mode: PER_PLAYER
   normal-cooldown-hours: 6
   ominous-cooldown-hours: 12
   show-cooldown-particles: true
@@ -421,7 +421,7 @@ global:
   teleport-players-on-reset: true
 
 vaults:
-  per-player-loot: true
+  loot-mode: PER_PLAYER
   normal-cooldown-hours: 12
   ominous-cooldown-hours: 24
   show-cooldown-particles: true
@@ -453,7 +453,7 @@ global:
   blocks-per-tick: 1000
 
 vaults:
-  per-player-loot: true
+  loot-mode: PER_PLAYER
   normal-cooldown-hours: 3
   ominous-cooldown-hours: 6
   show-cooldown-particles: true
@@ -483,7 +483,7 @@ global:
   teleport-players-on-reset: true
 
 vaults:
-  per-player-loot: true
+  loot-mode: PER_PLAYER
   normal-cooldown-hours: 168  # Weekly
   ominous-cooldown-hours: 336  # Bi-weekly
   show-cooldown-particles: false  # Less immersion-breaking
@@ -530,7 +530,9 @@ Most settings apply immediately. Exceptions:
 
 **"What happens to existing cooldowns if I change vault cooldown hours?"** Existing cooldowns aren't retroactively changed. New cooldowns apply to future vault interactions.
 
-**"Can I disable per-player loot?"** Yes, set `vaults.per-player-loot: false`. Vaults become first-come-first-served like vanilla (not recommended for multiplayer).
+**"Can I make a vault give out only one reward, to whoever gets there first?"** Yes — set `vaults.loot-mode: SHARED`. The first player to open a vault takes it and it stays shut for everybody else until the chamber resets. Your custom loot tables still apply.
+
+**"Can I turn the plugin's vault handling off entirely?"** Set `vaults.loot-mode: VANILLA`. Vaults then behave exactly as they do in a normal Minecraft world and your custom loot tables are ignored. Note this is **not** the same as shared loot — plain Minecraft is still one open **per player**. Run `/trial vault unlockall all` afterwards, or vaults players already opened will stay shut.
 
 **"How do I make chambers reset faster without lag?"** Increase `blocks-per-tick` gradually (500 → 750 → 1000) and test for lag.
 

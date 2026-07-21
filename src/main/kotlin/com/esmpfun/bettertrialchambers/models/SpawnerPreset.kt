@@ -32,7 +32,19 @@ data class SpawnerPreset(
     val normalConfig: String?,
     val ominousConfig: String?,
     val requiredPlayerRange: Int,
-    val targetCooldownLength: Int,
+    /**
+     * How long this spawner waits before it can be used again, in ticks
+     * (20 ticks = 1 second, so 36000 = 30 minutes).
+     *
+     * `null` means the preset did not set a time, in which case the spawner
+     * follows the server-wide `reset.spawner-cooldown-minutes` (or the chamber's
+     * own override) like any ordinary spawner. When a number IS set here it wins
+     * over those settings, unless `reset.spawner-cooldown-overrides-presets` is
+     * turned on. See [com.esmpfun.bettertrialchambers.utils.PresetCooldownPolicy].
+     *
+     * Optional since v2.0.8; before that it silently defaulted to 36000.
+     */
+    val targetCooldownLength: Int?,
     val totalMobs: Int?,
     val simultaneousMobs: Int?,
     val totalMobsAddedPerPlayer: Float?,

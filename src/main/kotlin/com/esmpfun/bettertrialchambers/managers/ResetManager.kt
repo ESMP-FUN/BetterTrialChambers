@@ -6,6 +6,7 @@ import com.esmpfun.bettertrialchambers.api.events.ChamberResetEvent
 import com.esmpfun.bettertrialchambers.models.Chamber
 import com.esmpfun.bettertrialchambers.utils.BlockRestorer
 import com.esmpfun.bettertrialchambers.utils.MessageUtil
+import com.esmpfun.bettertrialchambers.utils.PresetCooldownPolicy
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -700,15 +701,13 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                                         if (state is org.bukkit.block.TrialSpawner) {
                                             val oldCooldown = state.cooldownLength
 
-                                            // Preset-sourced spawners configure their own cooldown explicitly
-                                            // (spawner_presets.yml `target-cooldown-length`); the chamber/global
-                                            // spawner-cooldown setting must not silently override it. Same rule
-                                            // as the wild-spawner cooldown paths. Tracking/state clearing below
-                                            // still applies — only the cooldown LENGTH override is skipped.
-                                            val isPresetSpawner = state.persistentDataContainer.has(
-                                                org.bukkit.NamespacedKey("trialchamberpro", SpawnerPresetManager.PRESET_ID_KEY_NAME),
-                                                org.bukkit.persistence.PersistentDataType.STRING
-                                            )
+                                            // A preset that declares its own `target-cooldown-length` keeps it;
+                                            // one that omits it follows this chamber/global setting. Turning on
+                                            // `reset.spawner-cooldown-overrides-presets` forces every spawner onto
+                                            // the global setting. Same rule as the wild-spawner cooldown paths.
+                                            // Tracking/state clearing below still applies either way — only the
+                                            // cooldown LENGTH override is skipped.
+                                            val isPresetSpawner = PresetCooldownPolicy.keepsOwnCooldown(plugin, state)
 
                                             // Clear tracked players - KEY fix for trial key drops!
                                             state.trackedPlayers.forEach { player ->

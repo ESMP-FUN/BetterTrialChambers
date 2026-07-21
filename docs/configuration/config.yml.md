@@ -58,6 +58,10 @@ SQLite is perfect for single servers—no setup required, everything in one file
 **Stick with SQLite unless** you're running a network with BungeeCord/Velocity and need multiple servers to share chambers.
 {% endhint %}
 
+{% hint style="info" %}
+**Nothing to install for either option.** Everything needed to talk to SQLite *and* MySQL is built into the plugin — you don't need to add any driver or library to your server. (Before 2.0.8 the MySQL piece was missing from the download and only worked if your server software happened to provide its own copy.)
+{% endhint %}
+
 ### MySQL Options (only used when `type: MYSQL`)
 
 | Setting     | Description                                       |
@@ -285,6 +289,31 @@ Control how long trial spawners stay in cooldown after being completed. This aff
 **Per-Chamber Override:** You can set different cooldowns for individual chambers via the GUI (Chamber Settings → Spawner Cooldown) or database. Per-chamber settings override this global value.
 {% endhint %}
 
+{% hint style="warning" %}
+**This setting does not apply to preset spawners that set their own rest time.** If a preset in `spawner_presets.yml` has a `target-cooldown-length` line, spawners placed from it use **that** time and ignore this setting — the thinking being that if you wrote a number into a preset, you meant it.
+
+A preset that **leaves the line out** follows this setting like any other spawner. To force every spawner onto this one value, presets included, see [`spawner-cooldown-overrides-presets`](#spawner-cooldown-overrides-presets) below.
+{% endhint %}
+
+</details>
+
+<details>
+
+<summary><code>spawner-cooldown-overrides-presets</code></summary>
+
+**Default:** `false`
+
+> **Note:** in `config.yml` this key lives under the **`reset:`** section (`reset.spawner-cooldown-overrides-presets`).
+
+Decides who wins when a preset spawner states its own rest time **and** you have a server-wide rest time set.
+
+* **`false` (default):** the preset's own `target-cooldown-length` wins for spawners placed from it. Presets that don't state a time follow the server-wide setting.
+* **`true`:** the server-wide `spawner-cooldown-minutes` (or the chamber's own override) applies to **every** spawner, presets included. Use this when you want one rest time everywhere and don't want to go editing presets.
+
+{% hint style="info" %}
+**"The global setting seems to be ignored!"** — this is almost always the preset rule at work. Check whether your presets have a `target-cooldown-length` line. Note that the value in the example preset, `36000` ticks, is **30 minutes**, which is also Minecraft's own default — so a preset and vanilla can look identical and hide the fact that your global setting isn't reaching those spawners.
+{% endhint %}
+
 </details>
 
 <details>
@@ -313,6 +342,10 @@ Control cooldown for trial spawners **outside** of registered chambers (wild/unr
 
 {% hint style="warning" %}
 **Bonus Feature:** When this setting is enabled (not -1), spawner wave tracking (boss bars) will also work in wild Trial Chambers, giving players progress feedback even in unregistered chambers!
+{% endhint %}
+
+{% hint style="warning" %}
+The preset rule applies here too: a preset spawner that states its own `target-cooldown-length` keeps it and ignores this setting, unless `spawner-cooldown-overrides-presets` is turned on.
 {% endhint %}
 
 </details>
@@ -429,7 +462,7 @@ Notes:
 
 ```yaml
 vaults:
-  per-player-loot: true
+  loot-mode: PER_PLAYER
   normal-cooldown-hours: 24
   ominous-cooldown-hours: 48
   show-cooldown-particles: true
@@ -459,19 +492,43 @@ vaults:
 
 <details>
 
-<summary><code>per-player-loot</code></summary>
+<summary><code>loot-mode</code></summary>
+
+**Default:** `PER_PLAYER`
+
+The big one — this decides **who gets the loot** from a vault inside one of your chambers.
+
+* **`PER_PLAYER` (recommended):** Every player who turns up gets **their own reward** from the same vault. Ten players, ten rewards. Your **custom loot tables** are used, and each player has their own cooldown. This is what most servers want.
+* **`SHARED`:** Whoever opens a vault **takes it**, and it stays shut for **everybody else** until the chamber resets. One vault, one reward, first come first served. Your custom loot tables are still used. Other players get a message naming whoever got there first, so it doesn't look broken.
+  * Relies on `reset.reset-vault-cooldowns` being left on (it is by default) — that's what frees claimed vaults at reset. With it off, a claimed vault never opens up again for anybody.
+* **`VANILLA`:** BTC **leaves vaults completely alone**. They open with plain Minecraft loot (crossbows, wind charges, etc.) — your custom loot tables are **ignored**, and there are no per-player cooldowns.
+
+{% hint style="danger" %}
+**Custom loot table being ignored? Getting vanilla items instead?** This is the #1 cause. If `loot-mode` is set to `VANILLA`, none of your loot tables apply — the vault just does its vanilla thing. Set it back to `PER_PLAYER` and run `/trial reload`.
+
+You can check the current setting in-game with `/trial info`.
+{% endhint %}
+
+{% hint style="warning" %}
+**Switching to `VANILLA`? Read this.** Minecraft keeps its **own** record of who has opened each vault, and BTC writes into that record while it is managing vaults. So the moment you switch to `VANILLA`, every player who already opened a vault will find it **shut** — no loot, and it won't even take their key. It looks exactly like the plugin broke vaults.
+
+Run **`/trial vault unlockall all`** after switching to clear those records and open every vault up again. BTC also reminds you about this when you `/trial reload` after the change.
+{% endhint %}
+
+</details>
+
+<details>
+
+<summary><code>per-player-loot</code> (old setting)</summary>
 
 **Default:** `true`
 
-The big one — think of it as the **master ON/OFF switch** for everything BetterTrialChambers does with vaults.
+This is the older on/off switch that `loot-mode` replaced. It is still read **only when `loot-mode` is missing** from your config, so setups written before the change keep working: `true` behaves like `PER_PLAYER`, `false` behaves like `VANILLA`.
 
-* **`true` (recommended):** BTC handles vaults. Each player gets their own loot roll from your **custom loot tables**, their own cooldown, and everything else in this plugin.
-* **`false`:** BTC **leaves vaults completely alone**. They open with **plain vanilla Minecraft loot** (crossbows, wind charges, etc.) — your custom loot tables are **ignored**, and there are no per-player cooldowns. Only turn this off if you genuinely want vanilla vault behaviour.
+If `loot-mode` is present, this line does nothing. There is no reason to add it to a new config.
 
-{% hint style="danger" %}
-**Custom loot table being ignored? Getting vanilla items instead?** This is the #1 cause. If `per-player-loot` is set to `false`, none of your loot tables apply — the vault just does its vanilla thing. Set it back to `true` and run `/trial reload`.
-
-You can check the current setting in-game with `/trial info` — look at the **Per-Player Loot** line.
+{% hint style="info" %}
+Its name caused a lot of confusion: setting it to `false` sounded like it would give you *shared* loot, but it actually handed vaults back to plain Minecraft — which is still one open **per player**, never shared. If shared loot is what you're after, that's `loot-mode: SHARED`.
 {% endhint %}
 
 </details>

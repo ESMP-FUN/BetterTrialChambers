@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [2.0.8] - 2026-07-21
+### Added
+- **Shared vaults: one reward per vault for the whole server.** A new `vaults.loot-mode` setting in `config.yml` decides who gets the loot from a vault. **`PER_PLAYER`** (the default, and how the plugin has always behaved) gives every player who turns up their own reward from the same vault. The new **`SHARED`** means whoever opens a vault takes it, and it stays shut for everybody else until the chamber resets — one vault, one reward, first come first served, with your custom loot tables still applying. Players who arrive too late get a message naming whoever got there first, so it doesn't look broken. **`VANILLA`** leaves vaults entirely to Minecraft. You can also switch modes from the settings menu (`/trial menu` → Settings) or during `/trial setup`.
+- **`/trial vault unlockall <chamber|all>`** — opens every vault in a chamber up again for everyone, without waiting for a reset. Mainly needed after switching to `VANILLA` mode (see below).
+- **`reset.spawner-cooldown-overrides-presets`** — set this to `true` to force every trial spawner on the server, presets included, onto your server-wide rest time. Off by default, so presets keep their own times as before.
+
+### Fixed
+- **The plugin failed to load at all on recent Paper builds.** The jar contained three identical copies of one internal file (a side effect of the FastStats change in 2.0.7), and Paper's plugin remapper refuses to load any jar with duplicated entries — so BetterTrialChambers silently never appeared in `/plugins`, with nothing in the console pointing at it. If 2.0.7 seemed to do nothing at all on your server, this was why.
+- **MySQL is now actually included.** `config.yml` has offered `type: MYSQL` since the very first release, but the piece that talks to MySQL was never shipped with the plugin — it only worked because Paper happens to bundle a copy of its own, which is the server's choice and not something to rely on. It's now built in, so MySQL works out of the box with nothing extra to install.
+- **Admins testing vaults no longer lock themselves out of them.** Opening a vault with the `btc.bypass.cooldown` permission — which every OP has — used to still record you as having opened it, in Minecraft's own records as well as the plugin's. A few minutes of testing could therefore quietly shut those vaults for you under plain Minecraft, and in the new shared mode it would have claimed them for the entire server. Bypassing players now leave no trace on a vault at all.
+
+### Changed
+- **`vaults.per-player-loot` has been replaced by `vaults.loot-mode`.** The old setting is still read when `loot-mode` is missing, so existing setups keep working untouched — `true` behaves like `PER_PLAYER` and `false` like `VANILLA`. Its name was the problem: turning it off sounded like it would give you *shared* loot, when it actually handed vaults back to plain Minecraft, which is still one open **per player** and never shared. If shared loot is what you wanted, that's now `loot-mode: SHARED`.
+- **Switching vaults back to plain Minecraft now warns you, and tells you how to finish the job.** Minecraft keeps its own record of who opened each vault, so after such a switch every player who had already opened one found it shut — no loot, and it didn't even take their key, which looked exactly like the plugin had broken vaults. The plugin now flags this when you make the change and points you at `/trial vault unlockall all` to clear those records.
+- **`target-cooldown-length` in `spawner_presets.yml` is now optional.** Leave the line out and spawners from that preset follow your server-wide rest time like any ordinary spawner — which is usually what you want, since you then set the time once in `config.yml`. Presets that *do* state a time keep winning over the global setting, as before; that rule was never written down anywhere, which is why the global setting looked like it was being ignored. It is now explained in `config.yml`, in `spawner_presets.yml` and in the documentation.
+- **The download is a fifth smaller** — 12 MB down to 9.5 MB, even with MySQL support added. The database engine used to bundle a copy for every processor type it supports, including Android, FreeBSD, 32-bit machines and mainframes. It now ships only what a Minecraft server actually runs on: 64-bit Linux, 64-bit ARM Linux (Oracle Cloud, AWS Graviton, 64-bit Raspberry Pi OS), 64-bit Windows for people hosting from their own machine, and Apple Silicon for testing on a Mac.
+- Plainer wording throughout the vault and spawner-rest-time sections of `config.yml`, and the database section now explains in plain words when you'd pick MySQL over the default.
+
 ## [2.0.7] - 2026-07-19
 ### Changed
 - **Anonymous usage metrics now use [FastStats](https://faststats.dev) instead of bStats.** The same handful of aggregate numbers are collected as before — which database backend you run, whether auto-discovery is on, glow mode, a rough chamber-count bracket, and which premium add-ons are installed. **No player data.** `metrics.enabled: false` in `config.yml` still switches it off for this plugin, and there's still a server-wide off switch for every plugin that uses it: `enabled=false` in `plugins/faststats/config.properties` (the equivalent of the old `plugins/bStats/config.yml`).
@@ -1616,6 +1634,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[2.0.8]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.7...v2.0.8
 [2.0.7]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.4...v2.0.7
 [2.0.4]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.1...v2.0.4
 [2.0.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.0...v2.0.1
