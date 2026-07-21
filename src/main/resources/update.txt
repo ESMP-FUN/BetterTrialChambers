@@ -1,18 +1,14 @@
 <black>.
-<aqua>[2.0.0] <gray>- <white>2026-07-11
-<lime>+ <white>NEW NAME: <green>TrialChamberPro is now <yellow>Better Trial Chambers<green> — same free plugin, clearer name. Your data migrates automatically on first start.
-<lime>+ <white>NEW: <green>Main command is <yellow>/trial<green> (aliases <yellow>/btc<green>, <yellow>/chamber<green>); the old <yellow>/tcp<green> still works. Permissions are now <yellow>btc.*<green> with legacy <yellow>tcp.*<green> aliases; placeholders are <yellow>%btc_*%<green> with <yellow>%tcp_*%<green> kept.
-<aqua>[1.8.1] <gray>- <white>2026-07-10
-<lime>+ <white>NEW: <green>World exclusion — list worlds under <yellow>global.excluded-worlds<green> in config.yml to keep TCP fully inactive there (no auto-discovery, no generation, no wild-spawner boss bars). Handy for a second overworld you want to leave vanilla.
-<lime>+ <white>NEW: <green>Bundled updater upgraded to PluginPulse v0.8.0 — configurable source check order, authenticated private-repo updates, and a Jenkins CI update source.
-<aqua>[1.8.0] <gray>- <white>2026-07-05
-<lime>+ <white>NEW: <green>Built-in updater — <yellow>/trial update<green> checks Modrinth/GitHub and (opt-in) downloads a checksum-verified jar staged to install on your next restart, with automatic backup and <yellow>/trial update restore<green> rollback. Configure with the new <yellow>update<green> section in config.yml.
-<lime>+ <white>NEW: <green>Optional no-restart updates — with <yellow>update.allow-hot-reload: true<green>, <yellow>/trial update apply<green> swaps the new version in live (Paper only, off by default).
-<lime>+ <white>NEW: <green>1.7.3 fix included: spawner-wave counters can no longer stall when a custom-mob provider fails mid-replacement.
-<aqua>[1.7.2] <gray>- <white>2026-07-03
-<lime>+ <white>FIX: <green>Chamber resets no longer erase decorations — signs, player heads, banners, lecterns, jukeboxes, bookshelves and suspicious-block items now survive snapshots and resets (re-run <yellow>/trial snapshot create<green> on decorated chambers).
-<lime>+ <white>FIX: <green>Vault keys are consumed from the slot that held them at click time — scrolling your hotbar mid-open can no longer eat the wrong item; key-to-reopen also validates the loot table before taking payment.
-<lime>+ <white>FIX: <green>Logging out or crashing while spectating no longer strands you in spectator mode — your gamemode and position are restored on quit or next join.
-<lime>+ <white>FIX: <green>Statistics increment atomically in the database — no more lost counts on shared-MySQL networks; plus Folia-safe vault loot ejection and chamber-deletion cleanup.
-<lime>+ <white>FIX: <green>Explosions from just OUTSIDE a chamber wall can no longer destroy blocks inside (per-block protection, now also covering bed/respawn-anchor explosions); pausing a chamber cancels an already-counting-down reset and its warnings.
-<lime>+ <white>FIX: <green>Teleports (<yellow>/tp<green>, <yellow>/home<green>, pearls) now count as chamber entry/exit for time tracking; open per-player container copies are saved on server stop; tab-completion no longer reveals chamber names to non-admins.
+<aqua>[2.0.8] <gray>- <white>2026-07-21
+<lime>+ <white>FIX: <green>2.0.7 could not be loaded by recent Paper builds at all — the plugin silently never appeared in <yellow>/plugins<green>, with nothing in the console to explain why. If 2.0.7 seemed to do nothing on your server, this is the fix.
+<lime>+ <white>FIX: <green>MySQL is now actually included. <yellow>config.yml<green> has offered it since the first release, but the part that talks to MySQL was never shipped — it only worked if your server software happened to provide its own copy.
+<lime>+ <white>NEW: <green>Choose who gets the loot from a vault with <yellow>vaults.loot-mode<green>: everyone their own copy (as before), first come first served (one reward per vault for the whole server), or leave vaults to Minecraft.
+<lime>+ <white>FIX: <green>Testing vaults as an admin no longer quietly locks you out of them — a bypassing player now leaves no trace on the vault. New <yellow>/trial vault unlockall <chamber|all><green> opens every vault up again without waiting for a reset.
+<lime>+ <white>NEW: <green><yellow>target-cooldown-length<green> in spawner_presets.yml is now optional — leave it out and the preset follows your server-wide spawner rest time. Set <yellow>reset.spawner-cooldown-overrides-presets<green> to force every spawner onto one time.
+<aqua>[2.0.7] <gray>- <white>2026-07-19
+<lime>+ <white>NEW: <green>Anonymous usage metrics moved from bStats to FastStats — the same handful of aggregate numbers, no player data. Switch it off with <yellow>metrics.enabled: false<green>. Nothing is sent on the first run, so you get a chance to opt out first.
+<lime>+ <white>NEW: <green>Optional error reporting, off unless you turn it on. <yellow>metrics.error-reporting: true<green> reports only this plugin's own errors, with IP addresses, file paths, database credentials and player UUIDs stripped out before anything leaves your server.
+<aqua>[2.0.4] <gray>- <white>2026-07-19
+<lime>+ <white>FIX: <green>"The chamber has been reset!" no longer goes to the whole server — it now goes to the players who were actually inside that chamber. Set <yellow>global.reset-complete-audience: server<green> for the old behaviour.
+<lime>+ <white>NEW: <green>Optional permission for the reset message — set <yellow>global.reset-complete-permission<green> and only players who have it are told.
+<lime>+ <white>FIX: <green>Pointing a chamber at another loot table now actually works — its Normal/Ominous Loot buttons follow the override instead of editing a table nothing was using.
