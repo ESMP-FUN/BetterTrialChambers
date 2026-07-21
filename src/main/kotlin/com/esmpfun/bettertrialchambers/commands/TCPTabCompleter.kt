@@ -30,6 +30,7 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
     private val statTypes = listOf("chambers", "normal", "ominous", "mobs", "time")
     private val lootActions = listOf("set", "clear", "info", "list", "audit")
     private val vaultTypes = listOf("normal", "ominous")
+    private val vaultActions = listOf("reset", "unlockall")
     private val mobsActions = listOf("provider", "add", "remove", "list")
     private val mobsWaveTypes = listOf("normal", "ominous")
 
@@ -95,6 +96,7 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
                     "claims" -> claimsActions.filter { it.startsWith(args[1].lowercase()) }
                     "debug" -> debugActions.filter { it.startsWith(args[1].lowercase()) }
                     "list" -> listOf("current").filter { it.startsWith(args[1].lowercase()) }
+                    "vault" -> vaultActions.filter { it.startsWith(args[1].lowercase()) }
                     else -> emptyList()
                 }
             }
@@ -108,6 +110,12 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
                         else -> getChamberNames(sender).filter { it.startsWith(args[2].lowercase()) }
                     }
                     "container", "containers" -> getChamberNames(sender).filter { it.startsWith(args[2].lowercase()) }
+                    "vault" -> when (args[1].lowercase()) {
+                        // `unlockall` also accepts the literal `all` (every chamber at once).
+                        "unlockall" -> (listOf("all") + getChamberNames(sender)).filter { it.startsWith(args[2].lowercase()) }
+                        "reset" -> getChamberNames(sender).filter { it.startsWith(args[2].lowercase()) }
+                        else -> emptyList()
+                    }
                     "scan" -> if (args[1].equals("add", ignoreCase = true))
                         getChamberNames(sender).filter { it.startsWith(args[2].lowercase()) } else emptyList()
                     "dungeon" -> {

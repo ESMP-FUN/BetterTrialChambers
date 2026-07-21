@@ -61,7 +61,7 @@ presets:
 | `normal-config` | string | _(none)_ | Resource location of the datapack-defined spawner config used outside ominous mode. |
 | `ominous-config` | string | _(none)_ | Resource location of the datapack-defined spawner config used during ominous mode. |
 | `required-player-range` | int | `14` | How close a player must be (blocks) for the spawner to activate. |
-| `target-cooldown-length` | int | `36000` | Cooldown in **ticks** after a wave completes (`36000` = 30 min, vanilla default). |
+| `target-cooldown-length` | int | _(server-wide setting)_ | **Optional.** How long the spawner rests after a wave is beaten, in **ticks** (20 ticks = 1 second, so `36000` = 30 minutes). Leave it out to follow the server-wide setting instead — see below. |
 | `total-mobs` | int | _(datapack)_ | Total mobs spawned across the wave. Overrides the datapack value. |
 | `simultaneous-mobs` | int | _(datapack)_ | Maximum live mobs at once. Overrides the datapack value. |
 | `total-mobs-added-per-player` | float | _(datapack)_ | Extra total mobs per additional participating player. |
@@ -73,7 +73,13 @@ presets:
 
 The six datapack-override fields (`total-mobs` through `spawn-range`) are applied to the spawner **when the block is placed**, layered on top of the datapack config. If you edit them in `spawner_presets.yml`, run `/trial reload` and then **break and re-place** the spawner (a `/trial give` item placed after the reload picks up the new values — already-placed blocks keep the old ones).
 
-A preset spawner's cooldown always comes from its `target-cooldown-length`; the server-wide `reset.wild-spawner-cooldown-minutes` setting does not apply to preset-sourced spawners.
+**How rest times work between here and `config.yml`:**
+
+* If a preset **states** a `target-cooldown-length`, spawners placed from it use that time, and the server-wide `reset.spawner-cooldown-minutes` / `reset.wild-spawner-cooldown-minutes` settings are ignored for them. The idea is that if you took the trouble to write a number into a preset, you meant it.
+* If a preset **leaves the line out**, its spawners follow the server-wide setting like any other spawner. This is usually the easier choice — set the rest time once in `config.yml` and every spawner obeys it.
+* To force **every** spawner onto the server-wide setting, presets included, set `reset.spawner-cooldown-overrides-presets: true` in `config.yml`.
+
+If it looks like your server-wide setting is being ignored, check your presets for a `target-cooldown-length` line. Watch out for `36000` in particular: that's 30 minutes, which is also Minecraft's own default, so a preset and plain vanilla can look identical.
 
 </div>
 | `display-name` | string | _(none)_ | Item name shown in inventory. Supports `&` colour codes. |
