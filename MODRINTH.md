@@ -12,16 +12,8 @@
 
 ### Recently Added
 
-**New in 1.7.0:**
-
-- **Tunnel-breaking** — solves the "how do players even get in?" problem. Let players mine into a walled chamber through the tuff-brick shell, with drops always suppressed so the endlessly-restoring blocks can't be farmed. A shell-depth limit stops them strip-mining the interior, and every tunnel heals on the next reset. Opt-in via `protection.tunnel-breaking`.
-- **Import datapack rooms** — `/trial dungeon import <file|folder|zip>` turns vanilla `.nbt` structure templates (the format "crazy chambers"-style datapacks use) into rooms for BTC's procedural dungeon engine. Jigsaw blocks become doorway connectors automatically, and generated dungeons get resets, loot, and protection like any chamber.
-- **Datapack-enlarged chambers discover correctly** — auto-discovery now asks the game for a chamber's exact structure bounds, so chambers enlarged by datapacks register at full size in one pass. Player-built chambers still discover via the block scan.
-- **Configurable database table prefix** — all BTC tables are now `tcp_`-prefixed (`database.table-prefix`) so they can't collide with other plugins on a shared database. Existing installs migrate automatically and safely on first start.
-- **Built for huge chambers** — scanning, snapshotting, and spawner resets are now batched across ticks, so even multi-million-block datapack chambers never freeze the server.
-
-**And from recent releases:**
-
+- **The whole chamber is per-player** — vaults *and* chests / barrels / dispensers / droppers each hand every player their own Lootr-style copy that resets with the chamber (decorated pots refill too). The second player in no longer finds an empty room.
+- **…or first come, first served** — *new:* one setting decides who gets a vault's loot. Everyone gets their own copy, or the first player to reach a vault claims it and it stays shut for everybody else until the chamber resets. Your custom loot either way.
 - **A guided setup tour** — run `/trial setup` for a friendly, one-setting-at-a-time walkthrough of the main options (**Enable / Skip / Disable**, nothing forced). Native Dialog UI on Paper 1.21.7+, with an automatic clickable-chat fallback on older servers.
 
   <img src="https://raw.githubusercontent.com/ESMP-FUN/BetterTrialChambers/master/setup-chat.png" alt="The /trial setup clickable-chat prompt in-game" width="800" />
@@ -31,9 +23,8 @@
   <img src="https://raw.githubusercontent.com/ESMP-FUN/BetterTrialChambers/master/setup-dialog.png" alt="The /trial setup tour rendered as a native Dialog popup" width="800" />
   </details>
 
-- **The whole chamber is per-player** — vaults *and* chests / barrels / dispensers / droppers each hand every player their own Lootr-style copy that resets with the chamber (decorated pots refill too).
-- **Chambers can't be claimed or blast-mined** — blocks **Residence / Lands / GriefPrevention** claims from overlapping a chamber, and stops **AdvancedEnchantments** enchants from breaking into one.
-- **Vaults, expanded** — native **Vault economy rewards** in loot tables, working **time-based cooldowns**, **key-to-reopen** vaults, and opt-in floating hologram feedback.
+- **Build your own chambers** — a procedural dungeon engine stitches rooms you design into a fresh chamber, and `/trial dungeon import` turns vanilla `.nbt` structure templates (the format "crazy chambers"-style datapacks use) into rooms automatically. Generated dungeons get resets, loot and protection like any other chamber.
+- **Loot you actually control** — build tables by **weight** or by **plain % drop chance** per item, hand out **economy rewards** through Vault, let players **pay keys to reopen** a vault, and support custom items from Nexo / ItemsAdder / Oraxen / MythicMobs / CraftEngine.
 
 *This plugin is updated almost daily — and many of these features came straight from a server owner's suggestion. Got an idea? Share it (Discord above) and there's a good chance it ships within days. Thank you!*
 
