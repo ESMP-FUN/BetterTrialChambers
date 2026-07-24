@@ -5,7 +5,6 @@ import com.esmpfun.bettertrialchambers.models.BlockSnapshot
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import org.bukkit.Bukkit
-import org.bukkit.Chunk
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.World
@@ -25,8 +24,133 @@ import org.bukkit.entity.Player
 class BlockRestorer(private val plugin: BetterTrialChambers) {
 
     /**
-     * Restores blocks from a snapshot asynchronously.
-     * Groups blocks by chunk and processes them in batches to prevent lag.
+     * Incremental restore session: feed it batches of blocks as they stream off
+     * disk and it places them on the correct region threads, so a restore never
+     * needs the whole snapshot in memory at once. Call [submitBatch] repeatedly,
+     * then [finish] — which suspends until every scheduled region-thread batch
+     * has actually run (callers rely on this: ResetManager clears vault
+     * rewarded_players and resets spawner state immediately after).
+     *
+     * WorldEdit //undo integration is set up lazily from the first batch when
+     * an initiating player is present, matching the old whole-map behavior.
+     */
+    inner class StreamingSession(
+        private val expectedTotal: Int,
+        private val onProgress: ((Int, Int) -> Unit)? = null,
+        private val initiatingPlayer: Player? = null
+    ) {
+        private val processed = java.util.concurrent.atomic.AtomicInteger(0)
+        private val pendingBatches = java.util.concurrent.atomic.AtomicInteger(0)
+        private val completionSignal = CompletableDeferred<Unit>()
+
+        @Volatile
+        private var allSubmitted = false
+        private var weSession: WorldEditSessionData? = null
+        private var weAttempted = false
+
+        suspend fun submitBatch(batch: List<Pair<Location, BlockSnapshot>>) {
+            if (batch.isEmpty()) return
+
+            if (!weAttempted) {
+                weAttempted = true
+                weSession = if (initiatingPlayer != null && WorldEditSupport.isAvailable()) {
+                    try {
+                        createWorldEditSession(initiatingPlayer, batch.first().first)
+                    } catch (e: Throwable) {
+                        // Catch Throwable, not just Exception: a WorldEdit jar compiled for a
+                        // newer Java than the server runtime throws UnsupportedClassVersionError
+                        // (a LinkageError, not an Exception) the moment a WE class is touched.
+                        // WorldEdit is only a soft dependency here (//undo integration), so a
+                        // broken/incompatible install must degrade gracefully — never abort the
+                        // reset. The undo hint is simply skipped.
+                        plugin.logger.warning(
+                            "WorldEdit //undo integration unavailable (${e.javaClass.simpleName}: ${e.message}); " +
+                                "continuing reset without it. If this is an UnsupportedClassVersionError, your " +
+                                "WorldEdit build targets a newer Java than this server's runtime."
+                        )
+                        null
+                    }
+                } else null
+
+                if (weSession != null) {
+                    plugin.logger.info("WorldEdit integration enabled - changes can be undone with //undo")
+                }
+            }
+
+            // Group by chunk so each region task only touches blocks its thread owns
+            // (Folia correctness); groupBy copies entries, so callers may reuse lists.
+            batch.groupBy { chunkKey(it.first) }.values.forEach { group ->
+                val representative = group.first().first
+                pendingBatches.incrementAndGet()
+                plugin.scheduler.runAtLocation(representative, Runnable {
+                    try {
+                        val world = representative.world
+                        val chunkX = representative.blockX shr 4
+                        val chunkZ = representative.blockZ shr 4
+                        // Sync-load on the owning thread is the correct pattern here
+                        if (world != null && !world.isChunkLoaded(chunkX, chunkZ)) {
+                            world.getChunkAt(chunkX, chunkZ)
+                        }
+                        val session = weSession
+                        group.forEach { (location, blockSnapshot) ->
+                            try {
+                                // Use WorldEdit if available, otherwise direct Bukkit API
+                                if (session != null) {
+                                    restoreBlockWithWorldEdit(location, blockSnapshot, session)
+                                } else {
+                                    restoreBlock(location, blockSnapshot)
+                                }
+                                processed.incrementAndGet()
+                            } catch (e: Exception) {
+                                plugin.logger.warning(
+                                    "Failed to restore block at ${location.blockX},${location.blockY},${location.blockZ}: ${e.message}"
+                                )
+                            }
+                        }
+                        onProgress?.invoke(processed.get(), expectedTotal)
+                    } finally {
+                        batchFinished()
+                    }
+                })
+            }
+
+            // Small delay between batches to prevent lag (1 tick = 50ms)
+            delay(50)
+        }
+
+        private fun batchFinished() {
+            if (pendingBatches.decrementAndGet() == 0 && allSubmitted) {
+                completionSignal.complete(Unit)
+            }
+        }
+
+        /** @return the number of blocks actually restored. */
+        suspend fun finish(): Int {
+            allSubmitted = true
+            if (pendingBatches.get() == 0) {
+                completionSignal.complete(Unit)
+            }
+            completionSignal.await()
+
+            val session = weSession
+            if (session != null && initiatingPlayer != null) {
+                try {
+                    finalizeWorldEditSession(session, initiatingPlayer)
+                    plugin.logger.info("WorldEdit session finalized - use //undo to revert changes")
+                } catch (e: Exception) {
+                    plugin.logger.warning("Failed to finalize WorldEdit session: ${e.message}")
+                }
+            }
+            return processed.get()
+        }
+
+        private fun chunkKey(location: Location): Long =
+            ((location.blockX shr 4).toLong() shl 32) xor ((location.blockZ shr 4).toLong() and 0xFFFFFFFFL)
+    }
+
+    /**
+     * Restores blocks from an in-memory snapshot map asynchronously.
+     * Delegates to a [StreamingSession] fed in blocks-per-tick batches.
      *
      * @param snapshot Map of locations to block snapshots
      * @param onProgress Optional callback for progress updates (processed, total)
@@ -44,113 +168,21 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
 
         plugin.logger.info("Starting block restoration: $totalBlocks blocks")
 
-        // Try to set up WorldEdit integration if player provided and WorldEdit available
-        val weSession = if (initiatingPlayer != null && WorldEditSupport.isAvailable()) {
-            try {
-                createWorldEditSession(initiatingPlayer, snapshot)
-            } catch (e: Throwable) {
-                // Catch Throwable, not just Exception: a WorldEdit jar compiled for a
-                // newer Java than the server runtime throws UnsupportedClassVersionError
-                // (a LinkageError, not an Exception) the moment a WE class is touched.
-                // WorldEdit is only a soft dependency here (//undo integration), so a
-                // broken/incompatible install must degrade gracefully — never abort the
-                // reset. The undo hint is simply skipped.
-                plugin.logger.warning(
-                    "WorldEdit //undo integration unavailable (${e.javaClass.simpleName}: ${e.message}); " +
-                        "continuing reset without it. If this is an UnsupportedClassVersionError, your " +
-                        "WorldEdit build targets a newer Java than this server's runtime."
-                )
-                null
-            }
-        } else null
-
-        if (weSession != null) {
-            plugin.logger.info("WorldEdit integration enabled - changes can be undone with //undo")
-        }
-
-        // Group blocks by chunk for efficient processing
-        val blocksByChunk = snapshot.entries.groupBy { it.key.chunk }
-
-        // Use atomic counter for thread-safe progress tracking across multiple region threads (Folia)
-        val processedBlocks = java.util.concurrent.atomic.AtomicInteger(0)
-
-        // Track pending region-thread batches so we can await actual completion.
-        // runAtLocation is fire-and-forget; without this, restoreBlocks returned
-        // before vault tile entities were actually rewritten, which meant the
-        // post-restore vault rewarded_players clear ran against stale blocks.
-        val pendingBatches = java.util.concurrent.atomic.AtomicInteger(0)
-        val completionSignal = CompletableDeferred<Unit>()
-        fun batchFinished() {
-            if (pendingBatches.decrementAndGet() == 0) {
-                completionSignal.complete(Unit)
+        val session = StreamingSession(totalBlocks, onProgress, initiatingPlayer)
+        val batch = ArrayList<Pair<Location, BlockSnapshot>>(blocksPerTick)
+        for (entry in snapshot) {
+            batch.add(entry.key to entry.value)
+            if (batch.size >= blocksPerTick) {
+                session.submitBatch(batch)
+                batch.clear()
             }
         }
-
-        // Process each chunk
-        blocksByChunk.forEach { (chunk, blockEntries) ->
-            // Ensure chunk is loaded
-            ensureChunkLoaded(chunk)
-
-            // Process blocks in batches
-            blockEntries.chunked(blocksPerTick).forEach { batch ->
-                // Get a representative location for this batch (for Folia region scheduling)
-                val representativeLocation = batch.firstOrNull()?.key
-
-                if (representativeLocation != null) {
-                    pendingBatches.incrementAndGet()
-                    // Schedule on the region thread that owns this location
-                    plugin.scheduler.runAtLocation(representativeLocation, Runnable {
-                        try {
-                            batch.forEach { (location, blockSnapshot) ->
-                                try {
-                                    // Use WorldEdit if available, otherwise direct Bukkit API
-                                    if (weSession != null) {
-                                        restoreBlockWithWorldEdit(location, blockSnapshot, weSession)
-                                    } else {
-                                        restoreBlock(location, blockSnapshot)
-                                    }
-                                    processedBlocks.incrementAndGet()
-                                } catch (e: Exception) {
-                                    plugin.logger.warning(
-                                        "Failed to restore block at ${location.blockX},${location.blockY},${location.blockZ}: ${e.message}"
-                                    )
-                                }
-                            }
-
-                            // Call progress callback
-                            onProgress?.invoke(processedBlocks.get(), totalBlocks)
-                        } finally {
-                            batchFinished()
-                        }
-                    })
-                }
-
-                // Small delay between batches to prevent lag (1 tick = 50ms)
-                delay(50)
-            }
+        if (batch.isNotEmpty()) {
+            session.submitBatch(batch)
         }
+        val restored = session.finish()
 
-        // If nothing was scheduled (empty snapshot), complete immediately.
-        if (pendingBatches.get() == 0) {
-            completionSignal.complete(Unit)
-        }
-
-        // Wait for every scheduled batch to actually finish on its region thread
-        // before returning. Callers rely on this (e.g. ResetManager clears vault
-        // rewarded_players and resets spawner state immediately after).
-        completionSignal.await()
-
-        // Finalize WorldEdit session if used
-        if (weSession != null) {
-            try {
-                finalizeWorldEditSession(weSession, initiatingPlayer!!)
-                plugin.logger.info("WorldEdit session finalized - use //undo to revert changes")
-            } catch (e: Exception) {
-                plugin.logger.warning("Failed to finalize WorldEdit session: ${e.message}")
-            }
-        }
-
-        plugin.logger.info("Block restoration complete: ${processedBlocks.get()}/$totalBlocks blocks restored")
+        plugin.logger.info("Block restoration complete: $restored/$totalBlocks blocks restored")
 
         // Call completion callback on main/global thread
         plugin.scheduler.runTask(Runnable {
@@ -173,15 +205,17 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
      *
      * Run this BEFORE [restoreBlocks]; the two touch disjoint cells (foreign
      * cells vs. captured cells).
+     *
+     * @param occupiedSorted every snapshot-covered position packed via [pack],
+     *        sorted ascending (binary-searched; far cheaper than a boxed set
+     *        for multi-million-block chambers).
      */
     suspend fun clearAddedBlocks(
         world: World,
         minX: Int, minY: Int, minZ: Int,
         maxX: Int, maxY: Int, maxZ: Int,
-        snapshot: Map<Location, BlockSnapshot>,
+        occupiedSorted: LongArray,
     ) {
-        val occupied = HashSet<Long>(snapshot.size * 2)
-        snapshot.keys.forEach { occupied.add(pack(it.blockX, it.blockY, it.blockZ)) }
 
         val cleared = java.util.concurrent.atomic.AtomicInteger(0)
         val pending = java.util.concurrent.atomic.AtomicInteger(0)
@@ -210,7 +244,7 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
                         for (x in x0..x1) {
                             for (z in z0..z1) {
                                 for (y in minY..maxY) {
-                                    if (occupied.contains(pack(x, y, z))) continue
+                                    if (java.util.Arrays.binarySearch(occupiedSorted, pack(x, y, z)) >= 0) continue
                                     val block = world.getBlockAt(x, y, z)
                                     if (block.type != Material.AIR) {
                                         block.setType(Material.AIR, false)
@@ -239,9 +273,11 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
         }
     }
 
-    /** Pack block coords into a single long (vanilla BlockPos layout: 26/12/26 bits x/y/z). */
-    private fun pack(x: Int, y: Int, z: Int): Long =
-        ((x.toLong() and 0x3FFFFFF) shl 38) or ((z.toLong() and 0x3FFFFFF) shl 12) or (y.toLong() and 0xFFF)
+    companion object {
+        /** Pack block coords into a single long (vanilla BlockPos layout: 26/12/26 bits x/y/z). */
+        fun pack(x: Int, y: Int, z: Int): Long =
+            ((x.toLong() and 0x3FFFFFF) shl 38) or ((z.toLong() and 0x3FFFFFF) shl 12) or (y.toLong() and 0xFFF)
+    }
 
     /**
      * Holder for WorldEdit session data during restoration.
@@ -283,26 +319,6 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
             } else {
                 plugin.logger.warning("Failed to restore tile entity at ${location.blockX},${location.blockY},${location.blockZ}")
             }
-        }
-    }
-
-    /**
-     * Ensures a chunk is loaded before restoring blocks.
-     * On Folia, chunk loading is handled differently - we schedule to the chunk's region.
-     *
-     * @param chunk The chunk to load
-     */
-    private suspend fun ensureChunkLoaded(chunk: Chunk) {
-        if (!chunk.isLoaded) {
-            // Get a location in this chunk for region scheduling
-            val chunkLocation = Location(chunk.world, chunk.x * 16.0, 64.0, chunk.z * 16.0)
-
-            // Load chunk on the appropriate thread
-            plugin.scheduler.runAtLocation(chunkLocation, Runnable {
-                chunk.load()
-            })
-            // Wait for chunk to load
-            delay(50)
         }
     }
 
@@ -388,10 +404,7 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
      * Creates a WorldEdit EditSession for recording block changes.
      * Uses reflection to work with WorldEdit's API without compile-time dependency.
      */
-    private fun createWorldEditSession(player: Player, snapshot: Map<Location, BlockSnapshot>): WorldEditSessionData? {
-        if (snapshot.isEmpty()) return null
-
-        val firstLocation = snapshot.keys.first()
+    private fun createWorldEditSession(player: Player, firstLocation: Location): WorldEditSessionData? {
         val world = firstLocation.world ?: return null
 
         try {
