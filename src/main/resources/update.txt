@@ -1,4 +1,8 @@
 <black>.
+<aqua>[2.0.9] <gray>- <white>2026-07-24
+<lime>+ <white>FIX: <green>One big datapack chamber could register as several chambers, each resetting on its own timer and overwriting the others' walls. Pieces of one chamber now merge into a single registration — tune with <yellow>discovery.structure-merge-distance-blocks<green> if needed.
+<lime>+ <white>FIX: <green>Memory no longer stays high after a chamber is discovered — the plugin now releases that part of the map as soon as registration finishes.
+<lime>+ <white>FIX: <green>Snapshots of very large chambers no longer risk crashing servers with little memory — they are written to disk piece by piece, and resets read them back the same way. Old snapshot files upgrade themselves on their first reset.
 <aqua>[2.0.8] <gray>- <white>2026-07-21
 <lime>+ <white>FIX: <green>2.0.7 could not be loaded by recent Paper builds at all — the plugin silently never appeared in <yellow>/plugins<green>, with nothing in the console to explain why. If 2.0.7 seemed to do nothing on your server, this is the fix.
 <lime>+ <white>FIX: <green>MySQL is now actually included. <yellow>config.yml<green> has offered it since the first release, but the part that talks to MySQL was never shipped — it only worked if your server software happened to provide its own copy.

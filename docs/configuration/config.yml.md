@@ -1441,6 +1441,7 @@ discovery:
   pending-retry-seconds: 30        # How long to keep a partial-load seed pending while adjacent chunks load
   merge-distance-blocks: 250       # Merge a new region into an existing chamber within this distance
   max-merged-volume: 1500000       # Hard cap on the post-merge bounding-box volume (blocks)
+  structure-merge-distance-blocks: 16  # v2.0.9: merge distance for exact structure-bounds discoveries
   expand-on-discover: true         # Auto-run one expand pass after discovery to catch clipped sections
   expand-delay-seconds: 10         # Delay before that pass (lets vault rows commit + nearby chunks load)
   expand-force-load: false         # Opt-in: force-load unloaded chunks during expand (Paper-only; I/O spike)
@@ -1472,7 +1473,9 @@ Player-built chambers aren't generated structures, so they still discover via th
 
 `structure-max-volume` caps how large a structure-bounds discovery may be, since datapack chambers can be far bigger than vanilla ones (`-1` = uncapped). This replaces `generation.max-volume` for these discoveries only.
 
-**Performance with very large chambers:** scanning, snapshotting and spawner resets are batched across ticks (nothing freezes), but a multi-million-block chamber still takes real time — snapshot files get large, and block restoration runs at `global.blocks-per-tick` (500/tick ≈ 10,000 blocks/second, so a 3-million-block restore takes minutes). For big datapack chambers, raise `global.blocks-per-tick` and/or enable `global.use-fawe` (FastAsyncWorldEdit, Paper-only) for near-instant resets.
+**Performance with very large chambers:** scanning, snapshotting and spawner resets are batched across ticks (nothing freezes), but a multi-million-block chamber still takes real time — block restoration runs at `global.blocks-per-tick` (500/tick ≈ 10,000 blocks/second, so a 3-million-block restore takes minutes). For big datapack chambers, raise `global.blocks-per-tick` and/or enable `global.use-fawe` (FastAsyncWorldEdit, Paper-only) for near-instant resets.
+
+Since **2.0.9**, snapshots are written to disk piece by piece and read back the same way, so the memory a snapshot or reset needs stays flat no matter how large the chamber is — chambers of several million blocks are safe even on servers with little RAM. Datapacks that build one chamber out of several chamber structures are handled by `structure-merge-distance-blocks` below.
 
 </details>
 
@@ -1547,6 +1550,20 @@ Internal debounce and retry timers. `cooldown-seconds` prevents re-scanning the 
 When a newly discovered region's bounding box sits within `merge-distance-blocks` (Chebyshev distance) of an already-registered chamber, the two are merged into one chamber instead of registering a duplicate — vanilla chambers often load in pieces as their chunks stream in. `max-merged-volume` hard-caps the post-merge bounding box so pathological geometry can't swallow half the world into one logical chamber; regions that would exceed it stay separate.
 
 Since **1.5.6**, a merge automatically re-captures the chamber's snapshot whenever one exists (a pre-merge snapshot covers the old, smaller bounds and is unsafe to restore). If you see a console warning that a post-merge snapshot failed, run `/trial snapshot create <chamber>` before the next reset.
+
+</details>
+
+<details>
+
+<summary><code>structure-merge-distance-blocks</code> (v2.0.9)</summary>
+
+**Default:** `16`
+
+The merge distance used when a discovery came from the game's **exact structure bounds** (see `use-structure-bounds` above). Some datapacks build one big chamber out of **several** trial-chamber structures placed right next to each other; without merging, each piece registers as its own chamber with its own reset timer, and those resets fight over the shared walls. A newly-found structure within this many blocks (edge-to-edge) of an already-registered chamber grows that chamber's bounds instead of creating a new one — the merged chamber then gets a fresh snapshot automatically, same as any merge.
+
+The default of 16 folds chained datapack pieces together while keeping genuinely separate chambers (which generate hundreds of blocks apart) as their own registrations. Raise it if your datapack leaves bigger gaps between pieces and you still see duplicates; set `0` to merge only truly overlapping boxes, or `-1` to never merge structure discoveries. Merged size is capped by `structure-max-volume`, not `max-merged-volume`, since datapack chambers are legitimately huge.
+
+Already have duplicates from an earlier version? Delete them with `/trial delete <name>`, then walk through the chamber once — it re-registers as a single chamber.
 
 </details>
 
