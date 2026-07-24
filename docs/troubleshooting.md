@@ -225,6 +225,36 @@ Terrain that an affected reset already deleted **cannot be restored by the plugi
 
 <details>
 
+<summary><strong>The same chamber is registered twice (two names, two reset timers)</strong></summary>
+
+**Fixed in 2.0.9 — update first.** Some datapacks build one big trial chamber out of **several** of the game's chamber structures placed right next to each other. On older versions each piece registered as its own chamber, so one physical chamber ended up with two or more names in `/trial list`, each resetting on its own timer — and because the pieces share walls, those resets overwrote each other's blocks.
+
+Since 2.0.9 a newly-found structure that sits within `discovery.structure-merge-distance-blocks` (16 by default) of an already-registered chamber grows that chamber instead of registering a new one.
+
+**To clean up duplicates you already have:**
+
+```
+/trial delete <name>
+```
+
+Delete every registration for that chamber, then walk through it once with discovery enabled — it re-registers as a single chamber with one reset timer. If duplicates still appear afterwards, your datapack leaves bigger gaps between pieces than the default allows: raise `discovery.structure-merge-distance-blocks` and try again.
+
+</details>
+
+<details>
+
+<summary><strong>Memory keeps climbing as chambers are discovered</strong></summary>
+
+**Fixed in 2.0.9 — update first.** Registering a chamber has to read every block inside it, which pulls that whole part of the map into memory. On older versions the server kept it there when no player was nearby, so each discovered chamber pushed memory up a step that never came back down — on a small server that eventually crashed it, often with `pthread_create failed` or an out-of-memory error in the console.
+
+Since 2.0.9 the plugin tells the server it's finished with that part of the map as soon as registration completes, so the memory is released shortly after. Areas players are actually standing in are never affected.
+
+**If memory is still tight on a small server,** it's worth checking that the memory limit you give the server leaves room for the server software itself. On a 2 GB machine, `-Xmx1500M` leaves very little headroom — around `-Xmx1200M` is safer, and the crash above can happen with the memory graph looking only half full.
+
+</details>
+
+<details>
+
 <summary><strong>Boss bars don't go away when I leave a chamber</strong></summary>
 
 **Fixed in 1.2.26.** Update to the latest version.
@@ -238,6 +268,8 @@ If you're already on 1.2.26+ and still seeing this, check `spawner-waves.remove-
 <summary><strong>Server lags when chambers reset or snapshot</strong></summary>
 
 Snapshot and restore operations scale with chamber size. A 100×50×100 chamber is 500,000 blocks — even streaming to disk, that's work.
+
+Since **2.0.9** snapshots are written to disk piece by piece as the chamber is read, and read back the same way, so the **memory** a snapshot or reset needs no longer depends on how big the chamber is — a multi-million-block datapack chamber is safe on a small server. The **time** it takes still scales with size, so the tuning below still applies.
 
 **Tune these in `config.yml`:**
 

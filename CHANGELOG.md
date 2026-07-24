@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [2.0.9] - 2026-07-24
+### Fixed
+- **One physical chamber could register as several chambers.** Some datapacks build one big trial chamber out of several of the game's chamber structures placed right next to each other. Each piece used to register as its own chamber — same rooms, several reset timers — and those resets would overwrite each other's shared walls. A newly-found structure that sits within a few blocks of an already-registered chamber now grows that chamber instead of creating a new one. The distance is the new `discovery.structure-merge-distance-blocks` setting (16 blocks out of the box; raise it if your datapack leaves bigger gaps between pieces). If you already have duplicates: remove them with `/trial delete <name>` and walk through the chamber once — it re-registers as a single chamber.
+- **Memory no longer stays high after a chamber is discovered.** Registering a chamber has to read every block in it, which pulls all of that part of the map into memory — and the server kept it there indefinitely when no player was nearby. On small servers this looked like a memory leak: each discovered chamber pushed memory up a step and it never came back down. The plugin now tells the server it's finished with that part of the map as soon as registration completes, so the memory is freed shortly after. (Areas players are actually in are never touched.)
+- **Creating a snapshot of a very large chamber could crash servers with little memory.** Snapshots used to be assembled entirely in memory before being written to disk — for a multi-million-block datapack chamber that was several copies of the whole chamber at once, enough to take down a small server. Snapshots are now written straight to disk piece by piece while the chamber is being read, so the memory needed no longer depends on how big the chamber is. Chamber resets read snapshots back the same way, piece by piece.
+
+### Changed
+- **Existing snapshot files upgrade themselves.** The first reset after this update converts each chamber's snapshot file to the new format (you'll see one `Migrated legacy snapshot …` line per chamber in the console) — nothing to do on your end, and the new files are smaller on disk too.
+
 ## [2.0.8] - 2026-07-21
 ### Added
 - **Shared vaults: one reward per vault for the whole server.** A new `vaults.loot-mode` setting in `config.yml` decides who gets the loot from a vault. **`PER_PLAYER`** (the default, and how the plugin has always behaved) gives every player who turns up their own reward from the same vault. The new **`SHARED`** means whoever opens a vault takes it, and it stays shut for everybody else until the chamber resets — one vault, one reward, first come first served, with your custom loot tables still applying. Players who arrive too late get a message naming whoever got there first, so it doesn't look broken. **`VANILLA`** leaves vaults entirely to Minecraft. You can also switch modes from the settings menu (`/trial menu` → Settings) or during `/trial setup`.
@@ -1634,6 +1643,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[2.0.9]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.8...v2.0.9
 [2.0.8]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.7...v2.0.8
 [2.0.7]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.4...v2.0.7
 [2.0.4]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.1...v2.0.4
