@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="t d">
+  <title id="t">Better Trial Chambers icon</title>
+  <desc id="d">A glowing vault keyhole at the centre of a sweeping reset arrow, ringed by broken chamber walls.</desc>
+
+  <defs>
+    <radialGradient id="iglow" cx="50%" cy="50%" r="58%">
+      <stop offset="0%"   stop-color="#43D9C4" stop-opacity="0.10"/>
+      <stop offset="55%"  stop-color="#43D9C4" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#43D9C4" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="isoft" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="16"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" fill="#12171C"/>
+  <rect width="512" height="512" fill="url(#iglow)"/>
+
+  <circle cx="256.0" cy="256.0" r="196.0" fill="none" stroke="#5C6E7E"
+          stroke-width="16.0" stroke-dasharray="107.76 46.18"
+          transform="rotate(0.00 256.0 256.0)"><animateTransform attributeName="transform" type="rotate" values="0 256.0 256.0;-45.0 256.0 256.0" dur="9s" repeatCount="indefinite"/></circle>
+
+  <g transform="rotate(0.00 256.0 256.0)"><animateTransform attributeName="transform" type="rotate" values="0 256.0 256.0;360 256.0 256.0" dur="6s" repeatCount="indefinite"/>
+    <circle cx="256.0" cy="256.0" r="140.0" fill="none" stroke="#43D9C4"
+            stroke-width="22.0" stroke-linecap="butt"
+            stroke-dasharray="696.39 183.26" transform="rotate(-90 256.0 256.0)"/>
+    <path d="M129.6,186.9 L140.3,228.1 L99.7,217.2 Z" fill="#43D9C4"/>
+  </g>
+
+  <g fill="#F5A23C" filter="url(#isoft)" opacity="0.700">
+    <circle cx="256.0" cy="236.0" r="44.0"/>
+    <path d="M241,250 L229,314 H283 L271,250 Z" transform="translate(0 3) scale(1)"/>
+    <animate attributeName="opacity" values="0.45;0.95;0.45" dur="3s" repeatCount="indefinite"/>
+  </g>
+  <g fill="#F5A23C">
+    <circle cx="256.0" cy="236.0" r="38.0"/>
+    <path d="M241,250 L229,314 H283 L271,250 Z"/>
+  </g>
+</svg>
