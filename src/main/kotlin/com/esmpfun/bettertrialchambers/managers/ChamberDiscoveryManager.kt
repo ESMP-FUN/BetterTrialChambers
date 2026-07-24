@@ -233,13 +233,21 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
         plugin.launchAsync {
             registrationMutex.withLock {
                 try {
-                    // Structure-bounds results are EXACT: only merge when the boxes actually
-                    // overlap (i.e. the same structure was re-seeded, or a BFS-registered
-                    // fragment of it exists). The 250-block proximity merge is for clipped
-                    // block-scan fragments and would wrongly glue two distinct neighbouring
-                    // structures into one chamber.
-                    val nearby = if (boundsConfirmed) findOverlappingChamber(worldName, result)
-                                 else findNearbyChamber(worldName, result)
+                    // Structure-bounds results are EXACT, so they use their own (small) merge
+                    // distance rather than the 250-block block-scan one: big custom chambers
+                    // can be generated as SEVERAL trial-chamber structures chained together,
+                    // and registering each piece separately gives one physical chamber
+                    // multiple competing reset timers. A few blocks of tolerance folds those
+                    // pieces together while still keeping genuinely distinct neighbouring
+                    // structures (hundreds of blocks apart edge-to-edge) separate.
+                    val nearby = if (boundsConfirmed) {
+                        val structureMergeDistance =
+                            plugin.config.getInt("discovery.structure-merge-distance-blocks", 16)
+                        if (structureMergeDistance < 0) null
+                        else findChamberWithin(worldName, result, structureMergeDistance)
+                    } else {
+                        findNearbyChamber(worldName, result)
+                    }
                     if (nearby != null) {
                         mergeIntoExisting(world, nearby, result, key, method, exactBounds = boundsConfirmed)
                     } else {
@@ -276,16 +284,17 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
         }
     }
 
-    /** Registered chamber whose AABB actually overlaps/touches the result box (distance 0). */
-    private fun findOverlappingChamber(
+    /** Registered chamber whose AABB is within [distance] blocks (edge-to-edge) of the result box. */
+    private fun findChamberWithin(
         worldName: String,
-        result: BfsResult
+        result: BfsResult,
+        distance: Int
     ): com.esmpfun.bettertrialchambers.models.Chamber? =
         plugin.chamberManager.getCachedChambers().firstOrNull { c ->
             c.world == worldName && aabbsWithin(
                 result.minX, result.minY, result.minZ, result.maxX, result.maxY, result.maxZ,
                 c.minX, c.minY, c.minZ, c.maxX, c.maxY, c.maxZ,
-                0
+                distance
             )
         }
 
