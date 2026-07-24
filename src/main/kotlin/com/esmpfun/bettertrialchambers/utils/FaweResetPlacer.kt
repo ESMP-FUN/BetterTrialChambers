@@ -30,12 +30,39 @@ import java.util.concurrent.atomic.AtomicInteger
 class FaweResetPlacer(private val plugin: BetterTrialChambers) {
 
     suspend fun place(snapshot: Map<Location, BlockSnapshot>) {
-        val world = snapshot.keys.firstOrNull()?.world ?: return
+        val session = Session()
+        try {
+            session.placeBatch(snapshot.map { it.key to it.value })
+        } catch (e: Exception) {
+            session.discard()
+            throw e
+        }
+        session.finish()
+    }
 
-        withContext(Dispatchers.IO) {
-            val weWorld = BukkitAdapter.adapt(world)
-            WorldEdit.getInstance().newEditSessionBuilder().world(weWorld).maxBlocks(-1).build().use { session ->
-                snapshot.forEach { (loc, snap) ->
+    /**
+     * Streaming variant: feed batches as they come off disk so the whole
+     * snapshot never has to sit in memory. The EditSession is created lazily
+     * from the first batch's world; call [finish] to flush blocks and apply
+     * tile-entity NBT, or [discard] to abandon the session after a failure.
+     */
+    inner class Session {
+        private var editSession: com.sk89q.worldedit.EditSession? = null
+        private val tiles = ArrayList<Pair<Location, Map<String, Any>>>()
+
+        suspend fun placeBatch(batch: List<Pair<Location, BlockSnapshot>>) {
+            if (batch.isEmpty()) return
+            withContext(Dispatchers.IO) {
+                val session = editSession ?: run {
+                    val world = batch.first().first.world
+                        ?: throw IllegalStateException("Snapshot location has no world")
+                    WorldEdit.getInstance().newEditSessionBuilder()
+                        .world(BukkitAdapter.adapt(world))
+                        .maxBlocks(-1)
+                        .build()
+                        .also { editSession = it }
+                }
+                batch.forEach { (loc, snap) ->
                     try {
                         val data = Bukkit.createBlockData(resetTrialSpawnerState(snap.blockData))
                         session.setBlock(
@@ -45,28 +72,39 @@ class FaweResetPlacer(private val plugin: BetterTrialChambers) {
                     } catch (_: Exception) {
                         // Skip an unparseable block string rather than aborting the whole edit.
                     }
+                    snap.tileEntity?.let { tiles.add(loc to it) }
                 }
-            } // close() flushes the queue
+            }
         }
 
-        // Apply tile-entity NBT after the blocks exist (region-thread, Folia-safe in spirit
-        // though this path is Paper-only). Await so the caller's later steps see them.
-        val tiles = snapshot.entries.filter { it.value.tileEntity != null }
-        if (tiles.isEmpty()) return
-        val pending = AtomicInteger(tiles.size)
-        val done = CompletableDeferred<Unit>()
-        tiles.forEach { (loc, snap) ->
-            plugin.scheduler.runAtLocation(loc, Runnable {
-                try {
-                    NBTUtil.restoreTileEntity(loc.block.state, snap.tileEntity!!)
-                } catch (e: Exception) {
-                    plugin.logger.warning("FAWE reset: failed tile entity at ${loc.blockX},${loc.blockY},${loc.blockZ}: ${e.message}")
-                } finally {
-                    if (pending.decrementAndGet() == 0) done.complete(Unit)
-                }
-            })
+        suspend fun finish() {
+            withContext(Dispatchers.IO) {
+                editSession?.close() // close() flushes the queue
+            }
+
+            // Apply tile-entity NBT after the blocks exist (region-thread, Folia-safe in spirit
+            // though this path is Paper-only). Await so the caller's later steps see them.
+            if (tiles.isEmpty()) return
+            val pending = AtomicInteger(tiles.size)
+            val done = CompletableDeferred<Unit>()
+            tiles.forEach { (loc, tile) ->
+                plugin.scheduler.runAtLocation(loc, Runnable {
+                    try {
+                        NBTUtil.restoreTileEntity(loc.block.state, tile)
+                    } catch (e: Exception) {
+                        plugin.logger.warning("FAWE reset: failed tile entity at ${loc.blockX},${loc.blockY},${loc.blockZ}: ${e.message}")
+                    } finally {
+                        if (pending.decrementAndGet() == 0) done.complete(Unit)
+                    }
+                })
+            }
+            done.await()
         }
-        done.await()
+
+        /** Best-effort cleanup after a failure; never throws. */
+        fun discard() {
+            runCatching { editSession?.close() }
+        }
     }
 
     /** Mirrors BlockRestorer: force any non-fresh trial-spawner state back to waiting_for_players. */
