@@ -51,22 +51,34 @@ Vanilla Trial Chambers weren't designed for multiplayer. The first player takes 
 
 ---
 
-## Two-Line Plug-and-Play Setup
+<details>
+<summary>In case you didn't do the interactive startup setup</summary>
 
-For most servers, the only thing you need to configure is this:
+  ## Two-Line Plug-and-Play Setup
 
-```yaml
-# plugins/BetterTrialChambers/config.yml
-discovery:
-  enabled: true        # find natural trial chambers automatically
-  auto-snapshot: true  # capture blocks so resets can restore them
-```
+  For most servers, the only thing you need to configure is this:
 
-Restart once. Fly or walk through your world — every natural trial chamber registers itself as its chunks load, with per-player loot, protection, and automatic resets already active. Done.
+  ```yaml
+  # plugins/BetterTrialChambers/config.yml
+  discovery:
+    enabled: true        # find natural trial chambers automatically
+    auto-snapshot: true  # capture blocks so resets can restore them
+  ```
+
+  Restart once. Fly or walk through your world — every natural trial chamber registers itself as its chunks load, with per-player loot, protection, and automatic resets already active. Done.
+
+</details>
+
+<p>
 
 > Why it's opt-in: on **old** worlds that pre-date 1.21, players sometimes build decorative structures out of tuff and copper blocks. The auto-detector could register those as chambers. On fresh worlds there's no risk. [More details in the docs →](https://esmp-fun.gitbook.io/plugins/better-trial-chambers/configuration/config.yml)
 
+</p>
+<p>
+
 Prefer manual control? You can still register chambers with WorldEdit (`/trial generate wand MyChamber`) or by coordinates — see [Your First Chamber](https://esmp-fun.gitbook.io/plugins/better-trial-chambers/getting-started/your-first-chamber). And `/trial setup` walks you through the main settings either way.
+
+</p>
 
 ---
 
@@ -74,7 +86,8 @@ Prefer manual control? You can still register chambers with WorldEdit (`/trial g
 
 ### Core Systems
 
-- **Auto-Discovery** — natural chambers register themselves on chunk load, at their exact structure bounds. Works with datapack-enlarged chambers.
+- **Auto-Discovery** — natural chambers register themselves on chunk load, at their exact structure bounds. Works with datapack-enlarged chambers, including packs that build one huge chamber out of several chambers joined together — it registers as one chamber with one reset.
+- **Runs on small servers** — snapshots and resets are written and read piece by piece, so even a multi-million-block datapack chamber won't eat your RAM.
 - **Automatic Resets** — chambers restore on schedule with configurable warnings, or set the interval to `0` for manual-only.
 - **Per-Player Vaults** — everyone gets their own loot with separate cooldowns, plus optional pay-keys-to-reopen.
 - **Per-Player Chests & Barrels** *(opt-in)* — Lootr-style private container copies that re-roll fresh after every reset, so the whole chamber is per-player.
@@ -297,7 +310,7 @@ Placeholders for player stats (`%btc_vaults_opened%`, `%btc_mobs_killed%`, `%btc
 
 **Paper 1.21.1+ / 26.1.2+** · **Folia Native** · **Java 21+**
 
-Made with Kotlin by [darkstarworks](https://github.com/darkstarworks)
+Made with Kotlin by [darkstarworks](https://github.com/ESMP-FUN)
 
 ---
 
@@ -305,7 +318,8 @@ This plugin is free forever and actively maintained.
 
 If you have questions or would like to just say Hi, come [join the Discord](http://discord.gg/qwYcTpHsNC).
 
-Rather stay silent? (Anonymous) donations are also **VERY** welcome: https://ko-fi.com/darkstarworks
+Donations welcome: https://ko-fi.com/darkstarworks
+Become a Patreon: https://patreon.com/cw/darkstarworks
 
 [![Servers](https://img.shields.io/endpoint?url=https%3A%2F%2Ffaststats.dev%2Fapi%2Fshields%2Fbetter-trial-chambers%3Fmetric%3Dservers%26color%3Dorange%26icon%3D1&style=flat)](https://faststats.dev/project/better-trial-chambers)
 
