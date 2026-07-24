@@ -528,6 +528,15 @@ discovery:
                                    # Set to -1 to disable merging entirely.
   max-merged-volume: 1500000       # Hard cap on the post-merge bounding-box volume (blocks). Prevents pathological
                                    # daisy-chaining from swallowing huge regions into a single logical chamber.
+  structure-merge-distance-blocks: 16  # Same idea as merge-distance-blocks, but for discoveries that used the game's
+                                   # exact structure bounds. Some worlds generate one big chamber out of SEVERAL
+                                   # trial-chamber structures placed right next to each other — without this, each
+                                   # piece would register as its own chamber with its own reset timer, and their
+                                   # resets would fight over the shared walls. 16 means: if a newly-found structure
+                                   # sits within 16 blocks of an already-registered chamber, treat it as part of
+                                   # that chamber and grow its bounds instead of creating a new one. Normal worlds
+                                   # place separate chambers hundreds of blocks apart, so 16 is safe there too.
+                                   # Set to 0 to only merge when the boxes truly overlap, or -1 to never merge.
 
   # v1.6.3: After auto-registering a chamber, run one automatic "expand" pass a
   # few seconds later — a multi-seed re-flood from the chamber's vaults that
