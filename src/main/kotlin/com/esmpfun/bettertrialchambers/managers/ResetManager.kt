@@ -812,14 +812,102 @@ class ResetManager(private val plugin: BetterTrialChambers) {
     private suspend fun restoreFromSnapshot(chamber: Chamber, snapshotFile: File, initiatingPlayer: Player? = null): Int {
         plugin.logger.info("Restoring chamber ${chamber.name} from snapshot")
 
-        val snapshot = plugin.snapshotManager.loadSnapshot(snapshotFile)
-        if (snapshot == null) {
+        // Pass 1: migrate legacy-format files in place, then collect just the
+        // snapshot's coverage (packed positions + bounds) — the whole snapshot
+        // is never held in memory; blocks stream off disk in pass 2.
+        val scan = plugin.snapshotManager.prepareAndScan(snapshotFile)
+        if (scan == null || scan.blockCount == 0) {
             plugin.logger.severe("Failed to load snapshot for chamber ${chamber.name}")
             return 0
         }
 
-        restoreFromSnapshotBlocks(chamber, snapshot, initiatingPlayer)
-        return snapshot.size
+        val blockRestorer = BlockRestorer(plugin)
+
+        // Snapshots skip air on capture, so restoring alone can't revert blocks
+        // a player ADDED into formerly-empty cells (lava, cobble, etc.). Clear
+        // those first; disable via reset.clear-added-blocks if a server
+        // intentionally lets players build inside chambers.
+        //
+        // SAFETY: the clear region is the INTERSECTION of the chamber bounds and
+        // the snapshot's own coverage. If the chamber AABB grew after capture
+        // (e.g. a discovery merge), clearing the full chamber bounds would wipe
+        // everything in the annexed volume that the snapshot can't put back —
+        // terrain, builds, the lot. Never clear ground the snapshot doesn't cover.
+        if (plugin.config.getBoolean("reset.clear-added-blocks", true)) {
+            val world = chamber.getWorld()
+            if (world != null) {
+                if (scan.minX > chamber.minX || scan.minY > chamber.minY || scan.minZ > chamber.minZ ||
+                    scan.maxX < chamber.maxX || scan.maxY < chamber.maxY || scan.maxZ < chamber.maxZ
+                ) {
+                    plugin.logger.warning(
+                        "Snapshot for chamber ${chamber.name} covers a smaller region than the chamber " +
+                            "bounds (chamber likely grew after capture). Clearing only the snapshot-covered " +
+                            "region — run /trial snapshot create ${chamber.name} to recapture the full bounds."
+                    )
+                }
+                val clrMinX = maxOf(chamber.minX, scan.minX)
+                val clrMinY = maxOf(chamber.minY, scan.minY)
+                val clrMinZ = maxOf(chamber.minZ, scan.minZ)
+                val clrMaxX = minOf(chamber.maxX, scan.maxX)
+                val clrMaxY = minOf(chamber.maxY, scan.maxY)
+                val clrMaxZ = minOf(chamber.maxZ, scan.maxZ)
+                if (clrMinX <= clrMaxX && clrMinY <= clrMaxY && clrMinZ <= clrMaxZ) {
+                    blockRestorer.clearAddedBlocks(
+                        world,
+                        clrMinX, clrMinY, clrMinZ,
+                        clrMaxX, clrMaxY, clrMaxZ,
+                        scan.sortedPositions,
+                    )
+                }
+            }
+        }
+
+        val batchSize = plugin.config.getInt("global.blocks-per-tick", 500)
+
+        // Fast path: FastAsyncWorldEdit for scheduled (no-player) resets, to smooth out
+        // the lag of large restores. Paper-only; manual resets keep the BlockRestorer
+        // path so //undo still works. Falls back to BlockRestorer on any failure.
+        if (initiatingPlayer == null &&
+            plugin.config.getBoolean("global.use-fawe", false) &&
+            com.esmpfun.bettertrialchambers.utils.FaweResetPlacer.isAvailable(plugin)
+        ) {
+            val faweSession = com.esmpfun.bettertrialchambers.utils.FaweResetPlacer(plugin).Session()
+            try {
+                val streamed = plugin.snapshotManager.streamSnapshotBlocks(snapshotFile, batchSize) { batch ->
+                    faweSession.placeBatch(batch)
+                }
+                if (streamed != null) {
+                    faweSession.finish()
+                    plugin.logger.info("Restored $streamed blocks for chamber ${chamber.name} (FAWE)")
+                    return streamed
+                }
+                faweSession.discard()
+            } catch (e: Exception) {
+                faweSession.discard()
+                plugin.logger.warning("FAWE reset failed for ${chamber.name}, falling back to batched restore: ${e.message}")
+            }
+        }
+
+        // Pass 2: stream blocks off disk straight onto region threads.
+        val session = blockRestorer.StreamingSession(
+            expectedTotal = scan.blockCount,
+            onProgress = { processed, total ->
+                if (processed % 1000 == 0) {
+                    plugin.logger.info("Restoring ${chamber.name}: $processed/$total blocks")
+                }
+            },
+            initiatingPlayer = initiatingPlayer
+        )
+        val streamed = plugin.snapshotManager.streamSnapshotBlocks(snapshotFile, batchSize) { batch ->
+            session.submitBatch(batch)
+        }
+        val restored = session.finish()
+        if (streamed == null) {
+            plugin.logger.severe("Snapshot stream for chamber ${chamber.name} failed after $restored blocks")
+            return restored
+        }
+        plugin.logger.info("Restored $restored blocks for chamber ${chamber.name}")
+        return restored
     }
 
     /**
@@ -873,11 +961,17 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                 val clrMaxY = minOf(chamber.maxY, snapMaxY)
                 val clrMaxZ = minOf(chamber.maxZ, snapMaxZ)
                 if (clrMinX <= clrMaxX && clrMinY <= clrMaxY && clrMinZ <= clrMaxZ) {
+                    val occupied = LongArray(snapshot.size)
+                    var i = 0
+                    for (loc in snapshot.keys) {
+                        occupied[i++] = com.esmpfun.bettertrialchambers.utils.BlockRestorer.pack(loc.blockX, loc.blockY, loc.blockZ)
+                    }
+                    occupied.sort()
                     blockRestorer.clearAddedBlocks(
                         world,
                         clrMinX, clrMinY, clrMinZ,
                         clrMaxX, clrMaxY, clrMaxZ,
-                        snapshot,
+                        occupied,
                     )
                 }
             }
