@@ -397,6 +397,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
         }
 
         markProcessed(key)
+        refreshed?.let { releaseChamberChunks(world, it.minX, it.minZ, it.maxX, it.maxZ) }
     }
 
     /** Outcome of an operator-triggered [expandExisting] pass. */
@@ -496,7 +497,30 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
 
         if (markConfirmed) plugin.chamberManager.setBoundsConfirmed(chamber.id, true)
         plugin.logger.info("[Discovery] scan-add grew '${chamber.name}' from $oldVolume to $newVolume blocks ($vaults vaults, $spawners spawners)")
+        releaseChamberChunks(world, refreshed.minX, refreshed.minZ, refreshed.maxX, refreshed.maxZ)
         return ExpandResult(true, "expanded", oldVolume, newVolume, vaults, spawners)
+    }
+
+    /**
+     * Asks the server to unload the chunks a discovery pass had to load.
+     * Full-volume scans and snapshot captures sync-load every chunk in the
+     * chamber; without this nudge those chunks can stay resident long after
+     * discovery is done, which on small-RAM hosts reads as a permanent memory
+     * spike (the "RAM never comes back down after discovery" report). The
+     * server ignores the request for any chunk still in use — players nearby,
+     * force-loaded, spawn chunks — so this is purely a hint, never destructive.
+     */
+    private fun releaseChamberChunks(world: World, minX: Int, minZ: Int, maxX: Int, maxZ: Int) {
+        for (cx in (minX shr 4)..(maxX shr 4)) {
+            for (cz in (minZ shr 4)..(maxZ shr 4)) {
+                val loc = Location(world, (cx shl 4) + 8.0, 64.0, (cz shl 4) + 8.0)
+                plugin.scheduler.runAtLocation(loc, Runnable {
+                    if (world.isChunkLoaded(cx, cz)) {
+                        world.unloadChunkRequest(cx, cz)
+                    }
+                })
+            }
+        }
     }
 
     /** Runs [bfsCompute] on the region thread owning the seed and awaits the result. */
@@ -584,6 +608,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
         }
 
         markProcessed(key)
+        releaseChamberChunks(world, chamber.minX, chamber.minZ, chamber.maxX, chamber.maxZ)
 
         // Structure-bounds discoveries (v1.7.0) are exact — mark confirmed and skip the
         // auto-expand pass, which exists only to fix clipped block-scan results.
