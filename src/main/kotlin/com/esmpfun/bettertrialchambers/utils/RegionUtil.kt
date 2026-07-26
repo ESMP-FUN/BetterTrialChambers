@@ -1,5 +1,6 @@
 package com.esmpfun.bettertrialchambers.utils
 
+import com.esmpfun.bettertrialchambers.BetterTrialChambers
 import org.bukkit.Location
 import org.bukkit.World
 
@@ -110,5 +111,38 @@ object RegionUtil {
         return box1.minX <= box2.maxX && box1.maxX >= box2.minX &&
                box1.minY <= box2.maxY && box1.maxY >= box2.minY &&
                box1.minZ <= box2.maxZ && box1.maxZ >= box2.minZ
+    }
+
+    /**
+     * Asks the server to unload the chunks covering a chamber, once the plugin has
+     * finished working on it.
+     *
+     * Reading or rewriting every block in a chamber pulls that whole part of the map
+     * into memory. Without this nudge the server can keep it there long after the job
+     * is done, which on a machine with little memory looks like memory that goes up
+     * after a discovery or a reset and never comes back down.
+     *
+     * This is only ever a hint. The server ignores it for any chunk still in use —
+     * players nearby, force-loaded, or spawn chunks — so it can never pull the map out
+     * from under anyone.
+     */
+    fun releaseChunks(
+        plugin: BetterTrialChambers,
+        world: World,
+        minX: Int,
+        minZ: Int,
+        maxX: Int,
+        maxZ: Int,
+    ) {
+        for (cx in (minX shr 4)..(maxX shr 4)) {
+            for (cz in (minZ shr 4)..(maxZ shr 4)) {
+                val loc = Location(world, (cx shl 4) + 8.0, 64.0, (cz shl 4) + 8.0)
+                plugin.scheduler.runAtLocation(loc, Runnable {
+                    if (world.isChunkLoaded(cx, cz)) {
+                        world.unloadChunkRequest(cx, cz)
+                    }
+                })
+            }
+        }
     }
 }
