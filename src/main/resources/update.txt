@@ -1,18 +1,9 @@
 <black>.
-<aqua>[2.0.9] <gray>- <white>2026-07-24
-<lime>+ <white>FIX: <green>One big datapack chamber could register as several chambers, each resetting on its own timer and overwriting the others' walls. Pieces of one chamber now merge into a single registration — tune with <yellow>discovery.structure-merge-distance-blocks<green> if needed.
-<lime>+ <white>FIX: <green>Memory no longer stays high after a chamber is discovered — the plugin now releases that part of the map as soon as registration finishes.
-<lime>+ <white>FIX: <green>Snapshots of very large chambers no longer risk crashing servers with little memory — they are written to disk piece by piece, and resets read them back the same way. Old snapshot files upgrade themselves on their first reset.
-<aqua>[2.0.8] <gray>- <white>2026-07-21
-<lime>+ <white>FIX: <green>2.0.7 could not be loaded by recent Paper builds at all — the plugin silently never appeared in <yellow>/plugins<green>, with nothing in the console to explain why. If 2.0.7 seemed to do nothing on your server, this is the fix.
-<lime>+ <white>FIX: <green>MySQL is now actually included. <yellow>config.yml<green> has offered it since the first release, but the part that talks to MySQL was never shipped — it only worked if your server software happened to provide its own copy.
-<lime>+ <white>NEW: <green>Choose who gets the loot from a vault with <yellow>vaults.loot-mode<green>: everyone their own copy (as before), first come first served (one reward per vault for the whole server), or leave vaults to Minecraft.
-<lime>+ <white>FIX: <green>Testing vaults as an admin no longer quietly locks you out of them — a bypassing player now leaves no trace on the vault. New <yellow>/trial vault unlockall <chamber|all><green> opens every vault up again without waiting for a reset.
-<lime>+ <white>NEW: <green><yellow>target-cooldown-length<green> in spawner_presets.yml is now optional — leave it out and the preset follows your server-wide spawner rest time. Set <yellow>reset.spawner-cooldown-overrides-presets<green> to force every spawner onto one time.
-<aqua>[2.0.7] <gray>- <white>2026-07-19
-<lime>+ <white>NEW: <green>Anonymous usage metrics moved from bStats to FastStats — the same handful of aggregate numbers, no player data. Switch it off with <yellow>metrics.enabled: false<green>. Nothing is sent on the first run, so you get a chance to opt out first.
-<lime>+ <white>NEW: <green>Optional error reporting, off unless you turn it on. <yellow>metrics.error-reporting: true<green> reports only this plugin's own errors, with IP addresses, file paths, database credentials and player UUIDs stripped out before anything leaves your server.
-<aqua>[2.0.4] <gray>- <white>2026-07-19
-<lime>+ <white>FIX: <green>"The chamber has been reset!" no longer goes to the whole server — it now goes to the players who were actually inside that chamber. Set <yellow>global.reset-complete-audience: server<green> for the old behaviour.
-<lime>+ <white>NEW: <green>Optional permission for the reset message — set <yellow>global.reset-complete-permission<green> and only players who have it are told.
-<lime>+ <white>FIX: <green>Pointing a chamber at another loot table now actually works — its Normal/Ominous Loot buttons follow the override instead of editing a table nothing was using.
+<#FF7F50> ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
+<black>.
+<#008080>[2.0.10] <gray>- <white>2026-07-26
+<#00FF00>FIX: <white>Memory built up each time the plugin was reloaded with a plugin manager <gray>—<white> old copies are now released properly
+<#00FF00>FIX: <white>Menus now close when the plugin shuts down <gray>—<white> items in a loot deposit chest are handed back instead of stranded
+<black>.
+<#FF7F50> ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
+<black>.
