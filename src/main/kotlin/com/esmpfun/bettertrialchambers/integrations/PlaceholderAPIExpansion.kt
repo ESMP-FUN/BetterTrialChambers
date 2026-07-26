@@ -69,6 +69,15 @@ class PlaceholderAPIExpansion(
 
     override fun canRegister(): Boolean = true
 
+    /**
+     * Tells PlaceholderAPI which plugin these placeholders belong to. PlaceholderAPI
+     * uses this to drop them automatically when BetterTrialChambers shuts down. The
+     * plugin also removes them itself on shutdown; this is the safety net for the case
+     * where shutdown is cut short, and without either one PlaceholderAPI would keep a
+     * shut-down copy of the plugin in memory for as long as the server runs.
+     */
+    override fun getRequiredPlugin(): String = plugin.name
+
     override fun onRequest(player: OfflinePlayer?, params: String): String? {
         if (player == null) return null
 
