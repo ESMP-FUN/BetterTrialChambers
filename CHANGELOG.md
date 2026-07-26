@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [2.0.10] - 2026-07-26
+### Fixed
+- **Memory built up every time the plugin was reloaded.** If you reload plugins with a plugin manager (PlugManX and similar) instead of restarting the server, every reload left the previous copy of BetterTrialChambers sitting in memory for as long as the server kept running — so memory crept up step by step and never came back down. Two things were holding on to it: PlaceholderAPI kept the plugin's placeholders after it had shut down, and any menu a player still had open kept it alive as well. Both are now handed back properly when the plugin stops. Servers that restart rather than reload were never affected by this.
+- **Menus now close when the plugin shuts down.** A menu left open through a reload stopped responding to clicks entirely, which looked like it had frozen. Menus now close themselves on shutdown, and anything you had put into a loot deposit chest at that moment is handed straight back to you instead of being left in a menu that no longer works.
+
 ## [2.0.9] - 2026-07-24
 ### Fixed
 - **One physical chamber could register as several chambers.** Some datapacks build one big trial chamber out of several of the game's chamber structures placed right next to each other. Each piece used to register as its own chamber — same rooms, several reset timers — and those resets would overwrite each other's shared walls. A newly-found structure that sits within a few blocks of an already-registered chamber now grows that chamber instead of creating a new one. The distance is the new `discovery.structure-merge-distance-blocks` setting (16 blocks out of the box; raise it if your datapack leaves bigger gaps between pieces). If you already have duplicates: remove them with `/trial delete <name>` and walk through the chamber once — it re-registers as a single chamber.
@@ -1643,6 +1648,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[2.0.10]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.9...v2.0.10
 [2.0.9]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.8...v2.0.9
 [2.0.8]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.7...v2.0.8
 [2.0.7]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.4...v2.0.7
