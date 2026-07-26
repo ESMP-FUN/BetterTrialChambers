@@ -577,19 +577,9 @@ class BetterTrialChambers : JavaPlugin() {
                     logger.info("  - WorldEdit/FAWE: ${if (schematicManager.isAvailable()) "Available" else "Not Found"}")
 
                     // Register PlaceholderAPI expansion if available
-                    val placeholderAPIStatus = if (server.pluginManager.getPlugin("PlaceholderAPI") != null) {
-                        try {
-                            com.esmpfun.bettertrialchambers.integrations.PlaceholderAPIExpansion(this@BetterTrialChambers).register()
-                            // legacy pre-2.0 identifier so existing %tcp_*% placeholders keep resolving
-                            com.esmpfun.bettertrialchambers.integrations.PlaceholderAPIExpansion(this@BetterTrialChambers, "tcp").register()
-                            "Registered"
-                        } catch (e: Exception) {
-                            logger.warning("Failed to register PlaceholderAPI expansion: ${e.message}")
-                            "Failed"
-                        }
-                    } else {
-                        "Not Found"
-                    }
+                    val placeholderAPIStatus =
+                        com.esmpfun.bettertrialchambers.integrations.PlaceholderIntegration
+                            .register(this@BetterTrialChambers)
                     val metricsStatus =
                         com.esmpfun.bettertrialchambers.integrations.MetricsService.init(this@BetterTrialChambers)
                     logger.info("✓ Phase 10 Integrations: Ready")
@@ -657,6 +647,28 @@ class BetterTrialChambers : JavaPlugin() {
 
         // Remove our console log filter so a reload doesn't stack duplicates.
         com.esmpfun.bettertrialchambers.utils.TrialSpawnerLogFilter.uninstall()
+
+        // Take our placeholders back off PlaceholderAPI. Skipping this would leave
+        // PlaceholderAPI holding on to this copy of the plugin after it shuts down.
+        com.esmpfun.bettertrialchambers.integrations.PlaceholderIntegration
+            .unregisterAll(this@BetterTrialChambers)
+
+        // Close any of our menus players still have open. Two reasons: after a shutdown
+        // the menu can no longer respond to clicks, so leaving it open is confusing; and
+        // an open menu keeps this copy of the plugin in memory until the player closes
+        // it. Closing here still runs each menu's normal close handling — items in a
+        // deposit chest are handed back rather than lost. Shutdown runs on the server's
+        // main thread and no work can be scheduled for later at this point, so these
+        // close immediately rather than being queued.
+        for (player in server.onlinePlayers) {
+            if (player.openInventory.topInventory.holder is com.esmpfun.bettertrialchambers.gui.framework.BaseHolder) {
+                try {
+                    player.closeInventory()
+                } catch (e: Throwable) {
+                    logger.warning("Failed to close the open menu for ${player.name}: ${e.message}")
+                }
+            }
+        }
 
         // Stop update checks and unregister the join-notify listener.
         if (::updater.isInitialized) {
