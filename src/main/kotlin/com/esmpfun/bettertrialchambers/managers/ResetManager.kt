@@ -416,6 +416,16 @@ class ResetManager(private val plugin: BetterTrialChambers) {
 
             plugin.logger.info("Chamber ${chamber.name} reset successfully")
 
+            // Rewriting every block in the chamber pulls that whole part of the map into
+            // memory, and on a chamber nobody is standing in the server would otherwise
+            // keep it there. Now that the spawner and vault work above is finished with
+            // those blocks, hand them back. Chunks still in use are left alone.
+            chamber.getWorld()?.let { world ->
+                com.esmpfun.bettertrialchambers.utils.RegionUtil.releaseChunks(
+                    plugin, world, chamber.minX, chamber.minZ, chamber.maxX, chamber.maxZ
+                )
+            }
+
             // Fire post-reset event for downstream consumers.
             val durationMs = System.currentTimeMillis() - resetStart
             plugin.server.pluginManager.callEvent(
@@ -809,6 +819,35 @@ class ResetManager(private val plugin: BetterTrialChambers) {
      * @param initiatingPlayer Optional player who initiated the restoration (for WorldEdit undo support)
      */
     /** @return the number of blocks actually restored (0 when the snapshot failed to load). */
+    /**
+     * Builds the console progress reporter used while a chamber's blocks are put back.
+     *
+     * Reports at every 10% of the way through, so a reset is always about nine lines
+     * whatever the chamber's size. It used to report once per batch of blocks, which on
+     * a million-block chamber meant well over a thousand near-identical lines scrolling
+     * past — server owners reasonably read that as the reset being stuck in a loop.
+     *
+     * That old rule was unreliable too: it only reported when a batch happened to finish
+     * on an exact multiple of 1000 blocks, so changing `global.blocks-per-tick` could
+     * silence progress reporting almost entirely.
+     *
+     * A reset that genuinely restarts is still easy to spot — the "Restoring chamber
+     * <name> from snapshot" line above appears once per attempt.
+     */
+    private fun restoreProgressLogger(chamberName: String): (Int, Int) -> Unit {
+        // onProgress is invoked from region threads, so the last-reported milestone is
+        // held atomically: whichever thread first reaches a new 10% mark reports it once.
+        val lastTenth = java.util.concurrent.atomic.AtomicInteger(0)
+        return { processed, total ->
+            if (total > 0) {
+                val tenth = (processed.toLong() * 10 / total).toInt()
+                if (tenth in 1..9 && tenth > lastTenth.getAndAccumulate(tenth, ::maxOf)) {
+                    plugin.logger.info("Restoring $chamberName: ${tenth * 10}% ($processed/$total blocks)")
+                }
+            }
+        }
+    }
+
     private suspend fun restoreFromSnapshot(chamber: Chamber, snapshotFile: File, initiatingPlayer: Player? = null): Int {
         plugin.logger.info("Restoring chamber ${chamber.name} from snapshot")
 
@@ -891,11 +930,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
         // Pass 2: stream blocks off disk straight onto region threads.
         val session = blockRestorer.StreamingSession(
             expectedTotal = scan.blockCount,
-            onProgress = { processed, total ->
-                if (processed % 1000 == 0) {
-                    plugin.logger.info("Restoring ${chamber.name}: $processed/$total blocks")
-                }
-            },
+            onProgress = restoreProgressLogger(chamber.name),
             initiatingPlayer = initiatingPlayer
         )
         val streamed = plugin.snapshotManager.streamSnapshotBlocks(snapshotFile, batchSize) { batch ->
@@ -995,11 +1030,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
 
         blockRestorer.restoreBlocks(
             snapshot,
-            onProgress = { processed, total ->
-                if (processed % 1000 == 0) {
-                    plugin.logger.info("Restoring ${chamber.name}: $processed/$total blocks")
-                }
-            },
+            onProgress = restoreProgressLogger(chamber.name),
             onComplete = {
                 plugin.logger.info("Restored ${snapshot.size} blocks for chamber ${chamber.name}")
             },
