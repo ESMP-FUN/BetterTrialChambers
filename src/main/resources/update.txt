@@ -1,9 +1,9 @@
 <black>.
 <#FF7F50> ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
 <black>.
-<#008080>[2.0.10] <gray>- <white>2026-07-26
-<#00FF00>FIX: <white>Memory built up each time the plugin was reloaded with a plugin manager <gray>—<white> old copies are now released properly
-<#00FF00>FIX: <white>Menus now close when the plugin shuts down <gray>—<white> items in a loot deposit chest are handed back instead of stranded
+<#008080>[2.0.11] <gray>- <white>2026-07-26
+<#00FF00>FIX: <white>Memory no longer stays high after a chamber resets
+<#00FF00>FIX: <white>Resets report progress every 10% instead of a line per batch <gray>—<white> no more console flood
 <black>.
 <#FF7F50> ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
 <black>.

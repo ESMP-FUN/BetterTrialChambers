@@ -520,16 +520,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
      * force-loaded, spawn chunks — so this is purely a hint, never destructive.
      */
     private fun releaseChamberChunks(world: World, minX: Int, minZ: Int, maxX: Int, maxZ: Int) {
-        for (cx in (minX shr 4)..(maxX shr 4)) {
-            for (cz in (minZ shr 4)..(maxZ shr 4)) {
-                val loc = Location(world, (cx shl 4) + 8.0, 64.0, (cz shl 4) + 8.0)
-                plugin.scheduler.runAtLocation(loc, Runnable {
-                    if (world.isChunkLoaded(cx, cz)) {
-                        world.unloadChunkRequest(cx, cz)
-                    }
-                })
-            }
-        }
+        com.esmpfun.bettertrialchambers.utils.RegionUtil.releaseChunks(plugin, world, minX, minZ, maxX, maxZ)
     }
 
     /** Runs [bfsCompute] on the region thread owning the seed and awaits the result. */
