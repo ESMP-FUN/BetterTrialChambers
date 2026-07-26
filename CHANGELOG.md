@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [2.0.11] - 2026-07-26
+### Fixed
+- **Memory no longer stays high after a chamber resets.** Putting a chamber's blocks back has to pull that whole part of the map into memory, and the server kept it there afterwards even when nobody was anywhere near it — so on a server with a lot of chambers, memory climbed a step with every reset and never came back down. The plugin now tells the server it has finished with that area once the reset is complete. (This is the same fix 2.0.9 made for chamber discovery, now applied to resets as well. Areas players are actually in are never touched.)
+- **Resets no longer flood the console.** A reset used to print a progress line for every batch of blocks it placed — on a very large chamber that meant well over a thousand near-identical lines scrolling past, which looked for all the world like the reset was stuck repeating itself. Progress is now reported at every 10%, so any reset is about nine lines however big the chamber is. If you want to check a reset really is progressing, those lines now count upwards in clear steps.
+- **Reset progress could stop being reported at all.** The old progress lines only appeared when a batch happened to finish on an exact multiple of 1000 blocks. That held at the default setting, but if you had changed `global.blocks-per-tick` the console could go almost completely quiet during a reset, leaving no way to tell whether anything was happening.
+
 ## [2.0.10] - 2026-07-26
 ### Fixed
 - **Memory built up every time the plugin was reloaded.** If you reload plugins with a plugin manager (PlugManX and similar) instead of restarting the server, every reload left the previous copy of BetterTrialChambers sitting in memory for as long as the server kept running — so memory crept up step by step and never came back down. Two things were holding on to it: PlaceholderAPI kept the plugin's placeholders after it had shut down, and any menu a player still had open kept it alive as well. Both are now handed back properly when the plugin stops. Servers that restart rather than reload were never affected by this.
@@ -1648,6 +1654,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[2.0.11]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.10...v2.0.11
 [2.0.10]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.9...v2.0.10
 [2.0.9]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.8...v2.0.9
 [2.0.8]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.7...v2.0.8
