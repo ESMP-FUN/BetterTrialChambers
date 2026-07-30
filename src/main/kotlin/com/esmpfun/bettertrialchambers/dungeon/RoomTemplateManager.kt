@@ -11,7 +11,6 @@ import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.World
 import org.bukkit.block.BlockFace
-import org.bukkit.block.Orientation
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
@@ -49,7 +48,7 @@ class RoomTemplateManager(private val plugin: BetterTrialChambers) {
                         val rel = Triple(x - minX, y - minY, z - minZ)
                         when {
                             block.type == Material.JIGSAW -> {
-                                val face = JigsawUtil.orientationToFace((block.blockData as? org.bukkit.block.data.type.Jigsaw)?.orientation)
+                                val face = JigsawUtil.orientationToFace(block.blockData)
                                 val cap = sampleWall(block, face, wallFallback)
                                 blocks[rel] = BlockSnapshot(cap, null)
                                 if (face != null) {

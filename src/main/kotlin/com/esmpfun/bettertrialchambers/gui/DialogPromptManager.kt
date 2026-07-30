@@ -21,8 +21,11 @@ import org.bukkit.inventory.ItemStack
  * and funnels callbacks through `DialogAction.customClick`.
  *
  * **Runtime-gated:** this class references Paper-only Dialog classes, so it must only be
- * loaded/instantiated when the API is present (see [isAvailable]). On servers without it,
- * `/trial setup` falls back to the clickable-chat tour and this class is never touched.
+ * loaded/instantiated when the API is present. `SetupCommand` does that check with a
+ * `Class.forName("io.papermc.paper.dialog.Dialog")` probe — deliberately not a helper on
+ * this class, since naming it is exactly what would force the JVM to link it. On servers
+ * without the API, `/trial setup` falls back to the clickable-chat tour and this class is
+ * never touched.
  *
  * Shapes:
  *  - [showNotice]       — single OK button.
@@ -172,12 +175,4 @@ class DialogPromptManager(@Suppress("unused") private val plugin: BetterTrialCha
                 .build()
     }
 
-    companion object {
-        /**
-         * True when Paper's Dialog API is on the classpath. Checked once at enable; gates
-         * whether the Dialog renderer (which references these classes) is ever loaded.
-         */
-        fun isAvailable(): Boolean =
-            runCatching { Class.forName("io.papermc.paper.dialog.Dialog") }.isSuccess
-    }
 }

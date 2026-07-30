@@ -1,7 +1,7 @@
 package com.esmpfun.bettertrialchambers.dungeon
 
 import org.bukkit.block.BlockFace
-import org.bukkit.block.Orientation
+import org.bukkit.block.data.BlockData
 
 /**
  * Shared jigsaw-marker helpers used by both in-world room capture
@@ -14,13 +14,36 @@ import org.bukkit.block.Orientation
  */
 object JigsawUtil {
 
-    /** Horizontal outward facing of a jigsaw orientation, or null for vertical/unsupported. */
-    fun orientationToFace(o: Orientation?): BlockFace? = when (o) {
-        Orientation.NORTH_UP -> BlockFace.NORTH
-        Orientation.EAST_UP -> BlockFace.EAST
-        Orientation.SOUTH_UP -> BlockFace.SOUTH
-        Orientation.WEST_UP -> BlockFace.WEST
-        else -> null // UP_*/DOWN_* = vertical front, unsupported in v1
+    // Resolved against the Bukkit interface, not the CraftBukkit implementation
+    // class — the latter is remapped per server build and may not be accessible.
+    private val jigsawInterface: Class<*>? =
+        runCatching { Class.forName("org.bukkit.block.data.type.Jigsaw") }.getOrNull()
+
+    private val getOrientation =
+        runCatching { jigsawInterface?.getMethod("getOrientation") }.getOrNull()
+
+    /**
+     * Outward facing of a jigsaw block, or null when it points up/down (or the
+     * block isn't a jigsaw).
+     *
+     * Read reflectively and matched on the enum constant's name because
+     * `Jigsaw.getOrientation()` changed return type in 1.21.5 — it was
+     * `org.bukkit.block.data.type.Jigsaw.Orientation` and became the top-level
+     * `org.bukkit.block.Orientation`. A direct call compiled against either one
+     * throws `NoSuchMethodError` on the other, so naming the type at all would
+     * pin us to a single server version. The constant names are identical
+     * across both, which is what makes the name match safe.
+     */
+    fun orientationToFace(data: BlockData?): BlockFace? {
+        if (data == null || jigsawInterface?.isInstance(data) != true) return null
+        val orientation = runCatching { getOrientation?.invoke(data) }.getOrNull()
+        return when ((orientation as? Enum<*>)?.name) {
+            "NORTH_UP" -> BlockFace.NORTH
+            "EAST_UP" -> BlockFace.EAST
+            "SOUTH_UP" -> BlockFace.SOUTH
+            "WEST_UP" -> BlockFace.WEST
+            else -> null // UP_*/DOWN_* = vertical front, unsupported in v1
+        }
     }
 
     /** The two horizontal faces perpendicular to [facing] (wall-sampling preference order). */
