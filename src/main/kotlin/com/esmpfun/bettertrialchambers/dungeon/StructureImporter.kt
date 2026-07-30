@@ -67,9 +67,7 @@ class StructureImporter(private val plugin: BetterTrialChambers) {
                 Material.AIR, Material.CAVE_AIR, Material.VOID_AIR, Material.STRUCTURE_VOID -> {}
                 Material.JIGSAW -> {
                     materials[pos] = Material.JIGSAW
-                    val face = JigsawUtil.orientationToFace(
-                        (state.blockData as? org.bukkit.block.data.type.Jigsaw)?.orientation
-                    )
+                    val face = JigsawUtil.orientationToFace(state.blockData)
                     jigsaws += pos to face
                 }
                 else -> {
