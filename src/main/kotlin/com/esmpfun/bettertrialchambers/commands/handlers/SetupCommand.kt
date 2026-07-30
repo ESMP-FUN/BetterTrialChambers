@@ -1,7 +1,6 @@
 package com.esmpfun.bettertrialchambers.commands.handlers
 
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
-import com.esmpfun.bettertrialchambers.gui.DialogPromptManager
 import com.esmpfun.bettertrialchambers.setup.SetupController
 import com.esmpfun.bettertrialchambers.setup.SetupStep
 import com.esmpfun.bettertrialchambers.setup.SetupTourChat
@@ -27,8 +26,12 @@ class SetupCommand(
 ) : SubcommandHandler {
 
     private val chatTour = SetupTourChat(plugin, controller)
+
+    // The check is inline rather than a helper on DialogPromptManager: naming that
+    // class would make the JVM link it, and on a server without the Dialog API
+    // linking it fails — which is the very thing the check exists to avoid.
     private val dialogTour: com.esmpfun.bettertrialchambers.setup.SetupTourDialog? =
-        if (DialogPromptManager.isAvailable())
+        if (runCatching { Class.forName("io.papermc.paper.dialog.Dialog") }.isSuccess)
             com.esmpfun.bettertrialchambers.setup.SetupTourDialog(plugin, controller)
         else null
 
