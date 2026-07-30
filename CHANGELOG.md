@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [Unreleased]
+## [2.0.12] - 2026-07-31
 ### Fixed
 - **Building dungeon rooms works again on Minecraft 1.21 to 1.21.4.** Saving a room that contained a jigsaw block, or importing one from a structure file, failed outright on those versions — the way the plugin asked which way a jigsaw block faces only worked on 1.21.5 and newer. It now asks in a way that works on every supported version, so doorways are picked up correctly everywhere.
 
