@@ -8,6 +8,7 @@ import com.esmpfun.bettertrialchambers.gui.framework.VcGuiItem
 import com.esmpfun.bettertrialchambers.models.Chamber
 import com.esmpfun.bettertrialchambers.models.LootEditorDraft
 import com.esmpfun.bettertrialchambers.models.LootItem
+import com.esmpfun.bettertrialchambers.models.RedeemScope
 import net.kyori.adventure.text.Component
 import org.bukkit.Material
 import org.bukkit.entity.Player
@@ -60,6 +61,11 @@ class AmountEditorView(
             handleResetClick(ctx.event.isLeftClick, ctx.event.isRightClick)
         })
 
+        // Row 1: redeemable-scope cycle at (7,1)=16
+        set(16, VcGuiItem.wrap(createRedeemableButton()) { ctx ->
+            handleRedeemableClick()
+        })
+
         // Row 2: save (0,2)=18, discard (8,2)=26
         set(18, VcGuiItem.wrap(
             GuiComponents.infoItem(plugin, Material.GREEN_CONCRETE,
@@ -87,6 +93,7 @@ class AmountEditorView(
         lore += plugin.getGuiText(
             if (currentItem.enabled) "gui.amount-editor.display-enabled" else "gui.amount-editor.display-disabled"
         )
+        lore += plugin.getGuiText("gui.amount-editor.display-redeemable-${currentItem.redeemScope.name.lowercase()}")
 
         item.itemMeta = item.itemMeta?.apply {
             displayName(plugin.getGuiText("gui.amount-editor.display-name", "item" to currentItem.type.name))
@@ -103,6 +110,34 @@ class AmountEditorView(
     private fun createResetButton(): ItemStack =
         GuiComponents.infoItem(plugin, Material.CYAN_CONCRETE,
             "gui.amount-editor.reset-name", "gui.amount-editor.reset-lore")
+
+    /** The per-player redeem-cap cycle button. Icon reflects the current scope. */
+    private fun createRedeemableButton(): ItemStack {
+        val scope = currentItem.redeemScope
+        val material = when (scope) {
+            RedeemScope.PER_RESET -> Material.NAME_TAG
+            RedeemScope.PER_CHAMBER -> Material.LODESTONE
+            RedeemScope.ONCE -> Material.NETHER_STAR
+        }
+        return GuiComponents.infoItem(plugin, material,
+            "gui.amount-editor.redeemable-name",
+            "gui.amount-editor.redeemable-lore-${scope.name.lowercase()}")
+    }
+
+    /** Cycles PER_RESET → PER_CHAMBER → ONCE → PER_RESET, assigning a stable id when capped. */
+    private fun handleRedeemableClick() {
+        val next = when (currentItem.redeemScope) {
+            RedeemScope.PER_RESET -> RedeemScope.PER_CHAMBER
+            RedeemScope.PER_CHAMBER -> RedeemScope.ONCE
+            RedeemScope.ONCE -> RedeemScope.PER_RESET
+        }
+        // Assign a stable identity the first time this entry becomes capped, and keep
+        // it thereafter so a player's existing claims survive later scope changes.
+        val id = currentItem.redeemId ?: java.util.UUID.randomUUID().toString()
+        currentItem = currentItem.copy(redeemScope = next, redeemId = id)
+        layout()
+        update()
+    }
 
     private fun handleAdjustClick(amount: Int, left: Boolean, right: Boolean, shift: Boolean) {
         var min = currentItem.amountMin

@@ -290,6 +290,24 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
                     """.trimIndent()
                 )
 
+                // v2.1.0: per-player loot redemption ledger. One row per capped loot
+                // entry a player has claimed. chamber_id = -1 marks a global ONCE claim;
+                // any other value is a PER_CHAMBER claim scoped to that chamber. No FK to
+                // chambers: ONCE rows are chamber-agnostic and must outlive any single
+                // chamber, and claims are deliberately kept even if a chamber is deleted.
+                stmt.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS ${tables.playerLootRedemptions} (
+                        player_uuid VARCHAR(36) NOT NULL,
+                        chamber_id INT NOT NULL,
+                        redeem_id VARCHAR(64) NOT NULL,
+                        scope VARCHAR(16) NOT NULL,
+                        redeemed_at BIGINT NOT NULL,
+                        PRIMARY KEY (player_uuid, chamber_id, redeem_id)
+                    )
+                    """.trimIndent()
+                )
+
                 // Player statistics table
                 stmt.execute(
                     """
@@ -312,6 +330,7 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
                     "idx_${tables.vaults}_type ON ${tables.vaults}(type)",
                     "idx_${tables.playerVaults}_player ON ${tables.playerVaults}(player_uuid)",
                     "idx_${tables.spawners}_chamber ON ${tables.spawners}(chamber_id)",
+                    "idx_${tables.playerLootRedemptions}_player ON ${tables.playerLootRedemptions}(player_uuid)",
                 )
                 try {
                     // Use IF NOT EXISTS where supported; wrap in try/catch for MySQL which may not support it on older versions
