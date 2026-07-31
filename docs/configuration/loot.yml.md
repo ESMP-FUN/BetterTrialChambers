@@ -257,6 +257,7 @@ loot:
 
 * `amount-min` / `amount-max`: Stack size range (default: 1)
 * `serialized-item`: Base64-encoded `ItemStack.serializeAsBytes()` output (set automatically when adding an item through the GUI editor — see below)
+* `redeemable`: How often a single player can win this item — `per-reset` (default), `per-chamber`, or `once`. See [Limiting How Often a Player Can Win an Item](loot.yml.md#limiting-how-often-a-player-can-win-an-item-redeemable) below
 
 {% hint style="info" %}
 **Faithful items via the GUI editor (v1.5.0+).** When you add a loot entry by clicking the **+ Add from Hand** button in `/trial menu → Loot → …`, BTC captures the entire held `ItemStack` — enchantments, potion effects, custom names, lore, NBT, custom-model-data, third-party plugin tags, the lot — into the `serialized-item` field. The entry in `loot.yml` will look like:
@@ -906,6 +907,77 @@ Open `/trial menu` → **Loot Tables** → pick a table. In the editor:
 
 ***
 
+## Limiting How Often a Player Can Win an Item (Redeemable)
+
+_(Added in 2.1.0.)_ By default, every item can be won again each time a chamber resets — so a determined player can farm even your rarest drop by resetting the same chamber over and over. The **redeemable** setting lets you cap how often a single player can win a specific item, so special rewards stay special.
+
+This is exactly what you want for the vanilla **armour trims** (Silence, Flow, Bolt, Wayfinder, and friends): you can make them drop, but make sure each player only gets one.
+
+### The three choices
+
+| Setting | What it means |
+| --- | --- |
+| **Every reset** _(default)_ | No limit. The player can win it again after every reset. This is how loot has always worked — leave it here for normal items. |
+| **Once per chamber** | Each player can win this item **only once from this chamber**, and that stays true even after the chamber resets. They can still win it from a _different_ chamber. |
+| **Once ever** | Each player can win this item **only once, ever, from any chamber** on the whole server. The strongest anti-farm option. |
+
+When a player has already won a capped item, it's quietly taken out of _their_ personal roll — the other items simply fill the gap. Everyone else is unaffected, and nothing changes for players who haven't won it yet.
+
+{% hint style="success" %}
+**Set it in-game (no YAML needed).** Open `/trial menu` → **Loot Tables** → pick a table → click the item → open its **amount page**. There's a button labelled **"How often can a player get this?"** — click it to cycle through Every reset → Once per chamber → Once ever. Save, and it's written to `loot.yml` for you.
+{% endhint %}
+
+### Doing it by hand
+
+Add a `redeemable:` line to the item:
+
+```yaml
+weighted-items:
+  # A trim that each player can only ever win once, server-wide
+  - type: SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE
+    amount-min: 1
+    amount-max: 1
+    weight: 2.0
+    redeemable: once
+
+  # A rare book each player gets once per chamber (re-winnable at other chambers)
+  - type: ENCHANTED_BOOK
+    amount-min: 1
+    amount-max: 1
+    weight: 5.0
+    redeemable: per-chamber
+    enchantments:
+      - "MENDING:1"
+```
+
+Accepted values are `per-reset` (the default — you can omit the line entirely), `per-chamber`, and `once`.
+
+{% hint style="info" %}
+**About the hidden `redeem-id` line.** When you set a cap from the menu, BTC also writes a `redeem-id:` line (a random code) under the item. That code is how the plugin remembers _which_ item each player has already won, so **don't edit or delete it** — if you do, players who already won the item may be able to win it again. If you're writing the entry entirely by hand and leave `redeem-id` out, BTC fills in a stable one based on the item's type automatically.
+{% endhint %}
+
+{% hint style="warning" %}
+**A player's wins are remembered permanently.** "Once ever" and "Once per chamber" claims are stored in the database and there is currently no in-game command to wipe them, so test with a spare (non-op) account. Op accounts are a good way to keep testing, since the redeem cap is checked per player — but remember each op is still capped like anyone else once they've claimed the item.
+{% endhint %}
+
+### Combine with vanilla loot for farm-proof trims
+
+Pair this with the [`VANILLA_TABLE` passthrough](loot.yml.md#vanilla--datapack-loot-tables-passthrough) to hand out the exact vanilla ominous-vault trim set, but only once per player:
+
+```yaml
+weighted-items:
+  - type: VANILLA_TABLE
+    table: "minecraft:chests/trial_chambers/reward_ominous"
+    weight: 100.0
+    redeemable: per-chamber
+```
+
+{% hint style="info" %}
+**Heads up:** a `VANILLA_TABLE` entry rolls a whole vanilla table, which contains _many_ items — so `per-chamber`/`once` here caps the **entire table entry**, not each individual trim. If you want per-trim control, list the trim templates as their own entries (as in the first example above) and cap each one.
+{% endhint %}
+
+***
+
 ## Guaranteed Items
 
 Items in `guaranteed-items` ALWAYS drop, regardless of rolls or weight.
@@ -1474,6 +1546,8 @@ Open 50 vaults, record what you get, calculate actual drop rates. Does it match 
 **"Can I make loot tables that call other loot tables?"** Not currently, but you can work around it with multiple chambers assigned different tables.
 
 **"How do I remove an item from vanilla loot?"** You can't remove vanilla loot directly—BetterTrialChambers _replaces_ vault loot entirely. Just don't include unwanted items in your weighted-items!
+
+**"Why don't armour trims drop in my chambers?"** Because BetterTrialChambers replaces vault loot with your table, and the vanilla trims aren't in it unless you add them. Add the trim smithing templates (e.g. `SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE`) to your `weighted-items`, or add a `VANILLA_TABLE` entry pointing at `minecraft:chests/trial_chambers/reward_ominous`. To keep them from being farmed, set them to **Once ever** or **Once per chamber** — see [Limiting How Often a Player Can Win an Item](loot.yml.md#limiting-how-often-a-player-can-win-an-item-redeemable).
 
 ***
 

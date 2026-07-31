@@ -61,7 +61,8 @@ class TableNamesTest {
         assertEquals(
             listOf(
                 "tcp_chambers", "tcp_vaults", "tcp_spawners", "tcp_player_vaults",
-                "tcp_player_container_loot", "tcp_container_template", "tcp_player_stats"
+                "tcp_player_container_loot", "tcp_container_template", "tcp_player_stats",
+                "tcp_player_loot_redemptions"
             ),
             t.all
         )
