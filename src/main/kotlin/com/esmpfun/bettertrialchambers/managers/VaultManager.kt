@@ -276,6 +276,78 @@ class VaultManager(private val plugin: BetterTrialChambers) {
         }
     }
 
+    // ==== Per-player loot redemption ledger (v2.1.0) ====
+
+    /**
+     * Loads the set of capped-loot [com.esmpfun.bettertrialchambers.models.LootItem.redeemId]s
+     * this player has already claimed that apply when opening a vault in [chamberId]: every
+     * global `ONCE` claim (stored under chamber_id = -1) plus every `PER_CHAMBER` claim for
+     * this specific chamber. Passed into loot generation so already-earned items are excluded
+     * from the player's roll.
+     */
+    suspend fun getRedeemedLootIds(playerUuid: UUID, chamberId: Int): Set<String> = withContext(Dispatchers.IO) {
+        val ids = mutableSetOf<String>()
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement(
+                    "SELECT redeem_id FROM ${tables.playerLootRedemptions} " +
+                        "WHERE player_uuid = ? AND (chamber_id = -1 OR chamber_id = ?)"
+                ).use { stmt ->
+                    stmt.setString(1, playerUuid.toString())
+                    stmt.setInt(2, chamberId)
+                    stmt.executeQuery().use { rs ->
+                        while (rs.next()) ids.add(rs.getString("redeem_id"))
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.severe("Failed to load loot redemptions for $playerUuid: ${e.message}")
+        }
+        ids
+    }
+
+    /**
+     * Persists a player's freshly-earned capped-loot claims. `ONCE` items are stored globally
+     * (chamber_id = -1); `PER_CHAMBER` items under [chamberId]. Idempotent — re-recording an
+     * existing claim is a no-op. Uncapped (`PER_RESET`) items are ignored.
+     */
+    suspend fun recordLootRedemptions(
+        playerUuid: UUID,
+        chamberId: Int,
+        items: List<com.esmpfun.bettertrialchambers.models.LootItem>
+    ) = withContext(Dispatchers.IO) {
+        val capped = items.filter { it.isCapped() }
+        if (capped.isEmpty()) return@withContext
+        try {
+            val now = System.currentTimeMillis()
+            val isSQLite = plugin.databaseManager.databaseType ==
+                com.esmpfun.bettertrialchambers.database.DatabaseManager.DatabaseType.SQLITE
+            val sql = if (isSQLite) {
+                "INSERT INTO ${tables.playerLootRedemptions} (player_uuid, chamber_id, redeem_id, scope, redeemed_at) " +
+                    "VALUES (?, ?, ?, ?, ?) ON CONFLICT(player_uuid, chamber_id, redeem_id) DO NOTHING"
+            } else {
+                "INSERT INTO ${tables.playerLootRedemptions} (player_uuid, chamber_id, redeem_id, scope, redeemed_at) " +
+                    "VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE redeemed_at = redeemed_at"
+            }
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    for (item in capped) {
+                        val isGlobal = item.redeemScope == com.esmpfun.bettertrialchambers.models.RedeemScope.ONCE
+                        stmt.setString(1, playerUuid.toString())
+                        stmt.setInt(2, if (isGlobal) -1 else chamberId)
+                        stmt.setString(3, item.redeemId)
+                        stmt.setString(4, item.redeemScope.name)
+                        stmt.setLong(5, now)
+                        stmt.addBatch()
+                    }
+                    stmt.executeBatch()
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.severe("Failed to record loot redemptions for $playerUuid: ${e.message}")
+        }
+    }
+
     /**
      * Checks if a player can open a vault (cooldown check).
      *

@@ -5,6 +5,34 @@ import org.bukkit.enchantments.Enchantment
 import org.bukkit.potion.PotionType
 
 /**
+ * How often a single loot entry can be earned by one player (v2.1.0).
+ *
+ * The vanilla trial-chamber trims (Silence, Flow, Bolt, Wayfinder …) are the
+ * motivating case: server owners want them to drop, but not be farmable by
+ * resetting the same chamber over and over. Flag such an entry [PER_CHAMBER]
+ * or [ONCE] and once a player has received it, it is quietly removed from
+ * that player's roll — the weights simply redistribute.
+ *
+ * - [PER_RESET] (default, legacy behaviour): no cap. The item can be earned
+ *   again every time the chamber resets — nothing is tracked. This is exactly
+ *   how every loot entry behaved before this feature existed.
+ * - [PER_CHAMBER]: a player can earn this entry at most once from each chamber,
+ *   and that claim survives resets — re-earnable only from a *different* chamber.
+ * - [ONCE]: a player can earn this entry at most once, ever, from any chamber.
+ */
+enum class RedeemScope {
+    PER_RESET,
+    PER_CHAMBER,
+    ONCE;
+
+    companion object {
+        /** Case-insensitive parse; null/blank/unknown → [PER_RESET]. */
+        fun fromConfig(raw: String?): RedeemScope =
+            entries.firstOrNull { it.name.equals(raw?.trim(), ignoreCase = true) } ?: PER_RESET
+    }
+}
+
+/**
  * Represents an enchantment with a level range for randomization.
  */
 data class EnchantmentRange(
@@ -72,8 +100,18 @@ data class LootItem(
     // the Bukkit LootTable API — every stack the table generates is added.
     val vanillaTable: String? = null,
 
+    // Per-player redeem cap (v2.1.0). Default PER_RESET = uncapped/legacy. When
+    // PER_CHAMBER or ONCE, this entry drops for a player at most once (per chamber
+    // or globally); [redeemId] is the stable identity used to track that claim and
+    // is auto-assigned when the scope is first set to a capped value.
+    val redeemScope: RedeemScope = RedeemScope.PER_RESET,
+    val redeemId: String? = null,
+
     val enabled: Boolean = true
-)
+) {
+    /** True when a player's per-player claim of this entry must be tracked in the DB. */
+    fun isCapped(): Boolean = redeemScope != RedeemScope.PER_RESET && redeemId != null
+}
 
 /**
  * Represents a command-based reward.

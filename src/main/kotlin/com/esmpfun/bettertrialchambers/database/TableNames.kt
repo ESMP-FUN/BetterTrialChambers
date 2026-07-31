@@ -17,11 +17,13 @@ data class TableNames(val prefix: String) {
     val playerContainerLoot = "${prefix}player_container_loot"
     val containerTemplate = "${prefix}container_template"
     val playerStats = "${prefix}player_stats"
+    val playerLootRedemptions = "${prefix}player_loot_redemptions"
 
     /** All tables in FK-safe order (parents before children). */
     val all: List<String> = listOf(
         chambers, vaults, spawners, playerVaults,
         playerContainerLoot, containerTemplate, playerStats,
+        playerLootRedemptions,
     )
 
     companion object {

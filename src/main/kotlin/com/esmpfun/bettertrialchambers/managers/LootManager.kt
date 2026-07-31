@@ -23,6 +23,33 @@ class LootManager(private val plugin: BetterTrialChambers) {
 
     private val lootTables = mutableMapOf<String, LootTable>()
 
+    /**
+     * Per-opening redeem tracking (v2.1.0). Passed into [generateLoot] when a real
+     * player opens a vault so that capped entries (see [com.esmpfun.bettertrialchambers.models.RedeemScope])
+     * they've already claimed are excluded from their roll, and freshly-earned ones
+     * are collected in [newlyRedeemed] for the caller to persist after delivery.
+     *
+     * @param alreadyRedeemed redeemIds this player has already claimed that apply here
+     *   (global ONCE claims + this chamber's PER_CHAMBER claims), loaded from the DB.
+     */
+    class RedeemContext(private val alreadyRedeemed: Set<String>) {
+        /** Capped items that actually dropped this opening and must be recorded. */
+        val newlyRedeemed = mutableListOf<LootItem>()
+        private val consumedThisRoll = mutableSetOf<String>()
+
+        /** True if [item] is capped and already claimed (in the DB, or earlier in this same opening). */
+        fun isBlocked(item: LootItem): Boolean =
+            item.isCapped() && (item.redeemId in alreadyRedeemed || item.redeemId in consumedThisRoll)
+
+        /** Record that [item] dropped; capped items are queued for persistence and blocked from re-dropping. */
+        fun claim(item: LootItem) {
+            if (item.isCapped()) {
+                val id = item.redeemId ?: return
+                if (consumedThisRoll.add(id)) newlyRedeemed += item
+            }
+        }
+    }
+
     /** One legacy (pre-1.5.0) loot entry that lost its NBT and needs to be re-added. */
     data class LegacyItemRef(
         val table: String,
@@ -454,6 +481,20 @@ class LootManager(private val plugin: BetterTrialChambers) {
 
         val enabled = (data["enabled"] as? Boolean) ?: true
 
+        // Per-player redeem cap (v2.1.0). `redeemable: once|per-chamber|per-reset`.
+        val redeemScope = com.esmpfun.bettertrialchambers.models.RedeemScope
+            .fromConfig((data["redeemable"] as? String)?.replace('-', '_'))
+        var redeemId = data["redeem-id"] as? String
+        // A capped entry needs a stable identity to track claims. If the config
+        // author wrote `redeemable:` by hand without an id, synthesize a stable one
+        // from the material so hand-edited entries still work (GUI edits assign a UUID).
+        if (redeemScope != com.esmpfun.bettertrialchambers.models.RedeemScope.PER_RESET && redeemId.isNullOrBlank()) {
+            // Prefer a distinguishing identity: VANILLA_TABLE/CUSTOM_ITEM entries are all
+            // material AIR, so keying on the material alone would make two hand-capped
+            // passthrough entries share one claim. Fall back to the table/item id first.
+            redeemId = "auto_${vanillaTable ?: customItemId ?: material.name}"
+        }
+
         return LootItem(
             type = material,
             amountMin = amountMin,
@@ -479,6 +520,8 @@ class LootManager(private val plugin: BetterTrialChambers) {
             customModelData = customModelData,
             serializedItem = data["serialized-item"] as? String,
             vanillaTable = vanillaTable,
+            redeemScope = redeemScope,
+            redeemId = redeemId,
             enabled = enabled
         )
     }
@@ -560,7 +603,10 @@ class LootManager(private val plugin: BetterTrialChambers) {
      * @param player The player receiving the loot (for placeholders)
      * @return List of generated items
      */
-    fun generateLoot(tableName: String, player: Player): List<ItemStack> {
+    fun generateLoot(tableName: String, player: Player): List<ItemStack> =
+        generateLoot(tableName, player, null)
+
+    fun generateLoot(tableName: String, player: Player, redeem: RedeemContext?): List<ItemStack> {
         // Debug logging
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
             plugin.logger.info("==== LOOT GENERATION DEBUG ====")
@@ -587,7 +633,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
 
         // Generate loot from each pool independently (like vanilla)
         pools.forEach { pool ->
-            items.addAll(generateLootFromPool(pool, player))
+            items.addAll(generateLootFromPool(pool, player, redeem))
         }
 
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
@@ -601,23 +647,26 @@ class LootManager(private val plugin: BetterTrialChambers) {
     /**
      * Generates loot from a single pool.
      */
-    private fun generateLootFromPool(pool: LootPool, player: Player): List<ItemStack> {
+    private fun generateLootFromPool(pool: LootPool, player: Player, redeem: RedeemContext?): List<ItemStack> {
         val items = mutableListOf<ItemStack>()
 
-        // Add all guaranteed items (respect enabled flag)
-        pool.guaranteedItems.filter { it.enabled }.forEach { lootItem ->
+        // Add all guaranteed items (respect enabled flag + already-claimed redeem cap)
+        pool.guaranteedItems.filter { it.enabled && redeem?.isBlocked(it) != true }.forEach { lootItem ->
             items.addAll(expandLootItem(lootItem, player))
+            redeem?.claim(lootItem)
         }
 
         // INDEPENDENT mode: each enabled weighted item rolls its own 0-100% chance;
         // every item that passes drops, optionally capped by max-items. min/max-rolls
         // and the LUCK bonus don't apply here (there are no "draws").
         if (pool.rollMode == com.esmpfun.bettertrialchambers.models.LootRollMode.INDEPENDENT) {
-            var winners = pool.weightedItems.filter { it.enabled && Random.nextDouble() * 100.0 < it.weight }
+            var winners = pool.weightedItems.filter {
+                it.enabled && redeem?.isBlocked(it) != true && Random.nextDouble() * 100.0 < it.weight
+            }
             if (pool.maxItems in 1 until winners.size) {
                 winners = winners.shuffled().take(pool.maxItems)
             }
-            winners.forEach { items.addAll(expandLootItem(it, player)) }
+            winners.forEach { items.addAll(expandLootItem(it, player)); redeem?.claim(it) }
 
             // Command + economy rewards still fire (they're independent Bernoulli rolls
             // by design in both modes).
@@ -682,13 +731,16 @@ class LootManager(private val plugin: BetterTrialChambers) {
             }
         }
 
-        // Roll for weighted items (respect enabled flag)
-        val enabledWeighted = pool.weightedItems.filter { it.enabled }
+        // Roll for weighted items (respect enabled flag). The eligible list is
+        // recomputed per roll so a capped item claimed on an earlier roll (or already
+        // claimed in the DB) drops out for the remaining rolls — its weight is then
+        // shared by the other items instead of it appearing twice.
         repeat(rolls) {
-            // Select a random weighted item
-            val selectedItem = selectWeightedItem(enabledWeighted)
+            val eligible = pool.weightedItems.filter { it.enabled && redeem?.isBlocked(it) != true }
+            val selectedItem = selectWeightedItem(eligible)
             if (selectedItem != null) {
                 items.addAll(expandLootItem(selectedItem, player))
+                redeem?.claim(selectedItem)
             }
         }
 
@@ -1409,6 +1461,11 @@ class LootManager(private val plugin: BetterTrialChambers) {
         li.durabilityMax?.let { map["durability-max"] = it }
         li.instrument?.let { map["instrument"] = it }
         li.serializedItem?.let { map["serialized-item"] = it }
+        // Redeem cap — only written when non-default so untouched tables stay clean.
+        if (li.redeemScope != com.esmpfun.bettertrialchambers.models.RedeemScope.PER_RESET) {
+            map["redeemable"] = li.redeemScope.name.lowercase().replace('_', '-')
+            li.redeemId?.let { map["redeem-id"] = it }
+        }
         map["enabled"] = li.enabled
         return map
     }

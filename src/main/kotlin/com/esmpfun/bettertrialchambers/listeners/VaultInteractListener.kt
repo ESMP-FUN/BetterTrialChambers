@@ -481,8 +481,13 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
             return  // Don't consume key, don't mark vault as opened
         }
 
-        // Generate loot (async, player might disconnect during this)
-        val loot = plugin.lootManager.generateLoot(effectiveLootTable, player)
+        // Generate loot (async, player might disconnect during this). Per-player
+        // redeem caps (v2.1.0): load this player's already-claimed capped entries so
+        // items flagged once / per-chamber they already have are excluded from the roll.
+        val redeemCtx = com.esmpfun.bettertrialchambers.managers.LootManager.RedeemContext(
+            plugin.vaultManager.getRedeemedLootIds(player.uniqueId, vaultData.chamberId)
+        )
+        val loot = plugin.lootManager.generateLoot(effectiveLootTable, player, redeemCtx)
 
         // CRITICAL: If no loot was generated, don't consume the key or mark the vault
         if (loot.isEmpty()) {
@@ -570,6 +575,16 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                                 }
                                 player.sendMessage(plugin.getMessageComponent("inventory-full"))
                             }
+                        }
+                    }
+
+                    // Persist any capped (once / per-chamber) items the player just earned,
+                    // so they're excluded from future rolls. Off-thread; only reached once
+                    // loot was actually delivered above (v2.1.0).
+                    if (redeemCtx.newlyRedeemed.isNotEmpty()) {
+                        val earned = redeemCtx.newlyRedeemed.toList()
+                        plugin.launchAsync {
+                            plugin.vaultManager.recordLootRedemptions(player.uniqueId, vaultData.chamberId, earned)
                         }
                     }
 
