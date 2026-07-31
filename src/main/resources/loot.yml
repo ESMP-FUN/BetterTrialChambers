@@ -1,5 +1,24 @@
 # BetterTrialChambers Loot Tables
 
+# ---------------------------------------------------------------------------
+# Limiting how often a player can win an item ("redeemable")
+# ---------------------------------------------------------------------------
+# By default every item can be won again each time a chamber resets. To stop a
+# special item (like an armour trim) from being farmed, add a "redeemable:" line
+# to that item. The easiest way is the in-game menu: open the loot editor, click
+# an item's amount page, and press the "How often can a player get this?" button
+# to cycle through the choices. If you edit this file by hand, use one of:
+#
+#   redeemable: per-reset    (default) They can win it again after every reset.
+#   redeemable: per-chamber  Each player wins it only ONCE from this chamber,
+#                            even after resets. They can still get it from a
+#                            different chamber.
+#   redeemable: once         Each player wins it only ONCE, ever, anywhere.
+#
+# When the menu sets one of these, it also writes a hidden "redeem-id:" line -
+# leave that line alone; it's how the plugin remembers who has already won it.
+# ---------------------------------------------------------------------------
+
 loot-tables:
   # Default loot for normal vaults
   default:

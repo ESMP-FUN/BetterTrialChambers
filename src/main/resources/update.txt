@@ -1,9 +1,10 @@
 <black>.
 <#FF7F50> ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
 <black>.
-<#008080>[2.0.11] <gray>- <white>2026-07-26
-<#00FF00>FIX: <white>Memory no longer stays high after a chamber resets
-<#00FF00>FIX: <white>Resets report progress every 10% instead of a line per batch <gray>—<white> no more console flood
+<#008080>[2.1.0] <gray>- <white>2026-07-31
+<#FFD700>NEW: <white>Limit how often a player can win an item <gray>—<white> once ever, once per chamber, or every reset
+<#FFD700>NEW: <white>Makes armour trims drop without letting them be farmed by resetting
+<#FFD700>NEW: <white>Set it in-game on an item's amount page, or with a redeemable line in loot.yml
 <black>.
 <#FF7F50> ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
 <black>.
