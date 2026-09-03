@@ -145,15 +145,12 @@ fun handleKey(plugin: BetterTrialChambers, sender: CommandSender, args: Array<ou
             }
 
             val keyMaterial = when (keyTypeStr) {
-                "ominous" -> {
-                    // Try to get ominous trial key - it might not be in the Material enum yet
-                    try {
-                        Material.valueOf("OMINOUS_TRIAL_KEY")
-                    } catch (_: IllegalArgumentException) {
-                        sender.sendMessage(plugin.getMessageComponent("error-ominous-key-unavailable"))
-                        return
-                    }
-                }
+                // Named outright rather than looked up by text. This used to go
+                // through Material.valueOf("OMINOUS_TRIAL_KEY") in case the
+                // server was old enough not to have it, which stopped being
+                // possible a long time ago and traded a compile-time check for a
+                // runtime one that could only ever fail.
+                "ominous" -> Material.OMINOUS_TRIAL_KEY
                 else -> Material.TRIAL_KEY
             }
 
