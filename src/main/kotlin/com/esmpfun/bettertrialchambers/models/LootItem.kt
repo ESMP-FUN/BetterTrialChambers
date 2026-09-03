@@ -77,6 +77,18 @@ data class LootItem(
     val durabilityMin: Int? = null, // Minimum durability (as damage value)
     val durabilityMax: Int? = null, // Maximum durability (as damage value)
 
+    // Enchant the item the way an enchanting table would, at a random cost
+    // between these two levels. This is what vanilla's chamber rewards actually
+    // do for their bows, crossbows, axes and chestplates: the result is a whole
+    // realistic set of enchantments rather than one picked from a list. Both
+    // must be set together. Takes precedence over the fixed and random
+    // enchantment fields above when present.
+    val enchantWithLevelsMin: Int? = null,
+    val enchantWithLevelsMax: Int? = null,
+    // Whether an enchant-with-levels roll may produce treasure-only enchantments
+    // (mending, soul speed and the like). Vanilla's chamber rewards do not.
+    val enchantWithLevelsTreasure: Boolean = false,
+
     // Goat Horn instrument support (8 variants)
     val instrument: String? = null, // PONDER, SING, SEEK, FEEL, ADMIRE, CALL, YEARN, DREAM
 
@@ -175,6 +187,13 @@ enum class LootRollMode {
  * @property rollMode How weighted items are drawn — see [LootRollMode].
  * @property maxItems In [LootRollMode.INDEPENDENT] mode only, the maximum number of
  *   passing weighted items to keep per opening (0 = uncapped). Ignored in WEIGHTED mode.
+ * @property chance How often the pool runs at all, from 0.0 (never) to 1.0
+ *   (every time, which is the default). Vanilla's vault loot leans on this: its
+ *   "one really good item" pool only runs a quarter of the time for a normal
+ *   vault and three quarters of the time for an ominous one. Before this
+ *   existed the bundled tables faked it with `min-rolls: 0, max-rolls: 1`,
+ *   which comes out at about half the time, so normal vaults were roughly
+ *   twice as generous as vanilla and ominous ones slightly stingier.
  */
 data class LootPool(
     val name: String,
@@ -185,7 +204,8 @@ data class LootPool(
     val commandRewards: List<CommandReward> = emptyList(),
     val economyRewards: List<EconomyReward> = emptyList(),
     val rollMode: LootRollMode = LootRollMode.WEIGHTED,
-    val maxItems: Int = 0
+    val maxItems: Int = 0,
+    val chance: Double = 1.0
 )
 
 /**
