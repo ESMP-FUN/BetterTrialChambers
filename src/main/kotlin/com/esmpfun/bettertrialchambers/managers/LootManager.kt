@@ -765,10 +765,21 @@ class LootManager(private val plugin: BetterTrialChambers) {
      * Expands one rolled loot entry into its item stacks: a regular entry
      * yields exactly [createItemStack]'s single stack; a `VANILLA_TABLE`
      * entry yields every stack the referenced server loot table generates.
+     *
+     * Empty stacks are dropped here rather than passed on. [createItemStack]
+     * answers with an empty stack when an entry cannot be built at all (its
+     * stored item will not read back, or a custom-item plugin does not know the
+     * id any more), and nothing downstream was checking. Handing an empty stack
+     * to the server's item-drop call does not fail loudly: it spawns an item
+     * entity holding nothing, which vanishes on the next tick. So the player
+     * quietly received less loot than the table promised and only the console
+     * said why. Filtering here covers every caller and the vanilla-table path
+     * as well.
      */
     private fun expandLootItem(lootItem: LootItem, player: Player): List<ItemStack> {
-        val tableId = lootItem.vanillaTable ?: return listOf(createItemStack(lootItem, player))
-        return rollVanillaTable(tableId, player)
+        val tableId = lootItem.vanillaTable
+            ?: return listOf(createItemStack(lootItem, player)).filterNot { it.isEmpty }
+        return rollVanillaTable(tableId, player).filterNot { it.isEmpty }
     }
 
     /**
