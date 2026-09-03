@@ -248,7 +248,12 @@ class PlayerMovementListener(private val plugin: BetterTrialChambers) : Listener
         // Batch update all players in a single transaction
         if (updates.isNotEmpty()) {
             plugin.statisticsManager.batchAddTimeSpent(updates)
-            plugin.logger.info("Flushed time tracking for ${updates.size} players")
+            // Only when asked for. This runs every five minutes for as long as
+            // anybody is stood in a chamber, so on a busy server it was a few
+            // hundred lines a day saying nothing had gone wrong.
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.info("Flushed time tracking for ${updates.size} players")
+            }
         }
     }
 
