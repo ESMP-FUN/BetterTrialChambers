@@ -59,7 +59,23 @@ class SpawnerPresetPlaceListener(private val plugin: BetterTrialChambers) : List
         // before this fix carry the tag too, so they heal on placement.
         val preset = plugin.spawnerPresetManager.get(presetId)
         if (preset != null && state is TrialSpawner) {
-            applyConfigOverrides(state, preset)
+            // The settings in a preset are whatever an admin typed into
+            // spawner_presets.yml and are not checked on the way in, so a
+            // nonsensical one can be refused here. Kept away from the tag: if
+            // this threw, the update below never ran, the tag written a moment
+            // ago was never saved, and the spawner ended up on the map with no
+            // idea which preset it came from. That quietly loses the ability to
+            // mine it back and to recognise it later. A spawner with default
+            // settings is a much better outcome than a nameless one.
+            try {
+                applyConfigOverrides(state, preset)
+            } catch (e: Exception) {
+                plugin.logger.warning(
+                    "Spawner preset '$presetId' has a setting the server would not accept " +
+                        "(${e.message}); the spawner has been placed with its normal settings. " +
+                        "Check that preset's numbers in spawner_presets.yml."
+                )
+            }
         }
         state.update()
 
