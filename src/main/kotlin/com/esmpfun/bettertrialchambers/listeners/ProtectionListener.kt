@@ -10,7 +10,26 @@ import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.entity.Projectile
 import org.bukkit.event.block.BlockBreakEvent
+import org.bukkit.event.block.BlockBurnEvent
+import org.bukkit.event.block.BlockDispenseEvent
+import org.bukkit.event.block.BlockFadeEvent
+import org.bukkit.event.block.BlockFertilizeEvent
+import org.bukkit.event.block.BlockFormEvent
+import org.bukkit.event.block.BlockFromToEvent
+import org.bukkit.event.block.BlockGrowEvent
+import org.bukkit.event.block.BlockIgniteEvent
+import org.bukkit.event.block.BlockPistonExtendEvent
+import org.bukkit.event.block.BlockPistonRetractEvent
 import org.bukkit.event.block.BlockPlaceEvent
+import org.bukkit.event.block.BlockSpreadEvent
+import org.bukkit.event.block.LeavesDecayEvent
+import org.bukkit.event.block.SpongeAbsorbEvent
+import org.bukkit.event.entity.EntityDamageEvent
+import org.bukkit.event.hanging.HangingBreakByEntityEvent
+import org.bukkit.event.hanging.HangingBreakEvent
+import org.bukkit.event.player.PlayerArmorStandManipulateEvent
+import org.bukkit.event.player.PlayerBucketEmptyEvent
+import org.bukkit.event.world.StructureGrowEvent
 import org.bukkit.event.entity.EntityChangeBlockEvent
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityExplodeEvent
@@ -391,6 +410,254 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
      * true, so region owners/staff can work inside chambers overlapping their
      * regions. No-op (false) when the setting is off or WG is absent.
      */
+
+    // ======================================================================
+    // Keeping a chamber the way it was built
+    // ======================================================================
+    //
+    // Breaking and placing blocks were the only two ways in that were watched
+    // for. There are a lot of others, and none of them raise a block break or a
+    // block place, so none of them were ever seen:
+    //
+    //   - a bucket of water or lava does not count as placing a block
+    //   - a piston can push blocks in, or pull them out, from outside the walls
+    //   - fire spreads on its own once something is alight
+    //   - item frames, paintings and armour stands are not blocks at all, so
+    //     nothing stopped anyone taking them
+    //
+    // This matters most for the chambers that were never Trial Chambers. Plenty
+    // of servers register a hand-built arena or a minigame area as a chamber
+    // purely for the protection and the reset, and every one of these was open.
+
+    /** The chamber at [location], or null when there is nothing to protect there. */
+    private fun protectedChamberAt(location: org.bukkit.Location) =
+        plugin.chamberManager.getCachedChamberAt(location)?.takeIf { !it.isPaused }
+
+    /** True when protection as a whole, or this one setting, is switched off. */
+    private fun protectionOff(setting: String, default: Boolean): Boolean =
+        !plugin.config.getBoolean("protection.enabled", true) ||
+            !plugin.config.getBoolean("protection." + setting, default)
+
+    /** Emptying a bucket does not raise a block-place event, so it needs its own. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onBucketEmpty(event: PlayerBucketEmptyEvent) {
+        if (protectionOff("prevent-liquid-flow", true)) return
+        val player = event.player
+        if (player.hasPermission("btc.bypass.protection")) return
+        val location = event.block.location
+        protectedChamberAt(location) ?: return
+        if (deferToWorldGuard(location, player)) return
+        event.isCancelled = true
+        notifyBlocked(player, "cannot-place-blocks")
+    }
+
+    /** Water or lava poured just outside the walls, running in. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onLiquidFlow(event: BlockFromToEvent) {
+        if (protectionOff("prevent-liquid-flow", true)) return
+        // Only stop it crossing INTO a chamber. Liquid already inside one, in a
+        // build that was made with it, goes on working.
+        if (protectedChamberAt(event.toBlock.location) == null) return
+        if (protectedChamberAt(event.block.location) != null) return
+        event.isCancelled = true
+    }
+
+    /** A dispenser outside the walls, firing a bucket through them. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onDispense(event: BlockDispenseEvent) {
+        if (protectionOff("prevent-liquid-flow", true)) return
+        if (event.item.type != Material.WATER_BUCKET && event.item.type != Material.LAVA_BUCKET) return
+        protectedChamberAt(event.block.location) ?: return
+        event.isCancelled = true
+    }
+
+    /** Lighting a fire inside a chamber. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onIgnite(event: BlockIgniteEvent) {
+        if (protectionOff("prevent-fire", true)) return
+        val location = event.block.location
+        protectedChamberAt(location) ?: return
+        val player = event.player
+        if (player != null) {
+            if (player.hasPermission("btc.bypass.protection")) return
+            if (deferToWorldGuard(location, player)) return
+            event.isCancelled = true
+            notifyBlocked(player, "cannot-place-blocks")
+            return
+        }
+        // Lightning, lava, or fire spreading in from somewhere else.
+        event.isCancelled = true
+    }
+
+    /** Fire eating the chamber once something is already alight. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onBurn(event: BlockBurnEvent) {
+        if (protectionOff("prevent-fire", true)) return
+        protectedChamberAt(event.block.location) ?: return
+        event.isCancelled = true
+    }
+
+    /**
+     * Pistons, in both directions.
+     *
+     * A piston reaches twelve blocks, so someone outside the walls can push
+     * blocks in or drag them out without ever touching the chamber themselves,
+     * and no block break or place is raised for any of it. A piston that is
+     * itself inside the same chamber is left alone, because that is somebody's
+     * redstone working exactly as they built it.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onPistonExtend(event: BlockPistonExtendEvent) {
+        if (protectionOff("prevent-piston-movement", true)) return
+        if (pistonReachesIntoChamber(event.block.location, event.blocks.map { it.location })) {
+            event.isCancelled = true
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onPistonRetract(event: BlockPistonRetractEvent) {
+        if (protectionOff("prevent-piston-movement", true)) return
+        if (pistonReachesIntoChamber(event.block.location, event.blocks.map { it.location })) {
+            event.isCancelled = true
+        }
+    }
+
+    /** True when a piston would move a protected block it does not share a chamber with. */
+    private fun pistonReachesIntoChamber(
+        piston: org.bukkit.Location,
+        moved: List<org.bukkit.Location>,
+    ): Boolean {
+        val pistonChamber = protectedChamberAt(piston)
+        return moved.any { movedBlock ->
+            val chamber = protectedChamberAt(movedBlock) ?: return@any false
+            chamber.id != pistonChamber?.id
+        }
+    }
+
+    // ---------- Decorations ----------
+    //
+    // Item frames, paintings and armour stands are entities rather than blocks,
+    // so none of the block protection above has ever applied to them and anyone
+    // could walk off with the lot. Destroying and looting are stopped; turning a
+    // frame or swapping what is in it is left alone, since that survives a reset
+    // and some minigames are built on it.
+
+    /** True for the entities that are part of a build rather than part of the world. */
+    private fun isDecoration(entity: org.bukkit.entity.Entity): Boolean = when (entity) {
+        is org.bukkit.entity.Hanging -> true
+        is org.bukkit.entity.ArmorStand -> true
+        else -> false
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onHangingBreak(event: HangingBreakEvent) {
+        if (protectionOff("protect-decorations", true)) return
+        protectedChamberAt(event.entity.location) ?: return
+        event.isCancelled = true
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onHangingBreakByEntity(event: HangingBreakByEntityEvent) {
+        if (protectionOff("protect-decorations", true)) return
+        val location = event.entity.location
+        protectedChamberAt(location) ?: return
+        val remover = event.remover
+        if (remover is Player) {
+            if (remover.hasPermission("btc.bypass.protection")) return
+            if (deferToWorldGuard(location, remover)) return
+            event.isCancelled = true
+            notifyBlocked(remover, "cannot-break-blocks")
+            return
+        }
+        event.isCancelled = true
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onArmorStandManipulate(event: PlayerArmorStandManipulateEvent) {
+        if (protectionOff("protect-decorations", true)) return
+        val player = event.player
+        if (player.hasPermission("btc.bypass.protection")) return
+        val location = event.rightClicked.location
+        protectedChamberAt(location) ?: return
+        if (deferToWorldGuard(location, player)) return
+        event.isCancelled = true
+        notifyBlocked(player, "cannot-break-blocks")
+    }
+
+    /** Anything else that would destroy a decoration: fire, explosions, mobs. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onDecorationDamaged(event: EntityDamageEvent) {
+        if (protectionOff("protect-decorations", true)) return
+        if (!isDecoration(event.entity)) return
+        protectedChamberAt(event.entity.location) ?: return
+        event.isCancelled = true
+    }
+
+    // ---------- Natural change ----------
+    //
+    // Off by default. Leaves dropping, grass creeping and ice melting is the
+    // world behaving normally, and a reset puts it all back anyway. Turn it on
+    // for a build that has to stay exactly as placed between resets.
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onLeavesDecay(event: LeavesDecayEvent) {
+        if (protectionOff("prevent-natural-decay", false)) return
+        protectedChamberAt(event.block.location) ?: return
+        event.isCancelled = true
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onBlockFade(event: BlockFadeEvent) {
+        if (protectionOff("prevent-natural-decay", false)) return
+        protectedChamberAt(event.block.location) ?: return
+        event.isCancelled = true
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onBlockForm(event: BlockFormEvent) {
+        if (protectionOff("prevent-natural-decay", false)) return
+        protectedChamberAt(event.block.location) ?: return
+        event.isCancelled = true
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onBlockSpread(event: BlockSpreadEvent) {
+        // Fire spreading is griefing rather than nature, so it answers to the
+        // fire setting; everything else here answers to the decay setting.
+        val fire = event.newState.type == Material.FIRE
+        if (protectionOff(if (fire) "prevent-fire" else "prevent-natural-decay", fire)) return
+        protectedChamberAt(event.block.location) ?: return
+        event.isCancelled = true
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onBlockGrow(event: BlockGrowEvent) {
+        if (protectionOff("prevent-natural-decay", false)) return
+        protectedChamberAt(event.block.location) ?: return
+        event.isCancelled = true
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onStructureGrow(event: StructureGrowEvent) {
+        if (protectionOff("prevent-natural-decay", false)) return
+        if (event.blocks.none { protectedChamberAt(it.location) != null }) return
+        event.isCancelled = true
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onFertilize(event: BlockFertilizeEvent) {
+        if (protectionOff("prevent-natural-decay", false)) return
+        if (event.blocks.none { protectedChamberAt(it.location) != null }) return
+        event.isCancelled = true
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onSpongeAbsorb(event: SpongeAbsorbEvent) {
+        if (protectionOff("prevent-natural-decay", false)) return
+        if (event.blocks.none { protectedChamberAt(it.block.location) != null }) return
+        event.isCancelled = true
+    }
+
     private fun deferToWorldGuard(location: org.bukkit.Location, player: Player): Boolean {
         if (!plugin.config.getBoolean("protection.worldguard-integration", true)) return false
         if (!com.esmpfun.bettertrialchambers.utils.WorldGuardHook.isAvailable(plugin)) return false
