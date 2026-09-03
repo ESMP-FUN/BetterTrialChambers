@@ -317,7 +317,12 @@ reset-confirm-not-pending: "<gray><yellow>{chamber}</yellow> wasn't awaiting con
 reset-ready-notify: "<gold>[BTC] <yellow>{chamber}</yellow> is ready to reset — <click:run_command:'/trial reset confirm {chamber}'><green>[confirm]</green></click> <click:run_command:'/trial reset pending'><aqua>[list all]</aqua></click>"
 
 # /trial debug
-debug-usage: "<yellow>/trial debug schema <gray>- Print each database table's actual columns"
+debug-usage: "<yellow>/trial debug schema <gray>- Print each database table's actual columns
+<yellow>/trial debug structure <gray>- Check this server can save a block and put it back unchanged"
+debug-structure-no-world: "<red>No world is loaded, so there is nowhere to run the check."
+debug-structure-running: "<gray>Checking in <white>{world}</white> at height <white>{y}</white>, well above anything built…"
+debug-structure-list-item: "{flag}{verdict}<gray> - {what} <dark_gray>({detail})"
+debug-structure-summary: "<gray>{passed} of {total} kept."
 debug-schema-reading: "<gray>Reading database schema…"
 debug-schema-page-header: "<gold>BTC database schema <gray>({type}):"
 debug-schema-missing-list-item: "<red>{table}<gray>: (missing table)"
