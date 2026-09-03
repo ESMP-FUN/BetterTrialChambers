@@ -442,6 +442,41 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
     }
 
     /**
+     * Adds any [healableChamberColumns] the live `chambers` table is missing.
+     *
+     * A second attempt at what the migrations already tried, which is the point:
+     * if the first attempt failed because the table was busy at that moment, this
+     * quietly puts it right, and if it fails again the message says which column
+     * and which feature stops working, instead of leaving it to be discovered as
+     * a setting that will not stick.
+     */
+    private fun healChamberColumns(conn: Connection) {
+        val table = tables.chambers
+        val present = actualColumns(conn, table)
+        if (present.isEmpty()) return // table absent or metadata unavailable
+
+        val missing = healableChamberColumns.filterKeys { it !in present }
+        if (missing.isEmpty()) return
+
+        conn.createStatement().use { stmt ->
+            for ((name, ddl) in missing) {
+                try {
+                    stmt.execute("ALTER TABLE $table ADD COLUMN $name $ddl")
+                    plugin.logger.warning("[schema] Added missing '$table' column '$name'.")
+                } catch (e: SQLException) {
+                    plugin.logger.severe(
+                        "[schema] '$table' has no '$name' column and it could not be added: ${e.message}"
+                    )
+                    plugin.logger.severe(
+                        "[schema] Whatever that column stores will not be remembered between " +
+                            "restarts until this is fixed. Run /trial debug schema for the full picture."
+                    )
+                }
+            }
+        }
+    }
+
+    /**
      * `player_stats` columns the self-check can safely add to an older table (name → the
      * column definition for `ALTER TABLE ADD COLUMN`). The primary key (`player_uuid`) is
      * intentionally absent — it can't be added to a populated table, so its absence is
@@ -457,6 +492,35 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
         "last_updated" to "BIGINT NOT NULL DEFAULT 0",
     )
 
+    /**
+     * `chambers` columns that were added by a migration after the table's
+     * original design (name to its `ALTER TABLE ADD COLUMN` definition).
+     *
+     * Each migration adds its column inside a `try` that treats **any** database
+     * error as "the column is already there", because that is what it normally
+     * means. When it does not - the database was locked at that moment, the
+     * account cannot alter tables, the disk was full - the failure was swallowed
+     * and nothing further looked. The column stayed missing, and reading a
+     * chamber back has its own per-column fallbacks, so the feature simply
+     * behaved as though it had never been switched on: a paused chamber
+     * un-pausing itself on restart, with nothing anywhere saying why.
+     *
+     * Checking afterwards costs one metadata read and turns that into either a
+     * fix or a message somebody can act on.
+     */
+    private val healableChamberColumns = linkedMapOf(
+        "normal_loot_table" to "VARCHAR(64)",
+        "ominous_loot_table" to "VARCHAR(64)",
+        "spawner_cooldown_minutes" to "INT",
+        "custom_mob_provider" to "VARCHAR(32)",
+        "custom_mob_ids_normal" to "TEXT",
+        "custom_mob_ids_ominous" to "TEXT",
+        "is_paused" to "BOOLEAN NOT NULL DEFAULT 0",
+        "broadcast_reset_complete" to "BOOLEAN NOT NULL DEFAULT 1",
+        "display_name" to "VARCHAR(64)",
+        "bounds_confirmed" to "BOOLEAN NOT NULL DEFAULT 0",
+    )
+
     /** Every table TCP owns, for the schema report. */
     private val knownTables: List<String>
         get() = tables.all
@@ -470,6 +534,8 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
     private suspend fun verifyAndHealSchema() = withContext(Dispatchers.IO) {
         val statsTable = tables.playerStats
         connection.use { conn ->
+            healChamberColumns(conn)
+
             val statsCols = actualColumns(conn, statsTable)
             if (statsCols.isEmpty()) return@use // table absent or metadata unavailable
 
