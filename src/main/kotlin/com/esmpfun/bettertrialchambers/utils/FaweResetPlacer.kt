@@ -2,7 +2,6 @@ package com.esmpfun.bettertrialchambers.utils
 
 import com.sk89q.worldedit.WorldEdit
 import com.sk89q.worldedit.bukkit.BukkitAdapter
-import com.sk89q.worldedit.math.BlockVector3
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
 import com.esmpfun.bettertrialchambers.models.BlockSnapshot
 import kotlinx.coroutines.CompletableDeferred
@@ -65,8 +64,12 @@ class FaweResetPlacer(private val plugin: BetterTrialChambers) {
                 batch.forEach { (loc, snap) ->
                     try {
                         val data = Bukkit.createBlockData(resetTrialSpawnerState(snap.blockData))
+                        // The plain-coordinate overload. The BlockVector3 one is
+                        // deprecated in FAWE, and this also skips allocating a
+                        // vector object per block, which adds up over a reset that
+                        // writes hundreds of thousands of them.
                         session.setBlock(
-                            BlockVector3.at(loc.blockX, loc.blockY, loc.blockZ),
+                            loc.blockX, loc.blockY, loc.blockZ,
                             BukkitAdapter.adapt(data),
                         )
                     } catch (_: Exception) {

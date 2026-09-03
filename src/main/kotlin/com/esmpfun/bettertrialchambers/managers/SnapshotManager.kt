@@ -28,6 +28,7 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
+import kotlin.coroutines.resume
 
 /**
  * Manages chamber snapshots - creating, saving, loading, and validating.
@@ -230,7 +231,7 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
                                         }
                                     }
                                 }
-                                continuation.resume(batchTotal to captured) {}
+                                continuation.resume(batchTotal to captured)
                             } catch (e: Exception) {
                                 continuation.resumeWith(Result.failure(e))
                             }

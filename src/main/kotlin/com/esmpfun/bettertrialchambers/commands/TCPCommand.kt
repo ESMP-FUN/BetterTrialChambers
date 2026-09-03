@@ -12,6 +12,7 @@ import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
+import kotlin.coroutines.resume
 
 /**
  * Main command dispatcher for `/trial` subcommands. Large/self-contained handlers
@@ -378,7 +379,7 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
     /** Suspends for [ticks] server ticks via the scheduler (tick-paced, so it scales with TPS). */
     private suspend fun waitTicks(ticks: Long) {
         kotlinx.coroutines.suspendCancellableCoroutine<Unit> { cont ->
-            plugin.scheduler.runTaskLater(Runnable { cont.resume(Unit) {} }, ticks)
+            plugin.scheduler.runTaskLater(Runnable { cont.resume(Unit) }, ticks)
         }
     }
 

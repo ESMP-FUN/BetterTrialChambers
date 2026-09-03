@@ -13,6 +13,7 @@ import org.bukkit.World
 import org.bukkit.block.BlockFace
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.coroutines.resume
 
 /**
  * Captures, stores and loads [RoomTemplate]s. Capture scans a selection for
@@ -61,7 +62,7 @@ class RoomTemplateManager(private val plugin: BetterTrialChambers) {
                                 blocks[rel] = BlockSnapshot(block.blockData.asString, NBTUtil.captureTileEntity(block.state))
                         }
                     }
-                    cont.resume(Unit) {}
+                    cont.resume(Unit)
                 } catch (e: Exception) {
                     cont.resumeWith(Result.failure(e))
                 }

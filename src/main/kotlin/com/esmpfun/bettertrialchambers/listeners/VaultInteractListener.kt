@@ -21,6 +21,7 @@ import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.util.Vector
+import kotlin.coroutines.resume
 
 /**
  * Listens for vault interactions and handles per-player loot system.
@@ -241,7 +242,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
 
                     if (vaultState == null) {
                         plugin.logger.warning("Block at $location is not a Vault TileState!")
-                        continuation.resume(false) {}
+                        continuation.resume(false)
                         return@Runnable
                     }
 
@@ -251,11 +252,11 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                         plugin.logger.info("[Vault API] hasRewardedPlayer(${player.name}): $hasRewarded")
                     }
 
-                    continuation.resume(hasRewarded) {}
+                    continuation.resume(hasRewarded)
                 } catch (e: Exception) {
                     plugin.logger.severe("Error checking vault reward status: ${e.message}")
                     e.printStackTrace()
-                    continuation.resume(false) {} // Allow opening on error
+                    continuation.resume(false) // Allow opening on error
                 }
             })
         }
@@ -406,14 +407,14 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                 }
                 val item = player.inventory.itemInMainHand
                 if (item.type != expected || item.amount < cost) {
-                    continuation.resume(false) {}
+                    continuation.resume(false)
                     return@Runnable
                 }
                 if (cost > 1) item.amount -= (cost - 1)
-                continuation.resume(true) {}
+                continuation.resume(true)
             } catch (e: Exception) {
                 plugin.logger.warning("[VaultReopen] Payment check failed: ${e.message}")
-                continuation.resume(false) {}
+                continuation.resume(false)
             }
         })
     }
@@ -508,7 +509,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
 
                     if (vaultState == null) {
                         plugin.logger.warning("Cannot mark reward - block at $location is not a Vault!")
-                        continuation.resume(false) {}
+                        continuation.resume(false)
                         return@Runnable
                     }
 
@@ -522,11 +523,11 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                         plugin.logger.info("[Vault API] addRewardedPlayer(${player.name}) - marked and persisted")
                     }
 
-                    continuation.resume(true) {}
+                    continuation.resume(true)
                 } catch (e: Exception) {
                     plugin.logger.severe("Error marking vault reward: ${e.message}")
                     e.printStackTrace()
-                    continuation.resume(false) {}
+                    continuation.resume(false)
                 }
             })
         }
@@ -555,7 +556,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                     // Verify player still online
                     if (!player.isOnline) {
                         plugin.logger.info("Player ${player.name} disconnected during vault open")
-                        continuation.resume(Unit) {}
+                        continuation.resume(Unit)
                         return@Runnable
                     }
 
@@ -623,7 +624,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                         )
                     )
 
-                    continuation.resume(Unit) {}
+                    continuation.resume(Unit)
                 } catch (e: Exception) {
                     plugin.logger.severe("Error in vault open: ${e.message}")
                     e.printStackTrace()
@@ -717,7 +718,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                 } catch (e: Exception) {
                     plugin.logger.warning("[Vault] Failed to clear rewarded flag: ${e.message}")
                 }
-                continuation.resume(Unit) {}
+                continuation.resume(Unit)
             })
         }
     }

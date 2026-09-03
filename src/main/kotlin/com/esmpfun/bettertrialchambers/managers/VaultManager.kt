@@ -12,6 +12,7 @@ import org.bukkit.Material
 import org.bukkit.block.Vault
 import java.sql.ResultSet
 import java.util.UUID
+import kotlin.coroutines.resume
 
 /**
  * Manages vault tracking, cooldowns, and player interactions.
@@ -691,13 +692,13 @@ class VaultManager(private val plugin: BetterTrialChambers) {
                 try {
                     val block = location.block
                     if (block.type != Material.VAULT) {
-                        continuation.resume(Unit) {}
+                        continuation.resume(Unit)
                         return@Runnable
                     }
 
                     val vaultState = block.state as? Vault
                     if (vaultState == null) {
-                        continuation.resume(Unit) {}
+                        continuation.resume(Unit)
                         return@Runnable
                     }
 
@@ -708,10 +709,10 @@ class VaultManager(private val plugin: BetterTrialChambers) {
                         plugin.logger.info("[Vault API] Removed rewarded player $playerUuid from vault at ${location.blockX},${location.blockY},${location.blockZ}")
                     }
 
-                    continuation.resume(Unit) {}
+                    continuation.resume(Unit)
                 } catch (e: Exception) {
                     plugin.logger.warning("Failed to clear vault rewarded player: ${e.message}")
-                    continuation.resume(Unit) {}
+                    continuation.resume(Unit)
                 }
             })
         }
@@ -737,13 +738,13 @@ class VaultManager(private val plugin: BetterTrialChambers) {
                 try {
                     val block = location.block
                     if (block.type != Material.VAULT) {
-                        continuation.resume(Unit) {}
+                        continuation.resume(Unit)
                         return@Runnable
                     }
 
                     val vaultState = block.state as? Vault
                     if (vaultState == null) {
-                        continuation.resume(Unit) {}
+                        continuation.resume(Unit)
                         return@Runnable
                     }
 
@@ -758,10 +759,10 @@ class VaultManager(private val plugin: BetterTrialChambers) {
                         plugin.logger.info("[Vault API] Cleared ${rewardedPlayers.size} rewarded players from vault at ${location.blockX},${location.blockY},${location.blockZ}")
                     }
 
-                    continuation.resume(Unit) {}
+                    continuation.resume(Unit)
                 } catch (e: Exception) {
                     plugin.logger.warning("Failed to clear all vault rewarded players: ${e.message}")
-                    continuation.resume(Unit) {}
+                    continuation.resume(Unit)
                 }
             })
         }

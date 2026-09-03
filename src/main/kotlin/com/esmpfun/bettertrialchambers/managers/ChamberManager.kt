@@ -12,6 +12,7 @@ import org.bukkit.Location
 import org.bukkit.Material
 import java.sql.ResultSet
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.coroutines.resume
 
 /**
  * Manages chamber CRUD operations and caching.
@@ -469,7 +470,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                                 }
                             }
                         }
-                        continuation.resume(Triple(v, s, p)) {}
+                        continuation.resume(Triple(v, s, p))
                     } catch (e: Exception) {
                         continuation.resumeWith(Result.failure(e))
                     }
