@@ -567,49 +567,17 @@ object NBTUtil {
         }
     }
 
-    private fun encodeItems(items: Array<ItemStack?>): String {
-        val baos = ByteArrayOutputStream()
-        DataOutputStream(baos).use { out ->
-            out.writeInt(items.size)
-            for (item in items) {
-                if (item == null || item.type.isAir) {
-                    out.writeInt(-1)
-                } else {
-                    val bytes = item.serializeAsBytes()
-                    out.writeInt(bytes.size)
-                    out.write(bytes)
-                }
-            }
-        }
-        return Base64.getEncoder().encodeToString(baos.toByteArray())
-    }
-
-    private fun decodeItems(encoded: String): Array<ItemStack?> {
-        val bytes = Base64.getDecoder().decode(encoded)
-        DataInputStream(ByteArrayInputStream(bytes)).use { input ->
-            val size = input.readInt()
-            require(size in 0..128) { "implausible container size $size" }
-            return Array(size) {
-                val len = input.readInt()
-                if (len < 0) null
-                else {
-                    val buf = ByteArray(len)
-                    input.readFully(buf)
-                    ItemStack.deserializeBytes(buf)
-                }
-            }
-        }
-    }
-
     /**
-     * Restores Trial Spawner data and resets its state.
-     * CRITICAL: This clears tracked players so the spawner can be reactivated
-     * and will drop trial keys again when completed.
-     *
-     * NOTE: Cooldown length is NOT restored from snapshot - it's controlled by
-     * the config setting (reset.spawner-cooldown-minutes) and applied in
-     * ResetManager.resetTrialSpawners() which runs AFTER block restoration.
+     * Container contents, to and from text. Both live in [ItemArrayCodec], which
+     * the per-player container copies share, so the two cannot drift apart.
      */
+    private fun encodeItems(items: Array<ItemStack?>): String = ItemArrayCodec.encode(items)
+
+    private fun decodeItems(encoded: String): Array<ItemStack?> =
+        ItemArrayCodec.decode(encoded) { problem ->
+            Bukkit.getLogger().warning("[BTC] Restoring a container: $problem")
+        } ?: emptyArray()
+
     private fun restoreTrialSpawner(spawner: TrialSpawner, data: Map<String, Any>): Boolean {
         return try {
             // Clear all tracked players - this is the KEY fix for trial key drops!
