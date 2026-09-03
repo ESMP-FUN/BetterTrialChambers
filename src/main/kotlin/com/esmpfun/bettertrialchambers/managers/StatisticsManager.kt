@@ -243,9 +243,19 @@ class StatisticsManager(private val plugin: BetterTrialChambers) {
                     val results = mutableListOf<Pair<UUID, Int>>()
                     stmt.executeQuery().use { rs ->
                         while (rs.next()) {
-                            val uuid = UUID.fromString(rs.getString("player_uuid"))
-                            val value = rs.getInt("value")
-                            results.add(uuid to value)
+                            // Skip a row whose player id is not readable rather
+                            // than losing the whole board over it. One name
+                            // missing from a top ten is barely noticeable; an
+                            // empty leaderboard looks like the feature is broken.
+                            val raw = rs.getString("player_uuid")
+                            val uuid = runCatching { UUID.fromString(raw) }.getOrNull()
+                            if (uuid == null) {
+                                plugin.logger.warning(
+                                    "Leaderboard: skipping a row with an unreadable player id '$raw'."
+                                )
+                                continue
+                            }
+                            results.add(uuid to rs.getInt("value"))
                         }
                     }
 

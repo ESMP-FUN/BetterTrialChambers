@@ -238,8 +238,32 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
             plugin.databaseManager.connection.use { conn ->
                 conn.createStatement().use { stmt ->
                     val rs = stmt.executeQuery("SELECT * FROM ${tables.chambers} ORDER BY created_at DESC")
+                    var unreadable = 0
                     while (rs.next()) {
-                        chambers.add(parseChamber(rs))
+                        // Guarded per row on purpose. One chamber that will not
+                        // read used to throw all the way out of this loop, and
+                        // the whole list came back empty. Everything works off
+                        // this list, so the plugin would behave as though the
+                        // server had no chambers at all: nothing resetting,
+                        // nothing protected, no chamber loot anywhere. One
+                        // chamber missing is a very much smaller problem.
+                        val row = runCatching { parseChamber(rs) }.getOrElse { e ->
+                            unreadable++
+                            val name = runCatching { rs.getString("name") }.getOrNull() ?: "unnamed"
+                            plugin.logger.severe(
+                                "Chamber '$name' could not be read from the database and has been " +
+                                    "skipped: ${e.message}. Every other chamber has loaded normally."
+                            )
+                            null
+                        }
+                        if (row != null) chambers.add(row)
+                    }
+                    if (unreadable > 0) {
+                        plugin.logger.severe(
+                            "$unreadable chamber(s) could not be read. They are still in the database " +
+                                "and nothing has been deleted, but they will not reset or be protected " +
+                                "until the problem above is fixed."
+                        )
                     }
                 }
             }
