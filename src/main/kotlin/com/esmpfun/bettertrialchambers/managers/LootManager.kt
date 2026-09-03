@@ -80,6 +80,24 @@ class LootManager(private val plugin: BetterTrialChambers) {
         }
 
         val config = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(lootFile)
+
+        // Loot added through the editor is stored the way the game stores items,
+        // so it can be read on this Minecraft version or any later one, but not
+        // on an earlier one. If this file came from a newer version than the
+        // server is running, take a copy and say so before anything fails to
+        // load piecemeal. Files written before stamping existed report 0, which
+        // is always older and so never trips this.
+        com.esmpfun.bettertrialchambers.utils.SaveVersionStamp.warnIfFromNewerVersion(
+            file = lootFile,
+            stampedDataVersion = config.getInt(
+                "${com.esmpfun.bettertrialchambers.utils.SaveVersionStamp.SECTION}.data-version", 0
+            ),
+            stampedMinecraftVersion = config.getString(
+                "${com.esmpfun.bettertrialchambers.utils.SaveVersionStamp.SECTION}.minecraft-version"
+            ),
+            logger = plugin.logger,
+        )
+
         val tablesSection = config.getConfigurationSection("loot-tables") ?: return
 
         tablesSection.getKeys(false).forEach { tableName ->
@@ -279,9 +297,54 @@ class LootManager(private val plugin: BetterTrialChambers) {
 
         val rollMode = parseRollMode(data["mode"] as? String, "pool '$poolName'")
         val maxItems = ((data["max-items"] as? Number)?.toInt() ?: 0).coerceAtLeast(0)
+        val chance = parsePoolChance(data["chance"], poolName)
 
         return LootPool(poolName, minRolls, maxRolls, guaranteedItems, weightedItems,
-            commandRewards, economyRewards, rollMode, maxItems)
+            commandRewards, economyRewards, rollMode, maxItems, chance)
+    }
+
+    /**
+     * Reads `enchant-with-levels-min` / `-max`: enchant this item the way an
+     * enchanting table would, at a random cost between those two levels.
+     *
+     * This is what vanilla's chamber rewards actually do for their bows,
+     * crossbows, axes and chestplates, and it gives a whole believable set of
+     * enchantments rather than a single one picked off a list. Both values are
+     * required together, because one on its own has no meaning.
+     */
+    private fun parseEnchantWithLevels(data: Map<String, Any>, typeStr: String): Pair<Int, Int>? {
+        val min = (data["enchant-with-levels-min"] as? Number)?.toInt()
+        val max = (data["enchant-with-levels-max"] as? Number)?.toInt()
+        if (min == null && max == null) return null
+        if (min == null || max == null) {
+            plugin.logger.warning(
+                "loot.yml: '$typeStr' sets only one of enchant-with-levels-min / " +
+                    "enchant-with-levels-max. Both are needed, so this has been ignored."
+            )
+            return null
+        }
+        val lo = min.coerceAtLeast(0)
+        val hi = max.coerceAtLeast(0)
+        return if (lo > hi) hi to lo else lo to hi
+    }
+
+    /**
+     * Reads a pool's `chance`: how often the whole pool runs, as a number from
+     * 0 to 1. Accepts a percentage too, so both `chance: 0.25` and `chance: 25`
+     * mean a quarter of the time, because a server owner writing this by hand
+     * could reasonably reach for either.
+     */
+    private fun parsePoolChance(raw: Any?, poolName: String): Double {
+        val value = (raw as? Number)?.toDouble() ?: return 1.0
+        val normalised = if (value > 1.0) value / 100.0 else value
+        if (normalised < 0.0 || normalised > 1.0) {
+            plugin.logger.warning(
+                "loot.yml: pool '$poolName' has chance $value, which is outside 0 to 1 " +
+                    "(or 0 to 100 as a percentage). Treating it as always running."
+            )
+            return 1.0
+        }
+        return normalised
     }
 
     /**
@@ -473,6 +536,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
         }
 
         // Parse variable durability
+        val enchantLevels = parseEnchantWithLevels(data, typeStr)
         val durabilityMin = (data["durability-min"] as? Number)?.toInt()
         val durabilityMax = (data["durability-max"] as? Number)?.toInt()
 
@@ -514,6 +578,9 @@ class LootManager(private val plugin: BetterTrialChambers) {
             effectDuration = effectDuration,
             durabilityMin = durabilityMin,
             durabilityMax = durabilityMax,
+            enchantWithLevelsMin = enchantLevels?.first,
+            enchantWithLevelsMax = enchantLevels?.second,
+            enchantWithLevelsTreasure = data["enchant-with-levels-treasure"] as? Boolean ?: false,
             instrument = instrument,
             customItemPlugin = customItemPlugin,
             customItemId = customItemId,
@@ -649,6 +716,13 @@ class LootManager(private val plugin: BetterTrialChambers) {
      */
     private fun generateLootFromPool(pool: LootPool, player: Player, redeem: RedeemContext?): List<ItemStack> {
         val items = mutableListOf<ItemStack>()
+
+        // A pool can be set to run only some of the time. Vanilla's vaults use
+        // this for their best item: a quarter of the time for a normal vault,
+        // three quarters for an ominous one. A pool that does not run this
+        // opening contributes nothing at all, including its guaranteed items
+        // and its command and economy rewards.
+        if (pool.chance < 1.0 && Random.nextDouble() >= pool.chance) return items
 
         // Add all guaranteed items (respect enabled flag + already-claimed redeem cap)
         pool.guaranteedItems.filter { it.enabled && redeem?.isBlocked(it) != true }.forEach { lootItem ->
@@ -869,6 +943,31 @@ class LootManager(private val plugin: BetterTrialChambers) {
         val max = lootItem.potionLevelMax
         if (min != null && max != null) return Random.nextInt(min, max + 1)
         return lootItem.potionLevel
+    }
+
+    /**
+     * Puts an enchantment on a loot item, in the right place for that item.
+     *
+     * An enchanted book does not work like an enchanted sword. The sword *is*
+     * enchanted; the book *stores* an enchantment for someone to move onto
+     * something else at an anvil, and the game keeps those two in different
+     * places on the item.
+     *
+     * Everything before this went through `addUnsafeEnchantment` for both,
+     * which on a book wrote to the "this item is enchanted" slot instead of the
+     * "this book holds an enchantment" slot. The result looked completely
+     * normal in the tooltip and was useless at an anvil, which is the only
+     * thing anybody wants an enchanted book for. Enchanted books are also one
+     * of the most common trial chamber rewards, so this was worth getting right.
+     */
+    private fun applyEnchantment(itemStack: ItemStack, enchantment: Enchantment, level: Int) {
+        val meta = itemStack.itemMeta
+        if (meta is org.bukkit.inventory.meta.EnchantmentStorageMeta) {
+            meta.addStoredEnchant(enchantment, level, true)
+            itemStack.itemMeta = meta
+        } else {
+            itemStack.addUnsafeEnchantment(enchantment, level)
+        }
     }
 
     /**
@@ -1116,20 +1215,45 @@ class LootManager(private val plugin: BetterTrialChambers) {
 
         // Add fixed enchantments (legacy format)
         lootItem.enchantments?.forEach { (enchantment, level) ->
-            itemStack.addUnsafeEnchantment(enchantment, level)
+            applyEnchantment(itemStack, enchantment, level)
         }
 
         // Add enchantment ranges (random level within range)
         lootItem.enchantmentRanges?.values?.forEach { range ->
             val randomLevel = Random.nextInt(range.minLevel, range.maxLevel + 1)
-            itemStack.addUnsafeEnchantment(range.enchantment, randomLevel)
+            applyEnchantment(itemStack, range.enchantment, randomLevel)
         }
 
         // Pick one random enchantment from pool
         if (!lootItem.randomEnchantmentPool.isNullOrEmpty()) {
             val randomEnch = lootItem.randomEnchantmentPool.random()
             val randomLevel = Random.nextInt(randomEnch.minLevel, randomEnch.maxLevel + 1)
-            itemStack.addUnsafeEnchantment(randomEnch.enchantment, randomLevel)
+            applyEnchantment(itemStack, randomEnch.enchantment, randomLevel)
+        }
+
+        // Enchant it the way an enchanting table would. Vanilla's chamber
+        // rewards do this for their bows, crossbows, axes and chestplates, and
+        // it produces a whole believable set of enchantments rather than a
+        // single one. Done last, and on the stack rather than the meta, because
+        // the server hands back a fresh item.
+        val enchantMin = lootItem.enchantWithLevelsMin
+        val enchantMax = lootItem.enchantWithLevelsMax
+        if (enchantMin != null && enchantMax != null) {
+            val levels = Random.nextInt(enchantMin, enchantMax + 1)
+            runCatching {
+                Bukkit.getItemFactory().enchantWithLevels(
+                    itemStack,
+                    levels,
+                    lootItem.enchantWithLevelsTreasure,
+                    java.util.Random(),
+                )
+            }.onSuccess { return it }
+                .onFailure {
+                    plugin.logger.warning(
+                        "loot.yml: could not enchant '${lootItem.type}' at level $levels " +
+                            "(${it.message}). The item still drops, just unenchanted."
+                    )
+                }
         }
 
         return itemStack
@@ -1338,6 +1462,16 @@ class LootManager(private val plugin: BetterTrialChambers) {
         try {
             val file = File(plugin.dataFolder, "loot.yml")
             val config = org.bukkit.configuration.file.YamlConfiguration()
+
+            // Record which Minecraft wrote this, so that if the server is ever
+            // moved back to an older version the load side can spot it and keep
+            // a copy of the file before anything goes wrong. See SaveVersionStamp.
+            val stamp = com.esmpfun.bettertrialchambers.utils.SaveVersionStamp
+            config.createSection(stamp.SECTION).apply {
+                set("minecraft-version", stamp.currentMinecraftVersion())
+                set("data-version", stamp.currentDataVersion())
+            }
+
             val root = config.createSection("loot-tables")
             lootTables.values.forEach { table ->
                 val sec = root.createSection(table.name)
@@ -1378,6 +1512,9 @@ class LootManager(private val plugin: BetterTrialChambers) {
                         poolMap["name"] = pool.name
                         poolMap["min-rolls"] = pool.minRolls
                         poolMap["max-rolls"] = pool.maxRolls
+                        // Only written when it is actually doing something, so
+                        // hand-authored pools are not littered with `chance: 1.0`.
+                        if (pool.chance < 1.0) poolMap["chance"] = pool.chance
                         if (pool.rollMode != com.esmpfun.bettertrialchambers.models.LootRollMode.WEIGHTED) {
                             poolMap["mode"] = pool.rollMode.name.lowercase()
                         }
@@ -1470,6 +1607,9 @@ class LootManager(private val plugin: BetterTrialChambers) {
         li.effectDuration?.let { map["effect-duration"] = it }
         li.durabilityMin?.let { map["durability-min"] = it }
         li.durabilityMax?.let { map["durability-max"] = it }
+        li.enchantWithLevelsMin?.let { map["enchant-with-levels-min"] = it }
+        li.enchantWithLevelsMax?.let { map["enchant-with-levels-max"] = it }
+        if (li.enchantWithLevelsTreasure) map["enchant-with-levels-treasure"] = true
         li.instrument?.let { map["instrument"] = it }
         li.serializedItem?.let { map["serialized-item"] = it }
         // Redeem cap — only written when non-default so untouched tables stay clean.
