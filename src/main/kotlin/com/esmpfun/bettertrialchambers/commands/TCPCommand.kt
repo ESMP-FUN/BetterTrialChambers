@@ -126,6 +126,10 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
             sender.sendMessage(plugin.getMessageComponent("no-permission"))
             return
         }
+        if (args.getOrNull(1)?.lowercase() == "structure") {
+            runStructureProbe(sender)
+            return
+        }
         if (args.getOrNull(1)?.lowercase() != "schema") {
             sender.sendMessage(plugin.getMessageComponent("debug-usage"))
             return
@@ -146,6 +150,38 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
                 }
             })
         }
+    }
+
+    /**
+     * `/trial debug structure` - checks whether this server can save a block
+     * along with everything it is holding and put it back unchanged.
+     *
+     * Works in empty air well above the world so it cannot disturb a build, and
+     * clears up after itself. Reports one line per thing checked.
+     */
+    private fun runStructureProbe(sender: CommandSender) {
+        val world = (sender as? Player)?.world ?: plugin.server.worlds.firstOrNull()
+        if (world == null) {
+            sender.sendMessage(plugin.getMessageComponent("debug-structure-no-world"))
+            return
+        }
+        val origin = Location(world, 0.0, (world.maxHeight - 20).toDouble(), 0.0)
+        sender.sendMessage(plugin.getMessageComponent("debug-structure-running",
+            "world" to world.name, "y" to origin.blockY))
+
+        plugin.scheduler.runAtLocation(origin, Runnable {
+            val results = com.esmpfun.bettertrialchambers.utils.StructureRoundTripProbe.run(plugin, origin)
+            results.forEach { r ->
+                sender.sendMessage(plugin.getMessageComponent("debug-structure-list-item",
+                    "flag" to if (r.passed) "<green>" else "<red>",
+                    "what" to r.what,
+                    "verdict" to if (r.passed) "kept" else "LOST",
+                    "detail" to r.detail))
+            }
+            val passed = results.count { it.passed }
+            sender.sendMessage(plugin.getMessageComponent("debug-structure-summary",
+                "passed" to passed, "total" to results.size))
+        })
     }
 
     private fun handleClaims(sender: CommandSender, args: Array<out String>) {
