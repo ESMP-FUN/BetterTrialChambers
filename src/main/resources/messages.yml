@@ -529,6 +529,7 @@ gui-item-added-to-loot: "&aAdded {item} to loot table"
 gui-item-removed-from-loot: "&cRemoved {item} from loot table"
 gui-loot-changes-saved: "&aLoot table changes saved!"
 gui-loot-pool-saved: "&aPool '{pool}' changes saved!"
+gui-loot-pool-vanished: "&cThe pool '{pool}' is no longer part of that loot table, so your changes were not saved. Close this menu and open it again."
 
 # GUI Info Messages - Pool Selector
 gui-pool-create-hint: "&eTo add a new pool, edit loot.yml directly and /trial reload"

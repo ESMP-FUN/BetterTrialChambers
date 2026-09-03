@@ -468,6 +468,21 @@ class LootEditorView(
 
     private fun saveDraft(player: Player) {
         val existingTable = plugin.lootManager.getTable(draft.tableName)
+
+        // Editing one pool of a table that has several. If the table has gone,
+        // or has stopped having pools, since this editor was opened, then the
+        // branch below would build a fresh single-pool table out of this one
+        // pool's contents and every other pool in it would be gone. Better to
+        // save nothing and say so.
+        if (poolName != null && (existingTable == null || existingTable.isLegacyFormat())) {
+            player.sendMessage(plugin.getMessageComponent("gui-loot-pool-vanished", "pool" to poolName))
+            plugin.logger.warning(
+                "Loot editor: '${draft.tableName}' no longer has a pool named '$poolName', " +
+                    "so the edit was not saved rather than risk replacing the whole table."
+            )
+            return
+        }
+
         val table = if (poolName != null && existingTable != null && !existingTable.isLegacyFormat()) {
             val updatedPools = existingTable.pools.map { pool ->
                 if (pool.name == poolName) {
