@@ -1,5 +1,6 @@
 package com.esmpfun.bettertrialchambers.managers
 
+import kotlin.coroutines.resume
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
 import com.esmpfun.bettertrialchambers.api.events.ChamberResetCompleteEvent
 import com.esmpfun.bettertrialchambers.api.events.ChamberResetEvent
@@ -638,6 +639,13 @@ class ResetManager(private val plugin: BetterTrialChambers) {
 
                         entities.forEach { entity ->
                             when {
+                                // Armour stands and displays count as living things to
+                                // the server, so without this they were swept away with
+                                // the mobs on every reset and never came back.
+                                // Decorations are handled by the restore instead.
+                                com.esmpfun.bettertrialchambers.utils.DecorationEntities.isDecoration(entity) -> {
+                                    // left alone here
+                                }
                                 entity is Item && plugin.config.getBoolean("reset.clear-ground-items", true) -> {
                                     entity.remove()
                                 }
@@ -942,12 +950,16 @@ class ResetManager(private val plugin: BetterTrialChambers) {
             com.esmpfun.bettertrialchambers.utils.FaweResetPlacer.isAvailable(plugin)
         ) {
             val faweSession = com.esmpfun.bettertrialchambers.utils.FaweResetPlacer(plugin).Session()
+            val faweDecorations = mutableListOf<com.esmpfun.bettertrialchambers.utils.DecorationEntities.Captured>()
             try {
-                val streamed = plugin.snapshotManager.streamSnapshotBlocks(snapshotFile, batchSize) { batch ->
+                val streamed = plugin.snapshotManager.streamSnapshotBlocks(
+                    snapshotFile, batchSize, onEntity = { faweDecorations.add(it) },
+                ) { batch ->
                     faweSession.placeBatch(batch)
                 }
                 if (streamed != null) {
                     faweSession.finish()
+                    restoreDecorations(chamber, faweDecorations)
                     plugin.logger.info("Restored $streamed blocks for chamber ${chamber.name} (FAWE)")
                     return streamed
                 }
@@ -964,16 +976,65 @@ class ResetManager(private val plugin: BetterTrialChambers) {
             onProgress = restoreProgressLogger(chamber.name),
             initiatingPlayer = initiatingPlayer
         )
-        val streamed = plugin.snapshotManager.streamSnapshotBlocks(snapshotFile, batchSize) { batch ->
+        val decorations = mutableListOf<com.esmpfun.bettertrialchambers.utils.DecorationEntities.Captured>()
+        val streamed = plugin.snapshotManager.streamSnapshotBlocks(
+            snapshotFile, batchSize, onEntity = { decorations.add(it) },
+        ) { batch ->
             session.submitBatch(batch)
         }
         val restored = session.finish()
+        restoreDecorations(chamber, decorations)
         if (streamed == null) {
             plugin.logger.severe("Snapshot stream for chamber ${chamber.name} failed after $restored blocks")
             return restored
         }
         plugin.logger.info("Restored $restored blocks for chamber ${chamber.name}")
         return restored
+    }
+
+    /**
+     * Puts the chamber's decorations back: item frames, paintings, armour
+     * stands, displays and cushions.
+     *
+     * Runs after the blocks are down, because an item frame needs the block it
+     * hangs on to exist first. Anything of that kind still standing in the
+     * chamber is cleared before the saved ones go in, so repeated resets cannot
+     * stack up copies.
+     *
+     * A snapshot taken before decorations were recorded has none, and this then
+     * does nothing at all rather than clearing what is there. That matters:
+     * otherwise upgrading would delete the decorations out of every chamber
+     * whose snapshot predates the change.
+     */
+    private suspend fun restoreDecorations(
+        chamber: Chamber,
+        saved: List<com.esmpfun.bettertrialchambers.utils.DecorationEntities.Captured>,
+    ) {
+        if (saved.isEmpty()) return
+        val world = chamber.getWorld() ?: return
+        val centre = Location(
+            world,
+            (chamber.minX + chamber.maxX) / 2.0,
+            (chamber.minY + chamber.maxY) / 2.0,
+            (chamber.minZ + chamber.maxZ) / 2.0,
+        )
+        val placed = suspendCancellableCoroutine<Int> { continuation ->
+            plugin.scheduler.runAtLocation(centre, Runnable {
+                continuation.resume(
+                    runCatching {
+                        com.esmpfun.bettertrialchambers.utils.DecorationEntities.restore(
+                            plugin.server, world, chamber.getEntitiesInside(), saved, plugin.logger,
+                        )
+                    }.getOrElse {
+                        plugin.logger.warning(
+                            "Could not put the decorations back in ${chamber.name}: ${it.message}"
+                        )
+                        0
+                    }
+                )
+            })
+        }
+        if (placed > 0) plugin.logger.info("Put back $placed decoration(s) in ${chamber.name}")
     }
 
     /**
