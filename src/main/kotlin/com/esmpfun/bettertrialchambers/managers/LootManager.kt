@@ -100,8 +100,20 @@ class LootManager(private val plugin: BetterTrialChambers) {
 
         val tablesSection = config.getConfigurationSection("loot-tables") ?: return
 
+        tablesUnreadable.clear()
         tablesSection.getKeys(false).forEach { tableName ->
-            val tableSection = tablesSection.getConfigurationSection(tableName) ?: return@forEach
+            val tableSection = tablesSection.getConfigurationSection(tableName)
+            if (tableSection == null) {
+                // Something is under this name that is not a table at all. Said
+                // out loud rather than passed over: it used to be skipped in
+                // silence, so nobody knew their table was not in use.
+                plugin.logger.severe(
+                    "loot.yml: '$tableName' does not look like a loot table and has been skipped. " +
+                        "A table needs its settings indented underneath its name."
+                )
+                tablesUnreadable.add(tableName)
+                return@forEach
+            }
 
             try {
                 val lootTable = parseLootTable(tableName, tableSection)
@@ -110,6 +122,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
             } catch (e: Exception) {
                 plugin.logger.severe("Failed to parse loot table $tableName: ${e.message}")
                 e.printStackTrace()
+                tablesUnreadable.add(tableName)
             }
         }
 
@@ -1458,9 +1471,40 @@ class LootManager(private val plugin: BetterTrialChambers) {
     fun getLootTableNames(): Set<String> = lootTables.keys
 
 
+    /**
+     * Names of tables in `loot.yml` that would not load this time round.
+     *
+     * They are not in memory, and saving rewrites the file from memory, so
+     * without this they would be quietly deleted from disk the first time
+     * anybody edited any loot in the menu. See [saveAllToFile].
+     */
+    private val tablesUnreadable = mutableSetOf<String>()
+
     fun saveAllToFile() {
         try {
             val file = File(plugin.dataFolder, "loot.yml")
+
+            // Saving rewrites the whole file from what is currently loaded. Any
+            // table that would not load is therefore not in what gets written,
+            // and would be gone for good. Somebody with a typo in one table who
+            // then edits a different one in the menu would lose the first
+            // outright, with no warning and no way back.
+            //
+            // A copy is kept first so nothing is ever actually lost, and the
+            // console says which tables are affected and where the copy is.
+            if (tablesUnreadable.isNotEmpty() && file.exists()) {
+                val backup = com.esmpfun.bettertrialchambers.utils.SaveVersionStamp.backUp(file)
+                plugin.logger.warning("=".repeat(72))
+                plugin.logger.warning(
+                    "These loot tables could not be read when the server started, so they " +
+                        "are not part of what is about to be saved: " + tablesUnreadable.joinToString(", ")
+                )
+                if (backup != null) {
+                    plugin.logger.warning("A copy of loot.yml exactly as it was has been saved as ${backup.name}.")
+                    plugin.logger.warning("Fix the problem the console reported earlier, then copy those tables back.")
+                }
+                plugin.logger.warning("=".repeat(72))
+            }
             val config = org.bukkit.configuration.file.YamlConfiguration()
 
             // Record which Minecraft wrote this, so that if the server is ever
