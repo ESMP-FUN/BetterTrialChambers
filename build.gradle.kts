@@ -35,10 +35,22 @@ repositories {
 }
 
 dependencies {
-    // Paper API — 26.x track (the `-mc26` build). Carries the same Dialog API as 1.21.7+
-    // (used by `/trial setup`); plugin.yml's api-version '26.1' keeps this jar to 26.x servers,
-    // while the master build targets 1.21.7 + api-version '1.21'.
-    compileOnly("io.papermc.paper:paper-api:26.1.2.build.+")
+    // Paper API - 26.3 track (the `-mc263` build). plugin.yml's api-version '26.3'
+    // keeps this jar to 26.3+ servers; the mc26 build targets 26.1.2 + api-version
+    // '26.1', and the master build targets 1.21.7 + api-version '1.21'.
+    //
+    // PINNED TO 26.2 ON PURPOSE, FOR NOW. As of 2026-09-03 Mojang has shipped
+    // 26.3 Pre-Release 1 but PaperMC has published no 26.3 artifact: their newest
+    // is 26.2.build.121-stable, and 26.3 work is still on the unpublished
+    // `dev/26.3` branch. 26.2 is the closest API that exists, and every 26.3
+    // change audited so far is additive from a plugin's point of view, so the
+    // 26.3-only code paths in this branch are written defensively (capability
+    // checks / reflection) rather than against classes we cannot compile against.
+    //
+    // WHEN PAPER PUBLISHES 26.3: bump this to the 26.3 build, then work through
+    // the sites marked `TODO(26.3-api)` in the source - each one names exactly
+    // what to re-check.
+    compileOnly("io.papermc.paper:paper-api:26.2.build.121-stable")
 
     // Log4j core (bundled by the server at runtime) — for the console log filter
     // that mutes vanilla trial-spawner spam.
@@ -121,13 +133,18 @@ tasks {
         // Configure the Minecraft version for our task.
         // This is the only required configuration besides applying the plugin.
         // Your plugin's jar (or shadowJar if present) will be used automatically.
-        minecraftVersion("26.1.2")
+        // run-paper can only download versions PaperMC has actually published,
+        // so this stays on the newest published release until a 26.3 build exists.
+        // For real 26.3 testing use the vanilla pre-release server jar by hand.
+        minecraftVersion("26.2")
     }
 }
 
 // Use JDK 25 to compile against the Paper 26.x API, but output Java 21 bytecode so
 // the Shadow jar packager (which bundles an older ASM) can process the class files.
-// api-version: '26.1' in plugin.yml is what prevents this jar from loading on 1.21.x servers.
+// api-version: '26.3' in plugin.yml is what prevents this jar from loading on
+// 1.21.x and 26.1/26.2 servers. 26.3 itself ships on Java 25 (version.json says
+// java_version: 25), so a 26.3 server can always load Java 21 bytecode.
 kotlin {
     jvmToolchain {
         languageVersion.set(JavaLanguageVersion.of(25))
@@ -154,7 +171,7 @@ configurations.matching {
 
 tasks {
     shadowJar {
-        archiveClassifier.set("mc26")
+        archiveClassifier.set("mc263")
         // Do not relocate Kotlin stdlib or kotlinx-coroutines to ensure Bukkit can find them
         // They will be shaded into the jar with their original package names
         // This avoids NoClassDefFoundError for kotlinx.coroutines.Dispatchers during plugin bootstrap
