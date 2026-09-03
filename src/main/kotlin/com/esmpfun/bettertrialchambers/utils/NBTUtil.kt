@@ -409,7 +409,8 @@ object NBTUtil {
     private fun restoreLectern(lectern: org.bukkit.block.Lectern, data: Map<String, Any>): Boolean {
         return try {
             (data["book"] as? String)?.let { encoded ->
-                lectern.inventory.setItem(0, ItemStack.deserializeBytes(Base64.getDecoder().decode(encoded)))
+                // The state's own copy, not the live one: see restoreContainer.
+                lectern.snapshotInventory.setItem(0, ItemStack.deserializeBytes(Base64.getDecoder().decode(encoded)))
             }
             (data["page"] as? Int)?.let { runCatching { lectern.page = it } }
             lectern.update(true, false)
@@ -457,7 +458,8 @@ object NBTUtil {
         return try {
             (data["items"] as? String)?.let { encoded ->
                 val decoded = decodeItems(encoded)
-                val inv = shelf.inventory
+                // Same reason as restoreContainer: the state's own copy, not the live one.
+                val inv = shelf.snapshotInventory
                 for (i in 0 until minOf(inv.size, decoded.size)) inv.setItem(i, decoded[i])
             }
             (data["lastInteractedSlot"] as? Int)?.let { runCatching { shelf.lastInteractedSlot = it } }
@@ -555,7 +557,13 @@ object NBTUtil {
                 val items = data["items"] as? String
                 if (items != null) {
                     val decoded = decodeItems(items)
-                    val inv = container.inventory
+                    // Written into the block state's own copy, not the live one.
+                    // A block state hands out the live inventory, and update()
+                    // then writes the state's copy over the top. That copy was
+                    // taken before any of this ran, so writing to the live one
+                    // and calling update() puts the contents in and immediately
+                    // takes them back out again.
+                    val inv = container.snapshotInventory
                     inv.clear()
                     for (i in 0 until minOf(inv.size, decoded.size)) inv.setItem(i, decoded[i])
                 }
@@ -734,7 +742,8 @@ object NBTUtil {
                 }
             } else {
                 (data["item"] as? String)?.let { encoded ->
-                    pot.inventory.item = ItemStack.deserializeBytes(Base64.getDecoder().decode(encoded))
+                    // The state's own copy, not the live one: see restoreContainer.
+                    pot.snapshotInventory.item = ItemStack.deserializeBytes(Base64.getDecoder().decode(encoded))
                 }
             }
 
