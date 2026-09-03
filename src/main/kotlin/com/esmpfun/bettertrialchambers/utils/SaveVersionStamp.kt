@@ -74,18 +74,23 @@ object SaveVersionStamp {
      * @param stampedDataVersion the number read out of the file, or 0 when the
      *   file predates stamping (which is normal and never a problem, because
      *   anything older can always be read).
+     * @param takeBackup whether to copy the file first. On for text files a
+     *   person edits, off for large binary ones like chamber snapshots, where a
+     *   copy would double the disk used for no real gain: a snapshot is rebuilt
+     *   by taking a new one, not by hand-editing the old one.
      */
     fun warnIfFromNewerVersion(
         file: File,
         stampedDataVersion: Int,
         stampedMinecraftVersion: String?,
         logger: Logger,
+        takeBackup: Boolean = true,
     ): Boolean {
         val current = currentDataVersion()
         if (current == 0 || stampedDataVersion <= current) return false
 
         val wroteIt = stampedMinecraftVersion ?: "a newer version"
-        val backup = backUp(file)
+        val backup = if (takeBackup) backUp(file) else null
         logger.warning("=".repeat(72))
         logger.warning("${file.name} was last saved on Minecraft $wroteIt, and this server is")
         logger.warning("running ${currentMinecraftVersion()}. Minecraft can open a file from an older")
@@ -96,6 +101,11 @@ object SaveVersionStamp {
             logger.warning("  ${backup.name}")
             logger.warning("Nothing has been deleted. If you go back to Minecraft $wroteIt, rename")
             logger.warning("that copy back to ${file.name} and everything returns as it was.")
+        } else {
+            logger.warning("")
+            logger.warning("Nothing has been changed or deleted. Parts of it may simply not come")
+            logger.warning("back, and the console will say which. Going back to Minecraft $wroteIt")
+            logger.warning("restores it fully.")
         }
         logger.warning("=".repeat(72))
         return true
