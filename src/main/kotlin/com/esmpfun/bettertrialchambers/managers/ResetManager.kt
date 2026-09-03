@@ -18,6 +18,7 @@ import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.coroutines.resume
 
 /**
  * Manages automatic chamber resets with warnings, player teleportation, and snapshot restoration.
@@ -44,14 +45,10 @@ class ResetManager(private val plugin: BetterTrialChambers) {
     private val resetStaggerMs: Long
         get() = plugin.config.getLong("global.reset-stagger-seconds", 5L).coerceAtLeast(0L) * 1000L
 
-    private companion object {
-        // Solid blocks you still shouldn't be dropped onto.
-        val HAZARD_BLOCKS = setOf(
-            Material.LAVA, Material.MAGMA_BLOCK, Material.POINTED_DRIPSTONE, Material.CACTUS,
-            Material.FIRE, Material.SOUL_FIRE, Material.CAMPFIRE, Material.SOUL_CAMPFIRE,
-            Material.SWEET_BERRY_BUSH, Material.WITHER_ROSE, Material.POWDER_SNOW,
-        )
-    }
+    // Which blocks are safe to stand on, and which will hurt you the moment you
+    // land, now come from TeleportSafety. On 26.3 that reads the game's own
+    // #dangerous_for_teleportation and #entities_can_teleport_to block tags; on
+    // older servers it falls back to the hand-written list this replaced.
 
     /**
      * Starts monitoring and scheduling resets for all chambers.
@@ -455,8 +452,8 @@ class ResetManager(private val plugin: BetterTrialChambers) {
      * server versions without the effect rather than referencing a constant by name.
      */
     private fun clearTrialOmen(chamber: Chamber) {
-        val trialOmen = org.bukkit.Registry.POTION_EFFECT_TYPE.get(org.bukkit.NamespacedKey.minecraft("trial_omen"))
-        val badOmen = org.bukkit.Registry.POTION_EFFECT_TYPE.get(org.bukkit.NamespacedKey.minecraft("bad_omen"))
+        val trialOmen = com.esmpfun.bettertrialchambers.utils.Registries.potionEffect("trial_omen")
+        val badOmen = com.esmpfun.bettertrialchambers.utils.Registries.potionEffect("bad_omen")
         if (trialOmen == null && badOmen == null) return
         plugin.scheduler.runTask(Runnable {
             chamber.getPlayersInside().forEach { player ->
@@ -486,7 +483,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                     plugin.logger.warning("Could not capture reset audience for '${chamber.name}': ${e.message}")
                     emptySet()
                 }
-                continuation.resume(ids) {}
+                continuation.resume(ids)
             })
         }
 
@@ -504,7 +501,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                     try {
                         val players = chamber.getPlayersInside()
                         if (players.isEmpty()) {
-                            continuation.resume(Unit) {}
+                            continuation.resume(Unit)
                             return@Runnable
                         }
 
@@ -527,7 +524,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                                     synchronized(this) {
                                         remaining--
                                         if (remaining == 0) {
-                                            continuation.resume(Unit) {}
+                                            continuation.resume(Unit)
                                         }
                                     }
                                 }
@@ -536,7 +533,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                                 synchronized(this) {
                                     remaining--
                                     if (remaining == 0) {
-                                        continuation.resume(Unit) {}
+                                        continuation.resume(Unit)
                                     }
                                 }
                             })
@@ -587,8 +584,11 @@ class ResetManager(private val plugin: BetterTrialChambers) {
             val below = world.getBlockAt(x, y - 1, z)
             val feet = world.getBlockAt(x, y, z)
             val head = world.getBlockAt(x, y + 1, z)
-            if (below.type.isSolid && below.type !in HAZARD_BLOCKS &&
-                feet.isPassable && !feet.isLiquid && head.isPassable && !head.isLiquid
+            if (com.esmpfun.bettertrialchambers.utils.TeleportSafety.isSafeStandingSpot(
+                    below = below.type,
+                    feetPassable = feet.isPassable, feetLiquid = feet.isLiquid,
+                    headPassable = head.isPassable, headLiquid = head.isLiquid,
+                )
             ) {
                 return y
             }
@@ -639,7 +639,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                                 }
                             }
                         }
-                        continuation.resume(Unit) {}
+                        continuation.resume(Unit)
                     } catch (e: Exception) {
                         continuation.resumeWith(Result.failure(e))
                     }
@@ -785,10 +785,10 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                                 }
                             }
                         }
-                                continuation.resume(batchResets) {}
+                                continuation.resume(batchResets)
                             } catch (e: Exception) {
                                 plugin.logger.warning("Error resetting trial spawners: ${e.message}")
-                                continuation.resume(0) {}  // Don't fail the whole reset
+                                continuation.resume(0)  // Don't fail the whole reset
                             }
                         })
                     }

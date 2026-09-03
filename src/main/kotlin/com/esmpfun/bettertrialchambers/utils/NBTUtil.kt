@@ -146,9 +146,22 @@ object NBTUtil {
      * stored item otherwise.
      */
     private fun captureDecoratedPot(pot: DecoratedPot): Map<String, Any> {
+        // A pot side can be genuinely blank. Up to 26.2 the game had no way to say
+        // that, so a blank side reported itself as a plain brick; 26.3 made blank
+        // sides real, and they drop nothing when the pot is broken. Reading the
+        // side into a nullable and skipping anything blank means a blank side is
+        // simply not written to the snapshot, and the restore below then leaves it
+        // blank instead of stamping a brick onto it.
+        //
+        // TODO(26.3-api): once Paper publishes 26.3, check whether getSherd returns
+        // null or AIR for a blank side and whether setSherd accepts a way to clear
+        // one. Both cases are already handled here, but confirm which one is real.
         val sherds = mutableMapOf<String, String>()
         DecoratedPot.Side.entries.forEach { side ->
-            sherds[side.name] = pot.getSherd(side).name
+            val sherd: org.bukkit.Material? = runCatching { pot.getSherd(side) }.getOrNull()
+            if (sherd != null && !sherd.isAir) {
+                sherds[side.name] = sherd.name
+            }
         }
 
         val map = mutableMapOf<String, Any>(
@@ -203,9 +216,62 @@ object NBTUtil {
 
     private val gson = net.kyori.adventure.text.serializer.gson.GsonComponentSerializer.gson()
 
-    /** Sign: both sides' lines (Component JSON), glow + dye color per side, waxed state. */
+    /**
+     * Reads and writes a sign's "op features" switch, which 26.3 introduced.
+     *
+     * Up to 26.2, clicking a sign whose text carried a command just ran it. In
+     * 26.3 that only happens when the sign has this switch turned on, and a sign
+     * the game creates fresh has it off. That matters here because restoring a
+     * chamber rebuilds its signs: without carrying the switch across, an admin's
+     * "click here" command sign inside a chamber would quietly stop working the
+     * first time the chamber reset.
+     *
+     * BTC's 26.3 branch still compiles against the 26.2 API (Paper has not
+     * published a 26.3 one yet), so the switch is reached by looking the methods
+     * up on the running server rather than calling them directly. On a server
+     * that does not have them, every call here does nothing, which is the correct
+     * behaviour for 26.2 and earlier.
+     *
+     * TODO(26.3-api): when Paper publishes 26.3, replace this whole object with
+     * the direct getter/setter and delete the lookup.
+     */
+    private object SignOpFeatures {
+        private val getter by lazy {
+            runCatching {
+                org.bukkit.block.Sign::class.java.methods.firstOrNull {
+                    it.name.contains("OpFeatures", ignoreCase = true) &&
+                        it.parameterCount == 0 &&
+                        (it.returnType == Boolean::class.javaPrimitiveType || it.returnType == Boolean::class.javaObjectType)
+                }
+            }.getOrNull()
+        }
+        private val setter by lazy {
+            runCatching {
+                org.bukkit.block.Sign::class.java.methods.firstOrNull {
+                    it.name.contains("OpFeatures", ignoreCase = true) &&
+                        it.parameterCount == 1 &&
+                        (it.parameterTypes[0] == Boolean::class.javaPrimitiveType || it.parameterTypes[0] == Boolean::class.javaObjectType)
+                }
+            }.getOrNull()
+        }
+
+        /** The sign's current setting, or null on a server that has no such setting. */
+        fun read(sign: org.bukkit.block.Sign): Boolean? =
+            runCatching { getter?.invoke(sign) as? Boolean }.getOrNull()
+
+        /** Applies [value]; does nothing on a server that has no such setting. */
+        fun write(sign: org.bukkit.block.Sign, value: Boolean) {
+            runCatching { setter?.invoke(sign, value) }
+        }
+    }
+
+    /**
+     * Sign: both sides' lines (Component JSON), glow + dye color per side, waxed
+     * state, and (26.3 and later) whether the sign is allowed to run commands.
+     */
     private fun captureSign(sign: org.bukkit.block.Sign): Map<String, Any> = try {
         val map = mutableMapOf<String, Any>("type" to "SIGN", "waxed" to sign.isWaxed)
+        SignOpFeatures.read(sign)?.let { map["allowOpFeatures"] = it }
         for (side in org.bukkit.block.sign.Side.entries) {
             val s = sign.getSide(side)
             map["${side.name}_lines"] = s.lines().map { gson.serialize(it) }
@@ -231,6 +297,7 @@ object NBTUtil {
                 }
             }
             (data["waxed"] as? Boolean)?.let { sign.isWaxed = it }
+            (data["allowOpFeatures"] as? Boolean)?.let { SignOpFeatures.write(sign, it) }
             sign.update(true, false)
             true
         } catch (_: Exception) {
@@ -241,14 +308,20 @@ object NBTUtil {
     /**
      * Skull: owner profile as plain fields (uuid/name + the `textures` property's
      * value/signature) so player-head skins survive; profile objects themselves are
-     * not JDK-serializable. Restored via Paper's Bukkit.createProfile.
+     * not JDK-serializable.
+     *
+     * Goes through `Skull.getProfile()` / `setProfile(ResolvableProfile)`, the
+     * data-component profile API. The older `getPlayerProfile()` /
+     * `setPlayerProfile()` pair is deprecated on the 26.x API and carries the same
+     * three fields, so the snapshot format is unchanged and older snapshots still
+     * restore correctly.
      */
     private fun captureSkull(skull: org.bukkit.block.Skull): Map<String, Any> = try {
         val map = mutableMapOf<String, Any>("type" to "SKULL")
-        skull.playerProfile?.let { profile ->
-            profile.id?.let { map["uuid"] = it.toString() }
-            profile.name?.let { map["name"] = it }
-            profile.properties.firstOrNull { it.name == "textures" }?.let { prop ->
+        skull.profile?.let { profile ->
+            profile.uuid()?.let { map["uuid"] = it.toString() }
+            profile.name()?.let { map["name"] = it }
+            profile.properties().firstOrNull { it.name == "textures" }?.let { prop ->
                 map["textureValue"] = prop.value
                 prop.signature?.let { map["textureSignature"] = it }
             }
@@ -264,15 +337,17 @@ object NBTUtil {
             val uuid = (data["uuid"] as? String)?.let { runCatching { java.util.UUID.fromString(it) }.getOrNull() }
             val name = data["name"] as? String
             if (uuid != null || name != null) {
-                val profile = Bukkit.createProfile(uuid, name)
+                val builder = io.papermc.paper.datacomponent.item.ResolvableProfile.resolvableProfile()
+                uuid?.let { builder.uuid(it) }
+                name?.let { builder.name(it) }
                 (data["textureValue"] as? String)?.let { value ->
-                    profile.setProperty(
+                    builder.addProperty(
                         com.destroystokyo.paper.profile.ProfileProperty(
                             "textures", value, data["textureSignature"] as? String
                         )
                     )
                 }
-                skull.setPlayerProfile(profile)
+                skull.profile = builder.build()
             }
             (data["noteBlockSound"] as? String)?.let { key ->
                 runCatching { NamespacedKey.fromString(key)?.let { skull.noteBlockSound = it } }
@@ -403,7 +478,7 @@ object NBTUtil {
             mapOf("type" to "BRUSHABLE", "lootTable" to table.key.toString(), "seed" to brushable.seed.toString())
         } else {
             val map = mutableMapOf<String, Any>("type" to "BRUSHABLE")
-            brushable.item?.takeUnless { it.type.isAir }?.let {
+            brushable.item.takeUnless { it.type.isAir }?.let {
                 map["item"] = Base64.getEncoder().encodeToString(it.serializeAsBytes())
             }
             map
@@ -667,17 +742,16 @@ object NBTUtil {
             @Suppress("UNCHECKED_CAST")
             val sherds = data["sherds"] as? Map<String, String> ?: return false
 
+            // Only sides the snapshot actually recorded are written back. A side
+            // that was blank when captured is left exactly as the freshly restored
+            // block has it, which is blank, so blank sides stay blank across a
+            // reset rather than turning into bricks.
             sherds.forEach { (sideName, sherdName) ->
-                val side = DecoratedPot.Side.valueOf(sideName)
-                val material = try {
-                    org.bukkit.Material.valueOf(sherdName)
-                } catch (_: IllegalArgumentException) {
-                    null
-                }
-
-                if (material != null) {
-                    pot.setSherd(side, material)
-                }
+                val side = runCatching { DecoratedPot.Side.valueOf(sideName) }.getOrNull()
+                    ?: return@forEach
+                val material = runCatching { org.bukkit.Material.valueOf(sherdName) }.getOrNull()
+                    ?: return@forEach
+                runCatching { pot.setSherd(side, material) }
             }
 
             // Re-arm the break-loot the pot lost on a BlockData restore: its loot
