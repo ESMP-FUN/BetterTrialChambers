@@ -17,6 +17,58 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
         "stats", "leaderboard", "lb", "top", "reset", "menu", "loot", "mobs", "give",
         "pause", "resume", "rename", "dungeon", "container", "claims", "setup", "debug", "update"
     )
+    /**
+     * The permission each subcommand's own handler checks before doing anything.
+     *
+     * Used to keep the tab-completion list to the things the person typing can
+     * actually run. Without it, every player pressing tab after `/trial` was
+     * shown all thirty commands, nearly all of which answer "you don't have
+     * permission", including `delete` and `reload`.
+     *
+     * **Anything missing from this map stays visible.** Taken from the checks in
+     * the handlers themselves rather than written from memory, and a subcommand
+     * left out of it should show up and be refused, which is the old behaviour,
+     * rather than vanish for somebody who is allowed to use it.
+     */
+    private val subcommandPermissions = mapOf(
+        "claims" to "btc.admin.reload",
+        "debug" to "btc.admin.reload",
+        "delete" to "btc.admin.create",
+        "info" to "btc.admin",
+        "key" to "btc.admin.menu",
+        "leaderboard" to "btc.leaderboard",
+        "lb" to "btc.leaderboard",
+        "top" to "btc.leaderboard",
+        "list" to "btc.admin",
+        "menu" to "btc.admin.menu",
+        "paste" to "btc.admin.generate",
+        "pause" to "btc.admin.pause",
+        "reload" to "btc.admin.reload",
+        "rename" to "btc.admin.create",
+        "reset" to "btc.admin.menu",
+        "resume" to "btc.admin.pause",
+        "scan" to "btc.admin.scan",
+        "setexit" to "btc.admin.create",
+        "snapshot" to "btc.admin.snapshot",
+        "stats" to "btc.stats",
+        "update" to "btc.admin.reload",
+        "vault" to "btc.admin.menu",
+        // These are handled by their own classes rather than a method here;
+        // same idea, the permission is the one that class checks first.
+        "container" to "btc.admin.containers",
+        "dungeon" to "btc.admin.generate",
+        "generate" to "btc.admin.generate",
+        "give" to "btc.give",
+        "loot" to "btc.admin.loot",
+        "mobs" to "btc.admin.mobs",
+        "setup" to "btc.admin.setup",
+    )
+
+    private fun canSee(sender: CommandSender, subcommand: String): Boolean {
+        val permission = subcommandPermissions[subcommand] ?: return true
+        return sender.hasPermission(permission)
+    }
+
     private val setupActions = listOf("start", "continue")
 
     private val claimsActions = listOf("scan")
@@ -42,8 +94,8 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
     ): List<String>? {
         return when (args.size) {
             1 -> {
-                // First argument - subcommand
-                subcommands.filter { it.startsWith(args[0].lowercase()) }
+                // First argument - subcommand, narrowed to what this person can run.
+                subcommands.filter { it.startsWith(args[0].lowercase()) && canSee(sender, it) }
             }
             2 -> {
                 // Second argument - depends on subcommand
