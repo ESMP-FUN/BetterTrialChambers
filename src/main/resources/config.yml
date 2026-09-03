@@ -82,6 +82,12 @@ global:
   teleport-location: EXIT_POINT # EXIT_POINT, OUTSIDE_BOUNDS, or WORLD_SPAWN
   blocks-per-tick: 500
   auto-snapshot-on-register: true
+
+  # Look for vaults and trial spawners straight after registering a chamber with
+  # /trial generate, so you do not have to run /trial scan yourself afterwards.
+  # Turn this off if you register very large regions and would rather scan them
+  # by hand at a quieter moment.
+  auto-scan-on-register: true
   # Throttle for chamber resets. When many chambers come due at once (e.g. lots of
   # auto-discovered chambers sharing one interval), these stop them all restoring
   # simultaneously and tanking TPS.
@@ -157,6 +163,20 @@ naming:
     - Colossus
     - Noita
     - Immortals
+
+# Extra messages, all off unless you turn them on
+messages:
+  # Tell a player when they walk into one of your chambers. Walking straight
+  # from one chamber into another does not count, so a player crossing a border
+  # is not told twice.
+  chamber-entry-message: false
+
+  # Tell a player when they leave one.
+  chamber-exit-message: false
+
+  # Use the plugin's own wording when a player dies inside a chamber, instead of
+  # the server's usual death message.
+  custom-death-message: false
 
 # Generation settings
 generation:
