@@ -215,6 +215,12 @@ tasks {
 
     test {
         useJUnitPlatform()
+        // MockK mocks final Kotlin classes by loading an agent into the running
+        // test JVM. From JDK 24 onwards that is refused unless it is asked for,
+        // and this branch compiles and tests on JDK 25, so without these every
+        // test that mocks anything dies with "Could not self-attach to current
+        // VM". The master branch is on 21 and never hit it.
+        jvmArgs("-XX:+EnableDynamicAgentLoading", "-Djdk.attach.allowAttachSelf=true")
     }
 }
 

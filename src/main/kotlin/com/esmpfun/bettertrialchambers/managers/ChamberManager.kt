@@ -790,6 +790,18 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      * Does not access the database.
      */
     fun getCachedChamberAt(location: Location): Chamber? {
+        // Worth the early exit: this is called from every protection handler,
+        // and some of those fire constantly (flowing water raises one event per
+        // block per few ticks). A server with no chambers registered should pay
+        // nothing at all for having the plugin installed.
+        //
+        // TODO(perf): this walks every chamber. Each step is cheap, because
+        //  Chamber.contains compares the world name before anything else, but it
+        //  is still linear in the number of chambers on a hot path. The fix is a
+        //  chunk-keyed index like TrialSpawnerIndex already uses for spawners.
+        //  Left alone for now because the cache is written in a dozen places and
+        //  an index that misses one of them is worse than a scan that cannot.
+        if (chamberCache.isEmpty()) return null
         return chamberCache.values.firstOrNull { it.contains(location) }
     }
 

@@ -318,6 +318,45 @@ protection:
   # are exempt; mob damage and self-damage are never affected.
   allow-pvp: true
   prevent-mob-griefing: true
+
+  # ---------------------------------------------------------------------------
+  # Other ways a chamber can be damaged
+  # ---------------------------------------------------------------------------
+  # Stopping people breaking and placing blocks does not cover everything. These
+  # cover the rest. They only ever apply inside a registered chamber, and anyone
+  # with the tcp.bypass.protection permission (which includes operators) ignores
+  # them entirely.
+
+  # Stop water and lava getting into a chamber. This covers emptying a bucket
+  # inside one, pouring it just outside so it flows in, and a dispenser firing a
+  # bucket through the wall. Emptying a bucket is not the same as placing a
+  # block as far as the server is concerned, which is why it needs its own
+  # setting. Liquid that was already part of the build keeps flowing normally.
+  prevent-liquid-flow: true
+
+  # Stop fires being lit inside a chamber, and stop fire spreading through one
+  # if something does catch.
+  prevent-fire: true
+
+  # Stop pistons moving blocks into or out of a chamber. A piston reaches twelve
+  # blocks, so without this someone can stand outside the walls and push blocks
+  # in, or pull them out with a sticky piston, without ever setting foot inside.
+  # A piston that sits inside the same chamber as the blocks it moves is left
+  # alone, so redstone built into a chamber still works.
+  prevent-piston-movement: true
+
+  # Protect item frames, paintings and armour stands. These are not blocks, so
+  # none of the block settings above have ever applied to them and anybody could
+  # take them. Turning a frame or swapping the item in it is still allowed, since
+  # a reset puts that back and some minigames rely on it.
+  protect-decorations: true
+
+  # Stop the world slowly changing a chamber on its own: leaves dropping, grass
+  # and sculk creeping, ice and snow melting, crops and trees growing, sponges
+  # soaking up water. This is off by default because it is the world behaving
+  # normally and a reset puts it back anyway. Turn it on for a build that has to
+  # stay exactly as it was placed in between resets.
+  prevent-natural-decay: false
   worldguard-integration: true
   # Land-claim plugin integrations: stop players creating or expanding a claim that
   # overlaps a registered Trial Chamber (so they can't claim a chamber and change its
