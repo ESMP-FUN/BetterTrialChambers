@@ -659,6 +659,26 @@ class VaultManager(private val plugin: BetterTrialChambers) {
     /**
      * Parses vault data from a result set.
      */
+    /**
+     * Reads a vault's type from its stored text.
+     *
+     * Falls back to a normal vault rather than throwing. These rows are read in
+     * bulk, so one unreadable value used to abandon the whole query and the
+     * chamber would come back looking as though it had no vaults at all, which
+     * quietly breaks scanning and resetting for it. A single vault of the wrong
+     * kind is a much smaller problem than that, and the warning names the row so
+     * it can be corrected.
+     */
+    private fun parseVaultType(stored: String?, vaultId: Int): VaultType {
+        val match = VaultType.entries.firstOrNull { it.name.equals(stored, ignoreCase = true) }
+        if (match != null) return match
+        plugin.logger.warning(
+            "Vault #$vaultId has an unrecognised type '$stored' stored for it; " +
+                "treating it as a normal vault. Re-scan the chamber to correct this."
+        )
+        return VaultType.NORMAL
+    }
+
     private fun parseVault(rs: ResultSet): VaultData {
         return VaultData(
             id = rs.getInt("id"),
@@ -666,7 +686,7 @@ class VaultManager(private val plugin: BetterTrialChambers) {
             x = rs.getInt("x"),
             y = rs.getInt("y"),
             z = rs.getInt("z"),
-            type = VaultType.valueOf(rs.getString("type")),
+            type = parseVaultType(rs.getString("type"), rs.getInt("id")),
             lootTable = rs.getString("loot_table")
         )
     }
