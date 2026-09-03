@@ -406,40 +406,15 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
 
     // ==== Encoding ====
 
-    fun encodeContents(contents: Array<ItemStack?>): String {
-        val baos = ByteArrayOutputStream()
-        DataOutputStream(baos).use { out ->
-            out.writeInt(contents.size)
-            for (item in contents) {
-                if (item == null || item.type.isAir) {
-                    out.writeInt(-1)
-                } else {
-                    val bytes = item.serializeAsBytes()
-                    out.writeInt(bytes.size)
-                    out.write(bytes)
-                }
-            }
-        }
-        return Base64.getEncoder().encodeToString(baos.toByteArray())
-    }
+    /**
+     * Contents to and from text. Both live in [ItemArrayCodec], which the
+     * chamber snapshots share, so the two cannot drift apart.
+     */
+    fun encodeContents(contents: Array<ItemStack?>): String =
+        com.esmpfun.bettertrialchambers.utils.ItemArrayCodec.encode(contents)
 
-    fun decodeContents(encoded: String): Array<ItemStack?>? = try {
-        val bytes = Base64.getDecoder().decode(encoded)
-        DataInputStream(ByteArrayInputStream(bytes)).use { input ->
-            val size = input.readInt()
-            require(size in 0..128) { "implausible container size $size" }
-            Array(size) {
-                val len = input.readInt()
-                if (len < 0) null
-                else {
-                    val buf = ByteArray(len)
-                    input.readFully(buf)
-                    ItemStack.deserializeBytes(buf)
-                }
-            }
+    fun decodeContents(encoded: String): Array<ItemStack?>? =
+        com.esmpfun.bettertrialchambers.utils.ItemArrayCodec.decode(encoded) { problem ->
+            plugin.logger.warning("[ContainerLoot] $problem")
         }
-    } catch (e: Exception) {
-        plugin.logger.warning("[ContainerLoot] Corrupt contents row ignored: ${e.message}")
-        null
-    }
 }
