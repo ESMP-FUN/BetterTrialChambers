@@ -1,7 +1,7 @@
 name: BetterTrialChambers
 version: ${version}
 main: com.esmpfun.bettertrialchambers.BetterTrialChambers
-api-version: '26.1'
+api-version: '26.3'
 prefix: BTC
 load: POSTWORLD
 authors: [ darkstarworks ]
