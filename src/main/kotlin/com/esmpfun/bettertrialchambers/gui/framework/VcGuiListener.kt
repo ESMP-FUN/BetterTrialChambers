@@ -15,13 +15,20 @@ import org.bukkit.event.inventory.InventoryDragEvent
  *
  * Implements the canonical Paper partial-cancel pattern:
  *
- * - **Cross-inventory actions** ([InventoryAction.MOVE_TO_OTHER_INVENTORY],
- *   [InventoryAction.COLLECT_TO_CURSOR],
- *   [InventoryAction.HOTBAR_SWAP],
- *   [InventoryAction.HOTBAR_MOVE_AND_READD]) are **always cancelled**,
- *   regardless of which inventory was clicked. These are the dup-exploit
- *   family — letting any of them through would let a player move items
- *   between their inventory and our GUI in ways we can't reason about.
+ * - **Cross-inventory actions** are the dup-exploit family, and each is handled
+ *   according to whether it can actually reach into the top inventory:
+ *   - [InventoryAction.COLLECT_TO_CURSOR] is **always cancelled**, wherever the
+ *     double-click started, because the sweep pulls matching items out of both
+ *     inventories at once.
+ *   - [InventoryAction.MOVE_TO_OTHER_INVENTORY] is always cancelled too, by one
+ *     route or the other: a bottom-inv shift-click is cancelled here, and a
+ *     top-inv one is cancelled by the dispatch path below so the slot's own
+ *     handler still gets to see it.
+ *   - [InventoryAction.HOTBAR_SWAP] and [InventoryAction.HOTBAR_MOVE_AND_READD]
+ *     are cancelled **only when the hovered slot is in the top inventory**.
+ *     A number-key swap between two of the player's own slots cannot touch our
+ *     inventory, and blanket-cancelling it would break ordinary hotbar
+ *     rearrangement while a GUI happens to be open.
  *
  * - **`MOVE_TO_OTHER_INVENTORY` (shift-click) in the bottom inventory**
  *   gets one extra check first: if any slot in the GUI declared
@@ -186,6 +193,16 @@ class VcGuiListener : Listener {
     fun onDrag(event: InventoryDragEvent) {
         val holder = event.inventory.holder as? BaseHolder ?: return
         val gui = holder.gui
+        val dragger = event.whoClicked as? Player ?: return
+        // Same permission re-check clicking does. Without it, a player whose
+        // permission was taken away mid-session could still drag in a GUI that
+        // refuses their clicks.
+        if (gui.requiredPermission != null && !dragger.hasPermission(gui.requiredPermission)) {
+            event.isCancelled = true
+            dragger.closeInventory()
+            dragger.sendMessage(mm.deserialize("<red>You no longer have permission to use this GUI."))
+            return
+        }
         if (gui.freelyEditable) return  // pass through, see onClick comment
         val topSize = event.inventory.size
         val topSlotsTouched = event.rawSlots.filter { it < topSize }
@@ -202,7 +219,7 @@ class VcGuiListener : Listener {
                 val deposited = event.newItems[targetSlot]
                 if (deposited != null && !deposited.type.isAir) {
                     gui.handleDrag(DragContext(
-                        player = event.whoClicked as Player,
+                        player = dragger,
                         rawSlots = event.rawSlots,
                         newItems = event.newItems,
                         targetSlot = targetSlot,
@@ -224,6 +241,18 @@ class VcGuiListener : Listener {
     fun onClose(event: InventoryCloseEvent) {
         val holder = event.inventory.holder as? BaseHolder ?: return
         val player = event.player as? Player ?: return
-        holder.gui.handleClose(player)
+        // Whatever a GUI does on the way out stays inside that GUI. Some of
+        // these close handlers are the last thing standing between a player and
+        // the items they put into a deposit chest, so letting an exception out
+        // of here would strand them and fill the console with a stack trace
+        // nobody can act on. Reported against the GUI that caused it instead.
+        try {
+            holder.gui.handleClose(player)
+        } catch (e: Exception) {
+            player.server.logger.warning(
+                "[BTC] ${holder.gui.javaClass.simpleName} failed while closing for " +
+                    "${player.name}: ${e.message}"
+            )
+        }
     }
 }
