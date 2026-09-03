@@ -33,23 +33,21 @@ TAB characters will cause the entire YAML file to fail to load silently. This re
 
 ***
 
-## Want vanilla loot? It's already in the file.
+## Vanilla loot is what you already have
 
-Everything in `loot.yml` is fully customisable — but if you (or your players) just want the unmodified Minecraft 1.21 Trial Chamber drops, you don't have to build them yourself. Two ready-to-use loot tables — **`vanilla-normal`** and **`vanilla-ominous`** — are bundled inside `loot.yml` as a commented section titled **`VANILLA-ACCURATE LOOT TABLES`**.
+Out of the box, `loot.yml` gives out Minecraft's own Trial Chamber loot. The two tables it ships with, `default` for normal vaults and `ominous-default` for ominous ones, are the real thing: the same items, the same amounts, the same chances.
 
-They're faithful recreations transcribed directly from Mojang's own datapack JSONs (`data/minecraft/loot_table/chests/trial_chambers/*.json`), reproducing vanilla's three-pool structure (80/20 rare-or-common split, 1-3 common rolls, and a unique-item chance).
+They are generated straight from the game's own files rather than typed out by hand, so "the same as vanilla" means exactly that. Earlier versions shipped invented loot under those names and kept a separate commented-out copy of the real thing further down the file for you to paste in. That copy is gone, because there is nothing left to paste in.
 
-**To activate them:**
+Vanilla's vault loot is three pools, and that is how the file is laid out:
 
-1. Open `plugins/BetterTrialChambers/loot.yml`.
-2. Find the `VANILLA-ACCURATE LOOT TABLES` section.
-3. Copy the `vanilla-normal:` and/or `vanilla-ominous:` block, remove the leading `#` from every line, and paste it under `loot-tables:` — either replacing the bundled `default` / `ominous-default` examples, or alongside them under a new name.
-4. Run `/trial reload`.
-5. Either point existing chambers at the new table via the Chamber GUI → Settings → Loot Overrides, or rename your activated copy to `default` / `ominous-default` so every chamber picks it up automatically.
+1. **`main-reward`** gives one item. Four times out of five it comes from the rare list, and the fifth time from the everyday list.
+2. **`extra-supplies`** gives one to three more everyday items.
+3. **`unique`** gives one standout item, but the whole pool only runs a quarter of the time for a normal vault and three quarters of the time for an ominous one.
 
-The block includes inline comments explaining the small approximations the plugin's schema requires (e.g. vanilla's 25% unique-pool chance maps to the plugin's `min-rolls: 0, max-rolls: 1` ≈ 50%) so you can tune from there.
+Everything in there is yours to change. Edit it in this file, or in game through the loot editor, and your changes are saved back here. If you ever want the original back, delete `loot.yml` and restart the server; a fresh copy appears.
 
-**Or skip the transcription entirely** _(1.5.7+)_: reference the real vanilla tables directly with `type: VANILLA_TABLE` — see [Vanilla & Datapack Loot Tables](loot.yml.md#vanilla--datapack-loot-tables-passthrough) below. The transcribed tables remain useful when you want to _tweak_ vanilla's numbers; the passthrough is exact but not editable.
+**Want exact vanilla with no editing at all?** You can point straight at the game's own tables with `type: VANILLA_TABLE` - see [Vanilla & Datapack Loot Tables](loot.yml.md#vanilla--datapack-loot-tables-passthrough) below. The tables in this file are the ones to use when you want to *adjust* vanilla's numbers; the passthrough is exact but there is nothing in it to edit.
 
 ***
 
@@ -124,6 +122,32 @@ How many times to randomly pick from `weighted-items`. A random number between m
 
 {% hint style="warning" %}
 **Don't go crazy!** More rolls = more items. A vault that drops 20 items might be fun once, but it trivializes progression. Start conservative.
+{% endhint %}
+
+***
+
+### `chance`
+
+How often a pool runs at all. Leave it out and the pool always runs.
+
+Write it as a number from 0 to 1, or as a percentage if you find that easier - `chance: 0.25` and `chance: 25` mean the same thing.
+
+This is for a pool you only want to fire some of the time. Vanilla uses it for the standout item in a vault: that pool runs a quarter of the time for a normal vault and three quarters of the time for an ominous one. When a pool does not run, it gives nothing at all that opening, including its guaranteed items.
+
+```yaml
+- name: "unique"
+  min-rolls: 1
+  max-rolls: 1
+  chance: 0.25          # runs one opening in four
+  weighted-items:
+    - type: HEAVY_CORE
+      amount-min: 1
+      amount-max: 1
+      weight: 1
+```
+
+{% hint style="info" %}
+**Why not just use `min-rolls: 0`?** Because `min-rolls: 0` with `max-rolls: 1` picks 0 or 1 evenly, which is half the time, not a quarter. If you want a specific chance, say it with `chance`.
 {% endhint %}
 
 ***
@@ -618,6 +642,10 @@ Pick **ONE** random enchantment from a pool—great for variety!
 
 **Perfect for enchanted books!** Each player gets a different random enchantment.
 
+{% hint style="info" %}
+**About enchanted books.** An enchanted book does not work like an enchanted sword. The sword *is* enchanted; the book *holds* an enchantment for a player to move onto something else at an anvil. Use `type: ENCHANTED_BOOK` and the plugin puts the enchantment where an anvil can find it. Putting enchantment lines on a plain `BOOK` gives you a book that looks enchanted and does nothing at an anvil.
+{% endhint %}
+
 <details>
 
 <summary><strong>Examples</strong></summary>
@@ -645,6 +673,31 @@ Pick **ONE** random enchantment from a pool—great for variety!
 ```
 
 </details>
+
+#### Enchant It Like an Enchanting Table
+
+Instead of naming the enchantments yourself, you can tell the plugin to enchant the item exactly the way an enchanting table would, at a random cost between two levels.
+
+```yaml
+- type: BOW
+  amount-min: 1
+  amount-max: 1
+  weight: 10.0
+  enchant-with-levels-min: 5     # as if enchanted at level 5...
+  enchant-with-levels-max: 15    # ...through level 15
+```
+
+This is what Minecraft itself does for the bows, crossbows, axes and chestplates in a Trial Chamber vault, and it is why those come out with a believable set of enchantments rather than a single one. A higher level range means better and more numerous enchantments, the same as at a real enchanting table.
+
+Both lines are needed; one on its own does nothing.
+
+By default this will not produce treasure-only enchantments such as Mending or Soul Speed, which matches vanilla's chamber rewards. Add `enchant-with-levels-treasure: true` if you want them possible.
+
+{% hint style="info" %}
+**Which should I use?** Use `enchant-with-levels-min` / `-max` when you want the item to feel like it came off an enchanting table and you do not mind what it rolls. Use `random-enchantment-pool` when you want to control exactly which enchantments can appear.
+{% endhint %}
+
+***
 
 #### Combining Enchantment Features
 
