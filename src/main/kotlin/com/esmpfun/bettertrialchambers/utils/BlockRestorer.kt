@@ -41,6 +41,16 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
     ) {
         private val processed = java.util.concurrent.atomic.AtomicInteger(0)
         private val pendingBatches = java.util.concurrent.atomic.AtomicInteger(0)
+
+        // Blocks that could not be put back, counted rather than reported one by
+        // one. When something systematic is wrong (most likely a snapshot taken
+        // on a newer Minecraft, whose block descriptions this version cannot
+        // read) every single block fails, and a chamber can hold millions of
+        // them. A line each would bury the actual problem under its own output,
+        // which is the same mistake the reset progress lines made before 2.0.11.
+        // The first few are named so there is something concrete to look at.
+        private val failed = java.util.concurrent.atomic.AtomicInteger(0)
+        private val failureExamples = java.util.Collections.synchronizedList(ArrayList<String>())
         private val completionSignal = CompletableDeferred<Unit>()
 
         @Volatile
@@ -102,9 +112,7 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
                                 }
                                 processed.incrementAndGet()
                             } catch (e: Exception) {
-                                plugin.logger.warning(
-                                    "Failed to restore block at ${location.blockX},${location.blockY},${location.blockZ}: ${e.message}"
-                                )
+                                noteFailure(location, e.message)
                             }
                         }
                         onProgress?.invoke(processed.get(), expectedTotal)
@@ -141,7 +149,35 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
                     plugin.logger.warning("Failed to finalize WorldEdit session: ${e.message}")
                 }
             }
+            reportFailures()
             return processed.get()
+        }
+
+        /** Records one block that could not be put back. */
+        fun noteFailure(location: Location, reason: String?) {
+            val n = failed.incrementAndGet()
+            if (n <= FAILURE_EXAMPLES) {
+                failureExamples.add(
+                    "${location.blockX},${location.blockY},${location.blockZ}" +
+                        (reason?.let { " ($it)" } ?: "")
+                )
+            }
+        }
+
+        /** One summary at the end, rather than a line per block. */
+        private fun reportFailures() {
+            val n = failed.get()
+            if (n == 0) return
+            plugin.logger.warning(
+                "$n block(s) could not be put back and were left as they were. " +
+                    "This usually means the snapshot was taken on a newer version of " +
+                    "Minecraft than this server is running. Taking a fresh snapshot of " +
+                    "the chamber on this version fixes it."
+            )
+            val examples = failureExamples.toList()
+            if (examples.isNotEmpty()) {
+                plugin.logger.warning("First ${examples.size} of them: ${examples.joinToString("; ")}")
+            }
         }
 
         private fun chunkKey(location: Location): Long =
@@ -274,6 +310,9 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
     }
 
     companion object {
+        /** How many failing block positions to name before just counting them. */
+        const val FAILURE_EXAMPLES = 5
+
         /** Pack block coords into a single long (vanilla BlockPos layout: 26/12/26 bits x/y/z). */
         fun pack(x: Int, y: Int, z: Int): Long =
             ((x.toLong() and 0x3FFFFFF) shl 38) or ((z.toLong() and 0x3FFFFFF) shl 12) or (y.toLong() and 0xFFF)
@@ -306,9 +345,14 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
             val blockDataString = resetTrialSpawnerState(snapshot.blockData)
             val blockData = Bukkit.createBlockData(blockDataString)
             block.setBlockData(blockData, false) // Don't apply physics immediately
-        } catch (_: Exception) {
-            plugin.logger.warning("Invalid block data at ${location.blockX},${location.blockY},${location.blockZ}: ${snapshot.blockData}")
-            return
+        } catch (e: Exception) {
+            // Thrown on rather than logged here, so the caller can count these
+            // instead of writing a console line for each one. A snapshot from a
+            // newer Minecraft fails on every single block, and a chamber can
+            // hold millions.
+            throw IllegalArgumentException(
+                "cannot read the saved block '${snapshot.blockData}'", e
+            )
         }
 
         // Restore tile entity data if present
