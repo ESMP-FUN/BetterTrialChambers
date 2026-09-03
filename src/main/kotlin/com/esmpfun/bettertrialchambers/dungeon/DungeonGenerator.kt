@@ -22,6 +22,15 @@ class DungeonGenerator(
 
     private val stitcher = DungeonStitcher()
 
+    private companion object {
+        /**
+         * How a trial spawner appears at the start of a saved block description,
+         * with or without a trailing `[state=...]` part. Matched as text because
+         * the check runs before the blocks exist in the world.
+         */
+        const val TRIAL_SPAWNER_ID = "minecraft:trial_spawner"
+    }
+
     /** Generate + register a dungeon chamber named [name]. Returns true on success. */
     suspend fun generate(
         world: World,
@@ -72,6 +81,18 @@ class DungeonGenerator(
         // Place all room blocks (region-batched, Folia-safe), then carve joins open.
         BlockRestorer(plugin).restoreBlocks(combined)
         carve(world, result.doorways, doorWidth, doorHeight)
+
+        // Tell the spawner index about the trial spawners we just placed.
+        // The index normally learns about spawners by watching players place
+        // them, and nothing here does: the blocks are written straight into the
+        // world. Without this a freshly built dungeon had no wave tracking and
+        // no boss bars at all until something happened to reload its chunks.
+        // The blocks are already in hand, so no scan of the world is needed.
+        combined.forEach { (loc, snapshot) ->
+            if (snapshot.blockData.startsWith(TRIAL_SPAWNER_ID)) {
+                plugin.trialSpawnerIndex.add(world, loc.blockX, loc.blockY, loc.blockZ)
+            }
+        }
 
         // Register as a chamber + snapshot it as the reset baseline.
         val chamber = plugin.chamberManager.createChamber(
