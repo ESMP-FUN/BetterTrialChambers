@@ -725,6 +725,19 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                                         for (z in chamber.minZ..chamber.maxZ) {
                                             val block = world.getBlockAt(x, y, z)
                                     if (block.type == Material.TRIAL_SPAWNER) {
+                                        // Put it back in the spawner index while we are
+                                        // here. The index is kept up to date by watching
+                                        // players break and place blocks, and a reset does
+                                        // neither: it writes the blocks straight into the
+                                        // world. So a spawner that had been broken and was
+                                        // just restored was missing from the index, and
+                                        // the boss bar and wave tracking stayed dead for it
+                                        // until something happened to reload the chunk.
+                                        // This scan already visits every spawner in the
+                                        // chamber, on the right thread, so it costs nothing
+                                        // to say so here.
+                                        plugin.trialSpawnerIndex.add(world, block.x, block.y, block.z)
+
                                         val state = block.state
                                         if (state is org.bukkit.block.TrialSpawner) {
                                             val oldCooldown = state.cooldownLength
