@@ -72,8 +72,14 @@ class StructureImporter(private val plugin: BetterTrialChambers) {
                 }
                 else -> {
                     materials[pos] = state.type
-                    // captureTileEntity on an UNPLACED palette BlockState may not behave like a
-                    // placed one — degrade to null (block keeps its blockdata, loses tile NBT).
+                    // The one place still reading contents the old hand-written
+                    // way, and it has to be. Everywhere else saves a block
+                    // through the game itself, which needs a real block standing
+                    // in the world; these come out of a structure file and have
+                    // never been placed, so there is nothing to point that at.
+                    // Best-effort by nature: an unplaced state does not always
+                    // answer the way a placed one would, and a block that will
+                    // not read keeps its shape and loses what it held.
                     val nbt = try {
                         NBTUtil.captureTileEntity(state)
                     } catch (_: Exception) {

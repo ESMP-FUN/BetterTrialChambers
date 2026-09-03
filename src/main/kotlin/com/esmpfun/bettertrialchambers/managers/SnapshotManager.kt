@@ -4,6 +4,7 @@ import com.esmpfun.bettertrialchambers.BetterTrialChambers
 import com.esmpfun.bettertrialchambers.models.BlockSnapshot
 import com.esmpfun.bettertrialchambers.models.Chamber
 import com.esmpfun.bettertrialchambers.utils.CompressionUtil
+import com.esmpfun.bettertrialchambers.utils.BlockEntityCapture
 import com.esmpfun.bettertrialchambers.utils.NBTUtil
 import com.esmpfun.bettertrialchambers.utils.SaveVersionStamp
 import kotlinx.coroutines.Dispatchers
@@ -57,8 +58,16 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
          * everything was in before, and is safe because an older file
          * always reads on a newer game.
          */
-        const val FORMAT_VERSION = 3
+        const val FORMAT_VERSION = 4
         const val FORMAT_VERSION_MIN = 2
+
+        // How a block's contents were stored, written as one byte per block from
+        // version 4 onwards. Before that the same slot was a true/false for "has
+        // contents", where true always meant the hand-built map, so an older file
+        // reads as NOTHING or LEGACY_MAP and nothing else.
+        const val CONTENTS_NONE = 0
+        const val CONTENTS_LEGACY_MAP = 1
+        const val CONTENTS_STRUCTURE = 2
 
         const val RECORD_END = 0
         const val RECORD_PALETTE = 1
@@ -135,18 +144,28 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
             out.writeInt(relY)
             out.writeInt(relZ)
             out.writeInt(paletteId)
+            // Only blocks that actually hold something carry any of this, which
+            // is a small minority, so the ordinary block record stays one byte
+            // bigger than before and no more.
+            val structure = snapshot.structure
             val tile = snapshot.tileEntity
-            if (tile == null) {
-                out.writeBoolean(false)
-            } else {
-                out.writeBoolean(true)
-                // Tile entities are rare (vaults, spawners, pots); a per-entity
-                // serialized blob keeps the common block record tiny.
-                val buffer = ByteArrayOutputStream()
-                ObjectOutputStream(buffer).use { it.writeObject(HashMap(tile)) }
-                val bytes = buffer.toByteArray()
-                out.writeInt(bytes.size)
-                out.write(bytes)
+            when {
+                structure != null -> {
+                    out.writeByte(CONTENTS_STRUCTURE)
+                    out.writeInt(structure.size)
+                    out.write(structure)
+                }
+                tile != null -> {
+                    // Only reached when re-writing something read from an older
+                    // snapshot; fresh captures always take the branch above.
+                    out.writeByte(CONTENTS_LEGACY_MAP)
+                    val buffer = ByteArrayOutputStream()
+                    ObjectOutputStream(buffer).use { it.writeObject(HashMap(tile)) }
+                    val bytes = buffer.toByteArray()
+                    out.writeInt(bytes.size)
+                    out.write(bytes)
+                }
+                else -> out.writeByte(CONTENTS_NONE)
             }
             blocksWritten++
         }
@@ -232,15 +251,20 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
                                             // Capture block data
                                             val blockData = block.blockData.asString
 
-                                            // Capture tile entity data if applicable (MUST be on main thread)
-                                            val tileEntity = NBTUtil.captureTileEntity(block.state)
+                                            // Whatever the block is holding, saved the way the
+                                            // game itself saves it. Covers every kind of block
+                                            // rather than the eleven the old hand-written
+                                            // version knew, and everything each one holds
+                                            // rather than part of it. Must be on the thread
+                                            // that owns this block.
+                                            val contents = BlockEntityCapture.capture(plugin.server, block)
 
                                             captured.add(
                                                 CapturedBlock(
                                                     x - originX,
                                                     y - originY,
                                                     z - originZ,
-                                                    BlockSnapshot(blockData, tileEntity)
+                                                    BlockSnapshot(blockData, null, contents)
                                                 )
                                             )
                                         }
@@ -610,19 +634,49 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
                         plugin.logger.severe("Snapshot $label is corrupt: palette id $paletteId out of range")
                         return null
                     }
-                    val tileEntity = if (input.readBoolean()) {
+                    // Version 4 writes which kind of contents follow. Before
+                    // that the slot was a plain yes/no, and yes always meant the
+                    // hand-built map.
+                    val kind = if (version >= 4) {
+                        input.readByte().toInt()
+                    } else {
+                        if (input.readBoolean()) CONTENTS_LEGACY_MAP else CONTENTS_NONE
+                    }
+
+                    var legacyTile: Map<String, Any>? = null
+                    var structure: ByteArray? = null
+                    if (kind != CONTENTS_NONE) {
                         val length = input.readInt()
-                        if (readTiles) {
+                        if (!readTiles) {
+                            // Caller only wants to know which positions are
+                            // covered, so step over the contents unread.
+                            input.skipNBytes(length.toLong())
+                        } else {
                             val blob = ByteArray(length)
                             input.readFully(blob)
-                            @Suppress("UNCHECKED_CAST")
-                            ObjectInputStream(ByteArrayInputStream(blob)).use { it.readObject() as Map<String, Any> }
-                        } else {
-                            input.skipNBytes(length.toLong())
-                            null
+                            when (kind) {
+                                CONTENTS_STRUCTURE -> structure = blob
+                                CONTENTS_LEGACY_MAP -> {
+                                    @Suppress("UNCHECKED_CAST")
+                                    legacyTile = runCatching {
+                                        ObjectInputStream(ByteArrayInputStream(blob)).use {
+                                            it.readObject() as Map<String, Any>
+                                        }
+                                    }.getOrElse {
+                                        plugin.logger.warning(
+                                            "Snapshot $label: the contents of one block could not be " +
+                                                "read (${it.message}); the block itself will still come back."
+                                        )
+                                        null
+                                    }
+                                }
+                                else -> plugin.logger.warning(
+                                    "Snapshot $label: a block records its contents in a way this " +
+                                        "version does not know about ($kind); the block itself will " +
+                                        "still come back."
+                                )
+                            }
                         }
-                    } else {
-                        null
                     }
                     batch.add(
                         Location(
@@ -630,7 +684,7 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
                             (originX + relX).toDouble(),
                             (originY + relY).toDouble(),
                             (originZ + relZ).toDouble()
-                        ) to BlockSnapshot(palette[paletteId], tileEntity)
+                        ) to BlockSnapshot(palette[paletteId], legacyTile, structure)
                     )
                     count++
                     if (batch.size >= batchSize) {
