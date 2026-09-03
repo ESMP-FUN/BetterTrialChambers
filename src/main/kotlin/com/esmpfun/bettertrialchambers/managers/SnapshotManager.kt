@@ -5,6 +5,7 @@ import com.esmpfun.bettertrialchambers.models.BlockSnapshot
 import com.esmpfun.bettertrialchambers.models.Chamber
 import com.esmpfun.bettertrialchambers.utils.CompressionUtil
 import com.esmpfun.bettertrialchambers.utils.NBTUtil
+import com.esmpfun.bettertrialchambers.utils.SaveVersionStamp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.withContext
@@ -49,7 +50,16 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
     private companion object {
         /** "BTC2" — first four bytes (after gzip) of a v2 streamed snapshot. */
         const val MAGIC_V2 = 0x42544332
-        const val FORMAT_VERSION = 2
+
+        /**
+         * 3 adds the Minecraft version that wrote the file, straight after
+         * the format byte. Version 2 files still load; they simply do not
+         * say which Minecraft made them, which is the same position
+         * everything was in before, and is safe because an older file
+         * always reads on a newer game.
+         */
+        const val FORMAT_VERSION = 3
+        const val FORMAT_VERSION_MIN = 2
 
         const val RECORD_END = 0
         const val RECORD_PALETTE = 1
@@ -103,6 +113,12 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
         init {
             out.writeInt(MAGIC_V2)
             out.writeByte(FORMAT_VERSION)
+            // Which Minecraft wrote this. A snapshot holds block descriptions
+            // and items in the game's own wording, and the game reads its own
+            // older wording but not a newer one. Recording it lets a restore
+            // say so plainly instead of quietly skipping what it cannot read.
+            out.writeInt(SaveVersionStamp.currentDataVersion())
+            out.writeUTF(SaveVersionStamp.currentMinecraftVersion())
             out.writeUTF(worldName)
             out.writeInt(originX)
             out.writeInt(originY)
@@ -544,9 +560,23 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
         onBatch: suspend (List<Pair<Location, BlockSnapshot>>) -> Unit
     ): Int? {
         val version = input.readByte().toInt()
-        if (version != FORMAT_VERSION) {
+        if (version !in FORMAT_VERSION_MIN..FORMAT_VERSION) {
             plugin.logger.severe("Snapshot $label has unsupported format version $version")
             return null
+        }
+
+        if (version >= 3) {
+            val stampedDataVersion = input.readInt()
+            val stampedMinecraftVersion = input.readUTF()
+            SaveVersionStamp.warnIfFromNewerVersion(
+                file = File(label),
+                stampedDataVersion = stampedDataVersion,
+                stampedMinecraftVersion = stampedMinecraftVersion,
+                logger = plugin.logger,
+                // A snapshot is remade by taking a new one, not by editing the
+                // old one, so a copy would only double the disk it uses.
+                takeBackup = false,
+            )
         }
 
         val worldName = input.readUTF()
