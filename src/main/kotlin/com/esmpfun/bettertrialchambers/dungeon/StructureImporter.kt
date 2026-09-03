@@ -9,6 +9,7 @@ import org.bukkit.block.BlockFace
 import java.io.File
 import java.io.InputStream
 import java.util.zip.ZipFile
+import kotlin.coroutines.resume
 
 /**
  * Imports vanilla `.nbt` structure templates (the format datapacks use for
@@ -38,7 +39,7 @@ class StructureImporter(private val plugin: BetterTrialChambers) {
         val structure = suspendCancellableCoroutine<org.bukkit.structure.Structure> { cont ->
             plugin.scheduler.runTask(Runnable {
                 try {
-                    cont.resume(plugin.server.structureManager.loadStructure(input)) {}
+                    cont.resume(plugin.server.structureManager.loadStructure(input))
                 } catch (e: Exception) {
                     cont.resumeWith(Result.failure(e))
                 }

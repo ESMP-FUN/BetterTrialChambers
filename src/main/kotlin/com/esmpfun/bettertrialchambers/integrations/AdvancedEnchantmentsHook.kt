@@ -115,7 +115,7 @@ object AdvancedEnchantmentsHook {
         plugin.chamberManager.getCachedChamberAt(player.location)?.let { return !it.isPaused }
 
         val target = runCatching { player.getTargetBlockExact(MINING_REACH) }.getOrNull() ?: return false
-        val world = target.world?.name ?: return false
+        val world = target.world.name
         val margin = plugin.config.getInt("protection.advanced-enchantments-block-radius", DEFAULT_BLAST_MARGIN)
             .coerceIn(0, 16)
         val b = target.location

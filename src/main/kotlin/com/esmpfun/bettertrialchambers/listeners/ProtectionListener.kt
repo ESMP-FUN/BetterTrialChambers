@@ -214,7 +214,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         if (!plugin.config.getBoolean("protection.enabled", true)) return
         if (!plugin.config.getBoolean("protection.prevent-teleport-into-chamber", false)) return
 
-        val to = event.to ?: return
+        val to = event.to
         val toChamber = plugin.chamberManager.getCachedChamberAt(to) ?: return // not teleporting into a chamber
         if (toChamber.isPaused) return
         // Allow teleporting *within* the same chamber (e.g. /back while inside it).

@@ -11,6 +11,7 @@ import org.bukkit.Material
 import org.bukkit.World
 import java.util.ArrayDeque
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.coroutines.resume
 
 /**
  * Auto-discovery of naturally-generated Trial Chambers.
@@ -533,7 +534,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
                     plugin.logger.warning("[Discovery] scan-add flood failed at $sx,$sy,$sz: ${e.message}")
                     null
                 }
-                cont.resume(r) {}
+                cont.resume(r)
             })
         }
 

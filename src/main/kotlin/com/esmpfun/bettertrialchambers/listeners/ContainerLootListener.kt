@@ -31,6 +31,7 @@ import org.bukkit.loot.Lootable
 import org.bukkit.persistence.PersistentDataType
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.coroutines.resume
 
 /**
  * Per-player chamber container loot (opt-in via `chests.per-player-loot`).
@@ -327,7 +328,7 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
                     plugin.logger.warning("[ContainerLoot] Template materialize failed at ${keyLoc.blockX},${keyLoc.blockY},${keyLoc.blockZ}: ${e.message}")
                     arrayOfNulls<ItemStack?>(size)
                 }
-                cont.resume(result) {}
+                cont.resume(result)
             })
         }
 
@@ -391,7 +392,7 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
             } catch (e: Exception) {
                 plugin.logger.warning("[ContainerLoot] Failed to open container for ${player.name}: ${e.message}")
             }
-            cont.resume(Unit) {}
+            cont.resume(Unit)
         })
     }
 
@@ -437,7 +438,7 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
                         } catch (e: Exception) {
                             plugin.logger.warning("[ContainerLoot] Chamber scan failed in chunk $cx,$cz: ${e.message}")
                         }
-                        cont.resume(results) {}
+                        cont.resume(results)
                     })
                 }
                 for ((pos, contents, material) in rolled) {
