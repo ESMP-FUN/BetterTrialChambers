@@ -134,7 +134,12 @@ class DungeonCommand(private val plugin: BetterTrialChambers) : SubcommandHandle
         val importDir = File(plugin.dataFolder, "dungeon/import").apply { mkdirs() }
         // Resolve inside the import dir only (no path traversal).
         val target = File(importDir, args[2]).canonicalFile
-        if (!target.path.startsWith(importDir.canonicalFile.path)) {
+        // Compared with the separator on the end. Without it, a folder sitting
+        // beside the import one whose name merely starts the same way (say
+        // `import_old`) also matched, so `../import_old/room.nbt` was let
+        // through. Narrow, but the check is here to be exact.
+        val importRoot = importDir.canonicalFile.path + File.separator
+        if (target.canonicalFile != importDir.canonicalFile && !target.path.startsWith(importRoot)) {
             return sender.sendMessage(plugin.getMessageComponent("dungeon-import-bad-path"))
         }
         if (!target.exists()) {
