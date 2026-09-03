@@ -337,14 +337,15 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
     private fun restoreBlock(location: Location, snapshot: BlockSnapshot) {
         val block = location.block
 
-        // Parse and set block data
-        try {
-            // CRITICAL FIX: Reset trial spawner state to waiting_for_players
-            // If the snapshot was taken while spawners were in cooldown state,
-            // they would be restored in cooldown and not drop keys for 30 minutes!
-            val blockDataString = resetTrialSpawnerState(snapshot.blockData)
-            val blockData = Bukkit.createBlockData(blockDataString)
-            block.setBlockData(blockData, false) // Don't apply physics immediately
+        // The block's own description, with one correction applied.
+        //
+        // A trial spawner remembers how far through its cycle it was. If the
+        // snapshot happened to be taken while one was cooling down, restoring it
+        // as-is brings it back still cooling down, and it drops no key for the
+        // next half hour. So the saved description is rewritten to put every
+        // trial spawner back at the start.
+        val corrected = try {
+            Bukkit.createBlockData(resetTrialSpawnerState(snapshot.blockData))
         } catch (e: Exception) {
             // Thrown on rather than logged here, so the caller can count these
             // instead of writing a console line for each one. A snapshot from a
@@ -355,12 +356,35 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
             )
         }
 
-        // Restore tile entity data if present
+        val contents = snapshot.structure
+        if (contents != null) {
+            // Puts the block back together with everything it was holding, in
+            // one step, the way the game itself would.
+            if (BlockEntityCapture.restore(plugin.server, contents, location)) {
+                // That also restored the block's own description, including the
+                // trial spawner state we deliberately reset above, so put the
+                // corrected one back over the top. The block type is the same
+                // either way, so its contents are not disturbed.
+                if (block.blockData.asString != corrected.asString) {
+                    block.setBlockData(corrected, false)
+                }
+                return
+            }
+            // Could not be put back whole. Better a bare block in the right
+            // place than a hole, so fall through and at least set the block.
+            plugin.logger.warning(
+                "Could not put back what the block at ${location.blockX},${location.blockY}," +
+                    "${location.blockZ} was holding; the block itself has been restored."
+            )
+        }
+
+        block.setBlockData(corrected, false) // Don't apply physics immediately
+
+        // Snapshots taken before the change above stored contents as a
+        // hand-built map instead. Still read, so an existing snapshot keeps
+        // working until it is next retaken.
         snapshot.tileEntity?.let { tileEntityData ->
-            val state = block.state
-            if (NBTUtil.restoreTileEntity(state, tileEntityData)) {
-                // Successfully restored tile entity
-            } else {
+            if (!NBTUtil.restoreTileEntity(block.state, tileEntityData)) {
                 plugin.logger.warning("Failed to restore tile entity at ${location.blockX},${location.blockY},${location.blockZ}")
             }
         }

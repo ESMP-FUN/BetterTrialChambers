@@ -2,6 +2,7 @@ package com.esmpfun.bettertrialchambers.dungeon
 
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
 import com.esmpfun.bettertrialchambers.models.BlockSnapshot
+import com.esmpfun.bettertrialchambers.utils.BlockEntityCapture
 import com.esmpfun.bettertrialchambers.utils.CompressionUtil
 import com.esmpfun.bettertrialchambers.utils.NBTUtil
 import kotlinx.coroutines.Dispatchers
@@ -82,7 +83,15 @@ class RoomTemplateManager(private val plugin: BetterTrialChambers) {
                                 }
                             }
                             block.type != Material.AIR ->
-                                blocks[rel] = BlockSnapshot(block.blockData.asString, NBTUtil.captureTileEntity(block.state))
+                                // Saved the way the game saves it, so a room
+                                // template keeps a chest's name and lock, a mob
+                                // spawner, a command block and everything else
+                                // the old hand-written capture did not know about.
+                                blocks[rel] = BlockSnapshot(
+                                    block.blockData.asString,
+                                    null,
+                                    BlockEntityCapture.capture(plugin.server, block),
+                                )
                         }
                     }
                     cont.resume(Unit)
