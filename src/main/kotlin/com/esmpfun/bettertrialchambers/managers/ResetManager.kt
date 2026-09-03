@@ -63,7 +63,21 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                     val before = pendingResets.size
                     val chambers = plugin.chamberManager.getAllChambers()
                     chambers.forEach { chamber ->
-                        scheduleResetIfNeeded(chamber)
+                        // Guarded per chamber. Without this, one chamber that
+                        // throws took the rest of the round with it, and because
+                        // the list always comes back in the same order, every
+                        // chamber after it was never scheduled again. Silently,
+                        // apart from a single console line a minute.
+                        try {
+                            scheduleResetIfNeeded(chamber)
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            plugin.logger.severe(
+                                "Could not work out when '${chamber.name}' should next reset: " +
+                                    "${e.message}. Every other chamber is unaffected."
+                            )
+                        }
                     }
                     val newlyPending = pendingResets.size - before
                     if (newlyPending > 0) {
@@ -72,6 +86,10 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                                 "Use /trial reset pending to list, /trial reset confirm all to release."
                         )
                     }
+                } catch (e: CancellationException) {
+                    // The plugin is shutting down. Passed on rather than logged,
+                    // so stopping the server does not report an error.
+                    throw e
                 } catch (e: Exception) {
                     plugin.logger.severe("Error in reset scheduler: ${e.message}")
                 }

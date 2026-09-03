@@ -374,6 +374,28 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
     private fun sweepWaves() {
         activeWaves.values.toList().forEach { wave ->
             if (wave.completed) return@forEach
+            // The world can go away underneath a wave, and handing a location
+            // with no world to the scheduler throws. That throw would escape
+            // into the repeating task that calls this, and the server cancels a
+            // repeating task the first time it throws: the sweeper would stop
+            // for the rest of the server's life and stalled waves would never
+            // be tidied up again. Checked here, and the whole loop is wrapped
+            // below, so nothing can take the sweeper down with it.
+            if (wave.location.world == null) {
+                cancelWaveAt(wave.location)
+                return@forEach
+            }
+            scheduleWaveSweep(wave)
+        }
+    }
+
+    /**
+     * The per-wave half of [sweepWaves], handed to the region thread that owns
+     * the spawner. Anything that goes wrong stops here rather than travelling
+     * back up into the repeating task, for the reason given above.
+     */
+    private fun scheduleWaveSweep(wave: WaveState) {
+        try {
             plugin.scheduler.runAtLocation(wave.location, Runnable {
                 try {
                     val world = wave.location.world ?: return@Runnable
@@ -418,6 +440,11 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
                     }
                 }
             })
+        } catch (e: Throwable) {
+            plugin.logger.warning(
+                "[SpawnerWave] Could not check on the wave at " +
+                    "${wave.location.blockX},${wave.location.blockY},${wave.location.blockZ}: ${e.message}"
+            )
         }
     }
 
