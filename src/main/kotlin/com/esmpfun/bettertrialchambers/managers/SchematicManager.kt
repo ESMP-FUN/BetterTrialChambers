@@ -9,7 +9,7 @@ import com.sk89q.worldedit.function.operation.Operations
 import com.sk89q.worldedit.math.BlockVector3
 import com.sk89q.worldedit.session.ClipboardHolder
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
-import com.esmpfun.bettertrialchambers.utils.minecraftDispatcher
+import com.esmpfun.bettertrialchambers.utils.locationDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.bukkit.Location
@@ -24,6 +24,21 @@ import java.io.FileInputStream
 class SchematicManager(private val plugin: BetterTrialChambers) {
 
     private val schematicsDir: File = File(plugin.dataFolder, "schematics")
+
+    /**
+     * Where the file for a named schematic lives, or null when the name would
+     * point somewhere other than the schematics folder.
+     *
+     * The name arrives from a command and is dropped into a file path, so
+     * without this a name containing dots and slashes reads a file from
+     * elsewhere on the server. Only reading, so far less serious than the same
+     * gap on room templates, but there is no reason to allow it.
+     */
+    private fun schematicFile(name: String): File? {
+        if (name.isBlank()) return null
+        val candidate = File(schematicsDir, "$name.schem").canonicalFile
+        return if (candidate.parentFile == schematicsDir.canonicalFile) candidate else null
+    }
     private var worldEditAvailable: Boolean = false
 
     /**
@@ -104,9 +119,9 @@ class SchematicManager(private val plugin: BetterTrialChambers) {
         try {
             // Load schematic file on IO thread (file reading)
             val clipboard = withContext(Dispatchers.IO) {
-                val schematicFile = File(schematicsDir, "$schematicName.schem")
-                if (!schematicFile.exists()) {
-                    plugin.logger.warning("Schematic file not found: ${schematicFile.name}")
+                val schematicFile = schematicFile(schematicName)
+                if (schematicFile == null || !schematicFile.exists()) {
+                    plugin.logger.warning("Schematic file not found: $schematicName.schem")
                     return@withContext null
                 }
 
@@ -120,8 +135,15 @@ class SchematicManager(private val plugin: BetterTrialChambers) {
                 }
             } ?: return false
 
-            // Paste on main thread (block placement)
-            return withContext(plugin.minecraftDispatcher) {
+            // Paste on the thread that owns the destination.
+            //
+            // This used to use the legacy `minecraftDispatcher` property, which
+            // hands the work to the server's own scheduler. That call is refused
+            // outright on Folia, so pasting a schematic threw there rather than
+            // running in the wrong place. `locationDispatcher` is the right one
+            // for putting blocks down: the main thread on Paper, exactly as
+            // before, and the region owning this spot on Folia.
+            return withContext(plugin.locationDispatcher(plugin.scheduler, location)) {
                 val world = BukkitAdapter.adapt(location.world)
                 val pasteLocation = BlockVector3.at(
                     location.blockX,
@@ -181,7 +203,7 @@ class SchematicManager(private val plugin: BetterTrialChambers) {
         if (!worldEditAvailable) return@withContext null
 
         try {
-            val schematicFile = File(schematicsDir, "$schematicName.schem")
+            val schematicFile = schematicFile(schematicName) ?: return@withContext null
             if (!schematicFile.exists()) return@withContext null
 
             val format = ClipboardFormats.findByFile(schematicFile) ?: return@withContext null
@@ -225,6 +247,6 @@ class SchematicManager(private val plugin: BetterTrialChambers) {
      * Checks if a schematic file exists.
      */
     fun schematicExists(schematicName: String): Boolean {
-        return File(schematicsDir, "$schematicName.schem").exists()
+        return schematicFile(schematicName)?.exists() == true
     }
 }
