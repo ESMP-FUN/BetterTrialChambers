@@ -49,6 +49,10 @@ class SnapshotReminderService(private val plugin: BetterTrialChambers) : Listene
                                 .forEach { sendSummary(it, snapshotless) }
                         })
                     }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    // The plugin is shutting down. Passed on rather than logged,
+                    // so stopping the server does not report a failure.
+                    throw e
                 } catch (e: Exception) {
                     plugin.logger.warning("Snapshot reminder scheduler tick failed: ${e.message}")
                 }
