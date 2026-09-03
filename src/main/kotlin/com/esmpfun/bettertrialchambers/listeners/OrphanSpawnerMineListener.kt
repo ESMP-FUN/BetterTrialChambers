@@ -68,13 +68,30 @@ class OrphanSpawnerMineListener(private val plugin: BetterTrialChambers) : Liste
         }
 
         // Drop the full preset item so it can be re-placed and re-identified.
+        //
+        // Two ways that can fail, and both end up as a plain trial spawner
+        // rather than nothing. The whole point of this listener is that a preset
+        // spawner placed outside a chamber must never become impossible to pick
+        // up again, and handing back a plain one keeps that promise even when
+        // the preset itself is the problem.
         val preset = plugin.spawnerPresetManager.get(presetId)
-        val drop = if (preset != null) {
-            plugin.spawnerPresetManager.getItem(preset, 1)
-        } else {
+        val drop = when {
             // Preset was removed from spawner_presets.yml after this spawner was placed.
-            // Fall back to a plain trial_spawner so the block is never permanently unrecoverable.
-            org.bukkit.inventory.ItemStack(Material.TRIAL_SPAWNER)
+            preset == null -> org.bukkit.inventory.ItemStack(Material.TRIAL_SPAWNER)
+            else -> try {
+                plugin.spawnerPresetManager.getItem(preset, 1)
+            } catch (e: IllegalArgumentException) {
+                // The preset is still listed but its settings will not build into
+                // an item any more. Unguarded, this threw straight out of the
+                // event, so the block stayed put, nothing dropped, and the
+                // console filled with "could not pass event" while the player
+                // was left with a spawner they could not remove.
+                plugin.logger.warning(
+                    "Spawner preset '$presetId' could not be rebuilt into an item " +
+                        "(${e.message}); handing back a plain trial spawner instead."
+                )
+                org.bukkit.inventory.ItemStack(Material.TRIAL_SPAWNER)
+            }
         }
 
         block.world.dropItemNaturally(block.location, drop)
