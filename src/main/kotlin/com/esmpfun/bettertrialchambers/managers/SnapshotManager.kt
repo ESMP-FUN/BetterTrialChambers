@@ -5,10 +5,12 @@ import com.esmpfun.bettertrialchambers.models.BlockSnapshot
 import com.esmpfun.bettertrialchambers.models.Chamber
 import com.esmpfun.bettertrialchambers.utils.CompressionUtil
 import com.esmpfun.bettertrialchambers.utils.BlockEntityCapture
+import com.esmpfun.bettertrialchambers.utils.DecorationEntities
 import com.esmpfun.bettertrialchambers.utils.NBTUtil
 import com.esmpfun.bettertrialchambers.utils.SaveVersionStamp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.bukkit.Location
 import org.bukkit.Material
@@ -59,7 +61,7 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
          * everything was in before, and is safe because an older file
          * always reads on a newer game.
          */
-        const val FORMAT_VERSION = 4
+        const val FORMAT_VERSION = 5
         const val FORMAT_VERSION_MIN = 2
 
         // How a block's contents were stored, written as one byte per block from
@@ -73,6 +75,13 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
         const val RECORD_END = 0
         const val RECORD_PALETTE = 1
         const val RECORD_BLOCK = 2
+
+        /**
+         * One decoration standing in the chamber: an item frame, painting,
+         * armour stand, display or cushion. Written after all the blocks, and
+         * only from version 5 onwards, so an older file simply has none.
+         */
+        const val RECORD_ENTITY = 3
     }
 
     /**
@@ -170,6 +179,27 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
             }
             blocksWritten++
         }
+
+        /** Appends the decorations standing in the chamber. Call before [close]. */
+        fun writeEntity(entity: DecorationEntities.Captured) {
+            out.writeByte(RECORD_ENTITY)
+            out.writeUTF(entity.type)
+            out.writeInt(entity.minX)
+            out.writeInt(entity.minY)
+            out.writeInt(entity.minZ)
+            out.writeInt(entity.sizeX)
+            out.writeInt(entity.sizeY)
+            out.writeInt(entity.sizeZ)
+            out.writeDouble(entity.x)
+            out.writeDouble(entity.y)
+            out.writeDouble(entity.z)
+            out.writeInt(entity.bytes.size)
+            out.write(entity.bytes)
+            entitiesWritten++
+        }
+
+        var entitiesWritten = 0
+            private set
 
         override fun close() {
             if (closed) return
@@ -293,6 +323,41 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
 
             plugin.logger.info("Captured $capturedBlocks blocks (${totalBlocks - capturedBlocks} air blocks skipped)")
 
+            // The decorations standing in the chamber: item frames, paintings,
+            // armour stands, displays, cushions. Read on the thread that owns
+            // the chamber and written after the blocks, so a reset can put them
+            // back. Nothing that is not part of the build is included; see
+            // DecorationEntities.
+            val decorations = suspendCancellableCoroutine<List<DecorationEntities.Captured>> { continuation ->
+                val centre = Location(
+                    world,
+                    (chamber.minX + chamber.maxX) / 2.0,
+                    (chamber.minY + chamber.maxY) / 2.0,
+                    (chamber.minZ + chamber.maxZ) / 2.0,
+                )
+                plugin.scheduler.runAtLocation(centre, Runnable {
+                    continuation.resume(
+                        runCatching {
+                        DecorationEntities.capture(
+                            plugin.server, chamber.getEntitiesInside(),
+                            chamber.minX, chamber.minY, chamber.minZ,
+                            chamber.maxX, chamber.maxY, chamber.maxZ,
+                        )
+                    }
+                            .getOrElse {
+                                plugin.logger.warning(
+                                    "Could not record the decorations in ${chamber.name}: ${it.message}"
+                                )
+                                emptyList()
+                            }
+                    )
+                })
+            }
+            if (decorations.isNotEmpty()) {
+                withContext(Dispatchers.IO) { decorations.forEach { writer.writeEntity(it) } }
+                plugin.logger.info("Captured ${decorations.size} decoration(s) standing in the chamber")
+            }
+
             return withContext(Dispatchers.IO) {
                 writer.close()
                 Files.move(tempFile.toPath(), finalFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
@@ -388,6 +453,7 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
     suspend fun streamSnapshotBlocks(
         file: File,
         batchSize: Int,
+        onEntity: (DecorationEntities.Captured) -> Unit = {},
         onBatch: suspend (List<Pair<Location, BlockSnapshot>>) -> Unit
     ): Int? = withContext(Dispatchers.IO) {
         try {
@@ -399,7 +465,10 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
                     val magic = if (read == 4) ByteBuffer.wrap(header).int else 0
 
                     if (magic == MAGIC_V2) {
-                        streamV2Blocks(DataInputStream(input), file.name, batchSize, readTiles = true, onBatch)
+                        streamV2Blocks(
+                            DataInputStream(input), file.name, batchSize,
+                            readTiles = true, onEntity = onEntity, onBatch = onBatch,
+                        )
                     } else {
                         input.reset()
                         val blocks = readLegacySnapshot(input, file.name) ?: return@withContext null
@@ -581,6 +650,7 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
         label: String,
         batchSize: Int,
         readTiles: Boolean,
+        onEntity: (DecorationEntities.Captured) -> Unit = {},
         onBatch: suspend (List<Pair<Location, BlockSnapshot>>) -> Unit
     ): Int? {
         val version = input.readByte().toInt()
@@ -691,6 +761,32 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
                     if (batch.size >= batchSize) {
                         onBatch(batch)
                         batch = ArrayList(batchSize)
+                    }
+                }
+                RECORD_ENTITY -> {
+                    val type = input.readUTF()
+                    val boxX = input.readInt()
+                    val boxY = input.readInt()
+                    val boxZ = input.readInt()
+                    val sizeX = input.readInt()
+                    val sizeY = input.readInt()
+                    val sizeZ = input.readInt()
+                    val ex = input.readDouble()
+                    val ey = input.readDouble()
+                    val ez = input.readDouble()
+                    val length = input.readInt()
+                    if (!readTiles) {
+                        // A scan only asks which positions are covered, so the
+                        // decoration itself is stepped over unread.
+                        input.skipNBytes(length.toLong())
+                    } else {
+                        val blob = ByteArray(length)
+                        input.readFully(blob)
+                        onEntity(
+                            DecorationEntities.Captured(
+                                type, boxX, boxY, boxZ, sizeX, sizeY, sizeZ, ex, ey, ez, blob,
+                            )
+                        )
                     }
                 }
                 else -> {
