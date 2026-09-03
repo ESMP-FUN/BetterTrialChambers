@@ -48,7 +48,13 @@ class FaweResetPlacer(private val plugin: BetterTrialChambers) {
      */
     inner class Session {
         private var editSession: com.sk89q.worldedit.EditSession? = null
-        private val tiles = ArrayList<Pair<Location, Map<String, Any>>>()
+        // Blocks that were holding something, kept aside to be put back after
+        // the bulk placement. Holds the whole snapshot rather than just the old
+        // hand-built map, because that map is only what pre-existing snapshots
+        // carry: everything captured since holds the game's own saved form, and
+        // reading only the map here would have restored the blocks and silently
+        // dropped every chest, sign and spawner's contents on this path.
+        private val withContents = ArrayList<Pair<Location, BlockSnapshot>>()
 
         suspend fun placeBatch(batch: List<Pair<Location, BlockSnapshot>>) {
             if (batch.isEmpty()) return
@@ -72,7 +78,7 @@ class FaweResetPlacer(private val plugin: BetterTrialChambers) {
                     } catch (_: Exception) {
                         // Skip an unparseable block string rather than aborting the whole edit.
                     }
-                    snap.tileEntity?.let { tiles.add(loc to it) }
+                    if (snap.hasContents) withContents.add(loc to snap)
                 }
             }
         }
@@ -84,13 +90,18 @@ class FaweResetPlacer(private val plugin: BetterTrialChambers) {
 
             // Apply tile-entity NBT after the blocks exist (region-thread, Folia-safe in spirit
             // though this path is Paper-only). Await so the caller's later steps see them.
-            if (tiles.isEmpty()) return
-            val pending = AtomicInteger(tiles.size)
+            if (withContents.isEmpty()) return
+            val pending = AtomicInteger(withContents.size)
             val done = CompletableDeferred<Unit>()
-            tiles.forEach { (loc, tile) ->
+            withContents.forEach { (loc, snap) ->
                 plugin.scheduler.runAtLocation(loc, Runnable {
                     try {
-                        NBTUtil.restoreTileEntity(loc.block.state, tile)
+                        val contents = snap.structure
+                        if (contents != null) {
+                            BlockEntityCapture.restore(plugin.server, contents, loc)
+                        } else {
+                            snap.tileEntity?.let { NBTUtil.restoreTileEntity(loc.block.state, it) }
+                        }
                     } catch (e: Exception) {
                         plugin.logger.warning("FAWE reset: failed tile entity at ${loc.blockX},${loc.blockY},${loc.blockZ}: ${e.message}")
                     } finally {
