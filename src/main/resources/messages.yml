@@ -1410,6 +1410,15 @@ gui:
       - "&8  Guaranteed: {guaranteed}"
       - ""
       - "&eClick to edit this pool"
+    # Shown instead of the above when the pool does not run every time.
+    pool-lore-sometimes:
+      - "&7Runs &f{percent}%&7 of openings"
+      - "&7Rolls: &f{minRolls}-{maxRolls}"
+      - "&7Items: &f{items}"
+      - "&8  Weighted: {weighted}"
+      - "&8  Guaranteed: {guaranteed}"
+      - ""
+      - "&eClick to edit this pool"
     new-pool-name: "&a+ New Pool"
     new-pool-lore:
       - "&7Add a new loot pool"
@@ -1573,6 +1582,18 @@ gui:
       - "&7Best for large tables (many items)."
       - ""
       - "&eClick to switch to Weighted"
+    chance-name: "&eHow Often This Pool Runs: &f{percent}%"
+    chance-lore:
+      - "&7Some openings skip this pool entirely."
+      - "&f100%&7 = it runs every time."
+      - ""
+      - "&7Minecraft's own vaults use this: the pool"
+      - "&7with the one really good item in it runs"
+      - "&f25%&7 of the time for a normal vault and"
+      - "&f75%&7 for an ominous one."
+      - ""
+      - "&7Left: +5%  |  Right: -5%"
+      - "&7Shift+Left: +25%  |  Shift+Right: -25%"
     max-items-name: "&eMax Items: &f{value}"
     max-items-lore:
       - "&7Independent mode only."

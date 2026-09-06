@@ -105,13 +105,19 @@ class PoolSelectorView(
             else -> Material.CHEST
         }
         val itemCount = pool.weightedItems.size + pool.guaranteedItems.size
+        // A pool that does not always run is the single biggest thing about it,
+        // so it goes on the label rather than being left for the owner to find
+        // out from the drop rates.
+        val loreKey = if (pool.chance < 1.0) "gui.pool-selector.pool-lore-sometimes"
+            else "gui.pool-selector.pool-lore"
         return GuiComponents.infoItem(plugin, material,
-            "gui.pool-selector.pool-name", "gui.pool-selector.pool-lore",
+            "gui.pool-selector.pool-name", loreKey,
             "name" to pool.name,
             "minRolls" to pool.minRolls, "maxRolls" to pool.maxRolls,
             "items" to itemCount,
             "weighted" to pool.weightedItems.size,
-            "guaranteed" to pool.guaranteedItems.size)
+            "guaranteed" to pool.guaranteedItems.size,
+            "percent" to (pool.chance * 100.0).toInt())
     }
 
     private fun createNewPoolItem(currentPools: Int, maxPools: Int): ItemStack =

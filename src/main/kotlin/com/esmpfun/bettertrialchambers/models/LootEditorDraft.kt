@@ -23,6 +23,12 @@ package com.esmpfun.bettertrialchambers.models
  *                      0-100% drop chance and min/max rolls don't apply.
  * @property maxItems   INDEPENDENT-mode cap on how many passing items to keep
  *                      per opening (0 = uncapped). Ignored in WEIGHTED mode.
+ * @property chance     How often this pool runs at all, from 0.0 to 1.0. Only
+ *                      meaningful when editing one pool of a multi-pool table;
+ *                      a table with a single pool has no such setting, and this
+ *                      stays 1.0 there. Vanilla's vault loot leans on it: the
+ *                      "one really good item" pool runs a quarter of the time
+ *                      for a normal vault and three quarters for an ominous one.
  * @property dirty      Set whenever the draft is mutated through any editor;
  *                      used by the loot editor to decorate the Save button and
  *                      by the close handler to skip the auto-save when the user
@@ -36,5 +42,6 @@ data class LootEditorDraft(
     var maxRolls: Int,
     var rollMode: LootRollMode = LootRollMode.WEIGHTED,
     var maxItems: Int = 0,
+    var chance: Double = 1.0,
     var dirty: Boolean = false
 )
