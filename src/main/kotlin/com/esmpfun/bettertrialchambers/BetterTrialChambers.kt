@@ -815,6 +815,24 @@ class BetterTrialChambers : JavaPlugin() {
     private fun loadedMessages(): org.bukkit.configuration.file.YamlConfiguration {
         return cachedMessages ?: run {
             val loaded = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(File(dataFolder, "messages.yml"))
+            // Anything the server owner's own file does not have falls back to the
+            // wording built into the plugin. Without this, every upgrade that adds
+            // a new line of text put a literal "<missing: some.key>" on screen
+            // until the owner deleted their file and lost their translations with
+            // it. Their own wording still wins for every line they do have, and a
+            // line they deliberately blanked stays blank, because a blank line is
+            // still a line they wrote.
+            runCatching {
+                getResource("messages.yml")?.use { stream ->
+                    loaded.setDefaults(
+                        org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(
+                            java.io.InputStreamReader(stream, Charsets.UTF_8)
+                        )
+                    )
+                }
+            }.onFailure {
+                logger.warning("Could not read the built-in messages: ${it.message}")
+            }
             cachedMessages = loaded
             loaded
         }
