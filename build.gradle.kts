@@ -39,13 +39,15 @@ dependencies {
     // keeps this jar to 26.3+ servers; the mc26 build targets 26.1.2 + api-version
     // '26.1', and the master build targets 1.21.7 + api-version '1.21'.
     //
-    // PINNED TO 26.2 ON PURPOSE, FOR NOW. As of 2026-09-03 Mojang has shipped
-    // 26.3 Pre-Release 1 but PaperMC has published no 26.3 artifact: their newest
-    // is 26.2.build.121-stable, and 26.3 work is still on the unpublished
-    // `dev/26.3` branch. 26.2 is the closest API that exists, and every 26.3
-    // change audited so far is additive from a plugin's point of view, so the
-    // 26.3-only code paths in this branch are written defensively (capability
-    // checks / reflection) rather than against classes we cannot compile against.
+    // PINNED TO 26.2 ON PURPOSE, FOR NOW. Checked again on 2026-09-06: Mojang is
+    // up to 26.3 Pre-Release 2 and PaperMC still publishes no 26.3 artifact.
+    // Their newest is 26.2.build.121-stable and the 26.3 work is still on the
+    // unpublished `dev/26.3` branch, which is being actively worked on (cushions,
+    // poplar boats, and two new entity-removal events landed there on 2026-09-05
+    // and 06). 26.2 is the closest API that exists, and every 26.3 change audited
+    // so far is additive from a plugin's point of view, so the 26.3-only code
+    // paths in this branch are written defensively (capability checks /
+    // reflection) rather than against classes we cannot compile against.
     //
     // WHEN PAPER PUBLISHES 26.3: bump this to the 26.3 build, then work through
     // the sites marked `TODO(26.3-api)` in the source - each one names exactly

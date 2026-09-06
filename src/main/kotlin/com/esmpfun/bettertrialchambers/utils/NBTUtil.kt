@@ -146,16 +146,20 @@ object NBTUtil {
      * stored item otherwise.
      */
     private fun captureDecoratedPot(pot: DecoratedPot): Map<String, Any> {
-        // A pot side can be genuinely blank. Up to 26.2 the game had no way to say
-        // that, so a blank side reported itself as a plain brick; 26.3 made blank
-        // sides real, and they drop nothing when the pot is broken. Reading the
-        // side into a nullable and skipping anything blank means a blank side is
-        // simply not written to the snapshot, and the restore below then leaves it
-        // blank instead of stamping a brick onto it.
+        // A pot side can be genuinely blank, and 26.3 made that a real state: a
+        // blank side drops nothing when the pot is broken, where a brick side
+        // drops a brick. Asking a pot what is on a side still cannot tell the two
+        // apart, though - checked against Paper's 26.3 work on 2026-09-06, a
+        // blank side answers "brick", and there is no way to ask for a blank one
+        // back. So a pot read through here loses its blank sides.
         //
-        // TODO(26.3-api): once Paper publishes 26.3, check whether getSherd returns
-        // null or AIR for a blank side and whether setSherd accepts a way to clear
-        // one. Both cases are already handled here, but confirm which one is real.
+        // This is only ever reached for snapshots taken before the plugin started
+        // saving a block the way the game itself saves it, and those had already
+        // recorded the blank sides as bricks, so nothing is lost that was not lost
+        // already. Every snapshot taken since keeps them blank.
+        //
+        // The blank check below stays anyway: it costs nothing and covers a
+        // server that does answer honestly.
         val sherds = mutableMapOf<String, String>()
         DecoratedPot.Side.entries.forEach { side ->
             val sherd: org.bukkit.Material? = runCatching { pot.getSherd(side) }.getOrNull()
