@@ -70,9 +70,9 @@ object MessagesSchemaValidator {
 
         plugin.logger.warning("=".repeat(72))
         plugin.logger.warning("[messages.yml] Your file is missing ${missing.size} key(s) that this")
-        plugin.logger.warning("[messages.yml] version of BetterTrialChambers expects. The plugin will fall")
-        plugin.logger.warning("[messages.yml] back to literal '<missing: <key>>' text wherever those keys")
-        plugin.logger.warning("[messages.yml] are referenced (chat output, item names, item lores, GUI titles).")
+        plugin.logger.warning("[messages.yml] version of BetterTrialChambers expects. Those lines will show")
+        plugin.logger.warning("[messages.yml] in English from the plugin's own wording, so nothing is broken;")
+        plugin.logger.warning("[messages.yml] they simply will not be in your language until you add them.")
         plugin.logger.warning("")
 
         val shown = missing.take(MAX_KEYS_LOGGED)
@@ -84,7 +84,7 @@ object MessagesSchemaValidator {
         }
 
         plugin.logger.warning("")
-        plugin.logger.warning("[messages.yml] To fix:")
+        plugin.logger.warning("[messages.yml] To translate them too:")
         plugin.logger.warning("[messages.yml]   1. Stop the server.")
         plugin.logger.warning("[messages.yml]   2. Rename plugins/BetterTrialChambers/messages.yml to")
         plugin.logger.warning("[messages.yml]      messages.yml.bak so the plugin regenerates a fresh one.")
