@@ -82,6 +82,7 @@ class LootEditorView(
         maxRolls = source.maxRolls,
         rollMode = source.rollMode,
         maxItems = source.maxItems,
+        chance = source.chance,
         dirty = source.dirty
     )
 
@@ -113,7 +114,8 @@ class LootEditorView(
                     minRolls = pool.minRolls,
                     maxRolls = pool.maxRolls,
                     rollMode = pool.rollMode,
-                    maxItems = pool.maxItems
+                    maxItems = pool.maxItems,
+                    chance = pool.chance
                 )
             }
         }
@@ -177,6 +179,10 @@ class LootEditorView(
         lore += plugin.getGuiText("gui.loot-editor.item-amount",
             "min" to li.amountMin, "max" to li.amountMax)
         val avgAmount = (li.amountMin + li.amountMax) / 2.0
+        // A pool that only runs some of the time hands out that much less. Without
+        // this the "you get about N of these" line reads four times too generous
+        // on vanilla's rare-item pool, which runs a quarter of the time.
+        val poolRuns = draft.chance.coerceIn(0.0, 1.0)
         val independent = draft.rollMode == LootRollMode.INDEPENDENT
         if (weighted) {
             if (independent) {
@@ -186,7 +192,7 @@ class LootEditorView(
                     "percent" to String.format("%.1f", chance))
                 if (li.enabled) {
                     lore += plugin.getGuiText("gui.loot-editor.item-expected",
-                        "count" to formatExpected(chance / 100.0 * avgAmount))
+                        "count" to formatExpected(chance / 100.0 * avgAmount * poolRuns))
                 }
             } else if (totalWeight > 0.0 && li.enabled) {
                 // WEIGHTED mode: show the raw weight AND the derived per-draw % so the
@@ -197,7 +203,7 @@ class LootEditorView(
                     "percent" to String.format("%.1f", chancePerDraw * 100.0))
 
                 val avgDraws = (draft.minRolls + draft.maxRolls) / 2.0
-                val expected = avgDraws * chancePerDraw * avgAmount
+                val expected = avgDraws * chancePerDraw * avgAmount * poolRuns
                 lore += plugin.getGuiText("gui.loot-editor.item-expected",
                     "count" to formatExpected(expected))
             } else {
@@ -206,7 +212,7 @@ class LootEditorView(
             }
         } else if (li.enabled) {
             lore += plugin.getGuiText("gui.loot-editor.item-expected",
-                "count" to formatExpected(avgAmount))
+                "count" to formatExpected(avgAmount * poolRuns))
         }
         lore += plugin.getGuiText(if (li.enabled) "gui.loot-editor.item-enabled" else "gui.loot-editor.item-disabled")
         if (plugin.lootManager.isLegacy(li)) {
@@ -402,6 +408,31 @@ class LootEditorView(
             })
         }
 
+        // How often the pool runs, at (3, 5) = slot 48. Only a pool of a
+        // multi-pool table has this; a table with one pool always runs.
+        if (poolName != null) {
+            val percent = (draft.chance * 100.0).toInt()
+            val chanceItem = GuiComponents.infoItem(plugin, Material.CLOCK,
+                "gui.loot-editor.chance-name", "gui.loot-editor.chance-lore",
+                "percent" to percent)
+            set(48, VcGuiItem.wrap(chanceItem) { ctx ->
+                val step = when (ctx.click) {
+                    ClickType.LEFT -> 5
+                    ClickType.RIGHT -> -5
+                    ClickType.SHIFT_LEFT -> 25
+                    ClickType.SHIFT_RIGHT -> -25
+                    else -> 0
+                }
+                if (step != 0) {
+                    draft.chance = ((percent + step).coerceIn(0, 100)) / 100.0
+                    draft.dirty = true
+                    refreshContent()   // the expected-per-opening figures move with it
+                    buildControls()
+                    update()
+                }
+            })
+        }
+
         // Add (from hand) at (4, 5) = slot 49
         val add = GuiComponents.infoItem(plugin, Material.LIME_DYE,
             "gui.loot-editor.add-name", "gui.loot-editor.add-lore")
@@ -491,7 +522,8 @@ class LootEditorView(
                         guaranteedItems = draft.guaranteed.toList(),
                         weightedItems = draft.weighted.toList(),
                         rollMode = draft.rollMode,
-                        maxItems = draft.maxItems
+                        maxItems = draft.maxItems,
+                        chance = draft.chance
                     )
                 } else pool
             }
