@@ -542,12 +542,18 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     // frame or swapping what is in it is left alone, since that survives a reset
     // and some minigames are built on it.
 
-    /** True for the entities that are part of a build rather than part of the world. */
-    private fun isDecoration(entity: org.bukkit.entity.Entity): Boolean = when (entity) {
-        is org.bukkit.entity.Hanging -> true
-        is org.bukkit.entity.ArmorStand -> true
-        else -> false
-    }
+    /**
+     * True for the entities that are part of a build rather than part of the
+     * world.
+     *
+     * Asks the same question the snapshot asks, so what a reset puts back and
+     * what protection defends can never drift apart. That matters for the
+     * cushions added in 26.3: they are not hung on a wall the way a painting is,
+     * so the two handlers below never see one, and this is the only thing
+     * standing between a cushion and anyone who fancies it.
+     */
+    private fun isDecoration(entity: org.bukkit.entity.Entity): Boolean =
+        com.esmpfun.bettertrialchambers.utils.DecorationEntities.isDecoration(entity)
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onHangingBreak(event: HangingBreakEvent) {
@@ -571,6 +577,17 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         }
         event.isCancelled = true
     }
+
+    // The two handlers above only ever see something hung on a wall. A cushion is
+    // not, so 26.3 adds its own way of saying one has been taken:
+    // `io.papermc.paper.event.entity.EntityBreakEvent` (cancellable, with a
+    // reason of ENTITY, EXPLOSION, OBSTRUCTION, PHYSICS or DEFAULT) and
+    // `EntityBreakByEntityEvent`, which also names who did it.
+    //
+    // TODO(26.3-api): when Paper publishes 26.3, add a handler for those two
+    // shaped exactly like the pair above, so a cushion inside a chamber is
+    // defended the same way a painting is. Until then the damage handler further
+    // down is what covers them.
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onArmorStandManipulate(event: PlayerArmorStandManipulateEvent) {
