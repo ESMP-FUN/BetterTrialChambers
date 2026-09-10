@@ -627,6 +627,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                 } catch (e: Exception) {
                     plugin.logger.severe("Error in vault open: ${e.message}")
                     e.printStackTrace()
+                    com.esmpfun.bettertrialchambers.integrations.MetricsService.reportHandled(e, "vault-open")
                     continuation.resumeWith(Result.failure(e))
                 }
             })
