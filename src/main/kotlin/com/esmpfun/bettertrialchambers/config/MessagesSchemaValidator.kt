@@ -15,7 +15,7 @@ import java.io.InputStreamReader
  * [BetterTrialChambers.getGuiText] / [BetterTrialChambers.getMessage] fall back to the
  * literal string `<missing: <key>>`, which surfaces in chat and GUI tooltips.
  *
- * The check is purely informative — it only logs. It never modifies the user's
+ * The check is purely informative, it only logs. It never modifies the user's
  * file (we don't want to clobber translations) and never blocks startup.
  *
  * Triggered once during [BetterTrialChambers.onEnable] right after
@@ -36,7 +36,7 @@ object MessagesSchemaValidator {
 
         val userFile = File(plugin.dataFolder, "messages.yml")
         if (!userFile.exists()) {
-            // saveResource just ran — if this is missing the JAR doesn't ship it.
+            // saveResource just ran, if this is missing the JAR doesn't ship it.
             // Either way, nothing for this check to compare.
             return
         }
@@ -97,7 +97,7 @@ object MessagesSchemaValidator {
     }
 
     /**
-     * Walks the YAML tree and returns every leaf path — i.e. every key whose
+     * Walks the YAML tree and returns every leaf path, i.e. every key whose
      * value is a String, list, number, etc. but NOT a [ConfigurationSection].
      * Section paths are not interesting because they don't carry text.
      */

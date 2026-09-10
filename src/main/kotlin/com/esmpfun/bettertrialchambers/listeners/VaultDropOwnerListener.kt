@@ -30,7 +30,7 @@ class VaultDropOwnerListener(private val plugin: BetterTrialChambers) : Listener
             val droppedAt = readDropTime(item) ?: return
             val elapsedMs = System.currentTimeMillis() - droppedAt
             if (elapsedMs >= graceSeconds * 1000L) {
-                return // grace expired — free-for-all
+                return // grace expired, free-for-all
             }
         }
 

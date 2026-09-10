@@ -54,7 +54,7 @@ class DungeonStitcherTest {
         // The start ('entrance'-tagged) is placed unrotated at the origin.
         assertTrue(r.placements.any { it == Placement("entry", Rotation.NONE, 0, 0, 0) })
         // The attached room sits face-adjacent to the east. (Which room/rotation is
-        // chosen can vary — a single-connector room matches any facing via rotation —
+        // chosen can vary, a single-connector room matches any facing via rotation,
         // but the offset is the cell across the shared wall regardless.)
         assertTrue(r.placements.any { it.offsetX == 3 && it.offsetY == 0 && it.offsetZ == 0 })
         assertEquals(2, r.doorways.size)
@@ -64,7 +64,7 @@ class DungeonStitcherTest {
 
     @Test
     fun `rotates a candidate so its connector faces back`() {
-        // open connector faces EAST → candidate must present a WEST-facing door.
+        // open connector faces EAST -> candidate must present a WEST-facing door.
         // 'turny' only has a SOUTH connector, which becomes WEST under CW90.
         val shapes = listOf(
             room("entry", Connector(2, 1, 1, BlockFace.EAST), tags = setOf("entrance")),

@@ -9,7 +9,7 @@ import org.bukkit.event.HandlerList
 import org.bukkit.inventory.ItemStack
 
 /**
- * Fired immediately after a player has successfully opened a vault — the loot
+ * Fired immediately after a player has successfully opened a vault: the loot
  * is generated, the key is consumed, and the items have been delivered to the
  * player (either into the inventory or popped out as item entities, depending
  * on `vaults.drop-loot-at-vault`). Not cancellable; the open already happened.
@@ -20,7 +20,7 @@ import org.bukkit.inventory.ItemStack
  * @property vault         Database row for the opened vault.
  * @property chamber       The chamber the vault belongs to. May be null in the
  *                         pathological case of a vault whose chamber row was
- *                         deleted while the vault was open — listeners should
+ *                         deleted while the vault was open; listeners should
  *                         tolerate the null.
  * @property lootTableName The effective loot table that produced [items]
  *                         (chamber override resolved against vault default).

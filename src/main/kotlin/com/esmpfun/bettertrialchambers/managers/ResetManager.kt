@@ -29,7 +29,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
     private val scheduledResets = ConcurrentHashMap<Int, Job>()
     private val warningJobs = ConcurrentHashMap<Int, MutableList<Job>>()
 
-    // Chambers with a reset currently running/queued — guards against the same
+    // Chambers with a reset currently running/queued, guards against the same
     // chamber being reset twice concurrently (e.g. the 60s scheduler re-firing).
     private val inProgress = ConcurrentHashMap.newKeySet<Int>()
 
@@ -79,7 +79,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                     val newlyPending = pendingResets.size - before
                     if (newlyPending > 0) {
                         plugin.logger.info(
-                            "$newlyPending chamber(s) due for reset — ${pendingResets.size} total awaiting confirmation. " +
+                            "$newlyPending chamber(s) due for reset, ${pendingResets.size} total awaiting confirmation. " +
                                 "Use /trial reset pending to list, /trial reset confirm all to release."
                         )
                     }
@@ -109,7 +109,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
         if (chamber.id in inProgress) return
         if (chamber.id in pendingResets) return
 
-        // Skip paused chambers — they have no active behavior including auto-resets
+        // Skip paused chambers, they have no active behavior including auto-resets
         if (chamber.isPaused) return
 
         // Skip if automatic resets are disabled (resetInterval <= 0)
@@ -124,7 +124,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
         val now = System.currentTimeMillis()
 
         if (now >= nextResetTime) {
-            // Due now — enqueue for confirmation or launch through the throttle.
+            // Due now, enqueue for confirmation or launch through the throttle.
             triggerScheduledReset(chamber)
         } else {
             // Schedule future reset
@@ -171,7 +171,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
 
     /**
      * v1.7.2: cancels any scheduled reset, pending warnings, and pending
-     * confirmation for a chamber. Called when a chamber is paused or deleted —
+     * confirmation for a chamber. Called when a chamber is paused or deleted,
      * previously the queued warning messages ("resets in 30 seconds!") kept
      * firing for paused/deleted chambers, and a parked pending-confirmation
      * entry survived deletion.
@@ -257,13 +257,13 @@ class ResetManager(private val plugin: BetterTrialChambers) {
     ): Boolean {
         // v1.7.2: re-check pause state at FIRE time for scheduled resets. Scheduling
         // skips paused chambers, but a chamber paused during an already-running
-        // countdown still reset — the delayed job never rechecked. Manual resets
+        // countdown still reset, the delayed job never rechecked. Manual resets
         // (and API calls) stay allowed: an admin force-resetting a paused chamber
         // is deliberate.
         if (reason == ChamberResetEvent.Reason.SCHEDULED &&
             plugin.chamberManager.getCachedChamberById(chamber.id)?.isPaused == true
         ) {
-            plugin.logger.info("Skipping scheduled reset for '${chamber.name}' — chamber was paused during the countdown.")
+            plugin.logger.info("Skipping scheduled reset for '${chamber.name}', chamber was paused during the countdown.")
             return false
         }
 
@@ -313,13 +313,13 @@ class ResetManager(private val plugin: BetterTrialChambers) {
             scheduledResets.remove(chamber.id)?.cancel()
             warningJobs.remove(chamber.id)?.forEach { it.cancel() }
 
-            // Captured BEFORE Step 1 empties the chamber — by the time the completion
+            // Captured BEFORE Step 1 empties the chamber, by the time the completion
             // message fires at the end of this method, everyone has been teleported out
             // and getPlayersInside() returns nothing.
             val resetAudience = captureResetAudience(chamber)
 
             // Step 0: Strip Trial/Bad Omen from players inside so it doesn't carry into the next
-            // cycle. Independent of teleport — works even when players stay in the chamber.
+            // cycle. Independent of teleport, works even when players stay in the chamber.
             if (plugin.config.getBoolean("reset.clear-trial-omen-effect", true)) {
                 clearTrialOmen(chamber)
             }
@@ -348,7 +348,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                     blocksRestored = overrideBlocks.size
                 } else {
                     plugin.logger.warning(
-                        "Snapshot override for chamber ${chamber.name} failed to load — falling back to on-disk snapshot"
+                        "Snapshot override for chamber ${chamber.name} failed to load, falling back to on-disk snapshot"
                     )
                     val snapshotFile = chamber.getSnapshotFile()
                     if (snapshotFile != null && snapshotFile.exists()) {
@@ -391,18 +391,18 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                 }
             }
 
-            // v1.5.7: per-player container-loot copies reset with the chamber —
+            // v1.5.7: per-player container-loot copies reset with the chamber,
             // everyone gets fresh chest loot next cycle. No-op when unused.
             // Untouched containers then roll the vanilla loot table fresh on next
             // open (each player independently); OP overrides persist. No reset-time
-            // re-roll needed — freshness is inherent to the per-player model (v1.6.3).
+            // re-roll needed, freshness is inherent to the per-player model (v1.6.3).
             plugin.containerLootManager.clearChamber(chamber.id)
 
             // Send completion message if broadcasts are enabled globally and for this chamber.
             //
             // v2.0.4: this used to go to every online player on the server. The message
             // carries no chamber name, so for anyone who wasn't in the chamber it was an
-            // unidentifiable line of chat — and on servers with many auto-discovered
+            // unidentifiable line of chat, and on servers with many auto-discovered
             // chambers the staggered resets turned that into a steady drip of noise.
             // It now defaults to the players who were actually in the chamber.
             val globalAlerts = plugin.config.getBoolean("global.reset-complete-alert", true)
@@ -416,7 +416,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
 
                 plugin.scheduler.runTask(Runnable {
                     // {chamber} is offered even though the shipped default text doesn't use
-                    // it — existing messages.yml files keep their wording, and anyone who
+                    // it, existing messages.yml files keep their wording, and anyone who
                     // wants the name (particularly in server-wide mode) can add it.
                     val message = plugin.getMessageComponent(
                         "chamber-reset-complete",
@@ -455,7 +455,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
         } catch (e: Throwable) {
             // Throwable, not Exception: a soft-dependency class compiled for a newer
             // Java than the runtime throws LinkageError (UnsupportedClassVersionError),
-            // which an Exception catch misses — the reset would then die silently with
+            // which an Exception catch misses, the reset would then die silently with
             // no success/failure feedback. Report it and return false so callers can
             // tell the operator. CancellationException is rethrown above.
             plugin.logger.severe("Failed to reset chamber ${chamber.name}: ${e.javaClass.simpleName}: ${e.message}")
@@ -487,7 +487,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
      * Snapshots who is inside the chamber, as UUIDs, for the completion message.
      *
      * Read on the scheduler thread (same as [clearTrialOmen]) rather than straight off
-     * the IO dispatcher this reset runs on — `World.getPlayers()` is Bukkit state and
+     * the IO dispatcher this reset runs on, `World.getPlayers()` is Bukkit state and
      * isn't safe to touch from an arbitrary thread on Folia. UUIDs rather than Player
      * references, so a player who disconnects mid-reset can't be messaged through a
      * stale handle.
@@ -569,7 +569,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
      *
      * The old version scanned the chamber's CENTRE column (inside the structure)
      * and returned `y+2` above the first solid block without checking the
-     * destination was actually open — so players were teleported into the
+     * destination was actually open, so players were teleported into the
      * ceiling/walls and suffocated. This scans columns a couple of blocks beyond
      * each edge and requires solid ground with two passable, non-liquid cells
      * above it before accepting a spot.
@@ -753,7 +753,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                                             // one that omits it follows this chamber/global setting. Turning on
                                             // `reset.spawner-cooldown-overrides-presets` forces every spawner onto
                                             // the global setting. Same rule as the wild-spawner cooldown paths.
-                                            // Tracking/state clearing below still applies either way — only the
+                                            // Tracking/state clearing below still applies either way, only the
                                             // cooldown LENGTH override is skipped.
                                             val isPresetSpawner = PresetCooldownPolicy.keepsOwnCooldown(plugin, state)
 
@@ -790,7 +790,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                                             }
 
                                             // Clear the LEFTOVER active cooldown + pending spawn timer so the spawner
-                                            // is actually READY after the reset. This is the real "reset" — clearing
+                                            // is actually READY after the reset. This is the real "reset", clearing
                                             // tracked players (above) alone leaves a just-completed spawner stuck in its
                                             // post-completion cooldown (getCooldownEnd() still in the future), so it never
                                             // re-activates. Per Paper, cooldownEnd == 0 means "not in cooldown". For a
@@ -832,7 +832,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                     }
                 }
             } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
-                plugin.logger.warning("Trial-spawner reset batch timed out in chamber ${chamber.name} (x $batchStartX..$xEnd) — continuing")
+                plugin.logger.warning("Trial-spawner reset batch timed out in chamber ${chamber.name} (x $batchStartX..$xEnd), continuing")
                 0
             }
             resetCount += batchCount
@@ -863,13 +863,13 @@ class ResetManager(private val plugin: BetterTrialChambers) {
      * Reports at every 10% of the way through, so a reset is always about nine lines
      * whatever the chamber's size. It used to report once per batch of blocks, which on
      * a million-block chamber meant well over a thousand near-identical lines scrolling
-     * past — server owners reasonably read that as the reset being stuck in a loop.
+     * past, server owners reasonably read that as the reset being stuck in a loop.
      *
      * That old rule was unreliable too: it only reported when a batch happened to finish
      * on an exact multiple of 1000 blocks, so changing `global.blocks-per-tick` could
      * silence progress reporting almost entirely.
      *
-     * A reset that genuinely restarts is still easy to spot — the "Restoring chamber
+     * A reset that genuinely restarts is still easy to spot, the "Restoring chamber
      * <name> from snapshot" line above appears once per attempt.
      */
     private fun restoreProgressLogger(chamberName: String): (Int, Int) -> Unit {
@@ -890,7 +890,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
         plugin.logger.info("Restoring chamber ${chamber.name} from snapshot")
 
         // Pass 1: migrate legacy-format files in place, then collect just the
-        // snapshot's coverage (packed positions + bounds) — the whole snapshot
+        // snapshot's coverage (packed positions + bounds), the whole snapshot
         // is never held in memory; blocks stream off disk in pass 2.
         val scan = plugin.snapshotManager.prepareAndScan(snapshotFile)
         if (scan == null || scan.blockCount == 0) {
@@ -908,7 +908,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
         // SAFETY: the clear region is the INTERSECTION of the chamber bounds and
         // the snapshot's own coverage. If the chamber AABB grew after capture
         // (e.g. a discovery merge), clearing the full chamber bounds would wipe
-        // everything in the annexed volume that the snapshot can't put back —
+        // everything in the annexed volume that the snapshot can't put back,
         // terrain, builds, the lot. Never clear ground the snapshot doesn't cover.
         if (plugin.config.getBoolean("reset.clear-added-blocks", true)) {
             val world = chamber.getWorld()
@@ -919,7 +919,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                     plugin.logger.warning(
                         "Snapshot for chamber ${chamber.name} covers a smaller region than the chamber " +
                             "bounds (chamber likely grew after capture). Clearing only the snapshot-covered " +
-                            "region — run /trial snapshot create ${chamber.name} to recapture the full bounds."
+                            "region; run /trial snapshot create ${chamber.name} to recapture the full bounds."
                     )
                 }
                 val clrMinX = maxOf(chamber.minX, scan.minX)
@@ -1056,7 +1056,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
         // SAFETY: the clear region is the INTERSECTION of the chamber bounds and
         // the snapshot's own coverage. If the chamber AABB grew after capture
         // (e.g. a discovery merge), clearing the full chamber bounds would wipe
-        // everything in the annexed volume that the snapshot can't put back —
+        // everything in the annexed volume that the snapshot can't put back,
         // terrain, builds, the lot. Never clear ground the snapshot doesn't cover.
         if (plugin.config.getBoolean("reset.clear-added-blocks", true) && snapshot.isNotEmpty()) {
             val world = chamber.getWorld()
@@ -1077,7 +1077,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                     plugin.logger.warning(
                         "Snapshot for chamber ${chamber.name} covers a smaller region than the chamber " +
                             "bounds (chamber likely grew after capture). Clearing only the snapshot-covered " +
-                            "region — run /trial snapshot create ${chamber.name} to recapture the full bounds."
+                            "region; run /trial snapshot create ${chamber.name} to recapture the full bounds."
                     )
                 }
                 val clrMinX = maxOf(chamber.minX, snapMinX)

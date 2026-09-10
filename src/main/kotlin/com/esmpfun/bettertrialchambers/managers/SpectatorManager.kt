@@ -304,7 +304,7 @@ class SpectatorManager(private val plugin: BetterTrialChambers) {
     /**
      * Cleans up when a player disconnects.
      *
-     * v1.7.2: restores the previous gamemode/location synchronously — the quit
+     * v1.7.2: restores the previous gamemode/location synchronously, the quit
      * event runs on the player's thread and the player entity is still valid.
      * Previously the data was just dropped, so logging out while spectating
      * left the player in SPECTATOR (at the chamber) on their next join.
@@ -317,7 +317,7 @@ class SpectatorManager(private val plugin: BetterTrialChambers) {
             player.teleport(data.previousLocation)
             clearRecoveryData(player)
         }.onFailure {
-            plugin.logger.warning("[Spectator] Could not restore ${player.name} on quit: ${it.message} — join-time recovery will handle it.")
+            plugin.logger.warning("[Spectator] Could not restore ${player.name} on quit: ${it.message}, join-time recovery will handle it.")
         }
     }
 

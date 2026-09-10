@@ -7,17 +7,17 @@ import org.bukkit.potion.PotionType
 /**
  * How often a single loot entry can be earned by one player (v2.1.0).
  *
- * The vanilla trial-chamber trims (Silence, Flow, Bolt, Wayfinder …) are the
+ * The vanilla trial-chamber trims (Silence, Flow, Bolt, Wayfinder ...) are the
  * motivating case: server owners want them to drop, but not be farmable by
  * resetting the same chamber over and over. Flag such an entry [PER_CHAMBER]
  * or [ONCE] and once a player has received it, it is quietly removed from
- * that player's roll — the weights simply redistribute.
+ * that player's roll, the weights simply redistribute.
  *
  * - [PER_RESET] (default, legacy behaviour): no cap. The item can be earned
- *   again every time the chamber resets — nothing is tracked. This is exactly
+ *   again every time the chamber resets, nothing is tracked. This is exactly
  *   how every loot entry behaved before this feature existed.
  * - [PER_CHAMBER]: a player can earn this entry at most once from each chamber,
- *   and that claim survives resets — re-earnable only from a *different* chamber.
+ *   and that claim survives resets, re-earnable only from a *different* chamber.
  * - [ONCE]: a player can earn this entry at most once, ever, from any chamber.
  */
 enum class RedeemScope {
@@ -26,7 +26,7 @@ enum class RedeemScope {
     ONCE;
 
     companion object {
-        /** Case-insensitive parse; null/blank/unknown → [PER_RESET]. */
+        /** Case-insensitive parse; null/blank/unknown -> [PER_RESET]. */
         fun fromConfig(raw: String?): RedeemScope =
             entries.firstOrNull { it.name.equals(raw?.trim(), ignoreCase = true) } ?: PER_RESET
     }
@@ -64,7 +64,7 @@ data class LootItem(
     // Potion/Tipped Arrow support
     val potionType: PotionType? = null, // For potions and tipped arrows
     val potionLevel: Int? = null, // Potion effect amplifier (0 = level I, 1 = level II, etc.)
-    // Random amplifier range (v1.7.1) — rolled per generation when both are set; overrides
+    // Random amplifier range (v1.7.1), rolled per generation when both are set; overrides
     // potionLevel. Matches vanilla's set_ominous_bottle_amplifier uniform range (e.g. the
     // real ominous vault bottle is one entry with amplifier 2-4, not three split entries).
     val potionLevelMin: Int? = null,
@@ -109,7 +109,7 @@ data class LootItem(
     // Vanilla / datapack loot-table passthrough (v1.5.7). When set, 'type' is
     // ignored and rolling this entry populates the referenced server loot table
     // (e.g. "minecraft:chests/trial_chambers/reward" or any datapack key) via
-    // the Bukkit LootTable API — every stack the table generates is added.
+    // the Bukkit LootTable API, every stack the table generates is added.
     val vanillaTable: String? = null,
 
     // Per-player redeem cap (v2.1.0). Default PER_RESET = uncapped/legacy. When
@@ -157,10 +157,10 @@ data class EconomyReward(
  *
  * - [WEIGHTED] (default, legacy behaviour): the pool makes `min-rolls..max-rolls`
  *   draws per opening; each draw picks exactly ONE item with probability
- *   `item.weight / (sum of enabled weights)`. Weights are *relative* — only their
+ *   `item.weight / (sum of enabled weights)`. Weights are *relative*, only their
  *   ratio matters, and duplicates are possible across draws.
  * - [INDEPENDENT]: each enabled weighted item rolls once on its own, dropping when
- *   `random(0..100) < item.weight` — i.e. `weight` is read as a standalone 0-100%
+ *   `random(0..100) < item.weight`, i.e. `weight` is read as a standalone 0-100%
  *   chance. Chances are absolute and need not sum to 100. `min-rolls`/`max-rolls`
  *   (and the LUCK bonus) are ignored; instead an optional `max-items` cap keeps at
  *   most N of the winners (chosen at random) when more than N pass. Practical for
@@ -171,7 +171,7 @@ enum class LootRollMode {
     INDEPENDENT;
 
     companion object {
-        /** Case-insensitive parse; null/blank/unknown → [WEIGHTED] (with the caller free to warn). */
+        /** Case-insensitive parse; null/blank/unknown -> [WEIGHTED] (with the caller free to warn). */
         fun fromConfig(raw: String?): LootRollMode =
             entries.firstOrNull { it.name.equals(raw?.trim(), ignoreCase = true) } ?: WEIGHTED
 
@@ -184,7 +184,7 @@ enum class LootRollMode {
  * Represents a loot pool within a loot table.
  * Each pool rolls independently (like vanilla's common/rare/unique).
  *
- * @property rollMode How weighted items are drawn — see [LootRollMode].
+ * @property rollMode How weighted items are drawn, see [LootRollMode].
  * @property maxItems In [LootRollMode.INDEPENDENT] mode only, the maximum number of
  *   passing weighted items to keep per opening (0 = uncapped). Ignored in WEIGHTED mode.
  * @property chance How often the pool runs at all, from 0.0 (never) to 1.0

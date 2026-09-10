@@ -122,8 +122,8 @@ object RegionUtil {
      * is done, which on a machine with little memory looks like memory that goes up
      * after a discovery or a reset and never comes back down.
      *
-     * This is only ever a hint. The server ignores it for any chunk still in use —
-     * players nearby, force-loaded, or spawn chunks — so it can never pull the map out
+     * This is only ever a hint. The server ignores it for any chunk still in use,
+     * players nearby, force-loaded, or spawn chunks, so it can never pull the map out
      * from under anyone.
      */
     fun releaseChunks(

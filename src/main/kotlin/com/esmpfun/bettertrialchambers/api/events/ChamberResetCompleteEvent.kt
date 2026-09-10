@@ -7,7 +7,7 @@ import org.bukkit.event.HandlerList
 
 /**
  * Fired after a chamber has finished resetting (block restoration done, vault
- * cooldowns cleared, spawners reset). Not cancellable — at this point the work
+ * cooldowns cleared, spawners reset). Not cancellable; at this point the work
  * has already happened.
  *
  * Useful for triggering follow-up announcements, scoreboards, or webhook

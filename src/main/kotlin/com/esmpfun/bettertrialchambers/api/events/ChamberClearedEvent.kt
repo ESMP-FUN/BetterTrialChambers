@@ -8,7 +8,7 @@ import java.util.UUID
 
 /**
  * Fired when every trial spawner inside a registered chamber has completed
- * its current wave during the same reset cycle — i.e. the chamber has been
+ * its current wave during the same reset cycle; that is, the chamber has been
  * "cleared" in one continuous run, before any auto- or manual reset.
  *
  * Not cancellable; the clear has already happened. Tracking is kept per
@@ -18,11 +18,11 @@ import java.util.UUID
  * [ChamberResetEvent] / [ChamberResetCompleteEvent] cycle, so a chamber
  * that's cleared, reset, and cleared again fires the event twice.
  *
- * Wild spawners (those outside any registered chamber) do not contribute —
+ * Wild spawners (those outside any registered chamber) do not contribute;
  * the event is chamber-scoped only.
  *
  * Fires on whichever thread `SpawnerWaveManager.completeWave` is running
- * on — typically the wave's region thread. Asynchronous flag is computed
+ * on, typically the wave's region thread. Asynchronous flag is computed
  * at fire time so listeners can rely on `event.isAsynchronous()`.
  *
  * Primary intended consumer: the planned premium "Mythic Trials" module,

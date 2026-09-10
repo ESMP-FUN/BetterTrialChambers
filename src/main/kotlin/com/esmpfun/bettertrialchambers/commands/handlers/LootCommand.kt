@@ -5,7 +5,7 @@ import com.esmpfun.bettertrialchambers.models.VaultType
 import org.bukkit.command.CommandSender
 
 /**
- * `/trial loot <set|clear|info|list> ...` — manages per-chamber loot table
+ * `/trial loot <set|clear|info|list> ...`, manages per-chamber loot table
  * overrides. Wraps the four sub-actions (`set`, `clear`, `info`, `list`) that
  * were previously private methods on `TCPCommand`.
  *
@@ -35,7 +35,7 @@ class LootCommand(private val plugin: BetterTrialChambers) : SubcommandHandler {
     }
 
     /**
-     * `/trial loot audit` — lists loot entries that lack serialized NBT and look
+     * `/trial loot audit`, lists loot entries that lack serialized NBT and look
      * like pre-1.5.0 leftovers (enchanted books without enchantments, potions
      * without potion type, etc). The faithful-loot fix only applies to entries
      * added after upgrading; older rows have to be re-entered through the

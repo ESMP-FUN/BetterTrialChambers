@@ -1,19 +1,19 @@
 # =============================================================================
-#  BetterTrialChambers — procedural dungeon generation
+#  BetterTrialChambers: procedural dungeon generation
 # =============================================================================
 #  Build rooms in WorldEdit with COMPLETE walls. At each spot a door could be,
 #  place a minecraft:jigsaw block flush in the wall with its FRONT facing
 #  outward (orientations north_up / east_up / south_up / west_up). Don't pre-cut
-#  the opening — the generator carves a standard doorway where two rooms join,
+#  the opening. The generator carves a standard doorway where two rooms join,
 #  and leaves unused connectors as walls.
 #
-#  Capture a room:   stand at one corner → /trial dungeon pos1
-#                    stand at the opposite corner → /trial dungeon pos2
-#                    /trial dungeon capture <id> [roles…]   (e.g. entrance, vault)
+#  Capture a room:   stand at one corner, run /trial dungeon pos1
+#                    stand at the opposite corner, run /trial dungeon pos2
+#                    /trial dungeon capture <id> [roles...]   (e.g. entrance, vault)
 #  Generate:         /trial dungeon generate <name> [seed]
 #  Import (v1.7.0):  drop vanilla .nbt structure templates (or a whole datapack
 #                    .zip, e.g. "crazy chambers") into dungeon/import/, then
-#                    /trial dungeon import <file|folder|zip> [tags…]
+#                    /trial dungeon import <file|folder|zip> [tags...]
 #                    Rooms import literally (no worldgen processor randomizers);
 #                    only palette 0 is read; vertical jigsaws become walls.
 #  YAML needs SPACES, never TABs.

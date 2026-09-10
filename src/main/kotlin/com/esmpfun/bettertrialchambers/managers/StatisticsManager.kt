@@ -77,8 +77,8 @@ class StatisticsManager(private val plugin: BetterTrialChambers) {
 
     /**
      * v1.7.2: atomic single-column increment upsert. The old read-modify-write
-     * (getStats → ++ → saveStats full-row overwrite) silently lost counts when two
-     * servers sharing one MySQL incremented concurrently — the database now does the
+     * (getStats -> ++ -> saveStats full-row overwrite) silently lost counts when two
+     * servers sharing one MySQL incremented concurrently, the database now does the
      * addition itself, same pattern as [batchAddTimeSpent]. [column] must come from
      * the hardcoded call sites below, never from user input.
      */
@@ -222,7 +222,7 @@ class StatisticsManager(private val plugin: BetterTrialChambers) {
      * @param limit Number of top players to return
      */
     suspend fun getLeaderboard(stat: String, limit: Int = 10): List<Pair<UUID, Int>> = withContext(Dispatchers.IO) {
-        // Whitelisted column/expression — never interpolate user input here.
+        // Whitelisted column/expression, never interpolate user input here.
         val column = when (stat.lowercase()) {
             "chambers" -> "chambers_completed"
             "vaults" -> "(normal_vaults_opened + ominous_vaults_opened)"

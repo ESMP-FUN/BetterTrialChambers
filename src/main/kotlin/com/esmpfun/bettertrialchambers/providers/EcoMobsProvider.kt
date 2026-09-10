@@ -47,7 +47,7 @@ class EcoMobsProvider(private val plugin: BetterTrialChambers) : TrialMobProvide
             val registryCls = Class.forName("com.willfp.ecomobs.mob.EcoMobs")
             val registry = registryCls.getField("INSTANCE").get(null)
 
-            // `operator fun get(String): EcoMob?` — `get` is the Java-visible name.
+            // `operator fun get(String): EcoMob?`, `get` is the Java-visible name.
             val getMethod = registryCls.methods.firstOrNull {
                 it.name == "get" && it.parameterCount == 1 && it.parameterTypes[0] == String::class.java
             } ?: return null

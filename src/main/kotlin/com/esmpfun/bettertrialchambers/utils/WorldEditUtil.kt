@@ -15,7 +15,7 @@ object WorldEditUtil {
 
     // NOTE: the WorldEdit availability check lives in [WorldEditSupport], NOT here.
     // This class imports WorldEdit types (e.g. IncompleteRegionException in catch
-    // clauses), so the JVM can only link it when WorldEdit is actually installed —
+    // clauses), so the JVM can only link it when WorldEdit is actually installed,
     // calling any method here without WE present throws NoClassDefFoundError. Always
     // gate calls into this class behind WorldEditSupport.isAvailable() first.
 

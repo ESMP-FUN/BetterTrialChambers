@@ -12,14 +12,14 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * `/trial dungeon ...` — author room templates and generate dungeons from them.
+ * `/trial dungeon ...`, author room templates and generate dungeons from them.
  *
  *   pos1 / pos2            mark the capture selection (your feet position)
- *   capture <id> [roles…]  save the selection as a room template (roles → tags)
+ *   capture <id> [roles...]  save the selection as a room template (roles -> tags)
  *   generate <name> [seed] stitch a dungeon at your feet, register it as a chamber
  *   list                   list saved room templates
  *   delete <id>            delete a room template
- *   import <file|folder|zip> [tags…]  import vanilla .nbt structure templates
+ *   import <file|folder|zip> [tags...]  import vanilla .nbt structure templates
  *                          (from plugins/BetterTrialChambers/dungeon/import/) as rooms
  */
 class DungeonCommand(private val plugin: BetterTrialChambers) : SubcommandHandler {
@@ -124,7 +124,7 @@ class DungeonCommand(private val plugin: BetterTrialChambers) : SubcommandHandle
     }
 
     /**
-     * `/trial dungeon import <file|folder|zip> [tags…]` — v1.7.0. Reads from
+     * `/trial dungeon import <file|folder|zip> [tags...]`, v1.7.0. Reads from
      * `plugins/BetterTrialChambers/dungeon/import/`. A loose `.nbt` imports one room; a folder
      * imports every `.nbt` inside (folder name auto-tagged); a datapack `.zip` imports every
      * `data/<ns>/structure(s)/**/*.nbt` entry (immediate parent folder auto-tagged).

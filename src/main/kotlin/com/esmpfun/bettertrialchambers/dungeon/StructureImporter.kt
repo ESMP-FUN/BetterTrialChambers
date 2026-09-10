@@ -49,7 +49,7 @@ class StructureImporter(private val plugin: BetterTrialChambers) {
         val palette = structure.palettes.firstOrNull()
             ?: throw IllegalArgumentException("structure '$id' has no palette")
         if (structure.palettes.size > 1) {
-            plugin.logger.info("Import '$id': ${structure.palettes.size} palettes found — using palette 0 only.")
+            plugin.logger.info("Import '$id': ${structure.palettes.size} palettes found, using palette 0 only.")
         }
 
         val sizeX = structure.size.blockX
@@ -92,10 +92,10 @@ class StructureImporter(private val plugin: BetterTrialChambers) {
             }
         }
         if (nbtFailures > 0) {
-            plugin.logger.warning("Import '$id': tile-entity NBT could not be read for $nbtFailures block(s) — imported without it.")
+            plugin.logger.warning("Import '$id': tile-entity NBT could not be read for $nbtFailures block(s), imported without it.")
         }
 
-        // Pass 2: jigsaw cells → connectors, cell rewritten to a sampled wall block.
+        // Pass 2: jigsaw cells -> connectors, cell rewritten to a sampled wall block.
         val connectors = mutableListOf<Connector>()
         for ((pos, face) in jigsaws) {
             val wall = sampleWallInMemory(pos, face, blocks, materials) ?: wallFallback
@@ -103,7 +103,7 @@ class StructureImporter(private val plugin: BetterTrialChambers) {
             if (face != null) {
                 connectors += Connector(pos.first, pos.second, pos.third, face)
             } else {
-                plugin.logger.warning("Import '$id': jigsaw at ${pos.first},${pos.second},${pos.third} has a vertical/unsupported orientation — treated as wall, no connector.")
+                plugin.logger.warning("Import '$id': jigsaw at ${pos.first},${pos.second},${pos.third} has a vertical/unsupported orientation, treated as wall, no connector.")
             }
         }
 
@@ -174,8 +174,8 @@ class StructureImporter(private val plugin: BetterTrialChambers) {
 
         /**
          * Parses a zip entry path into a room id + auto-tag, or null when the entry isn't a
-         * datapack structure template. Pure — unit-tested.
-         * `data/crazy_chambers/structure/spawner/small_1.nbt` →
+         * datapack structure template. Pure, unit-tested.
+         * `data/crazy_chambers/structure/spawner/small_1.nbt` ->
          * id `crazy_chambers_spawner_small_1`, autoTag `spawner`.
          */
         fun zipEntryInfo(path: String): ZipRoomEntry? {

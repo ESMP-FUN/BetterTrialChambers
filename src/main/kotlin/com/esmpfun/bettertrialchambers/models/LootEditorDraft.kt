@@ -2,7 +2,7 @@ package com.esmpfun.bettertrialchambers.models
 
 /**
  * Mutable working copy of a loot table (or one pool of a multi-pool table) edited
- * inside the GUI. Lives across screens — the loot editor renders it, the amount
+ * inside the GUI. Lives across screens, the loot editor renders it, the amount
  * editor mutates a single item in it, and `MenuService` persists it across menu
  * navigation under a stable per-table-and-pool key so unsaved changes survive
  * back/forward clicks.
@@ -18,7 +18,7 @@ package com.esmpfun.bettertrialchambers.models
  *                      probability for a single roll.
  * @property minRolls   Minimum number of weighted rolls per vault open (WEIGHTED mode).
  * @property maxRolls   Maximum number of weighted rolls per vault open (WEIGHTED mode).
- * @property rollMode   How weighted items are drawn — see [LootRollMode]. In
+ * @property rollMode   How weighted items are drawn, see [LootRollMode]. In
  *                      INDEPENDENT mode each item's `weight` is read as its own
  *                      0-100% drop chance and min/max rolls don't apply.
  * @property maxItems   INDEPENDENT-mode cap on how many passing items to keep

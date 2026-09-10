@@ -13,7 +13,7 @@ import java.util.UUID
 class PlayerStatsHolder : BaseHolder()
 
 /**
- * Player stats view — detailed statistics for a specific player.
+ * Player stats view, detailed statistics for a specific player.
  * v1.3.0; migrated to VcGui in v1.5.0. `runBlocking` preserved.
  */
 class PlayerStatsView(

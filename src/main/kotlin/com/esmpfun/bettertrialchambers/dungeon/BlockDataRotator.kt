@@ -18,7 +18,7 @@ import org.bukkit.block.data.type.Wall
  * fences/panes/bars = [MultipleFacing]; walls = [Wall]). Best-effort: anything
  * it doesn't recognise (or that throws) passes through unrotated.
  *
- * No-NMS — uses only the Bukkit BlockData API, so it's stable across versions.
+ * No-NMS, uses only the Bukkit BlockData API, so it's stable across versions.
  */
 object BlockDataRotator {
 

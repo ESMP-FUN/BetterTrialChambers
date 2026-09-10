@@ -17,7 +17,7 @@ import kotlin.coroutines.resume
 /**
  * Main command dispatcher for `/trial` subcommands. Large/self-contained handlers
  * (`generate`, `mobs`, the `loot` family) live in `commands/handlers/` as
- * dedicated [SubcommandHandler] classes — see v1.3.0 Phase 3 in the changelog.
+ * dedicated [SubcommandHandler] classes, see v1.3.0 Phase 3 in the changelog.
  * Smaller handlers remain inline as private methods.
  */
 class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
@@ -230,7 +230,7 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
         sender.sendMessage(plugin.getMessageComponent("reload-success"))
 
         // Switching to VANILLA hands vaults back to Minecraft, which still remembers
-        // everyone the plugin recorded as having opened them — so those vaults stay
+        // everyone the plugin recorded as having opened them, so those vaults stay
         // shut and look broken. Point the owner at the one-command cleanup rather than
         // silently rewriting every vault block on the server.
         val modeAfter = com.esmpfun.bettertrialchambers.models.VaultLootMode.resolve(plugin)
@@ -253,7 +253,7 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
             return
         }
 
-        // `/trial scan add <chamber>` — re-flood from the chamber's structural seeds
+        // `/trial scan add <chamber>`, re-flood from the chamber's structural seeds
         // and grow its bounds to absorb sections that auto-discovery missed (e.g.
         // a wing whose chunks were unloaded when the chamber was first detected, so
         // the flood-fill clipped at the chunk boundary). Mirrors the auto-discovery
@@ -342,13 +342,13 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
 
         when (action) {
             // `create`, `update` and `restore` all accept the chamber name as an
-            // optional final arg — omit it while standing inside a chamber and the
+            // optional final arg, omit it while standing inside a chamber and the
             // command targets that one. `update` is the discoverable alias for
             // "save my edits". (`create` and `update` both (re)capture, overwriting.)
             "create", "update" -> {
                 val target = args.getOrNull(2)
                 if (target != null && target.equals("all", ignoreCase = true)) {
-                    // `/trial snapshot create all [force]` — backfill every chamber missing a
+                    // `/trial snapshot create all [force]`, backfill every chamber missing a
                     // snapshot (or re-capture all with `force`), staggered to protect TPS.
                     snapshotAll(sender, force = args.getOrNull(3)?.equals("force", ignoreCase = true) == true)
                 } else {
@@ -394,7 +394,7 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
         if (explicit != null) return explicit
         val player = sender as? Player
         if (player == null) {
-            // No name + not a player → nothing to infer from. Show usage.
+            // No name + not a player -> nothing to infer from. Show usage.
             sender.sendMessage(plugin.getMessageComponent("usage-snapshot"))
             return null
         }
@@ -422,7 +422,7 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
     /**
      * Bulk-capture snapshots for every registered chamber missing one (or *all* chambers when
      * [force]). Runs sequentially and waits 20 ticks **after each capture finishes** before the
-     * next, because a capture is a single heavy main-thread pass over the whole chamber — firing
+     * next, because a capture is a single heavy main-thread pass over the whole chamber, firing
      * 60+ back-to-back would tank TPS. Progress is reported every 10 chambers, not per-chamber.
      */
     private fun snapshotAll(sender: CommandSender, force: Boolean) {
@@ -516,7 +516,7 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
             // v1.5.1: verify the DB update before claiming success. Previously a failed
             // DB write left the chamber row with snapshot_file = NULL, so the *next* reset
             // logged "No snapshot found" and skipped restoration even though the .dat file
-            // was on disk — and the user got a misleading "snapshot created" message.
+            // was on disk, and the user got a misleading "snapshot created" message.
             val linked = try {
                 plugin.chamberManager.setSnapshotFile(chamberName, file.absolutePath)
             } catch (e: Exception) {
@@ -531,7 +531,7 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
                         "The chamber will reset as if no snapshot exists. Re-run /trial snapshot create."
                 )
                 sender.sendMessage(plugin.getMessageComponent("snapshot-failed",
-                    "error" to "file saved but DB link failed — see console"))
+                    "error" to "file saved but DB link failed; see console"))
                 return@launchAsync
             }
 
@@ -551,7 +551,7 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
 
         val sub = args.getOrNull(1)?.lowercase()
 
-        // /trial list current|here|near[est] — find the chamber you're in, else the nearest.
+        // /trial list current|here|near[est], find the chamber you're in, else the nearest.
         if (sub != null && sub in setOf("current", "here", "near", "nearest")) {
             val player = sender as? Player
             if (player == null) {
@@ -921,7 +921,7 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
         }
 
         // v1.5.7: /trial menu <chamber> deep-links straight into that chamber's
-        // detail view — the [menu] button on /trial list lines uses this.
+        // detail view, the [menu] button on /trial list lines uses this.
         val chamberName = args.getOrNull(1)
         if (chamberName != null) {
             plugin.launchAsync {

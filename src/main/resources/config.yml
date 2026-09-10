@@ -9,7 +9,7 @@ database:
   #   MYSQL  - your own MySQL/MariaDB server, using the settings below. Worth it
   #            for very busy servers, or if you run several servers that should
   #            share one set of chambers and statistics.
-  # Everything needed for both is built into the plugin — there is nothing extra
+  # Everything needed for both is built into the plugin, there is nothing extra
   # to download or install either way.
   type: SQLITE
   # MySQL settings (only used if type is MYSQL)
@@ -50,7 +50,7 @@ global:
   # excluded world: auto-discovery never registers chambers, /trial generate and
   # /trial dungeon generate are refused, and wild trial spawners get no boss
   # bars / wave tracking. Chambers already registered in a world BEFORE it was
-  # excluded keep working — remove them with /trial delete <name>.
+  # excluded keep working, remove them with /trial delete <name>.
   # Example:
   #   excluded-worlds:
   #     - second_overworld
@@ -65,7 +65,7 @@ global:
   #   chamber (default) - only the players who were inside that chamber when it reset
   #   server            - every online player, the pre-2.0.4 behaviour
   # 'chamber' is the default because the message doesn't say WHICH chamber reset, so
-  # server-wide it's an unidentifiable line of chat for everyone who wasn't in it — and
+  # server-wide it's an unidentifiable line of chat for everyone who wasn't in it, and
   # with lots of auto-discovered chambers, resets are staggered and it becomes a steady
   # drip of noise. If you switch this to 'server', consider adding {chamber} to the
   # 'chamber-reset-complete' entry in messages.yml so the line actually names the chamber.
@@ -75,7 +75,7 @@ global:
   reset-complete-permission: ""
   # Server-wide broadcast when a chamber is fully cleared (every trial spawner in it
   # finished its wave in one run). Uses the chamber's display name + the players who
-  # took part — e.g. "Bastion has been cleared by Steve, Alex!". Off by default.
+  # took part, e.g. "Bastion has been cleared by Steve, Alex!". Off by default.
   # (Premium Mythic Trials layers a richer "at difficulty N" version on top.)
   broadcast-chamber-cleared: false
   teleport-players-on-reset: true
@@ -94,7 +94,7 @@ global:
   max-concurrent-resets: 1      # how many chambers may reset at the same time
   reset-stagger-seconds: 5      # minimum gap between one reset finishing and the next starting
   # When true, chambers that come due for an automatic reset are NOT reset
-  # immediately — they're parked in a queue and online admins are notified.
+  # immediately, they're parked in a queue and online admins are notified.
   # An operator confirms them with /trial reset confirm <chamber> or
   # /trial reset confirm all (then they run staggered per the settings above).
   # /trial reset pending lists what's waiting.
@@ -122,7 +122,7 @@ naming:
   auto-assign: true
   # The pool to draw from. A name already used by another chamber is skipped; when all
   # are taken, new chambers fall back to their internal name until you add more or
-  # rename manually. Add your own — these are just a starting set.
+  # rename manually. Add your own, these are just a starting set.
   name-pool:
     - Bastion
     - Ashfall Hollow
@@ -224,7 +224,7 @@ vaults:
 
   # Key-to-reopen: let players open an already-used vault again by paying this
   # many matching trial keys IN TOTAL (a fresh open costs 1; so 1 = reopen at
-  # the same price, 2 = one extra key, etc.). 0 disables — players wait for
+  # the same price, 2 = one extra key, etc.). 0 disables, players wait for
   # the cooldown / chamber reset as usual. Keys must be held in the main hand.
   reopen-cost-keys: 0
 
@@ -260,7 +260,7 @@ vaults:
       success-text: "&a✔"     # shown on a successful open
       fail-text: "&c✘"        # shown on any failure
     sounds:
-      # Note: these are random-variant sound *events* — the game picks an .ogg
+      # Note: these are random-variant sound *events*, the game picks an .ogg
       # from the pool, so a specific variant (e.g. celebrate2) can't be pinned
       # without a resource pack.
       success: ENTITY_PILLAGER_CELEBRATE
@@ -287,7 +287,7 @@ protection:
   # come back on the next chamber reset (snapshot restore).
   tunnel-breaking:
     enabled: false
-    # Only these materials are breakable (default: tuff-brick family — the chamber shell).
+    # Only these materials are breakable (default: tuff-brick family, the chamber shell).
     blocks:
       - TUFF_BRICKS
       - TUFF_BRICK_SLAB
@@ -305,30 +305,30 @@ protection:
     shell-depth: 3
   prevent-container-access: false
   # How long (ms) to wait before re-showing a "can't break/place/access here" message to
-  # the same player. Stops chat spam when one action affects many blocks at once — e.g. an
+  # the same player. Stops chat spam when one action affects many blocks at once, e.g. an
   # AdvancedEnchantments "Blast Mining" enchant, a vein miner, or rapid clicking. 0 = no throttle.
   message-cooldown-ms: 1500
   # AdvancedEnchantments integration: AE custom enchants (Blast Mining, etc.) break blocks
-  # through their own effect path that ignores BTC's block-break cancel — so they can bypass
+  # through their own effect path that ignores BTC's block-break cancel, so they can bypass
   # chamber protection. When this is on (and AE is installed), BTC cancels AE enchant activations
   # for players standing in a registered chamber. Players with tcp.bypass.protection are exempt.
   # Off by default so AE behaves normally until you opt in.
   block-advanced-enchantments: false
   # Enchant names that stay allowed inside chambers even when the option above is on (lowercase,
-  # match the AE enchant name) — e.g. keep combat enchants working while blocking block-breakers.
+  # match the AE enchant name), e.g. keep combat enchants working while blocking block-breakers.
   advanced-enchantments-allowlist: []
   # How far (in blocks) an AE mining enchant's blast can reach, used to catch mining a chamber wall
   # from just OUTSIDE it. The check is centred on the block being mined, expanded by this radius, and
-  # blocked if it touches a chamber — so set this to your LARGEST blast enchant's radius (e.g. a 5x5
+  # blocked if it touches a chamber, so set this to your LARGEST blast enchant's radius (e.g. a 5x5
   # area-miner = 2). 0 = only block when the mined block is itself inside a chamber (no outside margin).
   advanced-enchantments-block-radius: 2
   # Stop players teleporting INTO a registered chamber from outside (/tpa, /tpahere, /home,
-  # /warp, /tp, ender pearls, etc.) — so they can't skip the intended entrance. Walking in is
+  # /warp, /tp, ender pearls, etc.), so they can't skip the intended entrance. Walking in is
   # unaffected. Players with tcp.bypass.entry (default: op), spectators, and creative-mode
   # players are exempt. Off by default.
   prevent-teleport-into-chamber: false
   # Gate WALKING into a chamber by permission: when true, only players with tcp.bypass.entry
-  # (default: op) can enter a chamber on foot — others are stopped at the boundary. Use this to
+  # (default: op) can enter a chamber on foot, others are stopped at the boundary. Use this to
   # make chambers rank-restricted. Spectators/creative are exempt. Off by default. (Note: this
   # runs on player movement; it's lightweight, but only enable it if you actually need it.)
   prevent-entry-without-permission: false
@@ -412,7 +412,7 @@ protection:
 trial-keys:
   # Ensure normal keys only open normal vaults (and ominous keys only open ominous vaults).
   validate-key-type: true
-  # Note: BTC does not provide trial-key dupe protection — for that, use a dedicated plugin
+  # Note: BTC does not provide trial-key dupe protection, for that, use a dedicated plugin
   # such as AntiDupePro (https://modrinth.com/plugin/AntiDupePro).
 
 # Reset settings
@@ -436,8 +436,8 @@ reset:
   # leftover omen doesn't carry into the next cycle. Set false to leave omen untouched.
   clear-trial-omen-effect: true
   # When a chamber resets, forget who has already opened its vaults, so everyone
-  # can use them again. Leave this on unless you have a good reason not to —
-  # with it off, a vault someone opened stays shut for them forever. If you use
+  # can use them again. Leave this on unless you have a good reason not to.
+  # With it off, a vault someone opened stays shut for them forever. If you use
   # the "first come, first served" vault setting (vaults.loot-mode: SHARED),
   # turning this off means claimed vaults NEVER open up again for anybody.
   reset-vault-cooldowns: true
@@ -448,11 +448,11 @@ reset:
   #    any other number = that many minutes
   #
   # Does NOT apply to spawners you placed from a preset that sets its own rest
-  # time — see spawner-cooldown-overrides-presets just below.
+  # time, see spawner-cooldown-overrides-presets just below.
   spawner-cooldown-minutes: -1
 
   # Spawners placed from a preset (spawner_presets.yml) can state their own rest
-  # time. When they do, that time wins and the setting above is ignored for them —
+  # time. When they do, that time wins and the setting above is ignored for them;
   # the idea being that if you wrote a time into a preset, you meant it. A preset
   # that does NOT state a time simply follows the setting above.
   #
@@ -468,7 +468,7 @@ reset:
   # The preset rule above applies here too.
   wild-spawner-cooldown-minutes: -1
 
-  # v1.3.0 — Custom mob provider spawner-key drops
+  # v1.3.0, Custom mob provider spawner-key drops
   # When a wave is driven by a non-vanilla mob provider (e.g. MythicMobs), vanilla's
   # state machine cannot issue Trial Keys on completion, so the plugin drops them
   # itself: one key per unique participating player, above the spawner block.
@@ -482,7 +482,7 @@ performance:
   cache-chamber-lookups: true
   cache-duration-seconds: 300
   time-tracking-interval: 300  # Flush time stats every 5 minutes (seconds)
-  # (Database operations are always async, and Folia support is auto-detected —
+  # (Database operations are always async, and Folia support is auto-detected;
   #  the former async-database-operations / use-folialib toggles were no-ops and
   #  have been removed.)
 
@@ -517,19 +517,19 @@ spawner-waves:
   detection-radius: 20          # Radius to detect players for boss bar display
   # Distance at which a player is REMOVED from a boss bar they were previously added to.
   # Should be larger than detection-radius to provide hysteresis (prevents flicker at the edge).
-  # Default: 32 blocks — the boss bar will hide when you walk this far from the spawner.
+  # Default: 32 blocks, the boss bar will hide when you walk this far from the spawner.
   remove-distance: 32
   award-stats: true             # Track wave kills in player statistics
   completion-message: true      # Send message when wave is complete
   # Stop wave mobs from fighting EACH OTHER. In vanilla, a skeleton's stray arrow
   # makes other mobs retaliate, so a wave can dissolve into mob-vs-mob brawls the
-  # player never has to touch — and those self-kills still complete the wave. When
+  # player never has to touch, and those self-kills still complete the wave. When
   # true, friendly fire and target-locking strictly between two trial-spawner wave
   # mobs is suppressed (player-vs-mob combat is never affected). Default: true.
   prevent-infighting: true
   # Glow outline on active trial spawners (v1.2.27, fixed v1.5.4)
   # When true, spawns an invisible shulker at each active spawner with the GLOWING effect
-  # applied, producing a colored block outline that's visible through walls — helps players
+  # applied, producing a colored block outline that's visible through walls, helps players
   # locate the remaining active spawners in large chambers. Cleared automatically when the
   # wave completes, the spawner enters cooldown, or the chamber is reset.
   # NOTE: in v1.2.27..v1.5.3 this used an Interaction entity which is silently glow-immune;
@@ -538,13 +538,13 @@ spawner-waves:
   glow-color-normal: "#FFFF55"  # Outline color for normal trial spawners (hex RGB)
   glow-color-ominous: "#A020F0" # Outline color for ominous trial spawners (hex RGB)
 
-  # Glow mode (v1.5.4) — controls *which* spawners glow when glow-active-spawners is true.
-  #   wave-active        (default) — only the spawner with the currently-active wave glows.
+  # Glow mode (v1.5.4), controls *which* spawners glow when glow-active-spawners is true.
+  #   wave-active        (default), only the spawner with the currently-active wave glows.
   #                                   Restores per-wave focus, easier on entity counts.
-  #   chamber-remaining            — when any wave starts in a chamber, every UNCLEARED
+  #   chamber-remaining           , when any wave starts in a chamber, every UNCLEARED
   #                                   spawner in that chamber glows for the rest of the
   #                                   cycle. Solves "where's the spawner I haven't done
-  #                                   yet?" — recommended for premium difficulty modules
+  #                                   yet?", recommended for premium difficulty modules
   #                                   (Mythic Trials's HUD pairs with this).
   glow-mode: "wave-active"
 
@@ -576,7 +576,7 @@ discovery:
   min-vaults-plus-spawners: 2      # Reject AABBs with fewer total vaults + spawners
   max-center-y: 10                 # Reject if AABB center Y > this (chambers gen deep underground)
   auto-snapshot: false             # Snapshot on registration (expensive for large chambers)
-  notify-ops: true                 # Broadcast registration to players with tcp.discovery.notify
+  notify-ops: true                 # Broadcast registration to players with btc.discovery.notify
   cooldown-seconds: 300            # Per-region debounce after a successful or failed discovery
   pending-retry-seconds: 30        # How long to keep a partial-load seed pending while adjacent chunks load
   merge-distance-blocks: 250       # If a newly-discovered region's AABB is within this many blocks (Chebyshev,
@@ -589,7 +589,7 @@ discovery:
                                    # daisy-chaining from swallowing huge regions into a single logical chamber.
   structure-merge-distance-blocks: 16  # Same idea as merge-distance-blocks, but for discoveries that used the game's
                                    # exact structure bounds. Some worlds generate one big chamber out of SEVERAL
-                                   # trial-chamber structures placed right next to each other — without this, each
+                                   # trial-chamber structures placed right next to each other, without this, each
                                    # piece would register as its own chamber with its own reset timer, and their
                                    # resets would fight over the shared walls. 16 means: if a newly-found structure
                                    # sits within 16 blocks of an already-registered chamber, treat it as part of
@@ -598,7 +598,7 @@ discovery:
                                    # Set to 0 to only merge when the boxes truly overlap, or -1 to never merge.
 
   # v1.6.3: After auto-registering a chamber, run one automatic "expand" pass a
-  # few seconds later — a multi-seed re-flood from the chamber's vaults that
+  # few seconds later, a multi-seed re-flood from the chamber's vaults that
   # grows the bounds to cover sections the first detection clipped (its node cap,
   # or chunks that were still loading at detection time). This is the automatic
   # equivalent of `/trial scan add`, so operators don't have to run it by hand on
@@ -608,7 +608,7 @@ discovery:
   expand-delay-seconds: 10         # Delay before the auto-expand pass (lets vault rows commit + nearby chunks load)
   # Opt-in: let expand passes (auto-expand AND /trial scan add) FORCE-LOAD unloaded
   # chunks on demand so they can reach a wing nobody has visited yet. Off by
-  # default — it trades a chunk-load I/O spike for completeness. Paper-only
+  # default, it trades a chunk-load I/O spike for completeness. Paper-only
   # (skipped on Folia). Even with this off, standing in the chamber and running
   # /trial scan add (or the GUI's "Travel & Expand") works because you load the chunks.
   expand-force-load: false
@@ -623,7 +623,7 @@ discovery:
 
 # The opt-in `/trial setup` settings tour (v1.6.0). Walks operators through the major
 # options one at a time in a friendly Dialog UI (with a clickable-chat fallback on
-# older/non-Paper servers). Nothing is ever forced — run it on demand with `/trial setup`.
+# older/non-Paper servers). Nothing is ever forced, run it on demand with `/trial setup`.
 setup:
   reminder:
     # Gently remind admins (with tcp.admin.setup) on join that the tour exists, IF they have
@@ -634,7 +634,7 @@ setup:
 # Per-player chamber container loot (v1.5.7, opt-in). When enabled, every
 # player who opens a chest / trapped chest / barrel / dispenser / dropper that
 # has a loot table inside a registered chamber gets their OWN, freshly-rolled
-# copy of its loot (Lootr-style) — the second player into a chamber no longer
+# copy of its loot (Lootr-style), the second player into a chamber no longer
 # finds gutted chests, and each player's loot is rolled independently from the
 # vanilla loot pool. The real container's loot table is never consumed, so on
 # every chamber reset each player's next open rolls fresh again ("vanilla, but
@@ -644,23 +644,23 @@ setup:
 #
 # Moderators customise a container's loot from the GUI: /trial menu -> chamber ->
 # Container Loot -> click a container to edit. An edited container becomes an
-# OVERRIDE — every player gets a copy of that loot (still per-player, re-cloned
+# OVERRIDE, every player gets a copy of that loot (still per-player, re-cloned
 # each reset). Shift-left-click in that GUI (or /trial container resetone) reverts
 # it to vanilla random rolls. Editing is GUI-only (no in-world sneak-open).
 chests:
   per-player-loot: false
 
-# Anonymous usage metrics (FastStats). No player data is collected — just
+# Anonymous usage metrics (FastStats). No player data is collected, just
 # aggregate config/feature usage that guides development priorities.
 # Server-wide opt-out for ALL FastStats plugins: set enabled=false in
 # plugins/faststats/config.properties (replaces the old plugins/bStats/config.yml).
-# Note: FastStats submits nothing on its first run — it writes that opt-out file
+# Note: FastStats submits nothing on its first run, it writes that opt-out file
 # and waits until the next restart, so owners get a chance to opt out first.
 metrics:
   enabled: true
   # OPT-IN. Set to true to automatically report BetterTrialChambers' own errors,
   # which helps get bugs fixed without you having to notice and file a report.
-  # Off by default — error reports are a bigger step than anonymous counters, so
+  # Off by default, error reports are a bigger step than anonymous counters, so
   # it's your call rather than something switched on for you.
   #
   # When enabled, only exceptions thrown by THIS plugin are sent; other plugins'
@@ -673,14 +673,14 @@ metrics:
 
 # Debug mode
 debug:
-  # Logs detailed decisions to the console — including WHY a protection action was or wasn't
+  # Logs detailed decisions to the console, including WHY a protection action was or wasn't
   # taken (block-break, PvP, teleport-into-chamber, walk-in entry gate, AdvancedEnchantments).
   # If a toggle "isn't working", turn this on and watch the log: the most common cause is the
-  # player being exempt via a bypass permission — and OPs have every tcp.bypass.* by default,
+  # player being exempt via a bypass permission, and OPs have every tcp.bypass.* by default,
   # so test with a non-OP account (or negate the permission). Noisy; leave off in production.
   verbose-logging: false
   # When true, skip the startup check that compares your messages.yml against
   # the JAR-bundled defaults. Leave this false unless the warning is noisy and
-  # you have a reason to ignore it — when keys are missing, GUI tooltips and
+  # you have a reason to ignore it, when keys are missing, GUI tooltips and
   # chat messages render as literal "<missing: key.name>" text.
   skip-messages-schema-check: false

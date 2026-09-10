@@ -14,7 +14,7 @@ import org.bukkit.inventory.ItemStack
 class ChamberSettingsHolder : BaseHolder()
 
 /**
- * Chamber settings view — configure chamber-specific reset interval, exit location,
+ * Chamber settings view, configure chamber-specific reset interval, exit location,
  * loot table overrides, and spawner cooldown. v1.3.0; migrated to VcGui in v1.5.0.
  */
 class ChamberSettingsView(

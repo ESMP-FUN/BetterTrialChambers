@@ -10,10 +10,10 @@ import java.util.UUID
 
 /**
  * Fired immediately before the plugin drops a trial key for a wave participant
- * (provider-driven waves only — vanilla spawners drop their own keys via the
+ * (provider-driven waves only; vanilla spawners drop their own keys via the
  * trial spawner state machine and do not pass through this event).
  *
- * Cancellable — listeners may suppress an individual key drop without
+ * Cancellable; listeners may suppress an individual key drop without
  * affecting other participants in the same wave.
  *
  * Fires once per participant per wave completion, so a four-player wave

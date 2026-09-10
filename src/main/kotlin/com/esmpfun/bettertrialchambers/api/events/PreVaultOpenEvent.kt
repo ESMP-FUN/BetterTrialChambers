@@ -10,7 +10,7 @@ import org.bukkit.event.Event
 import org.bukkit.event.HandlerList
 
 /**
- * Fired immediately before a vault open begins resolving its loot table —
+ * Fired immediately before a vault open begins resolving its loot table,
  * after the spam-click / cooldown / key-validation gates in
  * `VaultInteractListener` have all passed, but BEFORE the loot table is
  * resolved or any reward is granted.
@@ -18,7 +18,7 @@ import org.bukkit.event.HandlerList
  * Cancellable. If a listener cancels the event, the open is aborted in the
  * same way a missing loot table would abort: no key consumed, no loot
  * generated, no reward marked, no statistics incremented. The player
- * receives no plugin message — listeners that cancel are responsible for
+ * receives no plugin message; listeners that cancel are responsible for
  * their own user-facing feedback.
  *
  * Listeners may also override the loot table that will be used for this
@@ -29,7 +29,7 @@ import org.bukkit.event.HandlerList
  * consumed). Setting [lootTableOverride] to `null` (the default) means
  * "use normal resolution".
  *
- * Fires on whichever thread the vault open coroutine is running on — almost
+ * Fires on whichever thread the vault open coroutine is running on, almost
  * always an IO-dispatcher coroutine, never the primary thread. The event is
  * therefore delivered as asynchronous; listeners that need Bukkit-API access
  * should schedule onto the appropriate region thread themselves.

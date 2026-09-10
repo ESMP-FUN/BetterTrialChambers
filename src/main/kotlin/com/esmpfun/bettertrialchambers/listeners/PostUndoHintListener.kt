@@ -10,7 +10,7 @@ import org.bukkit.event.player.PlayerCommandPreprocessEvent
  * Observes WorldEdit `//undo` (and `/undo`) without intercepting it. If the player is
  * standing inside a registered chamber when they run undo, posts a one-line hint that
  * `/trial delete <name>` may be needed to also clean up the registration. Purely
- * informational — never cancels the event, never locks the player out.
+ * informational, never cancels the event, never locks the player out.
  */
 class PostUndoHintListener(private val plugin: BetterTrialChambers) : Listener {
 

@@ -43,7 +43,7 @@ import kotlin.coroutines.resume
  * File format (v2, streamed): gzip stream containing a small header followed by
  * per-block records that reference a running palette of block-data strings.
  * Capture writes each batch straight to disk and load reads straight from disk,
- * so memory use no longer scales with three full copies of the chamber — this
+ * so memory use no longer scales with three full copies of the chamber, this
  * is what lets multi-million-block chambers snapshot on small-heap servers.
  * Files written by older versions (Java-serialized [SnapshotData]) are detected
  * by their leading bytes and still load fine.
@@ -51,7 +51,7 @@ import kotlin.coroutines.resume
 class SnapshotManager(private val plugin: BetterTrialChambers) {
 
     private companion object {
-        /** "BTC2" — first four bytes (after gzip) of a v2 streamed snapshot. */
+        /** "BTC2", first four bytes (after gzip) of a v2 streamed snapshot. */
         const val MAGIC_V2 = 0x42544332
 
         /**
@@ -445,7 +445,7 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
     /**
      * Streams a snapshot file's blocks in [batchSize] groups without ever
      * materializing the whole snapshot, invoking [onBatch] for each group.
-     * Legacy files fall back to a full load and are then fed out in batches —
+     * Legacy files fall back to a full load and are then fed out in batches,
      * run [prepareAndScan] first to migrate them so this path stays cheap.
      *
      * @return the total number of blocks streamed, or null on failure.
@@ -587,7 +587,7 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
      * in that case.
      *
      * @param bytes Gzip-compressed snapshot bytes (v2 streamed format or the
-     *              legacy Java-serialized form — both are accepted).
+     *              legacy Java-serialized form, both are accepted).
      * @param contextLabel Short label included in log messages (e.g. the
      *                     chamber name) so admins can trace which override
      *                     produced a parse failure.
