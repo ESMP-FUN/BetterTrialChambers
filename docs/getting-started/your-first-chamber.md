@@ -2,247 +2,214 @@
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
-**Most servers don't need this page.** If your world has naturally-generated Trial Chambers (the default on normal worlds), the easy path is **[Quick Start](quick-start.md)** — `/trial setup` turns on auto-discovery and BTC manages every chamber for you, automatically.
+**Most servers don't need this page.** If your world has naturally-generated Trial Chambers (the default on normal worlds), use **[Quick Start](quick-start.md)** instead: `/trial setup` turns on auto-discovery and BTC manages every chamber for you.
 
-This page is for the few servers with **no natural chambers** — superflat / one-block worlds, custom world generation, or `generate-structures: false`. There, you register a chamber by hand, which is what this guide covers.
+This page is for servers with **no natural chambers**: superflat and one-block worlds, custom world generation, or `generate-structures: false`. There you register a chamber by hand.
 
 </div>
 
-Time to turn that dusty Trial Chamber into a repeatable endgame experience! This guide walks you through registering and configuring a chamber manually.
+Register and configure one Trial Chamber by hand so BTC can reset it and hand out per-player loot.
 
 ## Step 1: Find a Trial Chamber
 
-First things first—you need a Trial Chamber to manage. Got one already? Great! Need to find one?
+You need an existing Trial Chamber to manage. To find one:
 
 ```
 /locate structure trial_chambers
 ```
 
-Teleport to it and explore until you find the main vault room. You'll want to register the entire chamber structure, not just one room.
+Teleport to it and walk the whole structure so you know where its outer walls are. You register the entire chamber, not one room.
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
-**Pro tip:** Trial Chambers can be MASSIVE. Some span 100+ blocks in each direction. Bring blocks to mark corners!
+Trial Chambers are large, sometimes over 100 blocks across. Carry spare blocks to mark the corners.
 
 </div>
 
-## Step 2: Select the Chamber
+## Step 2: Select the chamber
 
-BetterTrialChambers needs to know which blocks belong to your chamber. The easiest way? **WorldEdit**.
+### With WorldEdit (recommended)
 
-### Using WorldEdit (Recommended)
+1. Get the WorldEdit wand: `//wand`
+2. Left-click the lowest corner of the chamber.
+3. Right-click the opposite, highest corner.
 
-1. Grab your WorldEdit wand: `//wand` or `/tool wand`
-2. Left-click one corner of the chamber (lowest point)
-3. Right-click the opposite corner (highest point)
-
-Your selection should encompass the entire chamber—all rooms, hallways, spawners, and vaults.
+The selection must cover the whole chamber: every room, hallway, spawner, and vault, plus a few blocks of padding on all sides.
 
 <div data-gb-custom-block data-tag="hint" data-style="warning">
 
-**Important:** Make sure your selection includes a bit of padding around the structure. If spawners or vaults are right on the edge, they might not get detected in the scan.
+Include a bit of padding around the structure. A vault or spawner sitting exactly on the selection edge may be missed by the scan.
+
+</div>
+
+Then register it:
+
+```
+/trial generate wand <name>
+```
+
+Use a short name with no spaces, for example `MainChamber`. You will see:
+
+```
+[BTC] Chamber MainChamber created successfully!
+[BTC] Next step: Run /trial scan MainChamber to detect vaults and spawners
+```
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
+`/trial generate wand` does not place or change any blocks. It just tells the plugin to start managing the region you selected.
 
 </div>
 
 ### Without WorldEdit
 
-Don't have WorldEdit? You can still do it manually (but seriously, get WorldEdit):
-
 ```
-/trial generate coords <minX,minY,minZ> <maxX,maxY,maxZ> <name>
+/trial generate coords <x1,y1,z1> <x2,y2,z2> [world] <name>
 ```
 
-Example:
+`world` is optional and defaults to the world you are standing in.
+
 ```
 /trial generate coords -150,-20,400 -50,40,500 MainChamber
 ```
 
-That's painful. Get WorldEdit. Moving on!
+The region must be at least 31 blocks wide, 15 tall, and 31 deep, and no larger than `generation.max-volume` (default 750,000 blocks).
 
-## Step 3: Register the Chamber
-
-With your selection made, register the existing Trial Chamber with the plugin:
+## Step 3: Scan for vaults and spawners
 
 ```
-/trial generate wand MyChamber
+/trial scan <name>
 ```
 
-Replace `MyChamber` with whatever name you want. Keep it simple—no spaces!
-
-You'll see:
-```
-[BTC] Chamber MyChamber created successfully!
-[BTC] Next step: Run /trial scan MyChamber to detect vaults and spawners
-```
-
-<div data-gb-custom-block data-tag="hint" data-style="success">
-
-**Naming conventions:** Use clear names like `MainChamber`, `NetherPortalTC`, or `SpawnChamber1`. You'll thank yourself later when managing multiple chambers.
-
-</div>
-<div data-gb-custom-block data-tag="hint" data-style="info">
-
-**Note:** `/trial generate wand` registers **existing** Trial Chambers from your WorldEdit selection for management. It doesn't create or modify blocks—it just tells the plugin to start managing the selected region.
-
-</div>
-
-## Step 4: Scan for Vaults and Spawners
-
-Now we tell the plugin to find all the vaults, spawners, and decorated pots:
+This finds the vaults, trial spawners, and decorated pots in the region:
 
 ```
-/trial scan MyChamber
-```
-
-This takes a few seconds. The plugin is searching every block in your selection for:
-
-- **Vaults** (normal and ominous)
-- **Trial Spawners** (normal and ominous)
-- **Decorated Pots**
-
-You'll get a summary:
-```
-[BTC] Scanning chamber MyChamber...
+[BTC] Scanning chamber MainChamber...
 [BTC] Scanning complete! Found 8 vaults, 12 spawners, 24 decorated pots.
 ```
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
-**What if it finds 0 vaults?** Either your selection didn't include the vaults, or you're in a decorative Trial Chamber variant without vaults. Expand your selection and scan again!
+**Found 0 vaults?** Your selection did not reach them. Redo the selection larger and scan again. If your selection was fine but a wing was still missing, run `/trial scan add <name>` to grow the bounds into the missed section.
 
 </div>
 
-## Step 5: Create a Snapshot
+## Step 4: Create a snapshot
 
-Here's where the magic happens. BetterTrialChambers needs a "snapshot" of your chamber in its pristine state:
+A snapshot is the saved "perfect" state the chamber resets back to. Make it while the chamber is untouched.
 
 ```
-/trial snapshot create MyChamber
+/trial snapshot create <name>
 ```
 
-The plugin will:
-1. Scan every block in the chamber
-2. Save block types, orientations, and tile entity data — including spawner/vault state, container loot, decorated pots, and (since **1.7.2**) sign text, player-head skins, banner patterns, lectern books, jukebox discs, chiseled-bookshelf contents, and suspicious-block items
-3. Compress it all into a file
-4. Store it in `snapshots/MyChamber.dat`
+You can leave the name off to snapshot the chamber you are standing in. It saves every block, its orientation, and its contents (spawner and vault state, container loot, decorated pots, sign text, player-head skins, banner patterns, lectern books, jukebox discs, chiseled-bookshelf contents, and suspicious-block items), then compresses it to `snapshots/<name>.dat`.
 
-<div data-gb-custom-block data-tag="hint" data-style="info">
+This takes a few seconds to about half a minute depending on size:
 
-**Upgrading from before 1.7.2?** Older snapshots restored decorations (signs, heads, banners, etc.) as blank blocks. Re-run `/trial snapshot create <chamber>` on decorated chambers once to capture them with full fidelity.
-
-</div>
-
-This might take 5-30 seconds depending on chamber size. You'll see:
 ```
-[BTC] Creating snapshot for MyChamber...
+[BTC] Creating snapshot for MainChamber...
 [BTC] Snapshot created successfully! (12,847 blocks, 1.2 MB)
 ```
 
-<div data-gb-custom-block data-tag="hint" data-style="warning">
+<div data-gb-custom-block data-tag="hint" data-style="info">
 
-**Keep it pristine!** Create snapshots when your chamber is in perfect condition. This is what the chamber will reset back to.
+**Upgrading from before 1.7.2?** Older snapshots restored signs, heads, and banners as blank blocks. Run `/trial snapshot create <name>` once more on decorated chambers to capture them properly.
 
 </div>
 
-## Step 6: Set an Exit Point
+<div data-gb-custom-block data-tag="hint" data-style="warning">
 
-When the chamber resets, players inside need somewhere to go. Stand where you want them to teleport and run:
+Do not delete the `.dat` files in `snapshots/` by hand. Without its snapshot a chamber cannot reset.
+
+</div>
+
+## Step 5: Set an exit point
+
+When a chamber resets, any players inside are moved out. Stand where you want them to land (usually just outside the entrance) and run:
 
 ```
-/trial setexit MyChamber
+/trial setexit <name>
 ```
 
-This saves your exact position (including look direction). Usually, you'll want this just outside the entrance.
+This saves your exact position and facing.
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
-**No exit set?** If you don't set one, players will teleport to the world spawn instead. Not the worst thing, but a dedicated exit is cleaner.
+If you skip this, players are moved to a safe spot just outside the chamber walls instead. A set exit point is tidier.
 
 </div>
 
-## Step 7: Test It Out!
+## Step 6: Test it
 
-Your chamber is now managed! Let's verify everything works:
+Check the chamber:
 
-### Check Chamber Info
 ```
-/trial info MyChamber
-```
-
-You should see:
-- Chamber bounds
-- Number of vaults and spawners
-- Snapshot status
-- Reset interval
-- Last reset time
-
-### Test the Reset
-```
-/trial reset MyChamber
+/trial info <name>
 ```
 
-This forces an immediate reset. You should:
-- Get teleported to the exit point
-- See the chamber fully restored
-- Notice all vaults are locked again
+This shows the bounds, vault and spawner counts, snapshot status, reset interval, and last reset time.
+
+Force a reset:
+
+```
+/trial reset <name>
+```
+
+You should be teleported to the exit point, see the chamber fully restored, and find every vault locked again.
 
 <div data-gb-custom-block data-tag="hint" data-style="success">
 
-**Perfect!** Your chamber is now on autopilot. It will automatically reset based on the interval in your config (default: 48 hours).
+The chamber is now on automatic resets using the interval in your config (default 48 hours).
 
 </div>
 
-## Step 8: Configure Reset Schedule (Optional)
+## Step 7: Change the reset interval (optional)
 
-By default, chambers reset every 48 hours. Want to change that for this specific chamber?
-
-Edit `plugins/BetterTrialChambers/config.yml`:
+To change the default for every chamber, edit `plugins/BetterTrialChambers/config.yml`:
 
 ```yaml
-# This is the default for all chambers
 global:
-  default-reset-interval: 172800  # 48 hours in seconds
+  default-reset-interval: 172800  # seconds; 172800 = 48 hours
 ```
 
-Or override it per-chamber from the GUI: `/trial menu` → pick the chamber → **Settings** → **Reset Interval**.
+Run `/trial reload` after editing.
 
-**Common intervals:**
-- Daily: `86400` (24 hours)
-- Twice daily: `43200` (12 hours)
-- Weekly: `604800` (7 days)
-- Manual only: `0` (disable automatic resets — use `/trial reset` or the GUI button)
-- Custom: Use an [online converter](https://www.timecalculator.net/) to get seconds
+| Interval | `default-reset-interval` |
+| --- | --- |
+| Every 12 hours | `43200` |
+| Daily | `86400` |
+| Every 48 hours (default) | `172800` |
+| Weekly | `604800` |
+| Manual only (no automatic resets) | `0` |
 
-## Quick Reference
+To override the interval for one chamber, open `/trial menu`, pick the chamber, then **Settings**, then **Reset Interval**.
 
-Here's everything in one place:
+## Command summary
 
 ```bash
-# 1. Select chamber with WorldEdit
+# 1. Select with WorldEdit
 //wand
 
-# 2. Register chamber
-/trial generate wand MyChamber
+# 2. Register
+/trial generate wand MainChamber
 
-# 3. Scan for vaults/spawners
-/trial scan MyChamber
+# 3. Scan for vaults and spawners
+/trial scan MainChamber
 
-# 4. Create snapshot
-/trial snapshot create MyChamber
+# 4. Create the snapshot
+/trial snapshot create MainChamber
 
-# 5. Set exit point
-/trial setexit MyChamber
+# 5. Set the exit point
+/trial setexit MainChamber
 
-# 6. Check info
-/trial info MyChamber
+# 6. Check it
+/trial info MainChamber
 
-# 7. Test reset (optional)
-/trial reset MyChamber
+# 7. Test a reset
+/trial reset MainChamber
 ```
 
-## What's Next?
-
-You've got a working chamber! Now make it yours:
+## What's next
 
 <div data-gb-custom-block data-tag="content-ref" data-url="../configuration/loot.yml.md">
 
@@ -250,7 +217,7 @@ You've got a working chamber! Now make it yours:
 
 </div>
 
-Replace vanilla loot with custom rewards, economy payouts, command rewards, and more.
+Replace vanilla vault loot with custom items, economy payouts, and command rewards.
 
 <div data-gb-custom-block data-tag="content-ref" data-url="basic-configuration.md">
 
@@ -258,7 +225,7 @@ Replace vanilla loot with custom rewards, economy payouts, command rewards, and 
 
 </div>
 
-Configure reset schedules, warnings, protection, and the settings most servers tweak.
+Reset schedules, warning times, and protection.
 
 <div data-gb-custom-block data-tag="content-ref" data-url="../configuration/config.yml.md">
 
@@ -266,42 +233,32 @@ Configure reset schedules, warnings, protection, and the settings most servers t
 
 </div>
 
-The full config reference — including per-player vaults and cooldowns.
+The full config reference, including per-player vaults and cooldowns.
 
 ---
 
-## Pro Tips
+## Notes
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
-**Multiple chambers?** Just repeat the process! Each chamber is independent with its own settings, loot tables, and reset schedules.
+**More chambers:** Repeat the steps. Each chamber is independent, with its own loot tables, settings, and reset schedule.
 
 </div>
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
-**Update the snapshot:** Made changes to your chamber? Run `/trial snapshot create MyChamber` again to update it. The old snapshot is overwritten.
+**Changed a chamber?** Run `/trial snapshot create <name>` again to update its snapshot. The old one is overwritten.
 
 </div>
 
-<div data-gb-custom-block data-tag="hint" data-style="warning">
+## If something goes wrong
 
-**Don't delete snapshots manually!** The `.dat` files in `snapshots/` are critical. If you delete them, you can't reset that chamber anymore.
+**"No WorldEdit selection found"** - Select both corners with `//wand` first.
 
-</div>
+**"Scan found 0 vaults"** - The selection does not reach the vaults. Redo it larger, or run `/trial scan add <name>`.
 
-## Common Issues
+**"Snapshot creation failed"** - Usually low disk space or a file permission problem. Check the console.
 
-**"No WorldEdit selection found"**
-You didn't make a selection. Use `//wand` and select both corners first.
+**Players not teleporting on reset** - Set an exit point with `/trial setexit <name>`.
 
-**"Scan found 0 vaults"**
-Your selection doesn't include the vaults, or they're not actually vaults (check with F3).
-
-**"Snapshot creation failed"**
-Usually a disk space or permission issue. Check console logs for details.
-
-**"Players aren't teleporting on reset"**
-Make sure you set an exit point with `/trial setexit MyChamber`.
-
-Still stuck? Check the [full troubleshooting guide](../troubleshooting.md)!
+Still stuck? See the [troubleshooting guide](../troubleshooting.md).

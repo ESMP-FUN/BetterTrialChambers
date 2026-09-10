@@ -1,105 +1,111 @@
 # loot.yml
 
-Time to get creative! The `loot.yml` file is where you customize what players get from vaults. Want to rain diamonds? Give economy rewards? Drop custom items from other plugins? This is your playground.
+`loot.yml` decides what players get from vaults: vanilla loot, custom items, enchanted gear, money, commands, or any mix.
 
 {% hint style="info" %}
 **Location:** `plugins/BetterTrialChambers/loot.yml`
 
-After making changes, reload with `/trial reload`
+After editing the file, run `/trial reload`.
 {% endhint %}
 
 {% hint style="danger" %}
-**CRITICAL: Never use TAB characters in loot.yml!**
+**Never put TAB characters in loot.yml.** YAML only allows spaces. A single TAB makes the whole file fail to load silently, and then every vault gives no loot even though keys are still used up.
 
-TAB characters will cause the entire YAML file to fail to load silently. This results in **all loot tables being empty**, causing vaults to give no loot even though keys are consumed (fixed in v1.2.19+).
-
-**Symptoms of TAB character issues:**
-
-* Console shows: `Loot table not found: default (available: )`
-* Keys are consumed but no loot is given
-* No YAML parsing errors are shown
-
-**How to check:**
-
-1. Open `loot.yml` in a text editor that shows whitespace
-2. Look for `→` (TAB) characters instead of spaces
-3. Replace all TABs with spaces (2 or 4 spaces per indentation level)
-
-**Prevention:**
-
-* Configure your text editor to use "spaces for tabs"
-* Use editors like VS Code, Notepad++, or Sublime Text that can show whitespace
+If the console says `Loot table not found: default (available: )` with an empty list, a TAB is the usual cause. Open the file in an editor that shows whitespace (VS Code, Notepad++, Sublime Text), replace every TAB with spaces, and set the editor to "insert spaces for tabs".
 {% endhint %}
 
 ***
 
-## Vanilla loot is what you already have
+## Keep the exact vanilla loot
 
-Out of the box, `loot.yml` gives out Minecraft's own Trial Chamber loot. The two tables it ships with, `default` for normal vaults and `ominous-default` for ominous ones, are the real thing: the same items, the same amounts, the same chances.
+Do nothing. Out of the box the two shipped tables, `default` (normal vaults) and `ominous-default` (ominous vaults), are Minecraft's own Trial Chamber loot, item for item and chance for chance. They are built from the game's own files, not typed by hand.
 
-They are generated straight from the game's own files rather than typed out by hand, so "the same as vanilla" means exactly that. Earlier versions shipped invented loot under those names and kept a separate commented-out copy of the real thing further down the file for you to paste in. That copy is gone, because there is nothing left to paste in.
+To get a fresh copy back later, delete `loot.yml` and restart the server.
 
-Vanilla's vault loot is three pools, and that is how the file is laid out:
-
-1. **`main-reward`** gives one item. Four times out of five it comes from the rare list, and the fifth time from the everyday list.
-2. **`extra-supplies`** gives one to three more everyday items.
-3. **`unique`** gives one standout item, but the whole pool only runs a quarter of the time for a normal vault and three quarters of the time for an ominous one.
-
-Everything in there is yours to change. Edit it in this file, or in game through the loot editor, and your changes are saved back here. If you ever want the original back, delete `loot.yml` and restart the server; a fresh copy appears.
-
-**Want exact vanilla with no editing at all?** You can point straight at the game's own tables with `type: VANILLA_TABLE` - see [Vanilla & Datapack Loot Tables](loot.yml.md#vanilla--datapack-loot-tables-passthrough) below. The tables in this file are the ones to use when you want to *adjust* vanilla's numbers; the passthrough is exact but there is nothing in it to edit.
+If you want vanilla loot that is guaranteed to stay in sync with the game and that you will never edit, point an entry straight at the game's table with `type: VANILLA_TABLE` (see [Vanilla & Datapack Loot Tables](loot.yml.md#vanilla--datapack-loot-tables-passthrough)). Use the shipped tables instead when you want to *adjust* vanilla's numbers.
 
 ***
 
-## Vanilla & Datapack Loot Tables (passthrough)
+## How a table is built
 
-_(Added in 1.5.7.)_ A pool entry can defer to **any loot table registered on the server** — vanilla's own tables or one shipped by a datapack:
+A table is made of one or more **pools**. Every pool rolls on its own, and the vault's loot is all the pools added together. Each shipped table has three pools:
 
-```yaml
-weighted-items:
-  - type: VANILLA_TABLE
-    table: "minecraft:chests/trial_chambers/reward"
-    weight: 30.0
-  - type: DIAMOND
-    amount-min: 1
-    amount-max: 3
-    weight: 70.0
-```
+1. `main-reward` gives one item (mostly from a rare list, sometimes from an everyday list).
+2. `extra-supplies` gives one to three everyday items.
+3. `unique` gives one standout item, but the whole pool only runs 25% of the time for a normal vault and 75% for an ominous one.
 
-When the entry is rolled, the referenced table is populated through the server's own loot engine and **every item it generates** is added to the drop (`amount-min`/`amount-max` don't apply — the table controls its own counts). Useful keys:
+For one opening, each pool:
 
-| Key                                              | Contents           |
-| ------------------------------------------------ | ------------------ |
-| `minecraft:chests/trial_chambers/reward`         | Normal vault loot  |
-| `minecraft:chests/trial_chambers/reward_ominous` | Ominous vault loot |
-| `minecraft:chests/trial_chambers/supply`         | Supply chest loot  |
-
-Datapack tables work with their own namespace (e.g. `mypack:chambers/boss`). An unknown key logs a console warning and yields nothing — the rest of the pool still drops — so a missing datapack degrades gracefully.
+1. Skips itself entirely if it has a `chance` and the roll fails (nothing drops from it, not even guaranteed items).
+2. Drops every `guaranteed-items` entry.
+3. Draws `min-rolls` to `max-rolls` times from `weighted-items`, picking one item per draw by weight (this is [weighted mode](loot.yml.md#drop-chance-modes-weighted-vs-independent); independent mode works differently).
+4. Rolls each `command-rewards` and `economy-rewards` entry on its own chance.
 
 ***
 
-## Understanding Loot Tables
+## Pool and table keys
 
-A **loot table** is a collection of possible rewards. When a player opens a vault, the plugin:
+These sit directly under a pool (or under the table itself in the single-pool format).
 
-1. Rolls between `min-rolls` and `max-rolls` times
-2. Each roll picks ONE item from `weighted-items` based on weight
-3. Adds all `guaranteed-items` (these ALWAYS drop)
-4. Gives everything to the player
+| Key | What it does | Values |
+| --- | --- | --- |
+| `min-rolls` / `max-rolls` | How many items this pool draws from `weighted-items`. A random number between the two. | Whole numbers. `1`/`1` = exactly one item. Negatives become 0; min above max is swapped. |
+| `chance` | How often the whole pool runs. Leave it out and it always runs. Pool format only. | `0` to `1`, or a percentage (`0.25` and `25` both mean a quarter of the time). Out-of-range values are treated as "always". |
+| `mode` | How `weighted-items` are drawn. See [Drop Chance Modes](loot.yml.md#drop-chance-modes-weighted-vs-independent). | `weighted` (default) or `independent`. An unknown value logs a warning and falls back to `weighted`. |
+| `max-items` | Independent mode only: keep at most this many of the items that won, chosen at random. | Whole number. `0` or left out = no limit. |
+| `guaranteed-items` | Items that always drop (subject to `chance` and the redeemable cap). | A list of item entries. |
+| `weighted-items` | The items drawn by the rolls. | A list of item entries. |
+| `command-rewards` | Console commands run on a chance. Not items. See [COMMAND Rewards](loot.yml.md#command-rewards-economy--permissions). | A list of command entries. |
+| `economy-rewards` | Money paid through Vault on a chance. See [Economy Rewards](loot.yml.md#economy-rewards). | A list of payout entries. |
 
-Think of it like rolling dice—higher weight = bigger section of the die.
+{% hint style="warning" %}
+More rolls means more items. A vault that hands out 20 items is fun once and then trivial. Start low; buffing loot later is easier than nerfing it.
+{% endhint %}
 
 {% hint style="info" %}
-**That's the default ("weighted") way of rolling.** There's a second, simpler way — **independent mode** — where every item just has its own drop chance (like "40% for a diamond"), instead of competing against each other. It's much easier when you have lots of items. See [Drop Chance Modes: Weighted vs Independent](loot.yml.md#drop-chance-modes-weighted-vs-independent) below.
+**Why not `min-rolls: 0` instead of `chance`?** `min-rolls: 0` with `max-rolls: 1` drops something about half the time, not a quarter. Use `chance` when you want a specific percentage.
 {% endhint %}
 
 ***
 
-## Loot Table Structure
+## Item entry keys
+
+Every entry in `weighted-items` or `guaranteed-items` needs a `type` and (for weighted entries) a `weight`. Everything else is optional.
+
+| Key | What it does | Values |
+| --- | --- | --- |
+| `type` | The item. A Bukkit [Material](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html) name, or one of the special types `CUSTOM_ITEM`, `VANILLA_TABLE`, `OMINOUS_BOTTLE`. | e.g. `DIAMOND`, `DIAMOND_SWORD`. A bad name logs a warning and skips the entry. |
+| `weight` | How likely this entry is compared to the others in the pool (weighted mode), or its own drop chance from 0 to 100 (independent mode). | A number. `0` or less never drops (logs a warning). |
+| `amount-min` / `amount-max` | Stack size range, rolled per drop. | Whole numbers, at least 1. Default 1. Min above max is swapped. Ignored for `VANILLA_TABLE`. |
+| `name` | Custom display name. Supports `&` colour codes, `&#RRGGBB` hex, and MiniMessage tags. | A string, e.g. `"&b&lTrial Diamond"`. |
+| `lore` | Custom lore lines, same formatting as `name`. | A list of strings. |
+| `enchantments` | Fixed enchantments. | A list of `"NAME:LEVEL"`, e.g. `"SHARPNESS:5"`. On an `ENCHANTED_BOOK` these are stored as book enchantments (usable at an anvil). |
+| `enchantment-ranges` | Enchantments with a random level in a range. | A list of `"NAME:MIN:MAX"`, e.g. `"SHARPNESS:1:5"`. |
+| `random-enchantment-pool` | Pick ONE enchantment at random from this list, at a random level. | A list of `"NAME:MIN:MAX"`. |
+| `enchant-with-levels-min` / `-max` | Enchant the item the way an enchanting table would, at a random cost between these two levels. Both are required together. Takes precedence over the three keys above. | Whole numbers. This is what vanilla does for chamber bows, crossbows, axes, and chestplates. |
+| `enchant-with-levels-treasure` | Allow the enchant-with-levels roll to produce treasure-only enchantments (Mending, Soul Speed, and so on). | `true` / `false`. Default `false`, matching vanilla chambers. |
+| `potion-type` | Effect for `POTION`, `SPLASH_POTION`, `LINGERING_POTION`, `TIPPED_ARROW`. | A [PotionType](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/potion/PotionType.html) name, e.g. `POISON`, `STRENGTH`. |
+| `potion-level` | Effect level. | `0` = level I, `1` = level II, and so on. |
+| `potion-level-min` / `-max` | Roll the effect level in a range, per drop. Both required together. Also used for `OMINOUS_BOTTLE`. | Whole numbers. Min above max is swapped. |
+| `custom-effect-type` | For effects with no standard `PotionType`, on a `POTION` / `SPLASH_POTION` etc. | A [PotionEffectType](https://jd.papermc.io/paper/1.21/org/bukkit/potion/PotionEffectType.html) name, e.g. `HERO_OF_THE_VILLAGE`, `GLOWING`, `LUCK`. |
+| `effect-duration` | Override how long the effect lasts. Left out, it is worked out from the potion type and item form. | Ticks (20 ticks = 1 second). |
+| `durability-min` / `-max` | Drop the item pre-damaged, with a random damage value in this range. | Whole numbers. Higher = more worn. |
+| `instrument` | Goat horn variant, for `type: GOAT_HORN`. | `PONDER`, `SING`, `SEEK`, `FEEL`, `ADMIRE`, `CALL`, `YEARN`, `DREAM` (or the full `PONDER_GOAT_HORN` form). |
+| `custom-model-data` | Give a vanilla item a resource-pack model id. | A number. |
+| `serialized-item` | A whole item saved by the game itself (enchants, effects, name, lore, NBT, third-party tags). Written automatically when you add an item from the GUI. When present, every structured key above is ignored except the amount range. | Base64 text. Do not hand-edit. |
+| `redeemable` | Cap how often one player can win this entry. See [Limiting How Often a Player Can Win an Item](loot.yml.md#limiting-how-often-a-player-can-win-an-item-redeemable). | `per-reset` (default), `per-chamber`, `once`. |
+| `redeem-id` | Hidden identity used to remember who has won a capped entry. Written automatically. | Text. Do not edit or delete. |
+| `enabled` | Set `false` to keep an entry in the file but stop it dropping. Toggled by the GUI. | `true` / `false`. Default `true`. |
+| `plugin` / `item-id` | For `type: CUSTOM_ITEM`. See [Custom Plugin Items](loot.yml.md#custom-plugin-items). | Plugin name and its item id. |
+| `table` | For `type: VANILLA_TABLE`. See [Vanilla & Datapack Loot Tables](loot.yml.md#vanilla--datapack-loot-tables-passthrough). | A loot table key like `"minecraft:chests/trial_chambers/reward"`. |
+
+***
+
+## Add a basic item to a table
 
 ```yaml
 loot-tables:
-  default:  # Normal vaults use this
+  default:
     min-rolls: 3
     max-rolls: 5
     guaranteed-items: []
@@ -110,200 +116,25 @@ loot-tables:
         weight: 10.0
 ```
 
-### `min-rolls` / `max-rolls`
+1. Open `loot.yml`.
+2. Under the table's `weighted-items`, add a `- type:` line with the Material name.
+3. Add `weight` (how common it is) and, if you want more than one, `amount-min` / `amount-max`.
+4. Save and run `/trial reload`.
 
-How many times to randomly pick from `weighted-items`. A random number between min and max is chosen.
+### Add it from the GUI
 
-**Examples:**
-
-* `min-rolls: 3` + `max-rolls: 5` = Player gets 3-5 random items
-* `min-rolls: 1` + `max-rolls: 1` = Player gets exactly 1 item (hardcore mode!)
-* `min-rolls: 10` + `max-rolls: 15` = Loot explosion
-
-{% hint style="warning" %}
-**Don't go crazy!** More rolls = more items. A vault that drops 20 items might be fun once, but it trivializes progression. Start conservative.
-{% endhint %}
+1. Run `/trial menu`, then **Loot Tables**, then click the table (a multi-pool table asks which pool first).
+2. Hold the item you want and click **+ Add from Hand**. The whole item is captured, including enchantments, potion data, custom name, lore, and NBT, into `serialized-item`.
+3. To add many at once, click **Bulk add (drag items in)**, drag or shift-click items into the chest, and close it.
+4. Changes are written to `loot.yml` and apply to every chamber using that table.
 
 ***
 
-### `chance`
-
-How often a pool runs at all. Leave it out and the pool always runs.
-
-Write it as a number from 0 to 1, or as a percentage if you find that easier - `chance: 0.25` and `chance: 25` mean the same thing.
-
-This is for a pool you only want to fire some of the time. Vanilla uses it for the standout item in a vault: that pool runs a quarter of the time for a normal vault and three quarters of the time for an ominous one. When a pool does not run, it gives nothing at all that opening, including its guaranteed items.
-
-```yaml
-- name: "unique"
-  min-rolls: 1
-  max-rolls: 1
-  chance: 0.25          # runs one opening in four
-  weighted-items:
-    - type: HEAVY_CORE
-      amount-min: 1
-      amount-max: 1
-      weight: 1
-```
-
-{% hint style="info" %}
-**Why not just use `min-rolls: 0`?** Because `min-rolls: 0` with `max-rolls: 1` picks 0 or 1 evenly, which is half the time, not a quarter. If you want a specific chance, say it with `chance`.
-{% endhint %}
-
-***
-
-## Multi-Pool Loot System
-
-**Like vanilla Trial Chambers**, you can now create multiple loot pools that each roll independently! This gives you much finer control over loot distribution.
-
-### Why Use Multiple Pools?
-
-Vanilla Minecraft vaults use **3 separate pools**:
-
-* **Common pool**: Always gives 2-3 basic items (iron, gold, arrows)
-* **Rare pool**: Gives 1-2 valuable items (diamonds, enchanted books)
-* **Unique pool**: 0-1 chance at special items (enchanted golden apples, heavy core)
-
-**Benefits:**
-
-* **More predictable loot** - Players always get common items + chance at rare/unique
-* **Better progression** - Separate rare items from common items
-* **Matches vanilla** - Feels like the real Trial Chambers
-* **Flexible design** - Can have pools with `min-rolls: 0` for bonus items
+## Item recipes
 
 <details>
 
-<summary><strong>Multi-Pool Example</strong></summary>
-
-```yaml
-loot-tables:
-  vanilla-style:
-    pools:
-      # Common pool - always gives 2-3 basic items
-      - name: common
-        min-rolls: 2
-        max-rolls: 3
-        weighted-items:
-          - type: IRON_INGOT
-            amount-min: 3
-            amount-max: 7
-            weight: 30.0
-          - type: GOLD_INGOT
-            amount-min: 2
-            amount-max: 5
-            weight: 25.0
-          - type: ARROW
-            amount-min: 16
-            amount-max: 32
-            weight: 20.0
-
-      # Rare pool - gives 1-2 valuable items
-      - name: rare
-        min-rolls: 1
-        max-rolls: 2
-        weighted-items:
-          - type: DIAMOND
-            amount-min: 1
-            amount-max: 3
-            weight: 15.0
-          - type: EMERALD
-            amount-min: 3
-            amount-max: 8
-            weight: 20.0
-          - type: GOLDEN_APPLE
-            amount-min: 1
-            amount-max: 1
-            weight: 12.0
-
-      # Unique pool - rare chance at 0-1 special item
-      - name: unique
-        min-rolls: 0
-        max-rolls: 1
-        weighted-items:
-          - type: ENCHANTED_GOLDEN_APPLE
-            amount-min: 1
-            amount-max: 1
-            weight: 3.0
-          - type: NETHERITE_INGOT
-            amount-min: 1
-            amount-max: 1
-            weight: 2.0
-```
-
-</details>
-
-**How it works:**
-
-1. Player opens vault
-2. Common pool rolls 2-3 times → always get basic items
-3. Rare pool rolls 1-2 times → get valuable items
-4. Unique pool rolls 0-1 times → **might** get special item
-5. Total: 3-6 items with good variety!
-
-{% hint style="info" %}
-**Legacy Format Still Works!** The old single-pool format (without `pools:`) is fully supported and will keep working. This is purely optional!
-{% endhint %}
-
-{% hint style="success" %}
-**Edit from the GUI** _(1.2.26+)_: open `/trial menu` → **Loot Tables**, click any table to edit it. Multi-pool tables open a pool selector; single-pool tables open the editor directly. Changes save to `loot.yml` and apply to every chamber using that table.
-{% endhint %}
-
-### Config Option
-
-Control the maximum number of pools in `config.yml`:
-
-```yaml
-loot:
-  max-pools-per-table: 5  # Default: 5
-```
-
-***
-
-## Item Types
-
-<details>
-
-<summary><strong>Basic Items</strong></summary>
-
-```yaml
-- type: DIAMOND
-  amount-min: 1
-  amount-max: 3
-  weight: 10.0
-```
-
-**Required fields:**
-
-* `type`: Material name (see [Spigot Material enum](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html))
-* `weight`: Probability weight (explained below)
-
-**Optional fields:**
-
-* `amount-min` / `amount-max`: Stack size range (default: 1)
-* `serialized-item`: Base64-encoded `ItemStack.serializeAsBytes()` output (set automatically when adding an item through the GUI editor — see below)
-* `redeemable`: How often a single player can win this item — `per-reset` (default), `per-chamber`, or `once`. See [Limiting How Often a Player Can Win an Item](loot.yml.md#limiting-how-often-a-player-can-win-an-item-redeemable) below
-
-{% hint style="info" %}
-**Faithful items via the GUI editor (v1.5.0+).** When you add a loot entry by clicking the **+ Add from Hand** button in `/trial menu → Loot → …`, BTC captures the entire held `ItemStack` — enchantments, potion effects, custom names, lore, NBT, custom-model-data, third-party plugin tags, the lot — into the `serialized-item` field. The entry in `loot.yml` will look like:
-
-```yaml
-- type: ENCHANTED_BOOK
-  amount-min: 1
-  amount-max: 1
-  weight: 5.0
-  serialized-item: "AQECAAcAAAA..."   # full ItemStack bytes
-```
-
-Previously, GUI-added items only stored the material + amount, so an enchanted book turned into a plain book on drop. The serialized form fixes that. You can still hand-author entries with `enchantments:` / `potion-data:` / `custom-name:` / `lore:` and skip `serialized-item` entirely — both paths work and can coexist in the same table.
-
-For bulk authoring, the **Bulk add (drag items in)** button in the GUI opens a chest you can drag or shift-click any number of items into — on close, every item is captured the same way and added to the table at once.
-{% endhint %}
-
-</details>
-
-<details>
-
-<summary><strong>Items with Custom Names &#x26; Lore</strong></summary>
+<summary><strong>Custom name and lore</strong></summary>
 
 ```yaml
 - type: DIAMOND
@@ -318,17 +149,13 @@ For bulk authoring, the **Bulk add (drag items in)** button in the GUI opens a c
     - "&6&lRare Drop"
 ```
 
-Color codes supported! Use `&` for colors:
-
-* `&0-9, a-f` = Colors
-* `&l` = Bold, `&o` = Italic, `&n` = Underline
-* `&m` = Strikethrough, `&k` = Magic
+`&0`-`&9` / `&a`-`&f` are colours; `&l` bold, `&o` italic, `&n` underline, `&m` strikethrough, `&k` magic. `&#RRGGBB` hex and MiniMessage tags also work.
 
 </details>
 
 <details>
 
-<summary><strong>Enchanted Items</strong></summary>
+<summary><strong>Enchanted gear</strong></summary>
 
 ```yaml
 - type: DIAMOND_SWORD
@@ -342,15 +169,13 @@ Color codes supported! Use `&` for colors:
     - "FIRE_ASPECT:2"
 ```
 
-Enchantments use the format `ENCHANTMENT_NAME:LEVEL`.
-
-See [Spigot Enchantment enum](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/enchantments/Enchantment.html) for names.
+Format is `NAME:LEVEL`. Names are the in-game ids (`SHARPNESS` or `minecraft:sharpness`). See the [Enchantment list](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/enchantments/Enchantment.html).
 
 </details>
 
 <details>
 
-<summary><strong>Enchanted Books</strong></summary>
+<summary><strong>Enchanted books</strong></summary>
 
 ```yaml
 - type: ENCHANTED_BOOK
@@ -361,38 +186,30 @@ See [Spigot Enchantment enum](https://hub.spigotmc.org/javadocs/spigot/org/bukki
     - "MENDING:1"
 ```
 
-Pro tip: Give ONLY enchanted books for specific enchants, not enchanted gear. Let players choose what to apply it to!
+Use `type: ENCHANTED_BOOK`, not `BOOK`. On a real enchanted book the plugin stores the enchantment where an anvil can use it. Enchantment lines on a plain `BOOK` only make it look enchanted.
+
+Tip: hand out books for specific enchantments rather than enchanted gear, so players choose what to apply them to.
 
 </details>
 
-***
+<details>
 
-## Advanced Loot Features
-
-**Version 1.1.9+** brings vanilla-style loot customization with full Minecraft 1.21+ support! Create dynamic, randomized loot just like vanilla Trial Chambers.
-
-### Tipped Arrows
-
-Add potion effects to arrows with custom amplifier levels!
+<summary><strong>Tipped arrows</strong></summary>
 
 ```yaml
 - type: TIPPED_ARROW
   amount-min: 8
   amount-max: 16
   weight: 15.0
-  potion-type: POISON    # Any PotionType
-  potion-level: 1        # 0 = Level I, 1 = Level II, etc.
+  potion-type: POISON
+  potion-level: 1        # 0 = I, 1 = II
   name: "&aPoison Arrows"
 ```
 
-**Available potion types:** `SPEED`, `SLOWNESS`, `STRENGTH`, `INSTANT_HEAL`, `INSTANT_DAMAGE`, `JUMP_BOOST`, `REGENERATION`, `RESISTANCE`, `FIRE_RESISTANCE`, `WATER_BREATHING`, `INVISIBILITY`, `NIGHT_VISION`, `WEAKNESS`, `POISON`, `WITHER`, `TURTLE_MASTER`, `SLOW_FALLING`
-
-<details>
-
-<summary><strong>Examples</strong></summary>
+More examples:
 
 ```yaml
-# Poison II arrows (great for combat)
+# Poison II arrows
 - type: TIPPED_ARROW
   amount-min: 12
   amount-max: 24
@@ -400,7 +217,7 @@ Add potion effects to arrows with custom amplifier levels!
   potion-type: POISON
   potion-level: 1
 
-# Slowness IV arrows (for PvP)
+# Slowness IV arrows for PvP
 - type: TIPPED_ARROW
   amount-min: 8
   amount-max: 16
@@ -408,50 +225,41 @@ Add potion effects to arrows with custom amplifier levels!
   potion-type: SLOWNESS
   potion-level: 3
 
-# Long-lasting poison arrows with custom duration
+# Longer-lasting poison arrows
 - type: TIPPED_ARROW
   amount-min: 4
   amount-max: 8
   weight: 12.0
   potion-type: POISON
   potion-level: 1
-  effect-duration: 1200    # 60 seconds (1200 ticks). Default: 400 ticks (20 seconds)
+  effect-duration: 1200    # 60 seconds
   name: "&2Long-Lasting Poison Arrow"
 ```
 
-</details>
-
-<details>
-
-<summary><strong>Custom Effect Duration</strong></summary>
-
-The `effect-duration` field lets you override how long potion effects last. When **not specified**, durations are **automatically calculated** from the potion type using vanilla Minecraft multipliers:
-
-| Item Type         | Auto-Calculated Duration       | Multiplier     |
-| ----------------- | ------------------------------ | -------------- |
-| POTION            | Base duration from potion type | 1.0× (100%)    |
-| SPLASH\_POTION    | 75% of base potion             | 0.75×          |
-| LINGERING\_POTION | 25% of base potion             | 0.25×          |
-| TIPPED\_ARROW     | **1/8 of base potion**         | 0.125× (12.5%) |
+Common `potion-type` values: `SPEED`, `SLOWNESS`, `STRENGTH`, `HEALING`, `HARMING`, `JUMP_BOOST`, `REGENERATION`, `RESISTANCE`, `FIRE_RESISTANCE`, `WATER_BREATHING`, `INVISIBILITY`, `NIGHT_VISION`, `WEAKNESS`, `POISON`, `WITHER`, `TURTLE_MASTER`, `SLOW_FALLING`.
 
 </details>
 
 <details>
 
-<summary><strong>Examples with auto-calculation</strong></summary>
+<summary><strong>Potion effect duration</strong></summary>
 
-* **Speed I Potion** (3:00 base) → **Tipped Arrow** = 22.5s (3:00 ÷ 8)
-* **Slowness I Potion** (1:30 base) → **Tipped Arrow** = 11.25s (1:30 ÷ 8)
-* **Regeneration I Potion** (0:45 base) → **Tipped Arrow** = 5.625s (0:45 ÷ 8)
-* **Poison I Potion** (0:45 base) → **Tipped Arrow** = 5.625s (0:45 ÷ 8)
+Leave `effect-duration` out and the plugin works the length out from the potion type, scaled by the item form:
+
+| Item form | Multiplier |
+| --- | --- |
+| `POTION` | 1.0x (the potion's own length) |
+| `SPLASH_POTION` | 1.0x |
+| `LINGERING_POTION` | 0.25x |
+| `TIPPED_ARROW` | 0.125x |
+
+Minimums are enforced so an effect never comes out at 0 seconds (5s for arrows, 10s for lingering, 30s for other potions). To set an exact length, add `effect-duration: <ticks>` (20 ticks = 1 second).
 
 </details>
 
-**Manual override:** Specify `effect-duration: <ticks>` to use a custom duration instead of auto-calculation (20 ticks = 1 second)
+<details>
 
-### Potions with Custom Levels
-
-Create potions with any effect level—perfect for ominous vault rewards!
+<summary><strong>Potions with a set level</strong></summary>
 
 ```yaml
 - type: POTION
@@ -463,15 +271,7 @@ Create potions with any effect level—perfect for ominous vault rewards!
   name: "&cStrength Potion II"
 ```
 
-**Works with:**
-
-* `POTION` - Drinkable potions (3 minute duration)
-* `SPLASH_POTION` - Throwable (2:15 duration)
-* `LINGERING_POTION` - Creates cloud (45 second cloud)
-
-<details>
-
-<summary><strong>Examples</strong></summary>
+Works with `POTION`, `SPLASH_POTION`, and `LINGERING_POTION`.
 
 ```yaml
 # Healing II splash potion
@@ -493,96 +293,73 @@ Create potions with any effect level—perfect for ominous vault rewards!
 
 </details>
 
-### Ominous Bottles (Bad Omen Effect)
+<details>
 
-Ominous Bottles give the **Bad Omen** effect when drunk, which triggers an **Ominous Trial** in a Trial Chamber. As of BTC **1.7.1** loot tables produce the **real `minecraft:ominous_bottle` item** — correct texture, correct name, and it stacks with bottles from vanilla vaults.
+<summary><strong>Ominous bottles (Bad Omen)</strong></summary>
+
+`type: OMINOUS_BOTTLE` produces the real `minecraft:ominous_bottle` item, which stacks with bottles from vanilla vaults.
 
 ```yaml
-# Fixed level:
+# Fixed level
 - type: OMINOUS_BOTTLE
   amount-min: 1
   amount-max: 1
   weight: 5.0
-  potion-level: 2            # 0=I, 1=II, 2=III, 3=IV, 4=V
+  potion-level: 2            # 0 = I ... 4 = V
 
-# Random level per drop — exactly how vanilla vaults roll it:
+# Random level per drop, the way vanilla ominous vaults roll it
 - type: OMINOUS_BOTTLE
   amount-min: 1
   amount-max: 1
   weight: 2.0
-  potion-level-min: 2        # Bad Omen III…
-  potion-level-max: 4        # …to V, rolled each drop
+  potion-level-min: 2       # Bad Omen III
+  potion-level-max: 4       # up to V
 ```
 
-#### Vanilla reference
+Vanilla reference: normal vaults drop levels I-II (`potion-level-min: 0`, `potion-level-max: 1`); ominous vaults drop III-V (`2` to `4`).
 
-* **Normal vaults** drop ominous bottles at levels **I–II** (`potion-level-min: 0`, `potion-level-max: 1`)
-* **Ominous vaults** drop them at levels **III–V** (`potion-level-min: 2`, `potion-level-max: 4`)
-* Ominous bottles can **only hold Bad Omen** — that's the game itself, not a plugin limit. A `potion-type:` on an ominous bottle is ignored (BTC warns at startup), and a `potion-level` outside 0–4 is clamped with a warning.
+Ominous bottles can only hold Bad Omen. A `potion-type` on one is ignored (logged), and a level outside 0-4 is clamped (logged). Custom `name` / `lore` still work but are not needed.
 
-Custom `name:` and `lore:` still work on ominous bottles, but the real item already displays properly without them.
-
-{% hint style="warning" %}
-**Upgrading from an older version?** Configs written before 1.7.1 were taught a workaround: a `POTION` with `custom-effect-type: BAD_OMEN` and a purple name. That produces a renamed *potion* that grants Bad Omen when drunk — it works, but it isn't the real ominous bottle item and won't stack with vanilla-dropped ones. Replace those entries with `type: OMINOUS_BOTTLE` as above (the old form still functions, so nothing breaks in the meantime).
-{% endhint %}
-
-<details>
-
-<summary><strong>Key Differences: <code>custom-effect-type</code> vs <code>potion-type</code></strong></summary>
-
-| Field                | Purpose                            | Examples                                      |
-| -------------------- | ---------------------------------- | --------------------------------------------- |
-| `potion-type`        | Standard Minecraft potion effects  | `SPEED`, `STRENGTH`, `POISON`, `HEALING`      |
-| `custom-effect-type` | Special/custom potion effect types | `HERO_OF_THE_VILLAGE`, `GLOWING`, `LUCK`      |
-
-**When to use which:**
-
-* **Use `potion-type`** for normal potions (Strength, Speed, Healing, etc.)
-* **Use `custom-effect-type`** for special effects that have no PotionType (Hero of the Village, Glowing, Luck, etc.)
-* **For Bad Omen, use `type: OMINOUS_BOTTLE`** — it's a real item with its own type, not a potion effect to fake.
-
-**Note:** The `effect-duration` field works with both `potion-type` and `custom-effect-type`! Use it to customize how long any potion effect lasts.
+Older configs faked this with a `POTION` plus `custom-effect-type: BAD_OMEN` and a purple name. That still works but does not stack with vanilla bottles; replace it with `type: OMINOUS_BOTTLE`.
 
 </details>
 
 <details>
 
-<summary><strong>Other Custom Effect Types</strong></summary>
+<summary><strong>Other custom effects</strong></summary>
 
-You can use `custom-effect-type` for other special effects:
+Use `custom-effect-type` for effects with no standard `potion-type`:
 
 ```yaml
-# Hero of the Village (from raid victory)
+# Hero of the Village
 - type: POTION
   custom-effect-type: HERO_OF_THE_VILLAGE
-  potion-level: 1  # Hero of the Village II
+  potion-level: 1
   weight: 1.0
   name: "&aVillage Hero Potion"
 
-# Luck (affects loot tables)
+# Luck
 - type: POTION
   custom-effect-type: LUCK
-  potion-level: 2  # Luck III
+  potion-level: 2
   weight: 3.0
   name: "&2Fortune's Favor"
 
-# Glowing (outline effect)
+# Glowing splash potion
 - type: SPLASH_POTION
   custom-effect-type: GLOWING
-  potion-level: 0  # Glowing I
+  potion-level: 0
   weight: 5.0
   name: "&eGlowing Splash Potion"
 ```
 
+Use `potion-type` for normal effects (Strength, Speed, Healing) and `custom-effect-type` for the rest. `effect-duration` works with both.
+
 </details>
 
-### Enchantment Randomization
+<details>
 
-Add dynamic enchantments with random levels—just like vanilla treasure loot!
-
-#### Fixed Level Ranges
-
-Apply enchantments with random levels within a range:
+<summary><strong>Random enchantment level</strong></summary>
 
 ```yaml
 - type: DIAMOND_SWORD
@@ -590,68 +367,46 @@ Apply enchantments with random levels within a range:
   amount-max: 1
   weight: 10.0
   enchantment-ranges:
-    - "SHARPNESS:1:5"    # Random Sharpness I to V
-    - "LOOTING:1:3"      # Random Looting I to III
+    - "SHARPNESS:1:5"    # random Sharpness I to V
+    - "LOOTING:1:3"      # random Looting I to III
   name: "&bRandom Enchanted Sword"
 ```
 
-**Format:** `ENCHANTMENT:MIN_LEVEL:MAX_LEVEL`
-
-<details>
-
-<summary><strong>Examples</strong></summary>
+Format: `NAME:MIN:MAX`. Every listed enchantment is applied, each at its own random level.
 
 ```yaml
-# Pickaxe with random Efficiency and Fortune
 - type: DIAMOND_PICKAXE
   amount-min: 1
   amount-max: 1
   weight: 8.0
   enchantment-ranges:
-    - "EFFICIENCY:3:5"    # Efficiency III-V
-    - "FORTUNE:1:3"       # Fortune I-III
-
-# Bow with random Power level
-- type: BOW
-  amount-min: 1
-  amount-max: 1
-  weight: 12.0
-  enchantment-ranges:
-    - "POWER:3:5"         # Power III-V
-    - "UNBREAKING:2:3"    # Unbreaking II-III
+    - "EFFICIENCY:3:5"
+    - "FORTUNE:1:3"
 ```
 
 </details>
 
-#### Random Enchantment Pool
+<details>
 
-Pick **ONE** random enchantment from a pool—great for variety!
+<summary><strong>Pick one enchantment from a pool</strong></summary>
 
 ```yaml
 - type: ENCHANTED_BOOK
   amount-min: 1
   amount-max: 1
   weight: 15.0
-  random-enchantment-pool:    # Will pick ONE of these
-    - "SHARPNESS:3:5"         # Either Sharpness III-V
-    - "PROTECTION:2:4"        # OR Protection II-IV
-    - "UNBREAKING:2:3"        # OR Unbreaking II-III
-    - "EFFICIENCY:3:5"        # OR Efficiency III-V
-    - "MENDING:1:1"           # OR Mending I
+  random-enchantment-pool:    # exactly one of these is chosen
+    - "SHARPNESS:3:5"
+    - "PROTECTION:2:4"
+    - "UNBREAKING:2:3"
+    - "EFFICIENCY:3:5"
+    - "MENDING:1:1"
 ```
 
-**Perfect for enchanted books!** Each player gets a different random enchantment.
-
-{% hint style="info" %}
-**About enchanted books.** An enchanted book does not work like an enchanted sword. The sword *is* enchanted; the book *holds* an enchantment for a player to move onto something else at an anvil. Use `type: ENCHANTED_BOOK` and the plugin puts the enchantment where an anvil can find it. Putting enchantment lines on a plain `BOOK` gives you a book that looks enchanted and does nothing at an anvil.
-{% endhint %}
-
-<details>
-
-<summary><strong>Examples</strong></summary>
+Great for enchanted books: each player gets a different one.
 
 ```yaml
-# Armor with ONE random protection type
+# Armour with one random protection type
 - type: DIAMOND_CHESTPLATE
   amount-min: 1
   amount-max: 1
@@ -661,51 +416,34 @@ Pick **ONE** random enchantment from a pool—great for variety!
     - "BLAST_PROTECTION:3:4"
     - "PROJECTILE_PROTECTION:3:4"
     - "FIRE_PROTECTION:3:4"
-
-# Book with one random utility enchantment
-- type: ENCHANTED_BOOK
-  weight: 10.0
-  random-enchantment-pool:
-    - "MENDING:1:1"
-    - "SILK_TOUCH:1:1"
-    - "FORTUNE:2:3"
-    - "LOOTING:2:3"
 ```
 
 </details>
 
-#### Enchant It Like an Enchanting Table
+<details>
 
-Instead of naming the enchantments yourself, you can tell the plugin to enchant the item exactly the way an enchanting table would, at a random cost between two levels.
+<summary><strong>Enchant like an enchanting table</strong></summary>
 
 ```yaml
 - type: BOW
   amount-min: 1
   amount-max: 1
   weight: 10.0
-  enchant-with-levels-min: 5     # as if enchanted at level 5...
-  enchant-with-levels-max: 15    # ...through level 15
+  enchant-with-levels-min: 5     # as if enchanted at level 5
+  enchant-with-levels-max: 15    # through level 15
 ```
 
-This is what Minecraft itself does for the bows, crossbows, axes and chestplates in a Trial Chamber vault, and it is why those come out with a believable set of enchantments rather than a single one. A higher level range means better and more numerous enchantments, the same as at a real enchanting table.
+This is what Minecraft does for the bows, crossbows, axes, and chestplates in chamber vaults, which is why they come out with a full believable set of enchantments. A higher range means better and more enchantments. Both lines are required; one alone does nothing.
 
-Both lines are needed; one on its own does nothing.
+Treasure-only enchantments (Mending, Soul Speed) are excluded by default. Add `enchant-with-levels-treasure: true` to allow them.
 
-By default this will not produce treasure-only enchantments such as Mending or Soul Speed, which matches vanilla's chamber rewards. Add `enchant-with-levels-treasure: true` if you want them possible.
+Use this when you want an enchanting-table feel and do not mind the exact result. Use `random-enchantment-pool` when you need to control which enchantments can appear.
 
-{% hint style="info" %}
-**Which should I use?** Use `enchant-with-levels-min` / `-max` when you want the item to feel like it came off an enchanting table and you do not mind what it rolls. Use `random-enchantment-pool` when you want to control exactly which enchantments can appear.
-{% endhint %}
-
-***
-
-#### Combining Enchantment Features
-
-You can mix fixed enchantments, ranges, and random pools!
+</details>
 
 <details>
 
-<summary><strong>Example</strong></summary>
+<summary><strong>Combine enchantment features</strong></summary>
 
 ```yaml
 - type: DIAMOND_SWORD
@@ -716,20 +454,22 @@ You can mix fixed enchantments, ranges, and random pools!
   lore:
     - "&7Forged in ancient trials"
   enchantments:
-    - "UNBREAKING:3"          # ALWAYS Unbreaking III
+    - "UNBREAKING:3"          # always Unbreaking III
   enchantment-ranges:
-    - "SHARPNESS:4:5"         # PLUS random Sharpness IV-V
-  random-enchantment-pool:    # PLUS one random bonus
+    - "SHARPNESS:4:5"         # plus random Sharpness IV-V
+  random-enchantment-pool:    # plus one random bonus
     - "LOOTING:2:3"
     - "SWEEPING_EDGE:2:3"
     - "FIRE_ASPECT:1:2"
 ```
 
+`enchantments`, `enchantment-ranges`, and `random-enchantment-pool` stack. (`enchant-with-levels-min`/`-max`, if set, replaces all three.)
+
 </details>
 
-### Variable Durability
+<details>
 
-Drop pre-damaged items with random wear—makes loot feel "used" and realistic!
+<summary><strong>Pre-damaged ("used") items</strong></summary>
 
 ```yaml
 - type: DIAMOND_SWORD
@@ -738,26 +478,16 @@ Drop pre-damaged items with random wear—makes loot feel "used" and realistic!
   weight: 10.0
   enchantments:
     - "SHARPNESS:4"
-  durability-min: 200        # Minimum damage value
-  durability-max: 800        # Maximum damage value
+  durability-min: 200        # damage value, higher = more worn
+  durability-max: 800
   name: "&bUsed Diamond Sword"
   lore:
     - "&7Found in a Trial Chamber"
-    - "&7Slightly worn but still powerful!"
 ```
 
-**How it works:**
-
-* `durability-min` and `durability-max` are **damage values** (higher = more damaged)
-* Diamond sword max durability: 1561 (so 200-800 damage = 60-50% durability remaining)
-* Perfect for "treasure" items that feel discovered, not crafted
-
-<details>
-
-<summary><strong>Examples</strong></summary>
+`durability-min` / `-max` are damage amounts, not remaining durability. A diamond sword has 1561 max durability, so 200-800 damage leaves it around half to two-thirds intact. Values above the item's max are capped.
 
 ```yaml
-# Heavily worn pickaxe (still useful)
 - type: NETHERITE_PICKAXE
   amount-min: 1
   amount-max: 1
@@ -768,32 +498,47 @@ Drop pre-damaged items with random wear—makes loot feel "used" and realistic!
   durability-min: 500
   durability-max: 1500
   name: "&5Veteran's Pickaxe"
-  lore:
-    - "&7Seen many adventures"
-
-# Lightly damaged armor (great find)
-- type: DIAMOND_HELMET
-  weight: 8.0
-  enchantments:
-    - "PROTECTION:3"
-  durability-min: 50
-  durability-max: 200
-  name: "&bScratched Helmet"
 ```
 
 </details>
 
-{% hint style="warning" %}
-**Durability values are damage amounts!** Higher values = more damaged. Check the max durability for each material to calibrate your ranges.
-{% endhint %}
+<details>
 
-### Combining Everything
+<summary><strong>Goat horns</strong></summary>
 
-You can mix **all** advanced features on a single item!
+```yaml
+- type: GOAT_HORN
+  amount-min: 1
+  amount-max: 1
+  weight: 8.0
+  instrument: PONDER
+  name: "&6Horn of Contemplation"
+```
+
+`instrument` values: `PONDER`, `SING`, `SEEK`, `FEEL` (regular goats); `ADMIRE`, `CALL`, `YEARN`, `DREAM` (screaming goats, rarer). The full form `PONDER_GOAT_HORN` also works.
+
+</details>
 
 <details>
 
-<summary><strong>Example</strong></summary>
+<summary><strong>Custom model data</strong></summary>
+
+```yaml
+- type: DIAMOND_SWORD
+  amount-min: 1
+  amount-max: 1
+  weight: 5.0
+  custom-model-data: 1042
+  name: "&6Special Sword"
+```
+
+Works on any vanilla item and combines with enchantments, lore, and durability ranges.
+
+</details>
+
+<details>
+
+<summary><strong>Everything at once</strong></summary>
 
 ```yaml
 - type: DIAMOND_SWORD
@@ -803,129 +548,77 @@ You can mix **all** advanced features on a single item!
   name: "&5&lUltimate Trial Weapon"
   lore:
     - "&7Found in the deepest chamber"
-    - "&7Radiates ancient power"
   enchantments:
-    - "UNBREAKING:3"          # Fixed: always Unbreaking III
+    - "UNBREAKING:3"
   enchantment-ranges:
-    - "SHARPNESS:4:5"         # Random Sharpness IV-V
+    - "SHARPNESS:4:5"
   random-enchantment-pool:
-    - "LOOTING:2:3"           # One random bonus enchantment
+    - "LOOTING:2:3"
     - "SWEEPING_EDGE:2:3"
     - "FIRE_ASPECT:1:2"
-  durability-min: 100         # Pre-damaged (battle-worn)
+  durability-min: 100
   durability-max: 300
 ```
 
 </details>
 
-This creates an incredible loot item with:
-
-* Custom name and lore
-* Always has Unbreaking III
-* Random Sharpness IV or V
-* ONE random bonus enchantment (Looting/Sweeping/Fire Aspect)
-* Random damage (100-300), making it feel "discovered"
-
-**Perfect for ominous vault jackpots!**
-
 ***
 
-## Understanding Weights
+## Set an item's drop chance (weight)
 
-**Weight determines probability.** Higher weight = more likely to be picked.
+In weighted mode, `weight` is relative. Double a weight and that item comes up twice as often. Weights do not need to add up to anything.
 
 <details>
 
-<summary><strong>Example Breakdown</strong></summary>
+<summary><strong>Worked example</strong></summary>
 
 ```yaml
 weighted-items:
-  - type: DIAMOND          # weight: 10
-  - type: EMERALD          # weight: 20
-  - type: IRON_INGOT       # weight: 15
-  - type: COAL             # weight: 55
+  - type: DIAMOND          # weight 10
+  - type: EMERALD          # weight 20
+  - type: IRON_INGOT       # weight 15
+  - type: COAL             # weight 55
 ```
 
-**Total weight:** 10 + 20 + 15 + 55 = 100
-
-**Probabilities:**
-
-* Diamond: 10/100 = **10%** chance per roll
-* Emerald: 20/100 = **20%** chance per roll
-* Iron: 15/100 = **15%** chance per roll
-* Coal: 55/100 = **55%** chance per roll
+Total weight 100, so per draw: Diamond 10%, Emerald 20%, Iron 15%, Coal 55%. If the total were 200 the same ratios would give half those percentages.
 
 </details>
 
-{% hint style="info" %}
-**Weights don't need to add to 100!** That's just for easy mental math. They're all relative to each other.
-{% endhint %}
-
-### Weight Strategies
-
-**Common items:** High weight (20-50)
-
-```yaml
-- type: IRON_INGOT
-  weight: 30.0
-```
-
-**Uncommon items:** Medium weight (5-20)
-
-```yaml
-- type: DIAMOND
-  weight: 10.0
-```
-
-**Rare items:** Low weight (1-5)
-
-```yaml
-- type: NETHERITE_INGOT
-  weight: 2.0
-```
-
-**Super rare items:** Very low weight (0.1-1)
-
-```yaml
-- type: ENCHANTED_GOLDEN_APPLE
-  weight: 0.5
-```
+Rough starting weights: common items 20-50, uncommon 5-20, rare 1-5, jackpot below 1. Fewer rolls means you want higher weights; more rolls means lower.
 
 ***
 
 ## Drop Chance Modes: Weighted vs Independent
 
-_(Added in 2.0.2.)_ There are **two ways** a table (or a pool) can decide what to drop. You pick one with a single `mode:` line. If you don't add that line, you get the classic **weighted** behaviour — nothing changes for existing tables.
+_(Added in 2.0.2.)_ A table or pool draws its `weighted-items` one of two ways. Set it with a `mode:` line. Leave it out for the classic **weighted** behaviour; existing tables are unchanged.
 
-### The two modes, in plain English
+**Weighted** (default): one shared draw. Each item's `weight` is its share of the draw, all items compete, and the pool makes `min-rolls` to `max-rolls` draws per opening. Adding an item shrinks everything else's share.
 
-**Weighted** _(the default)_ — think of it like a **raffle**. Every item gets some tickets (its `weight`), they all go in one bucket, and the vault draws a few tickets per opening (`min-rolls`–`max-rolls`). Items with more tickets come up more often, but they're all **competing against each other**. Add a new item and everything else's share shrinks a little.
-
-**Independent** — think of it like **each item flipping its own coin**. Every item just has its own **drop chance from 0 to 100%** and rolls on its own — a diamond at 40% means "40% chance, every opening," full stop. Items **don't compete**, so the chances **don't have to add up to 100%**. You can optionally cap how many are allowed to drop at once with `max-items`.
+**Independent**: each item rolls its own coin. `weight` is read as that item's own chance from 0 to 100. Items do not compete and the numbers do not need to total 100. `min-rolls` / `max-rolls` and the Luck bonus are ignored; use `max-items` to cap the haul.
 
 {% hint style="success" %}
-**Which should I use?**
-
-* A handful of items and you want that "one prize per opening" feel → **weighted**.
-* Lots of items (say 30, 50, 130…) and you just want to say "this one drops 20% of the time, that one 5%" without doing any mental math → **independent**. This is the easy one for big tables.
+**Which to use:** a handful of items and you want a "one prize per opening" feel, use **weighted**. Lots of items (30, 50, 130) and you just want to say "this one 20%, that one 5%" with no mental math, use **independent**.
 {% endhint %}
 
-### How to use independent mode
+### Turn on independent mode
 
-Add `mode: independent` to the table (or pool), then give each item a `weight` that now means **its own % chance** (0–100). Optionally add `max-items` to limit how many can drop per opening.
+1. Add `mode: independent` to the table or pool.
+2. Change each item's `weight` to the percentage you want (0 to 100).
+3. Optionally add `max-items` to limit how many can drop at once.
+4. Save and `/trial reload`.
 
 ```yaml
 loot-tables:
   my-big-table:
-    mode: independent      # <-- the only new line that matters
-    max-items: 3           # optional: keep at most 3 of the winners (0 or leave out = no limit)
-    min-rolls: 1           # ignored in independent mode, but kept so you can switch back easily
+    mode: independent
+    max-items: 3           # optional, 0 or omit = no limit
+    min-rolls: 1           # ignored here, kept so you can switch back
     max-rolls: 1
     weighted-items:
       - type: DIAMOND
         amount-min: 1
         amount-max: 2
-        weight: 40.0       # 40% chance to drop, on its own
+        weight: 40.0       # 40% chance on its own
       - type: NETHERITE_SCRAP
         amount-min: 1
         amount-max: 1
@@ -936,64 +629,53 @@ loot-tables:
         weight: 75.0       # 75% chance
 ```
 
-With the table above, every opening: the diamond rolls its own 40%, the scrap its own 10%, the emerald its own 75%. If more than 3 happen to win, 3 are kept at random.
-
-{% hint style="info" %}
-**`weight` is doing double duty on purpose.** In weighted mode it's a raffle-ticket count; in independent mode it's read as a straight 0–100% chance. That's why switching an **existing** table to independent reinterprets each number: an old weight of `10` becomes "10% chance." Anything above 100 just means "always drops" until you lower it. So after switching, glance over your numbers and adjust to taste.
-{% endhint %}
+Every opening the diamond rolls its own 40%, the scrap its own 10%, the emerald its own 75%. If more than 3 win, 3 are kept at random.
 
 {% hint style="warning" %}
-**`min-rolls` / `max-rolls` don't apply in independent mode** (there's no "draws" — every item rolls once). The LUCK bonus is skipped too. Use `max-items` if you want to cap the haul. Guaranteed items still always drop, in both modes.
+Switching an existing table to independent reinterprets every `weight` as a percentage: an old weight of `10` becomes "10% chance", anything over 100 becomes "always". Check your numbers after switching. Guaranteed items still always drop in both modes.
 {% endhint %}
 
-### Doing it from the GUI (no YAML needed)
+### Do it from the GUI
 
-Open `/trial menu` → **Loot Tables** → pick a table. In the editor:
+1. Run `/trial menu`, then **Loot Tables**, then pick a table.
+2. Click the **Roll Mode** button to flip between Weighted and Independent. Item tooltips update to match.
+3. In weighted mode each item's tooltip shows its weight and the rough % per draw.
+4. In independent mode each item shows its own % (shift-click to adjust), and the "Draws per Opening" button becomes a **Max Items** cap.
 
-* There's a **Roll Mode** button — click it to flip between Weighted and Independent. The item tooltips update to match.
-* In **weighted** mode, each item now shows its **weight number _and_ the rough % per draw** right on the tooltip — so you can see and tune the weight without having to disable the item first.
-* In **independent** mode, each item shows its own **drop chance %**, Shift-click adjusts that % up/down, and the "Draws per Opening" button becomes a **Max Items** cap.
-
-{% hint style="success" %}
-**Big tables are now easy to browse, too** _(2.0.1+)_: the loot editor is paginated, so tables with more than 36 items get Previous/Next arrows instead of hiding the extras.
-{% endhint %}
+Big tables are paginated in the editor (2.0.1+), so more than 36 items get Previous/Next arrows.
 
 ***
 
 ## Limiting How Often a Player Can Win an Item (Redeemable)
 
-_(Added in 2.1.0.)_ By default, every item can be won again each time a chamber resets — so a determined player can farm even your rarest drop by resetting the same chamber over and over. The **redeemable** setting lets you cap how often a single player can win a specific item, so special rewards stay special.
+_(Added in 2.1.0.)_ By default every item can be won again after each chamber reset, so a player can farm a rare drop by resetting the same chamber. The `redeemable` setting caps how often one player can win a specific entry. This is what you want for vanilla armour trims (Silence, Flow, Bolt, Wayfinder).
 
-This is exactly what you want for the vanilla **armour trims** (Silence, Flow, Bolt, Wayfinder, and friends): you can make them drop, but make sure each player only gets one.
-
-### The three choices
-
-| Setting | What it means |
+| Value | Meaning |
 | --- | --- |
-| **Every reset** _(default)_ | No limit. The player can win it again after every reset. This is how loot has always worked — leave it here for normal items. |
-| **Once per chamber** | Each player can win this item **only once from this chamber**, and that stays true even after the chamber resets. They can still win it from a _different_ chamber. |
-| **Once ever** | Each player can win this item **only once, ever, from any chamber** on the whole server. The strongest anti-farm option. |
+| `per-reset` _(default)_ | No limit. Winnable again after every reset. Leave the line out for normal items. |
+| `per-chamber` | Each player wins it only once from this chamber, and that stays true after resets. They can still win it from a different chamber. |
+| `once` | Each player wins it only once, ever, from any chamber on the server. |
 
-When a player has already won a capped item, it's quietly taken out of _their_ personal roll — the other items simply fill the gap. Everyone else is unaffected, and nothing changes for players who haven't won it yet.
+Once a player has won a capped entry it is quietly dropped from that player's roll and the other items fill the gap. Nobody else is affected.
 
-{% hint style="success" %}
-**Set it in-game (no YAML needed).** Open `/trial menu` → **Loot Tables** → pick a table → click the item → open its **amount page**. There's a button labelled **"How often can a player get this?"** — click it to cycle through Every reset → Once per chamber → Once ever. Save, and it's written to `loot.yml` for you.
-{% endhint %}
+### Set it from the GUI
 
-### Doing it by hand
+1. Run `/trial menu`, then **Loot Tables**, pick a table, click the item, and open its **amount page**.
+2. Click **"How often can a player get this?"** to cycle through Every reset, Once per chamber, and Once ever.
+3. Save. The plugin writes `redeemable` (and a hidden `redeem-id`) to `loot.yml`.
 
-Add a `redeemable:` line to the item:
+### Set it by hand
 
 ```yaml
 weighted-items:
-  # A trim that each player can only ever win once, server-wide
+  # A trim each player can only ever win once, server-wide
   - type: SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE
     amount-min: 1
     amount-max: 1
     weight: 2.0
     redeemable: once
 
-  # A rare book each player gets once per chamber (re-winnable at other chambers)
+  # A book each player gets once per chamber
   - type: ENCHANTED_BOOK
     amount-min: 1
     amount-max: 1
@@ -1003,19 +685,17 @@ weighted-items:
       - "MENDING:1"
 ```
 
-Accepted values are `per-reset` (the default — you can omit the line entirely), `per-chamber`, and `once`.
+Accepted values: `per-reset` (the default, omit the line), `per-chamber`, `once`.
 
 {% hint style="info" %}
-**About the hidden `redeem-id` line.** When you set a cap from the menu, BTC also writes a `redeem-id:` line (a random code) under the item. That code is how the plugin remembers _which_ item each player has already won, so **don't edit or delete it** — if you do, players who already won the item may be able to win it again. If you're writing the entry entirely by hand and leave `redeem-id` out, BTC fills in a stable one based on the item's type automatically.
+**The hidden `redeem-id` line.** When the menu sets a cap it also writes a random `redeem-id`. That is how the plugin remembers which entry each player has won, so do not edit or delete it. If you write the entry entirely by hand without a `redeem-id`, the plugin fills in a stable one based on the item type.
 {% endhint %}
 
 {% hint style="warning" %}
-**A player's wins are remembered permanently.** "Once ever" and "Once per chamber" claims are stored in the database and there is currently no in-game command to wipe them, so test with a spare (non-op) account. Op accounts are a good way to keep testing, since the redeem cap is checked per player — but remember each op is still capped like anyone else once they've claimed the item.
+Wins are stored in the database permanently and there is no in-game command to wipe them, so test with a spare non-op account. The cap is checked per player, and op accounts are capped too once they have claimed the item.
 {% endhint %}
 
-### Combine with vanilla loot for farm-proof trims
-
-Pair this with the [`VANILLA_TABLE` passthrough](loot.yml.md#vanilla--datapack-loot-tables-passthrough) to hand out the exact vanilla ominous-vault trim set, but only once per player:
+### Farm-proof vanilla trims
 
 ```yaml
 weighted-items:
@@ -1026,14 +706,14 @@ weighted-items:
 ```
 
 {% hint style="info" %}
-**Heads up:** a `VANILLA_TABLE` entry rolls a whole vanilla table, which contains _many_ items — so `per-chamber`/`once` here caps the **entire table entry**, not each individual trim. If you want per-trim control, list the trim templates as their own entries (as in the first example above) and cap each one.
+A `VANILLA_TABLE` entry rolls a whole table of many items, so `per-chamber` / `once` here caps the **whole entry**, not each trim. For per-trim caps, list the trim templates as their own entries and cap each one.
 {% endhint %}
 
 ***
 
-## Guaranteed Items
+## Guaranteed items
 
-Items in `guaranteed-items` ALWAYS drop, regardless of rolls or weight.
+Entries in `guaranteed-items` always drop, ignoring rolls and weight (but still subject to the pool's `chance` and the redeemable cap).
 
 ```yaml
 loot-tables:
@@ -1050,63 +730,112 @@ loot-tables:
         weight: 10.0
 ```
 
-Every player gets 1 Golden Apple + 2-4 random items from weighted-items.
-
-**Use cases:**
-
-* Participation rewards
-* Event tokens
-* Key fragments (for progression systems)
+Every player gets 1 Golden Apple plus 2-4 weighted items. Good for participation rewards, event tokens, or progression fragments.
 
 ***
 
-## Ominous Vault Loot
+## Multi-pool format
 
-The `ominous-default` table is for ominous vaults. Make it WAY better than normal vaults!
+A table can use `pools:` to hold several pools that each roll on their own, like vanilla's common / rare / unique split. Whether a table is single-pool or multi-pool is decided by one thing: if it has a `pools:` key, it is multi-pool. The single-pool format (keys directly under the table name) keeps working and needs no changes.
+
+<details>
+
+<summary><strong>Example</strong></summary>
 
 ```yaml
 loot-tables:
-  ominous-default:
-    min-rolls: 5
-    max-rolls: 8
-    weighted-items:
-      - type: ENCHANTED_GOLDEN_APPLE
-        amount-min: 1
-        amount-max: 1
-        weight: 25.0
-        name: "&6&lOminous Reward"
+  vanilla-style:
+    pools:
+      - name: common
+        min-rolls: 2
+        max-rolls: 3
+        weighted-items:
+          - type: IRON_INGOT
+            amount-min: 3
+            amount-max: 7
+            weight: 30.0
+          - type: GOLD_INGOT
+            amount-min: 2
+            amount-max: 5
+            weight: 25.0
+          - type: ARROW
+            amount-min: 16
+            amount-max: 32
+            weight: 20.0
 
-      - type: HEAVY_CORE
-        amount-min: 1
-        amount-max: 1
-        weight: 8.3
-        name: "&5&lHeavy Core"
-        lore:
-          - "&7Combine with Breeze Rod"
-          - "&7to create the Mace!"
+      - name: rare
+        min-rolls: 1
+        max-rolls: 2
+        weighted-items:
+          - type: DIAMOND
+            amount-min: 1
+            amount-max: 3
+            weight: 15.0
+          - type: EMERALD
+            amount-min: 3
+            amount-max: 8
+            weight: 20.0
+          - type: GOLDEN_APPLE
+            amount-min: 1
+            amount-max: 1
+            weight: 12.0
 
-      - type: NETHERITE_INGOT
-        amount-min: 1
-        amount-max: 2
-        weight: 8.0
+      - name: unique
+        min-rolls: 0
+        max-rolls: 1
+        weighted-items:
+          - type: ENCHANTED_GOLDEN_APPLE
+            amount-min: 1
+            amount-max: 1
+            weight: 3.0
+          - type: NETHERITE_INGOT
+            amount-min: 1
+            amount-max: 1
+            weight: 2.0
 ```
 
-**Design philosophy:**
+The common pool always gives 2-3 items, the rare pool 1-2, the unique pool 0-1. Total 3-6 items with a controlled spread of rarity.
 
-* More rolls (5-8 vs 3-5)
-* Better items (netherite, enchanted golden apples)
-* Unique drops (Heavy Core for Mace crafting)
-* Higher amounts (2-4 golden apples vs 1)
+</details>
+
+The maximum number of pools per table is set by `loot.max-pools-per-table` in `config.yml` (default 5). Pools past the limit are ignored at load.
+
+***
+
+## Vanilla & Datapack Loot Tables (passthrough)
+
+_(Added in 1.5.7.)_ An entry with `type: VANILLA_TABLE` and a `table:` key defers to any loot table registered on the server, vanilla or from a datapack.
+
+```yaml
+weighted-items:
+  - type: VANILLA_TABLE
+    table: "minecraft:chests/trial_chambers/reward"
+    weight: 30.0
+  - type: DIAMOND
+    amount-min: 1
+    amount-max: 3
+    weight: 70.0
+```
+
+When this entry is drawn (30% of draws here), the referenced table is run through the server's own loot engine and every item it produces is added. `amount-min` / `amount-max` do not apply; the table controls its own counts. The entry still counts as one draw of the pool.
+
+| Table key | Contents |
+| --- | --- |
+| `minecraft:chests/trial_chambers/reward` | Normal vault loot |
+| `minecraft:chests/trial_chambers/reward_ominous` | Ominous vault loot |
+| `minecraft:chests/trial_chambers/supply` | Supply chest loot |
+
+Datapack tables use their own namespace, e.g. `mypack:chambers/boss`. An unknown key logs a warning and yields nothing; the rest of the pool still drops.
 
 ***
 
 ## Economy Rewards
 
-Got Vault + an economy plugin? Give money as loot — two ways:
+Pay money as loot two ways.
 
-### Native `economy-rewards` _(recommended, added in 1.5.12)_
+### Native `economy-rewards` (recommended, added in 1.5.12)
 
-Pays money straight through the Vault API, so it works with **any** economy provider (EssentialsX, CMI, …) without hardcoding a plugin's command. Add an `economy-rewards` list at the pool level (or table level in the legacy single-pool format):
+Pays through the Vault API, so it works with any economy provider (EssentialsX, CMI) with no hardcoded command. Add an `economy-rewards` list at the pool level (or table level in the single-pool format):
 
 ```yaml
 loot-tables:
@@ -1119,48 +848,34 @@ loot-tables:
         amount-max: 3
         weight: 10.0
     economy-rewards:
-      - weight: 100.0          # % chance this payout fires (independent per entry)
-        min: 250.0             # random amount between min and max…
+      - weight: 100.0          # % chance this payout fires, rolled on its own
+        min: 250.0             # random amount between min and max
         max: 1500.0
         display-name: "Coins"  # optional label
       - weight: 5.0            # 5% jackpot
-        amount: 10000.0        # …or a fixed amount
+        amount: 10000.0        # fixed amount instead of a range
 ```
 
-* `weight` is a `0`–`100` percent chance, rolled independently per entry (same as `command-rewards`).
-* Use either `amount` (fixed) or `min`/`max` (random range).
-* The deposit runs on the main thread (safe with EssentialsX/CMI); the player gets a "You received \<currency>" message.
-* If **no** Vault economy provider is installed, the reward is simply skipped — other loot is unaffected.
+- `weight` is a 0 to 100 percentage, rolled on its own per entry.
+- Use `amount` (fixed) or `min` / `max` (random range).
+- The deposit runs on the main thread; the player gets a "You received" message.
+- With no Vault economy provider installed the reward is skipped and other loot is unaffected.
+- Economy rewards survive editing the table in the GUI.
 
-{% hint style="success" %}
-Round-trip safe: economy rewards survive editing a table in the in-game loot GUI (they're preserved on save, just like command rewards).
-{% endhint %}
+### Or `command-rewards`
 
-### Or via `command-rewards`
-
-Alternatively, run an economy command. Command rewards go in a **separate `command-rewards` list** — they are NOT items in `weighted-items`.
+Run an economy command instead. Command rewards go in a separate `command-rewards` list, not in `weighted-items`. See [COMMAND Rewards](loot.yml.md#command-rewards-economy--permissions).
 
 ```yaml
-loot-tables:
-  default:
-    min-rolls: 3
-    max-rolls: 5
-    weighted-items:
-      - type: DIAMOND
-        amount-min: 1
-        amount-max: 3
-        weight: 10.0
-    command-rewards:
-      - weight: 25.0
-        commands:
-          - "eco give {player} 1000"
-        display-name: "&6+1000 Coins"
+command-rewards:
+  - weight: 25.0
+    commands:
+      - "eco give {player} 1000"
+    display-name: "&6+1000 Coins"
 ```
 
-See the full [COMMAND Rewards](loot.yml.md#-command-rewards-economy--permissions) section below for complete documentation and examples.
-
 {% hint style="danger" %}
-**`type: COMMAND` inside `weighted-items` is NOT valid** and will log an error. Always use the `command-rewards` list instead.
+`type: COMMAND` inside `weighted-items` is not valid and logs an error. Use the `command-rewards` list.
 {% endhint %}
 
 ***
@@ -1169,7 +884,7 @@ See the full [COMMAND Rewards](loot.yml.md#-command-rewards-economy--permissions
 
 ### Nexo, ItemsAdder, Oraxen, CraftEngine, MythicCrucible
 
-Use `type: CUSTOM_ITEM` with `plugin:` and `item-id:` to drop custom items from supported plugins:
+Use `type: CUSTOM_ITEM` with `plugin:` and `item-id:`.
 
 ```yaml
 weighted-items:
@@ -1199,53 +914,102 @@ weighted-items:
     weight: 1.0
 ```
 
-BetterTrialChambers resolves custom items at runtime using the plugin's API, so the custom item plugin must be installed and enabled on the server.
+| Plugin | `item-id` form |
+| --- | --- |
+| Nexo | namespaced id, e.g. `"namespace:item_name"` |
+| ItemsAdder | namespaced id, e.g. `"namespace:item_name"` |
+| Oraxen | plain id, e.g. `"item_name"` |
+| CraftEngine | namespaced id from your pack, e.g. `"my_pack:item_name"`. A bare id defaults to the `minecraft` namespace, so always prefix custom items. |
+| MythicCrucible | internal Mythic item name, e.g. `"LegendarySword"`. Requires MythicMobs installed. `plugin: Crucible` also works. |
 
-**Supported plugins:**
-
-* **Nexo** — use the namespaced item ID (e.g. `"namespace:item_name"`)
-* **ItemsAdder** — use the namespaced item ID (e.g. `"namespace:item_name"`)
-* **Oraxen** — use the plain item ID (e.g. `"item_name"`)
-* **CraftEngine** — use the namespaced ID as configured in your CraftEngine pack (e.g. `"my_pack:item_name"`). A bare id without a namespace defaults to the `minecraft` namespace (CraftEngine's own `Key.from` behavior), so always prefix with your pack's namespace for custom items.
-* **MythicCrucible** — use the internal Mythic item name (e.g. `"LegendarySword"`). Requires **MythicMobs** installed (Crucible registers its items into the Mythic item manager). Accepts `plugin: MythicCrucible` or the shorter alias `plugin: Crucible`.
-
-You can also stack extra `name:`, `lore:`, and `enchantments:` on top of the resolved item—they will be applied over the custom item's base properties.
+The custom item plugin must be installed and enabled. You can add `name:`, `lore:`, and `enchantments:` on top of the resolved item.
 
 {% hint style="warning" %}
-**Make sure the item IDs are correct!** If the plugin can't find the item, it'll be skipped silently and nothing will drop. Test your loot tables after adding custom items.
-{% endhint %}
-
-{% hint style="info" %}
-**Heads up — custom item plugins are optional integrations.** BetterTrialChambers talks to Nexo, ItemsAdder, Oraxen, CraftEngine, and MythicCrucible through their own APIs at runtime. If one of those plugins releases a big update that changes how their API works, the integration here might stop working until BetterTrialChambers is updated to match. If that happens, the worst case is that the custom item is skipped and a warning appears in the server log — your chamber won't break or crash. Just let me know (open an issue / ping on Modrinth) and I'll push a fix.
+If the plugin cannot find the id, the entry is skipped and nothing drops. Test your tables after adding custom items. If a custom item plugin ships a breaking API change the integration may pause until BTC is updated; the worst case is a skipped item and a console warning, never a crash.
 {% endhint %}
 
 ***
 
-### Custom Model Data (Vanilla Items)
+## Give a chamber its own loot
 
-To give a vanilla item a custom model (for resource pack textures), add `custom-model-data:`:
-
-```yaml
-weighted-items:
-  - type: DIAMOND_SWORD
-    amount-min: 1
-    amount-max: 1
-    weight: 5.0
-    custom-model-data: 1042
-    name: "&6Special Sword"
-    lore:
-      - "&7A sword with a unique appearance"
-```
-
-`custom-model-data` works on any vanilla item type and can be combined with enchantments, lore, durability ranges, etc.
-
-***
-
-## Example Loot Tables
+1. Add a named table to `loot-tables` alongside `default` and `ominous-default`.
+2. Assign it with `/trial loot set <chamber> <normal|ominous> <table>`.
+3. Clear it with `/trial loot clear <chamber> [normal|ominous|all]`; the chamber then falls back to the default tables.
 
 <details>
 
-<summary><strong>Beginner-Friendly Server</strong></summary>
+<summary><strong>Example</strong></summary>
+
+```yaml
+loot-tables:
+  default:
+    min-rolls: 3
+    max-rolls: 5
+    weighted-items:
+      - type: DIAMOND
+        weight: 10.0
+
+  nether-chamber:
+    min-rolls: 4
+    max-rolls: 6
+    weighted-items:
+      - type: BLAZE_ROD
+        amount-min: 3
+        amount-max: 6
+        weight: 25.0
+      - type: FIRE_CHARGE
+        amount-min: 5
+        amount-max: 10
+        weight: 30.0
+      - type: NETHERITE_SCRAP
+        amount-min: 1
+        amount-max: 2
+        weight: 10.0
+      - type: ENCHANTED_BOOK
+        weight: 15.0
+        enchantments:
+          - "FIRE_PROTECTION:4"
+
+  ocean-chamber:
+    min-rolls: 3
+    max-rolls: 5
+    weighted-items:
+      - type: PRISMARINE_CRYSTALS
+        amount-min: 5
+        amount-max: 15
+        weight: 30.0
+      - type: HEART_OF_THE_SEA
+        amount-min: 1
+        amount-max: 1
+        weight: 5.0
+      - type: TRIDENT
+        weight: 3.0
+        enchantments:
+          - "RIPTIDE:3"
+```
+
+```
+/trial loot set NetherChamber normal nether-chamber
+/trial loot set OceanChamber normal ocean-chamber
+```
+
+</details>
+
+### From the GUI
+
+1. Run `/trial menu` and pick the chamber.
+2. Open **Loot Table Overrides**.
+3. Left/right-click **Normal** or **Ominous** to cycle through the tables. Shift-right-click clears the override.
+
+> **Two different buttons.** **Loot Table Overrides** chooses *which* table the chamber uses. The **Normal Loot** / **Ominous Loot** buttons edit the *contents* of whichever table it currently uses. With an override set, those buttons edit the table you pointed at, so edits reach other chambers using it too. Leave the override on `(default)` and the chamber gets its own private `chamber-<name>` table that nothing else touches.
+
+***
+
+## Example tables
+
+<details>
+
+<summary><strong>Beginner-friendly server</strong></summary>
 
 ```yaml
 loot-tables:
@@ -1261,22 +1025,18 @@ loot-tables:
         amount-min: 5
         amount-max: 10
         weight: 30.0
-
       - type: GOLD_INGOT
         amount-min: 3
         amount-max: 8
         weight: 25.0
-
       - type: DIAMOND
         amount-min: 1
         amount-max: 3
         weight: 15.0
-
       - type: EMERALD
         amount-min: 2
         amount-max: 5
         weight: 20.0
-
       - type: ENCHANTED_BOOK
         amount-min: 1
         amount-max: 1
@@ -1285,13 +1045,11 @@ loot-tables:
           - "EFFICIENCY:4"
 ```
 
-Generous amounts, guaranteed golden apple, decent diamond rate. Great for keeping new players engaged!
-
 </details>
 
 <details>
 
-<summary><strong>Hardcore/Competitive Server</strong></summary>
+<summary><strong>Hardcore / competitive server</strong></summary>
 
 ```yaml
 loot-tables:
@@ -1304,22 +1062,18 @@ loot-tables:
         amount-min: 1
         amount-max: 3
         weight: 50.0
-
       - type: GOLD_INGOT
         amount-min: 1
         amount-max: 2
         weight: 30.0
-
       - type: DIAMOND
         amount-min: 1
         amount-max: 1
         weight: 5.0
-
       - type: EMERALD
         amount-min: 1
         amount-max: 2
         weight: 10.0
-
       - type: ENCHANTED_BOOK
         amount-min: 1
         amount-max: 1
@@ -1328,13 +1082,11 @@ loot-tables:
           - "SHARPNESS:3"
 ```
 
-Stingy! Only 1-2 items, low amounts, rare diamonds. Makes every vault opening feel earned.
-
 </details>
 
 <details>
 
-<summary><strong>Economy-Focused Server</strong></summary>
+<summary><strong>Economy-focused server</strong></summary>
 
 ```yaml
 loot-tables:
@@ -1342,51 +1094,33 @@ loot-tables:
     min-rolls: 3
     max-rolls: 5
     weighted-items:
-      # Small payout - common
-      - type: COMMAND
-        weight: 40.0
-        commands:
-          - "eco give {player} 500"
-        display-name: "&a$500"
-        display-material: GOLD_NUGGET
-
-      # Medium payout - uncommon
-      - type: COMMAND
-        weight: 20.0
-        commands:
-          - "eco give {player} 2000"
-        display-name: "&a$2,000"
-        display-material: GOLD_INGOT
-
-      # Large payout - rare
-      - type: COMMAND
-        weight: 5.0
-        commands:
-          - "eco give {player} 10000"
-        display-name: "&6$10,000"
-        display-material: GOLD_BLOCK
-
-      # Still drop some physical items
       - type: DIAMOND
         amount-min: 1
         amount-max: 2
         weight: 10.0
-
       - type: ENCHANTED_BOOK
         amount-min: 1
         amount-max: 1
         weight: 5.0
         enchantments:
           - "MENDING:1"
+    economy-rewards:
+      - weight: 40.0
+        amount: 500.0
+        display-name: "&a$500"
+      - weight: 20.0
+        amount: 2000.0
+        display-name: "&a$2,000"
+      - weight: 5.0
+        amount: 10000.0
+        display-name: "&6$10,000"
 ```
-
-Perfect for servers where money is the primary progression system.
 
 </details>
 
 <details>
 
-<summary><strong>Custom Items + Vanilla Mix</strong></summary>
+<summary><strong>Custom items plus vanilla</strong></summary>
 
 ```yaml
 loot-tables:
@@ -1394,231 +1128,76 @@ loot-tables:
     min-rolls: 3
     max-rolls: 5
     weighted-items:
-      # Custom items from ItemsAdder
       - type: CUSTOM_ITEM
         plugin: ItemsAdder
         item-id: "trial_chamber:trial_token"
         weight: 25.0
-
       - type: CUSTOM_ITEM
         plugin: ItemsAdder
         item-id: "trial_chamber:rare_gem"
         weight: 10.0
-
-      # Vanilla items as filler
       - type: DIAMOND
         amount-min: 1
         amount-max: 3
         weight: 15.0
-
       - type: EMERALD_BLOCK
         amount-min: 1
         amount-max: 1
         weight: 8.0
-
-      # Commands for bonus perks
-      - type: COMMAND
-        weight: 5.0
+    command-rewards:
+      - weight: 5.0
         commands:
           - "lp user {player} permission set chamber.bonus true 3d"
         display-name: "&d3-Day Bonus Perk"
-        display-material: NETHER_STAR
-```
-
-Best of all worlds—custom items, vanilla loot, and special perks.
-
-</details>
-
-***
-
-## Per-Chamber Loot Tables
-
-Want different chambers to drop different loot? You can create multiple tables!
-
-<details>
-
-<summary><strong>Example</strong></summary>
-
-```yaml
-loot-tables:
-  # Main chamber - standard loot
-  default:
-    min-rolls: 3
-    max-rolls: 5
-    weighted-items:
-      - type: DIAMOND
-        weight: 10.0
-
-  # Nether-themed chamber - fire-focused loot
-  nether-chamber:
-    min-rolls: 4
-    max-rolls: 6
-    weighted-items:
-      - type: BLAZE_ROD
-        amount-min: 3
-        amount-max: 6
-        weight: 25.0
-
-      - type: FIRE_CHARGE
-        amount-min: 5
-        amount-max: 10
-        weight: 30.0
-
-      - type: NETHERITE_SCRAP
-        amount-min: 1
-        amount-max: 2
-        weight: 10.0
-
-      - type: ENCHANTED_BOOK
-        weight: 15.0
-        enchantments:
-          - "FIRE_PROTECTION:4"
-
-  # Ocean-themed chamber - water-focused loot
-  ocean-chamber:
-    min-rolls: 3
-    max-rolls: 5
-    weighted-items:
-      - type: PRISMARINE_CRYSTALS
-        amount-min: 5
-        amount-max: 15
-        weight: 30.0
-
-      - type: HEART_OF_THE_SEA
-        amount-min: 1
-        amount-max: 1
-        weight: 5.0
-
-      - type: TRIDENT
-        weight: 3.0
-        enchantments:
-          - "RIPTIDE:3"
 ```
 
 </details>
 
-Then assign the table to a specific chamber with `/trial loot set <chamber> <normal|ominous> <table>`:
+***
 
-```
-/trial loot set NetherChamber normal nether-chamber
-/trial loot set NetherChamber ominous nether-chamber-ominous
-/trial loot set OceanChamber normal ocean-chamber
-```
+## Test a table
 
-Clear per-chamber overrides with `/trial loot clear <chamber> [normal|ominous|all]` — after clearing, the chamber falls back to the default tables in `loot.yml`.
-
-You can also set these overrides from the GUI: `/trial menu` → pick the chamber → **Loot Table Overrides** → left/right-click **Normal** or **Ominous** to cycle through the available tables (shift-right-click clears the override).
-
-> **Two buttons, two different jobs.** On the chamber screen, **Loot Table Overrides** chooses _which_ table the chamber's vaults use. The **Normal Loot** / **Ominous Loot** buttons _edit the contents_ of whichever table it currently uses. If you've set an override, those buttons edit the table you pointed it at — and if other chambers use that same table, your edits reach them too. Leave the override on `(default)` and the chamber gets its own private `chamber-<name>` table that nothing else touches.
+1. Edit `loot.yml`.
+2. Run `/trial reload`.
+3. Run `/trial reset <chamber>` to force an instant reset.
+4. Open vaults and check the loot.
+5. For real numbers, open 30-50 vaults and count what drops. A diamond meant for 10% per roll that shows up in 8 of 150 rolls (5%) means the weights need work.
 
 ***
 
-## Design Tips
+## Common questions
 
-### Balance Philosophy
+**Vaults give no loot / "Loot table not found" with an empty list.** A TAB character in `loot.yml`. See the warning at the top of this page.
 
-**Don't make chambers replace mining/gameplay** Chambers should supplement progression, not replace it. If vaults drop 64 diamonds, why would players mine?
+**Vaults give plain vanilla loot (crossbows, wind charges) and ignore my table.** Check `vaults.loot-mode` in `config.yml`. If it is `VANILLA`, BTC leaves vaults alone. Set it to `PER_PLAYER` and `/trial reload`. Confirm with `/trial info` (the **Vault Loot** line). See [config.yml loot-mode](config.yml.md#vault-settings).
 
-**Reward effort appropriately** Chambers require keys and combat. Make rewards better than what players could get from 5 minutes of mining, but not game-breaking.
+**Can different players get different loot from the same vault?** Yes, with `vaults.loot-mode: PER_PLAYER` (the default). `SHARED` gives only the first player to reach the vault a reward.
 
-**Progression over time** Start conservative. It's easier to buff loot after launch than nerf it (players hate nerfs).
+**Can I use raw NBT for custom items?** Not directly. Use a custom item plugin, or add the item from the GUI (which stores it faithfully via `serialized-item`).
 
-### Weight Tuning
+**What happens if I mistype a Material name?** The plugin logs a warning and skips that entry. Check the console after reloading.
 
-**Test your tables!** Open 20-30 vaults and see if the loot feels right. Use `/trial reset` to quickly test.
+**Can a loot table call another loot table?** Only vanilla and datapack tables, via `type: VANILLA_TABLE`.
 
-**Check the math:**
+**How do I remove an item from vanilla loot?** BTC replaces vault loot with your table, so just do not include the item.
 
-```
-Common items: 40-60% chance
-Uncommon items: 15-30% chance
-Rare items: 5-15% chance
-Super rare items: <5% chance
-```
-
-**Adjust based on rolls:**
-
-* More rolls = lower individual weights
-* Fewer rolls = higher individual weights
-
-***
-
-## Advanced: Conditional Loot (Future Feature)
-
-In future versions, you'll be able to add conditions:
-
-```yaml
-# Example of planned future feature
-weighted-items:
-  - type: DIAMOND
-    weight: 10.0
-    conditions:
-      - "permission:vip.bonus"  # Only VIPs get this
-      - "world:world_nether"    # Only in nether world
-```
-
-Not available yet, but coming soon!
-
-***
-
-## Testing Your Loot
-
-### Quick Test Cycle
-
-1. Edit `loot.yml`
-2. Run `/trial reload`
-3. Run `/trial reset TestChamber` (forces instant reset)
-4. Open vaults
-5. Check if loot feels right
-6. Repeat!
-
-### Statistical Testing
-
-Open 50 vaults, record what you get, calculate actual drop rates. Does it match your intended design?
-
-**Example:**
-
-* Wanted diamonds at 10% per roll
-* Got diamonds in 8/50 vaults with 3 rolls each = 8/150 rolls = 5.3%
-* Weights might be off! Double-check total weight calculations
-
-***
-
-## Common Questions
-
-**"My loot tables aren't loading / vaults give no loot!"** Most likely caused by TAB characters in your YAML file. Check the console for `Loot table not found: default (available: )` - if the available list is empty, your entire loot.yml failed to parse. Open the file in an editor that shows whitespace and replace all TABs with spaces. See the warning at the top of this page for more details.
-
-**"My vaults give plain vanilla loot (crossbows, wind charges…) and ignore my custom table!"** Check `vaults.loot-mode` in `config.yml` — if it's set to `VANILLA`, BetterTrialChambers leaves vaults completely alone and they open with vanilla loot, ignoring every custom table. Set it back to `PER_PLAYER` and run `/trial reload`. You can confirm the current setting with `/trial info` (the **Vault Loot** line). See [config.yml → loot-mode](config.yml.md#vault-settings) for the full explanation.
-
-**"Can I use NBT data for custom items?"** Not directly. Use custom item plugins (ItemsAdder, Oraxen) which handle NBT internally.
-
-**"Can different players get different loot from the same vault?"** Yes! With `vaults.loot-mode: PER_PLAYER` in config.yml (the default), each player has their own loot roll. Set it to `SHARED` if you'd rather only the first player to reach a vault got a reward.
-
-**"What happens if I typo a material name?"** The plugin logs an error and skips that item. Check console after reloading.
-
-**"Can I make loot tables that call other loot tables?"** Not currently, but you can work around it with multiple chambers assigned different tables.
-
-**"How do I remove an item from vanilla loot?"** You can't remove vanilla loot directly—BetterTrialChambers _replaces_ vault loot entirely. Just don't include unwanted items in your weighted-items!
-
-**"Why don't armour trims drop in my chambers?"** Because BetterTrialChambers replaces vault loot with your table, and the vanilla trims aren't in it unless you add them. Add the trim smithing templates (e.g. `SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE`) to your `weighted-items`, or add a `VANILLA_TABLE` entry pointing at `minecraft:chests/trial_chambers/reward_ominous`. To keep them from being farmed, set them to **Once ever** or **Once per chamber** — see [Limiting How Often a Player Can Win an Item](loot.yml.md#limiting-how-often-a-player-can-win-an-item-redeemable).
+**Why don't armour trims drop?** They are not in your table unless you add them. Add the trim smithing templates (e.g. `SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE`) to `weighted-items`, or add a `VANILLA_TABLE` entry for `minecraft:chests/trial_chambers/reward_ominous`. To stop them being farmed, set them to `once` or `per-chamber` (see [Limiting How Often a Player Can Win an Item](loot.yml.md#limiting-how-often-a-player-can-win-an-item-redeemable)).
 
 ***
 
 ## COMMAND Rewards (Economy & Permissions)
 
-Want to give players **money**, **permissions**, **experience**, or run **any console command** when they open vaults? COMMAND rewards let you do exactly that!
-
-### How It Works
-
-Command rewards run console commands with a **probability** (weight-based). They execute alongside regular item drops.
+Command rewards run console commands when a player opens a vault, on a per-entry chance, alongside the item drops. Use them for money, permissions, experience, titles, or anything else.
 
 {% hint style="info" %}
-**Key Point:** Command rewards go in a separate `command-rewards` list, **NOT** in `weighted-items`!
+Command rewards go in a separate `command-rewards` list at the pool level (or table level in the single-pool format), **not** in `weighted-items`.
 {% endhint %}
 
-<details>
+### Add a command reward
 
-<summary><strong>Basic Example</strong></summary>
+1. Add a `command-rewards:` list to the pool or table.
+2. Give each entry a `weight` (0 to 100 percent chance, rolled on its own), a `commands` list, and a `display-name` for the player's message.
+3. Save and `/trial reload`.
 
 ```yaml
 loot-tables:
@@ -1630,40 +1209,30 @@ loot-tables:
         amount-min: 1
         amount-max: 3
         weight: 10.0
-
-    # Command rewards (separate list!)
     command-rewards:
-      - weight: 25.0              # 25% chance
+      - weight: 25.0
         commands:
           - "eco give {player} 1000"
         display-name: "&6+1000 Coins"
-
-      - weight: 10.0              # 10% chance
+      - weight: 10.0
         commands:
           - "lp user {player} permission set special.vault.bonus true"
         display-name: "&5Special Permission Unlocked!"
 ```
 
-When a player opens a vault:
+### Placeholders
 
-1. They get 3-5 random items (from weighted-items)
-2. 25% chance to receive 1000 coins
-3. 10% chance to get a special permission
-4. Player sees message: "&6+1000 Coins" or "&5Special Permission Unlocked!"
-
-</details>
+- `{player}` - the player's name
+- `{uuid}` - the player's UUID
 
 <details>
 
-<summary><strong>Multi-Pool with Bonuses</strong></summary>
-
-Separate item drops from bonus rewards using pools:
+<summary><strong>Put commands in their own pool</strong></summary>
 
 ```yaml
 loot-tables:
   premium-vault:
     pools:
-      # Regular items pool
       - name: items
         min-rolls: 3
         max-rolls: 5
@@ -1677,7 +1246,6 @@ loot-tables:
             amount-max: 3
             weight: 5.0
 
-      # Bonus rewards pool (guaranteed 1 roll)
       - name: bonuses
         min-rolls: 1
         max-rolls: 1
@@ -1686,18 +1254,15 @@ loot-tables:
             commands:
               - "eco give {player} 500"
             display-name: "&6+500 Coins"
-
           - weight: 30.0
             commands:
               - "eco give {player} 1000"
             display-name: "&6+1000 Coins"
-
           - weight: 15.0
             commands:
               - "eco give {player} 5000"
               - "give {player} nether_star 1"
             display-name: "&e&lJACKPOT! &6+5000 Coins"
-
           - weight: 5.0
             commands:
               - "lp user {player} parent add vip"
@@ -1706,32 +1271,18 @@ loot-tables:
             display-name: "&5&lULTRA RARE! &dVIP Rank!"
 ```
 
-Player opens vault:
-
-* Gets 3-5 premium items (diamonds, netherite)
-* Gets exactly 1 bonus (weighted probability):
-  * 50% chance: 500 coins
-  * 30% chance: 1000 coins
-  * 15% chance: 5000 coins + nether star
-  * 5% chance: VIP rank + 10000 coins + elytra
-
 </details>
-
-### Common Examples
 
 <details>
 
-<summary><strong>Economy Rewards (Vault Plugin)</strong></summary>
+<summary><strong>Economy (Vault)</strong></summary>
 
 ```yaml
 command-rewards:
-  # Give money
   - weight: 30.0
     commands:
       - "eco give {player} 1000"
     display-name: "&6+1000 Coins"
-
-  # Take money (punishment vault!)
   - weight: 5.0
     commands:
       - "eco take {player} 500"
@@ -1746,19 +1297,14 @@ command-rewards:
 
 ```yaml
 command-rewards:
-  # Grant permission
   - weight: 15.0
     commands:
       - "lp user {player} permission set special.perk true"
     display-name: "&dSpecial Perk Unlocked!"
-
-  # Add to group
   - weight: 5.0
     commands:
       - "lp user {player} parent add vip"
     display-name: "&5&lVIP RANK UNLOCKED!"
-
-  # Temporary permission (1 hour)
   - weight: 20.0
     commands:
       - "lp user {player} permission settemp special.bonus.1h true 1h"
@@ -1769,180 +1315,58 @@ command-rewards:
 
 <details>
 
-<summary><strong>Experience &#x26; Levels</strong></summary>
+<summary><strong>Experience, items, titles</strong></summary>
 
 ```yaml
 command-rewards:
-  # Give XP
   - weight: 25.0
     commands:
       - "xp add {player} 1000"
     display-name: "&a+1000 XP"
-
-  # Give levels
-  - weight: 10.0
-    commands:
-      - "xp add {player} 10 levels"
-    display-name: "&a+10 Levels"
-```
-
-</details>
-
-<details>
-
-<summary><strong>Items (Vanilla)</strong></summary>
-
-```yaml
-command-rewards:
-  # Give items
   - weight: 20.0
     commands:
       - "give {player} diamond 64"
     display-name: "&b+64 Diamonds"
-
-  # Give multiple items
-  - weight: 10.0
-    commands:
-      - "give {player} elytra 1"
-      - "give {player} firework_rocket 64"
-    display-name: "&5Flight Kit!"
-```
-
-</details>
-
-<details>
-
-<summary><strong>Titles &#x26; Messages</strong></summary>
-
-```yaml
-command-rewards:
   - weight: 5.0
     commands:
       - "title {player} title {\"text\":\"JACKPOT!\",\"color\":\"gold\",\"bold\":true}"
-      - "title {player} subtitle {\"text\":\"You won the grand prize!\",\"color\":\"yellow\"}"
       - "playsound minecraft:ui.toast.challenge_complete master {player}"
-    display-name: "&6&l★ JACKPOT ★"
+    display-name: "&6&l* JACKPOT *"
 ```
 
 </details>
 
-<details>
+### Notes
 
-<summary><strong>Combined Rewards</strong></summary>
-
-```yaml
-command-rewards:
-  # Ultimate reward package
-  - weight: 1.0                 # 1% chance - very rare!
-    commands:
-      - "lp user {player} parent add vip"
-      - "eco give {player} 50000"
-      - "give {player} elytra 1"
-      - "give {player} netherite_ingot 16"
-      - "xp add {player} 100 levels"
-      - "title {player} title {\"text\":\"LEGENDARY REWARD!\",\"color\":\"gold\",\"bold\":true}"
-    display-name: "&6&l⚡ LEGENDARY REWARD PACKAGE ⚡"
-```
-
-</details>
-
-### Available Placeholders
-
-* `{player}` - Player's name
-* `{uuid}` - Player's UUID
-
-Example:
-
-```yaml
-commands:
-  - "eco give {player} 1000"        # Becomes: eco give Steve 1000
-  - "lp user {player} parent add vip"  # Becomes: lp user Steve parent add vip
-```
-
-### Important Notes
-
-{% hint style="warning" %}
-**Commands run as CONSOLE** with OP permissions. Be careful with what commands you allow!
-{% endhint %}
-
-{% hint style="success" %}
-**Weight = Probability**. Higher weight = more likely. A `weight: 50.0` is twice as likely as `weight: 25.0`.
-{% endhint %}
-
-{% hint style="info" %}
-**Multiple commands execute in order**. Great for jackpot rewards that give items + money + permissions!
-{% endhint %}
-
-{% hint style="danger" %}
-**Don't use `type: COMMAND` in weighted-items!** That's incorrect. Use the `command-rewards` list instead.
-{% endhint %}
-
-### Required Plugins
-
-Command rewards work with **any** plugin that uses console commands:
-
-* **Economy**: [Vault](https://www.spigotmc.org/resources/vault.34315/) (+ economy plugin like EssentialsX)
-* **Permissions**: [LuckPerms](https://luckperms.net/)
-* **Custom Items**: ItemsAdder, Oraxen, MMOItems (use their give commands)
-* **Vanilla**: No plugins needed for vanilla commands (give, xp, title, etc.)
+- Commands run as console (op permissions). Be careful what you allow.
+- Multiple `commands` run in order.
+- The player sees a message with the `display-name`.
+- Works with any plugin driven by console commands: Vault plus an economy plugin for money, LuckPerms for permissions, vanilla `give` / `xp` / `title` with no plugin.
 
 ### Troubleshooting
 
-**"Commands aren't running!"**
+**Commands are not running.** Check the console for errors when a vault opens, test the command manually in console, and make sure the required plugins are installed.
 
-* Check console for errors when vault opens
-* Verify command syntax is correct (test in console manually)
-* Ensure required plugins (Vault, LuckPerms) are installed
+**"type: COMMAND is not valid" error.** Move the commands out of `weighted-items` into a `command-rewards` list.
 
-**"Getting 'type: COMMAND is not valid' error"**
-
-* You're using the wrong format! Don't put commands in `weighted-items`
-* Use `command-rewards` list instead (see examples above)
-
-**"Player gets no message"**
-
-* Make sure `display-name` is set
-* Check if commands are actually executing (console logs)
-* Weight might be too low (increase for testing)
-
-**"Economy commands don't work"**
-
-* Vault plugin required for `eco` commands
-* Need an economy plugin (EssentialsX, CMI, etc.) alongside Vault
-* Test command manually in console: `/eco give PlayerName 1000`
+**Player gets no message.** Set `display-name`, and raise the `weight` while testing.
 
 ***
 
-## What's Next?
-
-Now that you've mastered loot configuration, check out:
+## What's next?
 
 {% content-ref url="messages.yml.md" %}
 [messages.yml.md](messages.yml.md)
 {% endcontent-ref %}
 
-Customize all player-facing messages to match your server's style.
-
 {% content-ref url="config.yml.md" %}
 [config.yml.md](config.yml.md)
 {% endcontent-ref %}
 
-The full config reference — reset timing, protection, vault cooldowns, and more.
-
-***
-
-## Pro Tips
-
 {% hint style="success" %}
-**Create loot tiers:** Make tables named `tier1`, `tier2`, `tier3` with progressively better loot. Assign them to chambers in different regions of your world!
-{% endhint %}
-
-{% hint style="info" %}
-**Seasonal events:** Copy your `loot.yml`, modify it for the event (Halloween, Christmas), swap it in, reload. Easy seasonal loot!
+**Loot tiers:** make tables `tier1`, `tier2`, `tier3` with better loot each step and assign them to chambers in different regions.
 {% endhint %}
 
 {% hint style="warning" %}
-**Backup before experimenting!** Copy `loot.yml` before making drastic changes. Easy to restore if you mess up the YAML formatting.
+**Back up `loot.yml` before big changes.** A small YAML mistake is easy to make and easy to undo from a copy.
 {% endhint %}
-
-Happy looting!

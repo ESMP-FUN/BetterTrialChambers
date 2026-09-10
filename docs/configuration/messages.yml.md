@@ -1,169 +1,130 @@
 # messages.yml
 
-Want your plugin to match your server's vibe? The `messages.yml` file lets you customize every single message players see. Whether you're running a serious roleplay server or a meme-filled chaos realm, you've got full control.
+Every message players and admins see comes from `plugins/BetterTrialChambers/messages.yml`. Edit the text, keep the `{placeholders}`, reload.
+
+## How to change a message
+
+1. Open `plugins/BetterTrialChambers/messages.yml` in a plain-text editor.
+2. Find the key you want (use the tables below, or search the file).
+3. Change the text after the colon. Keep the quotes, and keep any `{placeholder}` that was already there, it gets filled in with a real value.
+4. Save the file. Use spaces only, never a TAB character, or the whole file fails to load.
+5. Run `/trial reload` in-game or from console. Changes apply immediately, no restart.
 
 {% hint style="info" %}
-**Location:** `plugins/BetterTrialChambers/messages.yml`
-
-After making changes, reload with `/trial reload`
+**Back up first.** Copy `messages.yml` somewhere safe before a big edit. If the file has a YAML mistake the plugin logs an error and falls back to built-in wording.
 {% endhint %}
-
-{% hint style="info" %}
-**Translating the admin GUI?** As of v1.3.0 every name, lore line, and button label across all 18 admin GUI views also lives here, under a nested `gui.*` section (~330 keys). For the GUI-specific translation conventions — section layout, shared toggle templates, the `gui.common.*` reuse pattern — see the [Localization](localization.md) guide.
-{% endhint %}
-
-<div data-gb-custom-block data-tag="hint" data-style="info">
-
-**New in 1.7.1:** every remaining admin-command message moved into `messages.yml` — new key families `dungeon-*`, `container-*`, `claims-*`, `debug-*`, `reset-*` (confirmation queue), `snapshot-all-*` / `snapshot-missing-*`, `loot-audit-*`, `list-*`, and shared `pagination-*` keys, plus new `help-*` entries and `time-ago`. Older `messages.yml` files keep working — the startup schema check lists any keys your file is missing, and leftover keys from removed messages are harmless.
-
-</div>
 
 ***
 
-## Text formatting — MiniMessage and legacy `&` codes
+## Text formatting
 
-**Added in v1.4.0.** BTC now supports the modern [MiniMessage](https://docs.advntr.dev/minimessage/format.html) syntax in every message — alongside the original `&` colour codes. You can use either format, or freely mix both in the same line.
+You can use either colour style, or mix both on the same line.
 
-{% hint style="success" %}
-**Existing `messages.yml` files keep working unchanged.** Migrating an entry to MiniMessage is opt-in, line by line. Use whichever feels more natural — the parser handles both transparently.
-{% endhint %}
-
-### Legacy `&` codes (still supported)
+### Legacy `&` codes
 
 ```yaml
-&0 - Black          &8 - Dark Gray
-&1 - Dark Blue      &9 - Blue
-&2 - Dark Green     &a - Green
-&3 - Dark Aqua      &b - Aqua
-&4 - Dark Red       &c - Red
-&5 - Dark Purple    &d - Light Purple
-&6 - Gold           &e - Yellow
-&7 - Gray           &f - White
-&l - Bold           &o - Italic
-&n - Underline      &m - Strikethrough
-&k - Magic          &r - Reset
-&#FF5500 - Hex colour (any 6-digit code)
+example: "&6&lGold bold text &r&7then gray"
 ```
+
+`&0`-`&f` are colours, `&l` bold, `&o` italic, `&n` underline, `&m` strikethrough, `&k` magic, `&r` reset. Hex colours: `&#FF5500`.
 
 ### MiniMessage tags
 
 ```yaml
-<black>          <dark_gray>      <bold>            <italic>
-<dark_blue>      <blue>           <underlined>      <strikethrough>
-<dark_green>     <green>          <obfuscated>      <reset>
-<dark_aqua>      <aqua>           <#FF5500>          (any hex)
-<dark_red>       <red>
-<dark_purple>    <light_purple>
-<gold>           <yellow>
-<gray>           <white>
+example: "<gold><bold>Gold bold text</bold></gold> <gray>then gray"
 ```
 
-Plus features that **`&` codes can't do** (these need MiniMessage):
+Named colours like `<gold>`, plus `<bold>`, `<italic>`, `<underlined>`, `<strikethrough>`, `<obfuscated>`, `<reset>`, and hex `<#FF5500>`. MiniMessage also does things `&` codes cannot:
 
 ```yaml
-# Gradients
-"<gradient:#ff0000:#00ff00>Sunset to ocean</gradient>"
-
-# Clickable text — runs a command when clicked
-"<click:run_command:'/trial menu'><yellow>[Open Menu]</yellow></click>"
-
-# Hover tooltips — show extra text on hover
-"<hover:show_text:'Bonus loot table active!'><gold>★</gold></hover>"
-
-# Custom fonts (resource-pack supplied)
-"<font:my_font:fancy>Stylised text</font>"
+gradient:  "<gradient:#ff0000:#00ff00>red to green</gradient>"
+clickable: "<click:run_command:'/trial menu'><yellow>[Open Menu]</yellow></click>"
+hover:     "<hover:show_text:'Extra info'><gold>hover me</gold></hover>"
 ```
 
-### Mixed examples
-
-Both formats work on the same line:
+### Mixing
 
 ```yaml
-"&6&lBOLD GOLD TEXT"                           # legacy
-"<gold><bold>BOLD GOLD TEXT</bold></gold>"     # MiniMessage
-"&aHello <gradient:#ff0000:#0000ff>world</gradient>"   # mixed
-"&#FF5500Custom hex"                           # legacy hex
-"<#FF5500>Custom hex"                          # MM hex
+mixed: "&aHello <gradient:#ff0000:#0000ff>world</gradient>"
 ```
+
+Both hex forms (`&#RRGGBB` and `<#RRGGBB>`) and gradients are supported since v1.4.0. Put `&r` or `<reset>` before a `{player}` or `{chamber}` placeholder so the name does not inherit the previous colour.
 
 {% hint style="info" %}
-**Where MiniMessage shines:** GUI item names and lore, boss bars, and chat messages all support **full MiniMessage fidelity** in v1.4.0+ — gradients, click events, and hover tooltips render correctly everywhere.
-{% endhint %}
-
-{% hint style="success" %}
-**Pro tip:** Use `&r` (or `<reset>`) to clear formatting before placeholders, so player names and chamber names don't inherit the previous colour. Example: `"&aWelcome &r&e{player}!"` resets to default before the yellow name.
+GUI item names and lore, boss bars, and chat all render full MiniMessage (gradients, click, hover).
 {% endhint %}
 
 ***
 
-## Message Categories
+## Keeping messages.yml up to date after upgrades
+
+Automatic since v1.5.19. On startup BetterTrialChambers adds any message keys introduced in the new version to your existing file, keeping their comments, and leaves your edits untouched. The old file is saved as `messages.yml.bak` first. Console shows:
+
+```
+[BTC] messages.yml: added 4 new key(s) introduced in this version
+[BTC] (your existing entries are kept; previous file saved as messages.yml.bak).
+```
+
+Anything your file is still missing falls back to the plugin's built-in wording at runtime, so nothing ever shows as blank. A startup schema check (from v1.4.1) stays as a backstop and lists missing keys in console if the merge ever fails; silence it with `debug.skip-messages-schema-check: true`.
+
+***
+
+## Message keys
+
+Every entry below exists in the shipped `messages.yml` with that exact spelling. Placeholders are shown in `{braces}`. Most messages get the `prefix` automatically; keys whose name contains `boss-bar`, `header`, `help-`, or `list-item` are shown without it.
 
 <details>
 
-<summary><strong>General Messages</strong></summary>
+<summary><strong>General</strong></summary>
 
-```yaml
-prefix: "&8[&6TCP&8]&r "
-reload-success: "&aConfiguration reloaded successfully!"
-no-permission: "&cYou don't have permission to use this command."
-player-only: "&cThis command can only be used by players."
-unknown-command: "&cUnknown subcommand. Use /trial help for help."
-```
-
-#### `prefix`
-
-Prepended to most messages. Keep it short!
-
-**Examples:**
-
-* Minimalist: `"&8[&6TCP&8] "`
-* Fancy: `"&8[&6 &eTrialChamber&6 &8] "`
-* Roleplay: `"&7[&5Ancient Chamber&7] "`
-* No prefix: `""` (empty string)
+| Key | What it is |
+| --- | --- |
+| `prefix` | Text put in front of most messages. Set to `""` for none. |
+| `reload-success` | Config reloaded (older wording, still present). |
+| `config-reloading` / `config-reloaded` | Shown while and after `/trial reload` runs. |
+| `no-permission` | Player lacks the permission for a command. |
+| `player-only` | Command was run from console but needs a player. |
+| `unknown-command` | Unrecognised `/trial` subcommand. |
+| `plugin-starting-up` | Command used before the plugin finished loading. |
 
 </details>
 
 <details>
 
-<summary><strong>Chamber Management</strong></summary>
+<summary><strong>Chamber management and auto-discovery</strong></summary>
 
-```yaml
-chamber-created: "&aChamber &e{chamber}&a created successfully!"
-chamber-not-found: "&cChamber &e{chamber}&c not found."
-chamber-deleted: "&aChamber &e{chamber}&a deleted successfully."
-chamber-list-item: "&e{chamber} &7- &f{world} &7({volume} blocks)"
-chamber-list-empty: "&cNo chambers registered yet."
-no-selection: "&cYou must make a WorldEdit selection first."
-worldedit-not-found: "&cWorldEdit is not installed or enabled."
-```
+| Key | What it is / placeholders |
+| --- | --- |
+| `chamber-created` | Chamber registered. `{chamber}` |
+| `chamber-not-found` | No chamber by that name. `{chamber}` |
+| `chamber-deleted` | Chamber unregistered. `{chamber}` |
+| `chamber-list-item` | One row of `/trial list` (plain). `{chamber}` `{world}` `{volume}` |
+| `chamber-list-empty` | Nothing registered yet. |
+| `chamber-renamed` | Display name set. `{chamber}` `{name}` |
+| `chamber-rename-cleared` | Display name removed. `{chamber}` |
+| `no-selection` | You have no WorldEdit selection. |
+| `worldedit-not-found` | WorldEdit missing or disabled. |
+| `generation-cancelled-name-in-use` | A chamber already uses that name. `{name}` |
+| `error-chamber-creation-failed` | Registration failed, see console. |
+| `discovery-registered` | Auto-discovery registered a natural chamber. `{name}` `{vaults}` `{spawners}` |
+| `discovery-merged` | Auto-discovery grew a chamber into an adjacent region. `{name}` `{vaults}` `{spawners}` |
+| `chamber-created-rollback-tip` | Tip shown after generate: how to undo. `{chamber}` |
+| `undo-cleanup-hint` | Tip shown after `//undo` inside a chamber. `{chamber}` |
 
-**Placeholders:**
+</details>
 
-* `{chamber}` - Chamber name
-* `{world}` - World name
-* `{volume}` - Total blocks in chamber
+<details>
 
-**Customization ideas:**
+<summary><strong>Chamber pause and resume</strong></summary>
 
-Minimalist:
-
-```yaml
-chamber-created: "&a✓ Created {chamber}"
-chamber-deleted: "&c✗ Deleted {chamber}"
-```
-
-Fancy:
-
-```yaml
-chamber-created: "&8[&a✓&8] &fChamber &6{chamber} &fhas been &aregistered&f!"
-```
-
-Roleplay:
-
-```yaml
-chamber-created: "&7The ancient chamber &e{chamber}&7 has been awakened..."
-chamber-deleted: "&7The chamber &e{chamber}&7 fades from memory..."
-```
+| Key | What it is / placeholders |
+| --- | --- |
+| `chamber-paused` | Chamber paused, record kept. `{chamber}` |
+| `chamber-resumed` | Chamber resumed. `{chamber}` |
+| `chamber-already-paused` | Already paused. `{chamber}` |
+| `chamber-not-paused` | Not currently paused. `{chamber}` |
+| `chamber-is-paused` | Player tried to interact with a paused chamber. |
+| `chamber-auto-paused` | Auto-pause tripped by block destruction. `{chamber}` `{count}` `{block}` |
 
 </details>
 
@@ -171,34 +132,14 @@ chamber-deleted: "&7The chamber &e{chamber}&7 fades from memory..."
 
 <summary><strong>Scanning</strong></summary>
 
-```yaml
-scan-started: "&aScanning chamber &e{chamber}&a..."
-scan-complete: "&aScanning complete! Found &e{vaults}&a vaults, &e{spawners}&a spawners, &e{pots}&a decorated pots."
-```
-
-**Placeholders:**
-
-* `{chamber}` - Chamber name
-* `{vaults}` - Number of vaults found
-* `{spawners}` - Number of trial spawners found
-* `{pots}` - Number of decorated pots found
-* `{error}` - Error message (on failure)
-
-**Examples:**
-
-Tech-style:
-
-```yaml
-scan-started: "&7[SYSTEM] Initiating scan of &f{chamber}&7..."
-scan-complete: "&a[SCAN COMPLETE] &7Detected: &f{vaults}x Vaults, {spawners}x Spawners, {pots}x Pots"
-```
-
-Adventure-style:
-
-```yaml
-scan-started: "&7Exploring the depths of &e{chamber}&7..."
-scan-complete: "&aYou've mapped the chamber! Discovered &e{vaults} vaults&a, &e{spawners} monster cages&a, and &e{pots} ancient pots&a!"
-```
+| Key | What it is / placeholders |
+| --- | --- |
+| `scan-started` | Scan begun. `{chamber}` |
+| `scan-complete` | Scan done. `{chamber}` `{vaults}` `{spawners}` `{pots}` |
+| `scan-add-started` | `/trial scan add` re-flood begun. `{chamber}` |
+| `scan-add-grown` | Bounds grew into missed sections. `{chamber}` `{added}` `{vaults}` `{spawners}` |
+| `scan-add-none` | Nothing extra found. `{chamber}` `{reason}` |
+| `usage-scan` | Wrong usage of `/trial scan`. |
 
 </details>
 
@@ -206,79 +147,68 @@ scan-complete: "&aYou've mapped the chamber! Discovered &e{vaults} vaults&a, &e{
 
 <summary><strong>Snapshots</strong></summary>
 
-```yaml
-snapshot-creating: "&aCreating snapshot for &e{chamber}&a..."
-snapshot-created: "&aSnapshot created successfully! (&e{blocks}&a blocks, &e{size}&a)"
-snapshot-restoring: "&aRestoring chamber &e{chamber}&a from snapshot..."
-snapshot-restored: "&aChamber restored successfully!"
-snapshot-failed: "&cSnapshot operation failed: {error}"
-```
+| Key | What it is / placeholders |
+| --- | --- |
+| `snapshot-creating` | Snapshot starting. `{chamber}` |
+| `snapshot-created` | Snapshot saved. `{blocks}` `{size}` |
+| `snapshot-restoring` | Restore starting. `{chamber}` |
+| `snapshot-restored` | Restore finished. |
+| `snapshot-failed` | Snapshot or restore error. `{error}` |
+| `snapshot-not-in-chamber` | Stand in a chamber or name one. |
+| `usage-snapshot` | Wrong usage of `/trial snapshot`. |
+| `gui-creating-snapshot` / `gui-snapshot-created` / `gui-snapshot-create-failed` | Same, from the GUI. `{chamber}` `{error}` |
+| `gui-no-snapshot-exists` / `gui-restoring-snapshot` / `gui-snapshot-restored` / `gui-restore-failed` | Restore, from the GUI. `{chamber}` `{error}` |
 
-**Placeholders:**
+**Bulk snapshot (`/trial snapshot create all` and `missing`):**
 
-* `{chamber}` - Chamber name
-* `{blocks}` - Block count
-* `{size}` - File size (e.g., "1.2 MB")
-* `{error}` - Error message
-
-**Examples:**
-
-Loading bar vibes:
-
-```yaml
-snapshot-creating: "&7[&e▰▰▰▱▱▱&7] Creating snapshot of &f{chamber}&7..."
-snapshot-created: "&7[&a▰▰▰▰▰▰&7] &aSnapshot saved! &7({blocks} blocks, {size})"
-```
-
-Immersive:
-
-```yaml
-snapshot-creating: "&7Capturing the essence of &e{chamber}&7..."
-snapshot-created: "&aThe chamber's memory has been preserved. &7({blocks} blocks)"
-```
+| Key | What it is / placeholders |
+| --- | --- |
+| `snapshot-all-none-registered` | No chambers registered. |
+| `snapshot-all-covered` | Every chamber already has one. `{count}` |
+| `snapshot-all-start` | Backfill starting. `{count}` `{mode}` |
+| `snapshot-all-mode-force` / `snapshot-all-mode-missing` | Fills the `{mode}` slot above. |
+| `snapshot-all-progress-list-item` | Progress line. `{done}` `{total}` |
+| `snapshot-all-complete` | Backfill done. `{created}` `{failed}` |
+| `snapshot-all-failed-part` | Appended when some failed. `{failed}` |
+| `snapshot-missing-none` | Nothing missing a snapshot. |
+| `snapshot-missing-page-header` | Header of the missing list. `{page}` `{maxPage}` `{total}` |
+| `snapshot-missing-list-item` | One missing chamber (clickable). `{chamber}` `{world}` |
+| `snapshot-missing-list-item-console` | Same, plain, for console. `{chamber}` `{world}` |
+| `snapshot-reminder` | Join reminder about un-snapshotted chambers. `{count}` `{chambers}` |
 
 </details>
 
 <details>
 
-<summary><strong>Chamber Resets</strong></summary>
+<summary><strong>Chamber resets</strong></summary>
 
-```yaml
-chamber-reset-warning: "&eWarning: &7{chamber} will reset in &6{time}&7!"
-chamber-reset-complete: "&aThe chamber has been reset!"
-chamber-resetting: "&aResetting chamber &e{chamber}&a..."
-reset-success: "&aChamber &e{chamber}&a reset successfully!"
-reset-failed: "&cFailed to reset chamber: {error}"
-```
+| Key | What it is / placeholders |
+| --- | --- |
+| `chamber-reset-warning` | Countdown warning before a reset. `{chamber}` `{time}` |
+| `chamber-reset-complete` | Reset finished (generic broadcast). |
+| `chamber-cleared-broadcast` | Announced when players clear every spawner. `{chamber}` `{players}` |
+| `chamber-resetting` | Reset in progress. `{chamber}` |
+| `reset-success` | Reset done. `{chamber}` |
+| `reset-failed` | Reset error. `{error}` |
+| `usage-reset` | Wrong usage of `/trial reset`. |
+| `gui-forcing-reset` / `gui-chamber-reset-complete` / `gui-reset-failed` | Reset from the GUI. `{chamber}` `{error}` |
+| `gui-reset-scheduled` | Reset scheduled from the GUI. `{chamber}` `{seconds}` |
+| `gui-exit-scheduled` / `gui-exit-warning` / `gui-player-ejected` | Players being cleared out before a reset. `{chamber}` `{seconds}` |
+| `gui-no-players-in-chamber` / `gui-players-ejected` | Eject action result. `{chamber}` `{count}` |
 
-**Placeholders:**
+**Reset confirmation queue (`global.reset-require-confirmation`):**
 
-* `{chamber}` - Chamber name
-* `{time}` - Time remaining (e.g., "5m 30s")
-* `{error}` - Error message
-
-**Examples:**
-
-Urgent/dramatic:
-
-```yaml
-chamber-reset-warning: "&c&l⚠ WARNING ⚠ &e{chamber} &cresets in &4&l{time}&c!"
-chamber-reset-complete: "&6✦ &fThe chamber has been restored to its former glory!"
-```
-
-Calm/informative:
-
-```yaml
-chamber-reset-warning: "&7[Notice] &e{chamber}&7 will reset in &f{time}&7. Please finish up!"
-chamber-reset-complete: "&aReset complete. The chamber is ready for new challengers."
-```
-
-Roleplay/lore:
-
-```yaml
-chamber-reset-warning: "&7The magic sustaining &e{chamber}&7 weakens... &6{time}&7 until collapse!"
-chamber-reset-complete: "&dThe chamber's ancient power has been renewed!"
-```
+| Key | What it is / placeholders |
+| --- | --- |
+| `reset-pending-empty` | Nothing awaiting confirmation. |
+| `reset-pending-page-header` | Header of the pending list. `{count}` |
+| `reset-pending-list-item` | One chamber awaiting confirmation. `{chamber}` |
+| `reset-confirm-usage` | Wrong usage of `/trial reset confirm`. |
+| `reset-confirm-all` | Confirmed a batch. `{count}` |
+| `reset-confirm-all-none` | Nothing was pending. |
+| `reset-confirmed` | Confirmed one chamber. `{chamber}` |
+| `reset-confirm-not-pending` | That chamber was not waiting. `{chamber}` |
+| `reset-ready-notify` | Operator notice that a chamber is ready to reset. `{chamber}` |
 
 </details>
 
@@ -286,757 +216,370 @@ chamber-reset-complete: "&dThe chamber's ancient power has been renewed!"
 
 <summary><strong>Vaults</strong></summary>
 
-```yaml
-vault-opened: "&aYou opened a {type} Vault!"
-vault-cooldown: "&cThis {type} Vault is on cooldown for &e{time}&c."
-vault-locked: "&cYou have already opened this {type} Vault! It will unlock when the chamber resets."
-vault-reset: "&aVault cooldown reset for &e{player}&a."
-wrong-key-type: "&cYou need a {required_type} Trial Key to open this vault!"
-no-key: "&cYou need a Trial Key to open this vault!"
-vault-not-found: "&cNo vault found at this location."
-vault-loot-table-missing: "&cVault configuration error! Loot table not found. Please contact an admin."
-vault-no-loot-generated: "&cVault is empty! No loot was generated. Please contact an admin."
-vault-error: "&cAn error occurred while opening the vault. Please try again."
-```
+| Key | What it is / placeholders |
+| --- | --- |
+| `vault-opened` | Vault opened. `{type}` |
+| `vault-cooldown` | Vault on personal cooldown. `{type}` `{time}` |
+| `vault-locked` | Already opened, unlocks on reset. `{type}` |
+| `vault-locked-shared` | Someone else opened this shared vault first. `{player}` `{type}` |
+| `vault-cooldown-shared` | Shared vault, reopens later. `{player}` `{type}` `{time}` |
+| `vault-reopened` | Paid keys to reopen a vault. `{type}` `{cost}` |
+| `vault-reopen-need` | Hold matching keys to reopen. `{type}` `{cost}` |
+| `vault-reset` | An admin cleared your cooldown. `{player}` |
+| `wrong-key-type` | Wrong key in hand. `{required_type}` |
+| `no-key` | No trial key at all. |
+| `vault-not-found` | No vault at that spot. |
+| `vault-loot-table-missing` | Configured loot table does not exist (key kept). |
+| `vault-no-loot-generated` | Loot table produced nothing (key kept). |
+| `vault-error` | Vault block could not be updated (key kept). |
+| `wild-vault-place-blocked` / `orphan-spawner-needs-silk-touch` | Placing a vault outside a chamber; retrieving a lone spawner needs Silk Touch. |
 
-**Placeholders:**
+**Vault cooldown admin (`/trial vault reset` and `unlockall`):**
 
-* `{type}` - Vault type: "Normal" or "Ominous"
-* `{time}` - Cooldown time remaining
-* `{player}` - Player name
-* `{required_type}` - Key type needed
-
-**New in v1.2.19:**
-
-* `vault-loot-table-missing` - Shown when the configured loot table doesn't exist (indicates configuration error)
-* `vault-no-loot-generated` - Shown when a loot table exists but generates no items (empty weighted-items or bad config)
-
-**New in v1.2.21:**
-
-* `vault-locked` - Shown when a player has already opened a vault (permanent cooldown until reset)
-* `vault-error` - Shown when the vault block state can't be updated (rare edge case)
-
-{% hint style="info" %}
-**Note:** In v1.2.19+, if error messages appear, **keys are NOT consumed**. The player keeps their key so they can try again once the issue is resolved.
-{% endhint %}
-
-{% hint style="success" %}
-**v1.2.21+:** Vault cooldowns now use Paper's native API. The `vault-locked` message is shown for permanent cooldowns (vanilla behavior). This automatically resets when the chamber is restored from snapshot.
-{% endhint %}
-
-**Examples:**
-
-Excited/rewarding:
-
-```yaml
-vault-opened: "&a&l✓ UNLOCKED! &r&7You opened a {type} Vault!"
-vault-cooldown: "&7This {type} Vault has already been looted. Try again in &e{time}&7."
-```
-
-Mystical:
-
-```yaml
-vault-opened: "&dThe {type} Vault yields its treasures to you..."
-vault-cooldown: "&5The vault's magic has not yet regenerated. Return in &d{time}&5."
-```
-
-Gameplay-focused:
-
-```yaml
-vault-opened: "&6[LOOT] &f{type} Vault opened!"
-vault-cooldown: "&e[COOLDOWN] &7{time} remaining"
-```
+| Key | What it is / placeholders |
+| --- | --- |
+| `vault-reset-usage-hint` | Usage hint. `{chamber}` |
+| `vault-reset-all-start` / `vault-reset-all-complete` | Resetting a whole chamber. `{chamber}` `{count}` |
+| `vault-reset-single-start` / `vault-reset-single-complete` | Resetting one vault. `{id}` |
+| `vault-unlockall-complete` | Reopened vaults for everyone. `{count}` `{chamber}` |
+| `vault-unlockall-every-chamber` | Fills `{chamber}` when the target is `all`. |
+| `vault-mode-vanilla-hint` | Note shown when vault handling is left to vanilla. |
+| `usage-vault-reset` / `usage-vault-unlockall` | Wrong usage. |
 
 </details>
 
 <details>
 
-<summary><strong>Trial Keys</strong></summary>
+<summary><strong>Trial keys and preset spawner items</strong></summary>
 
-```yaml
-key-given: "&aGave &e{amount}&a {type} Trial Key(s) to &e{player}&a."
-key-invalid-amount: "&cInvalid amount. Must be a positive number."
-key-check: "&e{player}&a has &e{normal}&a Normal Key(s) and &e{ominous}&a Ominous Key(s)."
-```
-
-**Placeholders:**
-
-* `{amount}` - Number of keys
-* `{type}` - "Normal" or "Ominous"
-* `{player}` - Player name
-* `{normal}` - Normal key count
-* `{ominous}` - Ominous key count
+| Key | What it is / placeholders |
+| --- | --- |
+| `key-given` | Keys handed out. `{amount}` `{type}` `{player}` |
+| `key-invalid-amount` | Amount was not a positive number. |
+| `key-check` | Key counts for a player. `{player}` `{normal}` `{ominous}` |
+| `usage-key` / `usage-key-give` / `usage-key-check` | Wrong usage of `/trial key`. |
+| `error-ominous-key-unavailable` | This server version has no Ominous Trial Keys. |
+| `give-received` / `give-sent` | `/trial give` result. `{amount}` `{preset}` `{player}` |
+| `give-usage` / `give-available` / `give-no-presets` / `give-unknown-preset` / `give-bad-amount` / `give-needs-target-from-console` / `give-build-failed` / `give-inventory-full` | `/trial give` errors and hints. `{presets}` `{preset}` `{value}` `{error}` |
 
 </details>
 
 <details>
 
-<summary><strong>Statistics</strong></summary>
+<summary><strong>Statistics and leaderboards</strong></summary>
 
-```yaml
-stats-header: "&6=== Statistics for {player} ==="
-stats-chambers: "&eChambers Completed: &f{count}"
-stats-normal-vaults: "&eNormal Vaults Opened: &f{count}"
-stats-ominous-vaults: "&eOminous Vaults Opened: &f{count}"
-stats-mobs: "&eMobs Killed: &f{count}"
-stats-deaths: "&eDeaths: &f{count}"
-stats-time: "&eTime Spent: &f{time}"
-statistics-disabled: "&cStatistics are disabled in the configuration."
-invalid-stat-type: "&cInvalid stat type. Use: chambers, normal, ominous, mobs, or time"
-```
-
-**Placeholders:**
-
-* `{player}` - Player name
-* `{count}` - Stat count
-* `{time}` - Formatted time (e.g., "2h 15m")
-
-**Customization:**
-
-Clean list:
-
-```yaml
-stats-header: "&7───── &6Stats: {player} &7─────"
-stats-chambers: "&8▸ &7Chambers: &f{count}"
-stats-normal-vaults: "&8▸ &7Normal Vaults: &f{count}"
-stats-ominous-vaults: "&8▸ &7Ominous Vaults: &f{count}"
-```
-
-Game-style:
-
-```yaml
-stats-header: "&6╔═══════════════════════╗\n&6║ &fStats: {player}\n&6╚═══════════════════════╝"
-stats-chambers: "  &e⚔ Chambers Beaten: &a{count}"
-stats-normal-vaults: "  &e🔓 Normal Vaults: &a{count}"
-```
+| Key | What it is / placeholders |
+| --- | --- |
+| `stats-header` | Stats title. `{player}` |
+| `stats-chambers` / `stats-normal-vaults` / `stats-ominous-vaults` / `stats-mobs` / `stats-deaths` | One stat line. `{count}` |
+| `stats-time` | Time spent line. `{time}` |
+| `statistics-disabled` | Stats turned off in config. |
+| `invalid-stat-type` | Bad stat name given. |
+| `leaderboard-header` | Leaderboard title. `{stat}` |
+| `leaderboard-entry` | One leaderboard row. `{rank}` `{player}` `{value}` |
+| `leaderboard-empty` | No stats recorded yet. |
 
 </details>
 
 <details>
 
-<summary><strong>Leaderboards</strong></summary>
+<summary><strong>Entering, leaving, dying, protection</strong></summary>
 
-```yaml
-leaderboard-header: "&6=== Top Players - {stat} ==="
-leaderboard-entry: "&e#{rank} &f{player}&7: &a{value}"
-leaderboard-empty: "&7No statistics recorded yet."
-```
-
-**Placeholders:**
-
-* `{stat}` - Stat type (e.g., "Chambers Completed")
-* `{rank}` - Player's rank (1, 2, 3...)
-* `{player}` - Player name
-* `{value}` - Stat value
-
-**Examples:**
-
-Medal system:
-
-```yaml
-leaderboard-header: "&6&l🏆 TOP PLAYERS - {stat} 🏆"
-leaderboard-entry: "&7{rank}. &f{player} &8- &e{value}"
-```
-
-With actual medals for top 3 (requires creative formatting):
-
-```yaml
-# For top 3, manually format with different entries if your plugin supports it
-leaderboard-entry: "&e#{rank} &f{player}&7: &a{value}"
-# Could be: 🥇 #1, 🥈 #2, 🥉 #3 for top 3
-```
+| Key | What it is / placeholders |
+| --- | --- |
+| `chamber-entered` | Player entered a chamber. `{chamber}` |
+| `chamber-exited` | Player left a chamber. |
+| `player-died-in-chamber` | Death notice. `{player}` `{chamber}` |
+| `teleported-to-exit` | Sent to a chamber's exit point. `{chamber}` |
+| `cannot-break-blocks` / `cannot-place-blocks` / `cannot-access-container` | Protection blocked the action. |
+| `tunnel-only-outer-wall` | Only the outer wall may be tunnelled. |
+| `cannot-claim-in-chamber` | Land claim overlaps a chamber. `{chamber}` |
+| `cannot-use-enchant-in-chamber` | That enchant is disabled in chambers. |
+| `pvp-disabled-in-chamber` | PvP is off in chambers. |
+| `cannot-teleport-into-chamber` | Teleport into a chamber blocked. |
+| `cannot-enter-chamber` | No permission to enter this chamber. |
 
 </details>
 
 <details>
 
-<summary><strong>Chamber Completion &#x26; Entry</strong></summary>
+<summary><strong>Type labels (used inside other messages)</strong></summary>
 
-```yaml
-chamber-entered: "&7Entered chamber: &e{chamber}"
-chamber-exited: "&7Left chamber"
-player-died-in-chamber: "&c{player} died in {chamber}"
-```
-
-**Placeholders:**
-
-* `{chamber}` - Chamber name
-* `{player}` - Player name
-
-**Examples:**
-
-Achievement-style:
-
-```yaml
-chamber-entered: "&7➜ Entering &e{chamber}&7..."
-chamber-exited: "&7← Leaving chamber"
-```
-
-Subtle:
-
-```yaml
-chamber-entered: "&8[&7{chamber}&8]"
-chamber-exited: ""
-```
-
-Dramatic:
-
-```yaml
-player-died-in-chamber: "&c☠ &7{player} fell in &c{chamber}"
-```
+| Key | Default | Used for |
+| --- | --- | --- |
+| `vault-type-normal` / `vault-type-ominous` | `Normal` / `Ominous` | The `{type}` in vault messages. |
+| `wave-type-normal` / `wave-type-ominous` | `Trial` / `Ominous` | The `{type}` in `spawner-wave-complete`. |
+| `wave-boss-type-normal` / `wave-boss-type-ominous` | `Trial Spawner` / `Ominous Trial` | Spawner boss bar labels. |
 
 </details>
 
 <details>
 
-<summary><strong>Protection</strong></summary>
+<summary><strong>Chamber info (`/trial info &#x3C;chamber>`)</strong></summary>
 
-```yaml
-cannot-break-blocks: "&cYou cannot break blocks in a Trial Chamber!"
-cannot-place-blocks: "&cYou cannot place blocks in a Trial Chamber!"
-cannot-access-container: "&cYou cannot access containers in a Trial Chamber!"
-```
-
-**Customization:**
-
-Strict:
-
-```yaml
-cannot-break-blocks: "&4[DENIED] &cBreaking blocks is not allowed here."
-```
-
-Funny:
-
-```yaml
-cannot-break-blocks: "&cHey! Stop that! This isn't your chamber to break."
-cannot-place-blocks: "&cNo block placing in the ancient ruins, thanks."
-```
-
-Immersive:
-
-```yaml
-cannot-break-blocks: "&7An ancient magic prevents you from damaging the structure."
-cannot-place-blocks: "&7The chamber's magic rejects your attempt to alter it."
-```
+| Key | What it is / placeholders |
+| --- | --- |
+| `info-header` | Title. `{chamber}` |
+| `info-display-name` | Display name line. `{name}` |
+| `info-world` | World line. `{world}` |
+| `info-bounds` | Corner coordinates. `{minX}` `{minY}` `{minZ}` `{maxX}` `{maxY}` `{maxZ}` |
+| `info-volume` | Block count. `{volume}` |
+| `info-exit` | Exit line. `{exit}` |
+| `info-reset-interval` | Reset interval. `{interval}` |
+| `info-last-reset` | Last reset time. `{time}` |
+| `info-snapshot` | Snapshot status. `{status}` |
+| `info-paused` | Shown when the chamber is paused. |
+| `info-exit-location-set` / `info-exit-location-not-set` | Fills `{exit}` above. `{x}` `{y}` `{z}` |
+| `info-snapshot-created` / `info-snapshot-not-created` | Fills `{status}` above. |
+| `exit-set` | Exit point saved. `{chamber}` |
+| `usage-setexit` | Wrong usage of `/trial setexit`. |
 
 </details>
 
 <details>
 
-<summary><strong>Teleportation</strong></summary>
+<summary><strong>Time formatting</strong></summary>
 
-```yaml
-teleported-to-exit: "&aTeleported to exit of chamber &e{chamber}&a."
-```
+| Key | Default | Notes |
+| --- | --- | --- |
+| `time-days` / `time-hours` / `time-minutes` / `time-seconds` | `{days}d` etc. | Non-zero units are joined with spaces, e.g. `2d 5h 30m`. |
+| `time-never` | `Never` | No such event yet. |
+| `time-now` | `Just now` | Durations under a minute. |
+| `time-ago` | `{time} ago` | Wraps a formatted duration for relative timestamps. |
 
-**Placeholders:**
-
-* `{chamber}` - Chamber name
-
-**Examples:**
-
-Magical:
-
-```yaml
-teleported-to-exit: "&7You've been whisked away to safety..."
-```
-
-Simple:
-
-```yaml
-teleported-to-exit: "&7→ Exit"
-```
+Used for cooldowns, reset warnings, `/trial info`, stats and leaderboards.
 
 </details>
 
 <details>
 
-<summary><strong>Chamber Info</strong></summary>
+<summary><strong>Help menu (`/trial help`)</strong></summary>
 
-```yaml
-info-header: "&6=== Chamber Info: {chamber} ==="
-info-world: "&eWorld: &f{world}"
-info-bounds: "&eBounds: &f{minX},{minY},{minZ} to {maxX},{maxY},{maxZ}"
-info-volume: "&eVolume: &f{volume} blocks"
-info-exit: "&eExit: &f{exit}"
-info-reset-interval: "&eReset Interval: &f{interval}"
-info-last-reset: "&eLast Reset: &f{time}"
-info-snapshot: "&eSnapshot: &f{status}"
-```
+One line per command. All start with `help-`:
 
-**Placeholders:**
-
-* `{chamber}` - Chamber name
-* `{world}` - World name
-* `{minX}`, `{minY}`, `{minZ}`, `{maxX}`, `{maxY}`, `{maxZ}` - Coordinates
-* `{volume}` - Block count
-* `{exit}` - Exit location or "Not set"
-* `{interval}` - Reset interval (e.g., "48 hours")
-* `{time}` - Last reset time
-* `{count}` - Count of vaults/spawners
-* `{status}` - Snapshot status
+`help-header`, `help-list`, `help-info`, `help-generate`, `help-paste`, `help-scan`, `help-scan-add`, `help-setexit`, `help-snapshot`, `help-snapshot-bulk`, `help-snapshot-missing`, `help-reset`, `help-pause`, `help-resume`, `help-rename`, `help-delete`, `help-loot`, `help-mobs`, `help-vault`, `help-vault-unlockall`, `help-key`, `help-give`, `help-stats`, `help-leaderboard`, `help-menu`, `help-dungeon`, `help-setup`, `help-container`, `help-claims`, `help-debug`, `help-update`, `help-reload`.
 
 </details>
 
 <details>
 
-<summary><strong>Time Formatting</strong></summary>
+<summary><strong>Saved selection regions (`/trial generate value`)</strong></summary>
 
-```yaml
-time-days: "{days}d"
-time-hours: "{hours}h"
-time-minutes: "{minutes}m"
-time-seconds: "{seconds}s"
-time-never: "Never"
-time-now: "Just now"
-time-ago: "{time} ago"
-```
-
-**Placeholders:**
-
-* `{days}`, `{hours}`, `{minutes}`, `{seconds}` - Time values
-* `{time}` (in `time-ago`) - The already-formatted duration
-
-Used for cooldowns, reset warnings, `/trial info`, stats and leaderboards. Non-zero units are joined with spaces, like `"2d 5h 30m"`; `time-ago` wraps that for relative timestamps ("5m ago") and `time-now` replaces durations under a minute. _As of 1.7.1 these keys are actually applied everywhere durations are shown (they previously existed but were unused)._
-
-**Examples:**
-
-Verbose:
-
-```yaml
-time-days: "{days} days"
-time-hours: "{hours} hours"
-time-minutes: "{minutes} minutes"
-time-seconds: "{seconds} seconds"
-```
-
-Ultra-minimal:
-
-```yaml
-time-days: "{days}d"
-time-hours: "{hours}h"
-time-minutes: "{minutes}m"
-time-seconds: "{seconds}s"
-```
+| Key | What it is / placeholders |
+| --- | --- |
+| `wevar-saved` / `wevar-save-failed` | Saving your selection under a name. `{name}` |
+| `wevar-deleted` / `wevar-not-found` | Deleting or missing a saved region. `{name}` |
+| `wevar-list-header` / `wevar-list-item` / `wevar-list-empty` | The saved-region list. `{name}` `{world}` `{minX}`..`{maxZ}` |
 
 </details>
 
 <details>
 
-<summary><strong>System Messages</strong></summary>
+<summary><strong>Schematic paste (`/trial paste`)</strong></summary>
 
-```yaml
-plugin-starting-up: "&eBetterTrialChambers is still starting up. Please try again in a moment..."
-```
-
-Shown when commands are used before the plugin finishes async initialization.
-
-</details>
-
-<details>
-
-<summary><strong>Info Display Format</strong></summary>
-
-```yaml
-# Used in /trial info output
-info-exit-location-set: "&a{x}, {y}, {z}"
-info-exit-location-not-set: "&cNot set"
-info-snapshot-created: "&aCreated"
-info-snapshot-not-created: "&cNot created"
-```
-
-**Placeholders:**
-
-* `{x}`, `{y}`, `{z}` - Coordinates
-
-These are displayed as values in the chamber info command output.
+| Key | What it is / placeholders |
+| --- | --- |
+| `paste-loading` | Reading schematic size. |
+| `paste-preview-shown` | Preview particles shown. `{schematic}` `{x}` `{y}` `{z}` `{width}` `{height}` `{length}` |
+| `paste-confirm-hint` | Type confirm or cancel. `{time}` |
+| `paste-confirming` / `paste-success` / `paste-failed` | Paste running / done / failed. `{schematic}` `{x}` `{y}` `{z}` |
+| `paste-cancelled` / `paste-timeout` | Cancelled or expired. |
+| `paste-undo-hint` | Reminder that `//undo` reverses it. |
+| `worldedit-not-available` | WorldEdit or FAWE missing. |
+| `schematic-usage` / `schematic-usage-hint` / `schematic-not-found` / `schematic-no-schematics` | Usage and missing-file messages. `{list}` `{name}` |
+| `error-invalid-coordinates` | Bad `x y z` given to `/trial paste`. |
 
 </details>
 
 <details>
 
-<summary><strong>Spawner Waves</strong></summary>
+<summary><strong>Spawner waves</strong></summary>
 
-```yaml
-spawner-wave-complete: "&a✓ {type} Spawner wave complete! &7Killed &e{killed}&7 mobs in &f{duration}"
-
-# Boss bar messages (no prefix added - displayed on boss bar)
-spawner-wave-boss-bar-complete: "Wave Complete!"
-spawner-wave-boss-bar-ominous: "Ominous Trial - Wave {wave}"
-spawner-wave-boss-bar-normal: "Trial Spawner - Wave {wave}"
-spawner-wave-boss-bar-progress: "{type} - {killed}/{total}"
-```
-
-**Placeholders:**
-
-* `{type}` - Spawner type: "Trial" or "Ominous"
-* `{killed}` - Number of mobs killed
-* `{total}` - Total mobs expected
-* `{duration}` - Time to complete (e.g., "1m 30s")
-* `{wave}` - Wave number
-
-**Examples:**
-
-Celebratory:
-
-```yaml
-spawner-wave-complete: "&6🎉 &e{type} Wave Cleared! &7{killed} mobs defeated in {duration}!"
-spawner-wave-boss-bar-complete: "✓ Victory!"
-```
-
-Competitive:
-
-```yaml
-spawner-wave-complete: "&a[WAVE COMPLETE] &7{killed} kills in &f{duration}"
-spawner-wave-boss-bar-progress: "{killed}/{total} eliminated"
-```
+| Key | What it is / placeholders |
+| --- | --- |
+| `spawner-wave-complete` | Wave cleared (chat). `{type}` `{killed}` `{duration}` |
+| `spawner-wave-boss-bar-complete` | Boss bar text when a wave is done. |
+| `spawner-wave-boss-bar-ominous` / `spawner-wave-boss-bar-normal` | Boss bar title per spawner type. `{wave}` |
+| `spawner-wave-boss-bar-progress` | Boss bar progress text. `{type}` `{killed}` `{total}` |
 
 </details>
 
 <details>
 
-<summary><strong>Spectator Mode</strong></summary>
+<summary><strong>Spectator mode</strong></summary>
 
-```yaml
-spectate-offer: "&7You died in &e{chamber}&7. Would you like to spectate?"
-spectate-hint: "&7Type &aspectate &7to watch or &cno &7to respawn normally."
-spectate-offer-expired: "&7Spectate offer expired."
-spectate-started: "&aYou are now spectating &e{chamber}&a!"
-spectate-exit-hint: "&7Type &eexit &7to leave spectator mode."
-spectate-exited: "&7You have left spectator mode."
-spectate-declined: "&7Spectator mode declined."
-spectate-boundary-warning: "&cYou cannot leave the chamber while spectating!"
-spectate-no-players: "&7No other players are in the chamber to spectate."
-spectate-chamber-not-found: "&cThe chamber no longer exists."
-```
-
-**Placeholders:**
-
-* `{chamber}` - Chamber name
-
-**Examples:**
-
-Encouraging:
-
-```yaml
-spectate-offer: "&7Tough luck! Want to watch your teammates in &e{chamber}&7?"
-spectate-started: "&a👀 Spectating &e{chamber}&a - Cheer them on!"
-```
-
-Roleplay:
-
-```yaml
-spectate-offer: "&7Your spirit lingers near &e{chamber}&7... Watch from beyond?"
-spectate-started: "&d✦ &7Your spirit observes the trial of &e{chamber}&7..."
-spectate-exited: "&7Your spirit returns to the mortal plane."
-```
+| Key | What it is / placeholders |
+| --- | --- |
+| `spectate-offer` / `spectate-hint` | Offer shown after dying in a chamber. `{chamber}` |
+| `spectate-offer-expired` | Offer timed out. |
+| `spectate-started` / `spectate-exit-hint` / `spectate-exited` / `spectate-declined` | Entering, using, leaving spectator mode. `{chamber}` |
+| `spectate-boundary-warning` | Tried to leave the chamber while spectating. |
+| `spectate-no-players` | No one to watch. |
+| `spectate-chamber-not-found` | The chamber is gone. |
 
 </details>
 
 <details>
 
-<summary><strong>GUI Action Messages</strong></summary>
+<summary><strong>Per-chamber loot overrides and audit</strong></summary>
 
-```yaml
-# Chamber Operations
-gui-chamber-world-not-loaded: "&cChamber world not loaded!"
-gui-teleport-to-center: "&aTeleported to center of {chamber}"
-gui-forcing-reset: "&eForcing reset for '{chamber}'..."
-gui-chamber-reset-complete: "&aChamber '{chamber}' has been reset!"
-gui-reset-failed: "&cFailed to reset chamber: {error}"
-gui-no-players-in-chamber: "&eNo players are currently in this chamber."
-gui-players-ejected: "&aEjected {count} player(s) from '{chamber}'!"
-gui-reset-scheduled: "&eChamber '{chamber}' will reset in {seconds} seconds."
-gui-exit-scheduled: "&ePlayers will be ejected from '{chamber}' in {seconds} seconds."
-gui-exit-warning: "&cYou will be ejected from this chamber in {seconds} seconds!"
-gui-player-ejected: "&eYou have been ejected from the chamber!"
-
-# Snapshot Operations
-gui-no-snapshot-exists: "&cNo snapshot exists for this chamber!"
-gui-restoring-snapshot: "&eRestoring snapshot for '{chamber}'..."
-gui-snapshot-restored: "&aSnapshot restored!"
-gui-restore-failed: "&cFailed to restore: {error}"
-gui-creating-snapshot: "&eCreating snapshot for '{chamber}'..."
-gui-snapshot-created: "&aSnapshot created!"
-gui-snapshot-create-failed: "&cFailed to create snapshot: {error}"
-
-# Chamber Settings
-gui-reset-interval-set: "&aReset interval set to {value}"
-gui-reset-interval-failed: "&cFailed to update reset interval"
-gui-exit-location-set: "&aExit location set to your current position"
-gui-exit-location-failed: "&cFailed to set exit location"
-gui-no-exit-location: "&cNo exit location set for this chamber"
-gui-teleport-to-exit: "&aTeleported to exit location"
-gui-spawner-cooldown-set: "&aSpawner cooldown set to {value}"
-gui-spawner-cooldown-failed: "&cFailed to update spawner cooldown"
-gui-spawner-cooldown-reset: "&aSpawner cooldown reset to global config"
-
-# Loot Table Settings
-gui-no-loot-tables: "&cNo loot tables available"
-gui-loot-table-set: "&a{type} loot table set to: {table}"
-gui-loot-table-failed: "&cFailed to set loot table"
-gui-loot-table-cleared: "&a{type} loot table override cleared"
-gui-loot-clear-failed: "&cFailed to clear loot table override"
-
-# Loot Editor
-gui-hold-item-to-add: "&cHold an item to add!"
-gui-item-added-to-loot: "&aAdded {item} to loot table"
-gui-loot-changes-saved: "&aLoot table changes saved!"
-gui-loot-pool-saved: "&aPool '{pool}' changes saved!"
-
-# Info Messages
-gui-pool-create-hint: "&eTo add a new pool, edit loot.yml directly and /trial reload"
-gui-pool-create-coming-soon: "&7GUI pool creation coming soon!"
-```
-
-**Placeholders:**
-
-* `{chamber}` - Chamber name
-* `{count}` - Number of players
-* `{seconds}` - Time in seconds
-* `{error}` - Error message
-* `{value}` - Setting value (e.g., "5 minutes", "Enabled")
-* `{type}` - Vault/loot type: "Normal" or "Ominous"
-* `{table}` - Loot table name
-* `{item}` - Item type name
-* `{pool}` - Pool name
-
-**Customization:**
-
-Tech-style:
-
-```yaml
-gui-forcing-reset: "&7[SYSTEM] Initiating reset of &f{chamber}&7..."
-gui-chamber-reset-complete: "&a[COMPLETE] &7Chamber &f{chamber}&7 restored"
-gui-reset-scheduled: "&7[SCHEDULED] &f{chamber}&7 reset in &e{seconds}s"
-```
-
-Immersive:
-
-```yaml
-gui-forcing-reset: "&7The ancient magic begins to stir in &e{chamber}&7..."
-gui-chamber-reset-complete: "&d✦ &7The chamber &e{chamber}&7 has been renewed!"
-gui-player-ejected: "&7An unseen force gently pushes you from the chamber..."
-```
+| Key | What it is / placeholders |
+| --- | --- |
+| `loot-set-success` | Override set. `{type}` `{chamber}` `{table}` |
+| `loot-clear-success` | Override cleared. `{chamber}` |
+| `loot-table-not-found` | Table name not in loot.yml. `{table}` |
+| `loot-info-header` / `loot-info-normal` / `loot-info-ominous` / `loot-info-default` | `/trial loot info` output. `{chamber}` `{table}` |
+| `loot-list-header` / `loot-list-item` | `/trial loot list` output. `{table}` |
+| `usage-loot` / `usage-loot-set` / `usage-loot-clear` / `usage-loot-info` | Wrong usage. |
+| `error-loot-set-failed` / `error-no-loot-tables` / `error-invalid-type-loot-clear` | Loot command errors. |
+| `loot-audit-clean` / `loot-audit-found` / `loot-audit-group-list-item` / `loot-audit-entry-list-item` / `loot-audit-more-list-item` / `loot-audit-hint` | `/trial loot audit` (pre-1.5.0 entries that lost NBT). `{count}` `{group}` `{kind}` `{index}` `{material}` `{reason}` |
+| `inventory-full` / `loot-received` / `loot-money-received` | Loot delivery to a player. `{item}` `{amount}` |
 
 </details>
 
 <details>
 
-<summary><strong>Help Messages</strong></summary>
+<summary><strong>Per-player container loot (`/trial container`)</strong></summary>
 
-```yaml
-help-header: "&6=== BetterTrialChambers Commands ==="
-help-scan: "&e/trial scan <chamber> &7- Scan for vaults/spawners"
-help-generate: "&e/trial generate <mode> ... &7- Register chamber from various sources"
-# ... (all help entries)
-```
+| Key | What it is / placeholders |
+| --- | --- |
+| `container-tp` / `container-teleported` | Teleported to a container template. `{x}` `{y}` `{z}` `{index}` |
+| `container-template-reset` / `container-template-reset-none` | Revert a container to vanilla per-player rolls. `{x}` `{y}` `{z}` |
+| `container-materialize-start` / `container-materialize-done` | Scanning a chamber for containers. `{chamber}` `{count}` |
+| `container-cleared-copies` / `container-cleared-templates` | Clearing player copies or templates. `{count}` |
+| `container-usage` / `container-usage-action` / `container-usage-index` | Usage strings. `{action}` |
+| `container-list-page-header` / `container-list-stats` / `container-list-item` / `container-list-more` / `container-list-empty-hint` | The container list. `{chamber}` `{state}` `{templates}` `{copies}` `{index}` `{x}` `{y}` `{z}` `{items}` `{count}` |
+| `container-state-on` / `container-state-off` | Fills `{state}` above. |
+| `container-no-template` / `container-resetone-success` / `container-resetone-failed` | Acting on one container by number. `{index}` `{count}` |
+| `container-world-not-loaded` | Chamber world is not loaded. |
 
-Customize the entire help menu to match your server's command style!
+</details>
 
-**Examples:**
+<details>
 
-Compact:
+<summary><strong>Pagination and list locator</strong></summary>
 
-```yaml
-help-header: "&6Commands:"
-help-scan: "&e/trial scan <chamber> &8▸ &7Scan for blocks"
-help-generate: "&e/trial generate <mode> &8▸ &7Register chamber"
-```
+| Key | What it is / placeholders |
+| --- | --- |
+| `pagination-list-item` | Prev/Next row template. `{prev}` `{next}` |
+| `pagination-prev-active` / `pagination-prev-disabled` / `pagination-next-active` / `pagination-next-disabled` | The clickable arrows. `{command}` |
+| `list-page-header` | `/trial list` page header. `{page}` `{maxPage}` `{total}` |
+| `chamber-list-item-interactive` | Clickable `/trial list` row. `{chamber}` `{world}` `{volume}` |
+| `list-current-inside` / `list-current-none` / `list-current-nearest` | `/trial list current`. `{chamber}` `{volume}` `{distance}` `{x}` `{y}` `{z}` |
 
-Detailed:
+</details>
 
-```yaml
-help-header: "&6╔════════════════════════════╗\n&6║ &fBetterTrialChambers Commands\n&6╚════════════════════════════╝"
-help-generate: "&e/trial generate wand <name>\n  &7Registers a chamber from your WorldEdit selection"
-```
+<details>
+
+<summary><strong>Debug and land-claim scan</strong></summary>
+
+| Key | What it is / placeholders |
+| --- | --- |
+| `debug-usage` | `/trial debug` usage. |
+| `debug-structure-no-world` / `debug-structure-running` / `debug-structure-list-item` / `debug-structure-summary` | Structure self-check output. `{world}` `{y}` `{flag}` `{verdict}` `{what}` `{detail}` `{passed}` `{total}` |
+| `debug-schema-reading` / `debug-schema-page-header` / `debug-schema-missing-list-item` / `debug-schema-table-list-item` | `/trial debug schema` output. `{type}` `{table}` `{columns}` `{flag}` |
+| `claims-usage` / `claims-no-integration` / `claims-scanning` / `claims-conflicts-found` / `claims-no-conflicts` | `/trial claims scan`. `{count}` |
+
+</details>
+
+<details>
+
+<summary><strong>Procedural dungeon assembly (`/trial dungeon`)</strong></summary>
+
+All keys start with `dungeon-`:
+
+`dungeon-usage`, `dungeon-pos-set` (`{label}` `{x}` `{y}` `{z}`), `dungeon-usage-capture`, `dungeon-need-positions`, `dungeon-capturing` / `dungeon-captured` / `dungeon-capture-failed` (`{id}` `{blocks}` `{connectors}` `{tags}` `{error}`), `dungeon-usage-generate`, `dungeon-generating` / `dungeon-generated` / `dungeon-generate-failed` / `dungeon-generate-failed-console` (`{name}` `{seed}` `{error}`), `dungeon-list-empty` / `dungeon-list-page-header` (`{templates}`), `dungeon-usage-delete` / `dungeon-deleted` / `dungeon-delete-not-found` (`{id}`), and the import family `dungeon-usage-import`, `dungeon-import-bad-path`, `dungeon-import-not-found`, `dungeon-importing`, `dungeon-import-unsupported`, `dungeon-import-empty`, `dungeon-import-complete`, `dungeon-import-list-item`, `dungeon-import-more-list-item`, `dungeon-import-note`, `dungeon-import-failed` (`{file}` `{extension}` `{count}` `{connectors}` `{id}` `{blocks}` `{tags}` `{error}`).
+
+</details>
+
+<details>
+
+<summary><strong>Custom mob providers (`/trial mobs`)</strong></summary>
+
+Command output starts with `mobs-`:
+
+`mobs-usage-root`, `mobs-usage-providers`, `mobs-usage-chamber`, `mobs-usage-provider`, `mobs-usage-addremove`, `mobs-providers-header`, `mobs-providers-entry` (`{id}` `{name}` `{status}`), `mobs-status-available` / `mobs-status-unavailable`, `mobs-list-provider` / `mobs-list-normal` / `mobs-list-ominous` (`{chamber}` `{provider}` `{mobs}`), `mobs-list-empty`, `mobs-list-falls-back`, `mobs-provider-unknown` / `mobs-provider-set` / `mobs-provider-update-failed` (`{provider}`), `mobs-bad-wave-type`, `mobs-already-present` / `mobs-not-present` / `mobs-added` / `mobs-removed` / `mobs-update-failed` (`{id}` `{wave}` `{chamber}`), `mobs-vanilla-warning` (`{chamber}`), `mobs-unknown-action` (`{action}`).
+
+GUI equivalents start with `gui-provider-` and `gui-mob-`: `gui-provider-set` / `gui-provider-failed`, `gui-mob-input-prompt` / `gui-mob-input-cancelled` / `gui-mob-input-no-chamber` / `gui-mob-input-duplicate` / `gui-mob-input-added` / `gui-mob-input-failed`, `gui-mob-remove-missing` / `gui-mob-removed` / `gui-mob-remove-failed` (`{section}` `{id}`).
+
+</details>
+
+<details>
+
+<summary><strong>GUI action messages</strong></summary>
+
+Feedback shown in chat after a click in the admin GUI. All start with `gui-`:
+
+| Key | What it is / placeholders |
+| --- | --- |
+| `gui-chamber-world-not-loaded` | Chamber's world is not loaded. |
+| `gui-teleport-to-center` / `gui-teleport-to-exit` | Teleport buttons. `{chamber}` |
+| `gui-reset-interval-set` / `gui-reset-interval-failed` | Change reset interval. `{value}` |
+| `gui-exit-location-set` / `gui-exit-location-failed` / `gui-no-exit-location` | Set or use the exit point. |
+| `gui-spawner-cooldown-set` / `gui-spawner-cooldown-failed` / `gui-spawner-cooldown-reset` / `gui-spawner-cooldown-reset-failed` | Per-chamber spawner cooldown. `{value}` |
+| `gui-broadcast-reset-enabled` / `gui-broadcast-reset-disabled` / `gui-broadcast-reset-failed` / `gui-broadcast-reset-global-override` | Per-chamber reset-broadcast toggle. |
+| `gui-no-loot-tables` / `gui-loot-table-set` / `gui-loot-table-failed` / `gui-loot-table-cleared` / `gui-loot-clear-failed` | Per-chamber loot table override. `{type}` `{table}` |
+| `gui-hold-item-to-add` / `gui-item-added-to-loot` / `gui-item-removed-from-loot` | Loot editor add and remove. `{item}` |
+| `gui-loot-changes-saved` / `gui-loot-pool-saved` / `gui-loot-pool-vanished` | Loot editor save. `{pool}` |
+| `gui-loot-deposit-added` | Bulk-add deposit chest closed. `{count}` |
+| `gui-pool-create-hint` / `gui-pool-create-coming-soon` | Pool creation is loot.yml only for now. |
+| `gui-expand-teleported` / `gui-expand-running` / `gui-expand-grown` / `gui-expand-none` | Travel and Expand button. `{chamber}` `{added}` `{vaults}` `{spawners}` |
+| `gui-rename-input-prompt` / `gui-rename-input-cancelled` / `gui-rename-input-set` / `gui-rename-input-failed` | Rename via the GUI chat prompt. `{chamber}` `{name}` |
+| `error-menu-failed` | GUI failed to open. `{error}` |
+
+</details>
+
+<details>
+
+<summary><strong>Command usage and error strings</strong></summary>
+
+Wrong-usage hints all start with `usage-`, general errors with `error-`. Present keys:
+
+`usage-scan`, `usage-setexit`, `usage-snapshot`, `usage-delete`, `usage-pause`, `usage-resume`, `usage-rename`, `usage-reset`, `usage-generate` and the `usage-generate-*` family (`value`, `value-save`, `value-delete`, `value-extra`, `coords`, `coords-legacy`, `wand`, `blocks`, `help-value`, `help-or-coords`, `help-or-wand`, `help-or-blocks`), `usage-vault-reset`, `usage-vault-unlockall`, `usage-key`, `usage-key-give`, `usage-key-check`, `usage-loot`, `usage-loot-set`, `usage-loot-clear`, `usage-loot-info`.
+
+`error-chamber-creation-failed`, `error-world-not-loaded` (`{world}` `{name}`), `error-region-too-small` (`{minXZ}` `{minY}` `{dx}` `{dy}` `{dz}`), `error-region-too-large` (`{maxVolume}` `{volume}`), `error-invalid-type`, `error-invalid-type-loot-clear`, `error-player-not-found`, `player-not-found` (`{player}`), `error-ominous-key-unavailable`, `error-menu-failed` (`{error}`), `error-loot-set-failed`, `error-no-loot-tables`, `error-invalid-coordinates`.
+
+`generate-rounding-note` / `generate-rounding-info` (`{requested}` `{actual}` `{overhead}` `{volume}`) explain block-count rounding for `/trial generate blocks`.
+
+</details>
+
+<details>
+
+<summary><strong>Plugin info (`/trial info` with no chamber)</strong></summary>
+
+All start with `plugin-info-`:
+
+`plugin-info-header`, `plugin-info-version` (`{version}`), `plugin-info-authors` (`{authors}`), `plugin-info-database` (`{type}`), `plugin-info-chambers` (`{count}`), `plugin-info-platform` (`{platform}`), `plugin-info-integrations-header`, `plugin-info-integration-worldedit` / `-worldguard` / `-papi` / `-vault` (`{status}`), `plugin-info-config-header`, `plugin-info-config-loot-mode` (`{mode}`), `plugin-info-config-spawner-waves` / `-spectator` / `-statistics` (`{status}`).
+
+</details>
+
+<details>
+
+<summary><strong>Admin GUI text and the setup tour</strong></summary>
+
+Every item name, lore line and button label in the admin GUI lives under the nested `gui:` section (roughly 330 keys), and the `/trial setup` tour text lives under `setup:`. These are grouped one section per view. Because there are so many and they follow their own conventions, they are covered in the [Localization](localization.md) guide rather than listed here.
 
 </details>
 
 ***
 
-## Complete Theme Examples
+## Notes on coverage
 
-<details>
-
-<summary><strong>Minimalist Theme</strong></summary>
-
-```yaml
-prefix: "&8[&6TCP&8] "
-chamber-created: "&a✓ Created {chamber}"
-chamber-deleted: "&c✗ Deleted {chamber}"
-vault-opened: "&a{type} vault unlocked"
-vault-cooldown: "&7Cooldown: &e{time}"
-chamber-reset-warning: "&e{chamber} &7resets in {time}"
-stats-header: "&7─── &6{player} &7───"
-```
-
-**Vibe:** Clean, no-nonsense, modern.
-
-</details>
-
-<details>
-
-<summary><strong>Fantasy/Roleplay Theme</strong></summary>
-
-```yaml
-prefix: "&7[&5Ancient Trials&7] "
-chamber-created: "&7The chamber &e{chamber}&7 awakens from its slumber..."
-chamber-deleted: "&7The memory of &e{chamber}&7 fades into legend..."
-vault-opened: "&dThe {type} Vault bestows its treasures upon you!"
-vault-cooldown: "&5The vault's magic has not yet recovered. Return in &d{time}&5."
-chamber-reset-warning: "&7The magic of &e{chamber}&7 wanes... &6{time}&7 until renewal!"
-chamber-reset-complete: "&d✦ The chamber's ancient power has been restored! ✦"
-stats-header: "&5╔════════════════════════╗\n&5║ &fLegend of {player}\n&5╚════════════════════════╝"
-```
-
-**Vibe:** Immersive, magical, story-driven.
-
-</details>
-
-<details>
-
-<summary><strong>Competitive/PvP Theme</strong></summary>
-
-```yaml
-prefix: "&c[&4PvP&c] "
-chamber-created: "&c[NEW ARENA] &f{chamber} &cregistered"
-vault-opened: "&a[LOOTED] &f{type} Vault"
-vault-cooldown: "&e[ON COOLDOWN] &7{time} remaining"
-chamber-reset-warning: "&4⚠ ARENA RESET: &c{time}"
-player-died-in-chamber: "&c☠ {player} &7was slain in &c{chamber}"
-stats-header: "&4╔════════════════════╗\n&4║ &c{player} Stats\n&4╚════════════════════╝"
-leaderboard-header: "&4&l⚔ TOP FIGHTERS - {stat} ⚔"
-```
-
-**Vibe:** Intense, competitive, action-focused.
-
-</details>
-
-<details>
-
-<summary><strong>Casual/Friendly Theme</strong></summary>
-
-```yaml
-prefix: "&b[Trial] "
-chamber-created: "&aWoohoo! Chamber &e{chamber}&a is ready to go!"
-vault-opened: "&a🎉 You got loot from a {type} vault!"
-vault-cooldown: "&eOops! This vault is still cooling down. Try again in &6{time}&e!"
-chamber-reset-warning: "&eHeads up! &b{chamber}&e is resetting in &6{time}&e. Wrap it up!"
-stats-header: "&b=== How's {player} doing? ==="
-cannot-break-blocks: "&cHey now! No breaking stuff in here 😊"
-```
-
-**Vibe:** Friendly, approachable, lighthearted.
-
-</details>
+- Keys under `gui:` and `setup:` are real and translatable but not enumerated on this page (see [Localization](localization.md)).
+- `reload-success` still ships alongside the newer `config-reloaded`; both are harmless to keep.
+- Leftover keys from removed features do no harm. The startup merge only adds keys, it never deletes yours.
 
 ***
 
-## Multi-Language Support
-
-Want to support multiple languages? You can create separate message files!
-
-1. Copy `messages.yml` to `messages_es.yml` (Spanish), `messages_fr.yml` (French), etc.
-2. Translate all messages
-3. Use a language switcher plugin to change which file is loaded per-player
-
-{% hint style="info" %}
-**Note:** BetterTrialChambers doesn't have built-in per-player language switching (yet), but you can manually swap files and reload for server-wide language changes.
-{% endhint %}
-
-***
-
-## Pro Tips
-
-{% hint style="success" %}
-**Test your messages!** Trigger each message in-game to see how it looks in chat. Some look great in the config but ugly in-game.
-{% endhint %}
-
-{% hint style="warning" %}
-**Don't overdo colors.** Too many colors = eyesore. Stick to 2-3 main colors for consistency.
-{% endhint %}
-
-{% hint style="info" %}
-**Use prefixes wisely.** If you have a very long prefix, consider shortening it or removing it entirely for certain messages (like warnings).
-{% endhint %}
-
-***
-
-## Color Palette Ideas
-
-### Earthy/Natural
-
-* Primary: `&a` (green), `&e` (yellow)
-* Accent: `&6` (gold), `&7` (gray)
-
-### Mystical/Magical
-
-* Primary: `&d` (light purple), `&5` (dark purple)
-* Accent: `&b` (aqua), `&f` (white)
-
-### Tech/Modern
-
-* Primary: `&b` (cyan), `&f` (white)
-* Accent: `&7` (gray), `&8` (dark gray)
-
-### Fire/Danger
-
-* Primary: `&c` (red), `&6` (gold)
-* Accent: `&4` (dark red), `&e` (yellow)
-
-***
-
-## Keeping messages.yml up-to-date after plugin upgrades
-
-**Since 1.5.19 this is automatic.** On startup, BetterTrialChambers merges any message keys added in the new release into your existing `messages.yml` — **with their comments** — while leaving your existing translations and customisations untouched. The previous file is saved as `messages.yml.bak` first. So new keys just appear; you never have to delete and regenerate the file.
-
-What you'll see in console when keys are added:
-
-```
-[BTC] messages.yml: added 4 new key(s) introduced in this version
-[BTC] (your existing entries are kept; previous file saved as messages.yml.bak).
-```
-
-**Older behaviour (before 1.5.19):** the file was only written when absent, so upgraders' files were missing new keys and the plugin fell back to the literal text `<missing: key.name>` in chat / GUI / boss bars. A startup schema check (v1.4.1) warned about this; with the auto-merge it no longer triggers, but it remains as a backstop if a merge ever fails.
-
-{% hint style="info" %}
-**Translating?** Your edits are safe across updates — the merge only **adds** missing keys, it never changes or removes your values. See [Localization](localization.md) for translating the new `{type}` labels (`vault-type-normal` / `vault-type-ominous`, `wave-type-*`, `wave-boss-type-*`) and other player-facing text.
-{% endhint %}
-
-***
-
-## Applying Changes
-
-After editing `messages.yml`:
+## Applying changes
 
 ```
 /trial reload
 ```
 
-All messages update immediately. No restart needed!
+All messages update immediately, no restart needed.
 
-***
-
-## Common Questions
-
-**"Can I remove the prefix from all messages?"** Yes! Set `prefix: ""` (empty string).
-
-**"What if I want different prefixes for different message types?"** You'll need to manually add prefixes to individual messages instead of using the global prefix.
-
-**"Can I use hex color codes?"** Yes — since **v1.4.0**. Use legacy `&#FF5500` or MiniMessage `<#FF5500>` (and gradients like `<gradient:#FF5500:#00AAFF>…</gradient>`). See the **Text formatting — MiniMessage and legacy `&` codes** section near the top of this page.
-
-**"What if I mess up the YAML formatting?"** The plugin will fail to load messages and log errors. Always backup before editing!
-
-**"Can I add custom messages for my own plugins?"** BetterTrialChambers only uses the messages defined here. For custom messages, you'd need to modify the plugin or request new placeholder support.
-
-***
-
-## What's Next?
-
-You've completed the configuration trilogy!
-
-Where to go next:
+## Related pages
 
 {% content-ref url="loot.yml.md" %}
 [loot.yml.md](loot.yml.md)
@@ -1046,8 +589,6 @@ Where to go next:
 [config.yml.md](config.yml.md)
 {% endcontent-ref %}
 
-{% content-ref url="../reference/commands.md" %}
-[commands.md](../reference/commands.md)
+{% content-ref url="localization.md" %}
+[localization.md](localization.md)
 {% endcontent-ref %}
-
-Now go make those messages uniquely yours!
