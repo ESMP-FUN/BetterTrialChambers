@@ -10,7 +10,7 @@ import org.bukkit.event.HandlerList
 /**
  * Fired by `ChamberDiscoveryManager` after a candidate chamber has been
  * validated (size, vault count, center-Y) but **before** it is registered in
- * the database. Cancellable — listeners may abort the auto-registration.
+ * the database. Cancellable; listeners may abort the auto-registration.
  *
  * Useful for custom whitelists ("only auto-register chambers in survival
  * worlds"), dimension restrictions, or integrations that want to register the

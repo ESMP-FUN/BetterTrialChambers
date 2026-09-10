@@ -18,7 +18,7 @@ import org.bukkit.inventory.ItemStack
 class VaultManagementHolder : BaseHolder()
 
 /**
- * Vault management view — view and reset vault cooldowns for a chamber.
+ * Vault management view, view and reset vault cooldowns for a chamber.
  * v1.3.0; migrated to VcGui in v1.5.0. `runBlocking` preserved.
  */
 class VaultManagementView(

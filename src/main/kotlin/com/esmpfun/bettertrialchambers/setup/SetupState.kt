@@ -5,11 +5,11 @@ import java.io.File
 import java.util.UUID
 
 /**
- * Machine-owned persistence for the setup tour (`setup-state.yml`, not config.yml — no
+ * Machine-owned persistence for the setup tour (`setup-state.yml`, not config.yml, no
  * comments to preserve). Tracks:
  *  - [touched]: once true (operator ran `/trial setup` or applied any step), the reminder
  *    never fires again.
- *  - reminder cadence ([reminderCount] / [lastReminderEpoch]) — capped + weekly.
+ *  - reminder cadence ([reminderCount] / [lastReminderEpoch]), capped + weekly.
  *  - per-player paused position, so `/trial setup continue` resumes across restarts.
  *
  * Mirrors [com.esmpfun.bettertrialchambers.utils.WEVarStore]'s load-once /

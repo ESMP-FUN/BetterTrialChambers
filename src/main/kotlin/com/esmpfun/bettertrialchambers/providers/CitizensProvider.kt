@@ -8,15 +8,15 @@ import org.bukkit.entity.Entity
 /**
  * Citizens integration via reflection (v1.3.0).
  *
- * Mob id is either a numeric Citizens NPC id (preferred — stable across
+ * Mob id is either a numeric Citizens NPC id (preferred, stable across
  * renames) or an exact NPC name. The provider looks the NPC up in the
  * default registry, `clone()`s it so the template NPC isn't moved, and
  * spawns the clone at [location].
  *
- *   CitizensAPI.getNPCRegistry().getById(int) / iterator → NPC
- *   npc.clone() → NPC
- *   clone.spawn(Location) → boolean
- *   clone.getEntity() → org.bukkit.entity.Entity
+ *   CitizensAPI.getNPCRegistry().getById(int) / iterator -> NPC
+ *   npc.clone() -> NPC
+ *   clone.spawn(Location) -> boolean
+ *   clone.getEntity() -> org.bukkit.entity.Entity
  *
  * If the template lookup fails the provider returns null and the wave falls
  * back to vanilla for this spawn.

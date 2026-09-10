@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap
  * (MythicMobs, EliteMobs, etc.) are guaranteed to be up before their providers
  * report [TrialMobProvider.isAvailable].
  *
- * Not thread-safe during registration — all `register` calls should happen on
+ * Not thread-safe during registration, all `register` calls should happen on
  * the main thread during plugin startup. Lookups via [get] are thread-safe.
  */
 class TrialMobProviderRegistry {

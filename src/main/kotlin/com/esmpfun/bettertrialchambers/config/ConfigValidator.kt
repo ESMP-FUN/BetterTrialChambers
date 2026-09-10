@@ -8,7 +8,7 @@ import com.esmpfun.bettertrialchambers.database.TableNames
  *
  * Reads every numeric config value that has a sensible domain, clamps
  * out-of-range values back to a safe default, and logs a warning for each clamp.
- * Does not hard-fail — a misconfigured server still boots, just with corrected
+ * Does not hard-fail, a misconfigured server still boots, just with corrected
  * in-memory values and a visible log trail so the admin can fix `config.yml`.
  *
  * Intentionally permissive: only the keys with known pathological values are
@@ -79,7 +79,7 @@ object ConfigValidator {
         }
 
         for (rule in rules) {
-            if (!config.contains(rule.key)) continue  // key absent → plugin default wins
+            if (!config.contains(rule.key)) continue  // key absent -> plugin default wins
 
             val raw = config.getLong(rule.key, Long.MIN_VALUE)
             if (raw == Long.MIN_VALUE) {

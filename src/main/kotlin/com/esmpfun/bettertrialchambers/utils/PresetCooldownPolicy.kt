@@ -17,8 +17,8 @@ import org.bukkit.persistence.PersistentDataType
  *  - A preset that OMITS `target-cooldown-length` follows the global /
  *    per-chamber setting like any ordinary spawner. This is the recommended
  *    way to write presets now.
- *  - `reset.spawner-cooldown-overrides-presets: true` forces every spawner —
- *    presets included — onto the global setting.
+ *  - `reset.spawner-cooldown-overrides-presets: true` forces every spawner,
+ *    presets included, onto the global setting.
  *
  * Before v2.0.8 ANY preset-sourced spawner was exempt and `target-cooldown-length`
  * silently defaulted to 36000 ticks, so there was no way to opt a preset into the
@@ -37,7 +37,7 @@ object PresetCooldownPolicy {
     }
 
     /**
-     * True when [state]'s own preset cooldown must be left alone — i.e. the
+     * True when [state]'s own preset cooldown must be left alone, i.e. the
      * caller should NOT write the global / per-chamber cooldown onto it.
      */
     fun keepsOwnCooldown(plugin: BetterTrialChambers, state: TileState): Boolean {

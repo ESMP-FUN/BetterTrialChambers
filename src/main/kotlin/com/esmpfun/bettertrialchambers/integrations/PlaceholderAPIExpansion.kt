@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * PlaceholderAPI expansion for BetterTrialChambers.
  *
- * Provides the following placeholders (canonical list — also documented in
+ * Provides the following placeholders (canonical list, also documented in
  * `docs/reference/placeholders.md`; keep the two in sync):
  *
  * **Player Statistics:**
@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap
  * - %btc_leaderboard_time% - Player's rank by time spent
  * - %btc_leaderboard_mobs% - Player's rank by mobs killed
  *
- * **Top Players (for scoreboards) — position 1-10, "name" or "value":**
+ * **Top Players (for scoreboards), position 1-10, "name" or "value":**
  * - %btc_top_vaults_<1-10>_name% / %btc_top_vaults_<1-10>_value%
  * - %btc_top_chambers_<1-10>_name% / %btc_top_chambers_<1-10>_value%
  * - %btc_top_time_<1-10>_name% / %btc_top_time_<1-10>_value% (value formatted)

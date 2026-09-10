@@ -157,7 +157,7 @@ class SpectatorListener(private val plugin: BetterTrialChambers) : Listener {
 
     /**
      * v1.7.2 crash recovery: if the server stopped while this player was
-     * spectating, PDC recovery keys survived in their player data — restore
+     * spectating, PDC recovery keys survived in their player data, restore
      * their previous gamemode/location instead of leaving them in SPECTATOR.
      * Runs on the player's entity thread (Folia-safe).
      */

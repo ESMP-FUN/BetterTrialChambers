@@ -25,12 +25,12 @@ object MessageUtil {
     }
 
     /**
-     * Localized variant of [formatTime] — unit suffixes come from the
+     * Localized variant of [formatTime], unit suffixes come from the
      * messages.yml `time-*` keys.
      */
     fun formatTime(plugin: BetterTrialChambers?, milliseconds: Long): String {
         // getRawMessage (not rawMessage): older user messages.yml copies may lack the
-        // time-* keys, and this must degrade to English rather than "<missing: …>".
+        // time-* keys, and this must degrade to English rather than "<missing: ...>".
         fun unit(key: String, placeholder: String, value: Long, fallback: String): String =
             plugin?.getRawMessage(key, "{$placeholder}$fallback")
                 ?.replace("{$placeholder}", value.toString())
@@ -77,7 +77,7 @@ object MessageUtil {
         return formatRelativeTime(null, timestamp)
     }
 
-    /** Localized variant of [formatRelativeTime] — uses `time-now` / `time-ago`. */
+    /** Localized variant of [formatRelativeTime], uses `time-now` / `time-ago`. */
     fun formatRelativeTime(plugin: BetterTrialChambers?, timestamp: Long): String {
         val now = System.currentTimeMillis()
         val diff = now - timestamp

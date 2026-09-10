@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 
 /**
  * Tests for the v2.0.2 independent-roll-mode model surface: the [LootRollMode]
- * config parser and the legacy-table → synthesized-pool passthrough in
+ * config parser and the legacy-table -> synthesized-pool passthrough in
  * [LootTable.getEffectivePools]. The generation math itself lives in LootManager
  * (needs a live Player), but these pin the pure decisions the engine depends on.
  */

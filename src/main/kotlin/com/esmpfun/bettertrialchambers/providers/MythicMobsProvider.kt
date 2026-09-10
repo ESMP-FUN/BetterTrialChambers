@@ -7,7 +7,7 @@ import org.bukkit.entity.Entity
 import java.util.Optional
 
 /**
- * MythicMobs integration via reflection. No compile-time dependency — all calls
+ * MythicMobs integration via reflection. No compile-time dependency, all calls
  * are resolved against the live MythicBukkit singleton so TCP can load on
  * servers that don't have MythicMobs installed.
  *
@@ -17,7 +17,7 @@ import java.util.Optional
  *   ActiveMob.entity.bukkitEntity -> org.bukkit.entity.Entity
  *
  * Fallback path if `mobManager` lookup shape differs across versions is wrapped
- * in try/catch — provider degrades to "unavailable" rather than crashing.
+ * in try/catch, provider degrades to "unavailable" rather than crashing.
  */
 class MythicMobsProvider(private val plugin: BetterTrialChambers) : TrialMobProvider {
 
@@ -43,7 +43,7 @@ class MythicMobsProvider(private val plugin: BetterTrialChambers) : TrialMobProv
         }
     }
 
-    /** Clears the availability cache — call if MythicMobs is reloaded at runtime. */
+    /** Clears the availability cache, call if MythicMobs is reloaded at runtime. */
     fun invalidate() { cachedAvailable = null }
 
     override fun spawnMob(mobId: String, location: Location, ominous: Boolean): Entity? {
@@ -81,7 +81,7 @@ class MythicMobsProvider(private val plugin: BetterTrialChambers) : TrialMobProv
 
     override fun validateMobId(mobId: String): Boolean {
         if (mobId.isBlank()) return false
-        if (!isAvailable()) return true // optimistic — can't validate without API
+        if (!isAvailable()) return true // optimistic, can't validate without API
         return try {
             val mythicBukkitCls = Class.forName("io.lumine.mythic.bukkit.MythicBukkit")
             val inst = mythicBukkitCls.getMethod("inst").invoke(null)

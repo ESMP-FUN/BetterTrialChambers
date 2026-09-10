@@ -71,7 +71,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
     private val chamberParticipantsThisCycle = ConcurrentHashMap<Int, MutableSet<UUID>>()
     private val chamberCycleStartMs = ConcurrentHashMap<Int, Long>()
     // Lazy cache of spawner counts per chamber (block scan is O(volume); cache so
-    // subsequent wave completions are O(1)). Reset cycles preserve the count —
+    // subsequent wave completions are O(1)). Reset cycles preserve the count,
     // a chamber's snapshot restoration keeps spawner geometry stable.
     private val chamberSpawnerCountCache = ConcurrentHashMap<Int, Int>()
 
@@ -80,7 +80,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
     // counts or detection scans. Value is a sentinel byte.
     private val glowMarkerKey = org.bukkit.NamespacedKey("trialchamberpro", "glow_marker")
 
-    // v1.5.4: chamber-remaining glow tracking. Maps chamberId → (spawnerKey → entityUUID)
+    // v1.5.4: chamber-remaining glow tracking. Maps chamberId -> (spawnerKey -> entityUUID)
     // for "standalone" glows spawned on uncleared sister-spawners in chamber-remaining mode.
     // Distinct from WaveState.glowEntityId (which tracks the wave-attached glow on the
     // spawner that triggered the wave). On wave-start for a spawner that was previously
@@ -113,14 +113,14 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
      * implementation used `× players` (over-counting by `perPlayer` per nearby player),
      * which produced bars showing e.g. "1/30" when vanilla actually completed at 20.
      * Vanilla counts the FIRST tracked player as the trigger (gets `base` mobs only) and
-     * each ADDITIONAL player as a `perPlayer` bonus — i.e. `additional = max(0, players - 1)`.
+     * each ADDITIONAL player as a `perPlayer` bonus, i.e. `additional = max(0, players - 1)`.
      */
     private fun computeExpectedMobs(location: Location, isOminous: Boolean, playerCountFallback: Int): Int {
         return try {
             val world = location.world ?: return 6
             val state = world.getBlockAt(location).state as? org.bukkit.block.TrialSpawner ?: return 6
             val cfg = if (isOminous) state.ominousConfiguration else state.normalConfiguration
-            // `trackedPlayers` is Paper's mirror of Mojang's `detectedPlayers` — snapshotted
+            // `trackedPlayers` is Paper's mirror of Mojang's `detectedPlayers`, snapshotted
             // at trigger time. Falls back to caller-provided count (clamped >= 1) only if
             // the API returns empty (e.g. between waves or post-cooldown).
             val players = state.trackedPlayers.size.takeIf { it > 0 } ?: playerCountFallback.coerceAtLeast(1)
@@ -212,7 +212,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
         // Ratchet expected count: max of (configured base+per-player), actual spawn count, and
         // current value. The configured value can grow as more players join (additional per-player).
         // v1.4.0: fallback was `wave.participatingPlayers.size` (boss-bar detection radius,
-        // default 20 blocks) — which over-counted relative to vanilla's `requiredPlayerRange`
+        // default 20 blocks), which over-counted relative to vanilla's `requiredPlayerRange`
         // (default 14). Pass `1` instead so the fallback can never inflate beyond what
         // `state.trackedPlayers.size` would say. Vanilla's count is authoritative; the
         // fallback only matters if Paper returns an empty trackedPlayers (rare).
@@ -332,7 +332,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
 
     /**
      * Cancels and tears down the wave at [spawnerLocation] without firing completion rewards.
-     * Called when the spawner block is broken — the wave is no longer meaningful.
+     * Called when the spawner block is broken, the wave is no longer meaningful.
      */
     fun cancelWaveAt(spawnerLocation: Location) {
         val key = getSpawnerKey(spawnerLocation)
@@ -345,7 +345,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
     /**
      * Removes the chamber-remaining standalone glow at [spawnerLocation], if one
      * exists. Called when a trial-spawner block is broken: [cancelWaveAt] only
-     * cleans the wave-attached glow of an *active* spawner — a non-active
+     * cleans the wave-attached glow of an *active* spawner, a non-active
      * spawner glowing in `chamber-remaining` mode would otherwise keep its
      * orphaned glow shulker floating in place until the next chamber reset.
      */
@@ -363,7 +363,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
     /**
      * Periodic sweep that fixes the two ways a wave can deadlock:
      *   1. A tracked mob disappears without firing EntityDeathEvent (despawn, /kill, void,
-     *      removed by another plugin) — its UUID stays in trackedMobs and the wave never
+     *      removed by another plugin), its UUID stays in trackedMobs and the wave never
      *      satisfies trackedMobs.isEmpty().
      *   2. The vanilla spawner has already entered cooldown / ejecting_reward but our kill
      *      counter never reached the (possibly inflated) expected value, so the bar hangs.
@@ -461,7 +461,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
             activeWaves.remove(key)
         }
         // v1.5.0: reset per-cycle ChamberClearedEvent tracking on chamber reset.
-        // The spawner-count cache is preserved — the chamber's spawner geometry
+        // The spawner-count cache is preserved, the chamber's spawner geometry
         // doesn't change across a reset cycle (snapshot restoration is faithful).
         chamberSpawnersCompletedThisCycle.remove(chamber.id)
         chamberParticipantsThisCycle.remove(chamber.id)
@@ -517,7 +517,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
         // replaced the spawns with provider mobs the spawner still enters cooldown but will not
         // eject keys (it's tracking UUIDs that no longer exist). We compensate here.
         //
-        // wave.isOminous is captured at wave creation (WaveState ctor) — it cannot flip mid-wave,
+        // wave.isOminous is captured at wave creation (WaveState ctor), it cannot flip mid-wave,
         // so it is safe to use here as the "ominous-at-start" snapshot.
         maybeDropProviderKeys(wave)
 
@@ -566,7 +566,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
         }
 
         // Fire post-event for downstream consumers (stat plugins, custom rewards, etc).
-        // Resolved chamber may be null for wild spawners — listeners must tolerate that.
+        // Resolved chamber may be null for wild spawners, listeners must tolerate that.
         val resolvedChamber = plugin.chamberManager.getCachedChamberAt(wave.location)
         plugin.server.pluginManager.callEvent(
             com.esmpfun.bettertrialchambers.api.events.SpawnerWaveCompleteEvent(
@@ -653,7 +653,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
 
     /**
      * Scans [chamber] for trial-spawner blocks by iterating each chunk's tile
-     * entities — O(chunks × tile-entities) instead of the previous
+     * entities, O(chunks × tile-entities) instead of the previous
      * O(chamber volume) per-block scan, which on a merged discovery chamber
      * near the 1.5M-block cap meant millions of `getBlockAt` calls on the
      * region thread (a multi-second freeze on first wave completion).
@@ -710,7 +710,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
      * participant's UUID + timestamp so [com.esmpfun.bettertrialchambers.listeners.SpawnerKeyDropOwnerListener]
      * can enforce owner-only pickup during the grace window.
      *
-     * No-op for vanilla-driven waves. No-op for wild spawners not in a registered chamber —
+     * No-op for vanilla-driven waves. No-op for wild spawners not in a registered chamber,
      * we can't determine the configured provider there and vanilla still handles them correctly.
      */
     private fun maybeDropProviderKeys(wave: WaveState) {
@@ -994,7 +994,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
      * producing a colored 1×1×1 cube outline that is visible through walls.
      *
      * **Why a Shulker and not Interaction / Display:** Interaction entities are
-     * explicitly *immune* to the glow effect in vanilla — they have no renderable
+     * explicitly *immune* to the glow effect in vanilla, they have no renderable
      * model for the outline pass to draw around. (Confirmed against the Minecraft
      * Wiki: Withers, ender dragons, dropped items, display entities, and
      * **Interaction entities are immune to Glowing**.) The pre-v1.5.4 implementation
@@ -1036,7 +1036,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
                     s.isPersistent = false
                     s.isGlowing = true
                     // Invulnerable: a damageable marker can be killed (removing the
-                    // glow mid-wave) and a dead shulker rolls vanilla loot — free
+                    // glow mid-wave) and a dead shulker rolls vanilla loot, free
                     // shulker shells farmable at every glowing spawner. Collidable
                     // off so it doesn't intercept arrows or push entities.
                     s.isInvulnerable = true
@@ -1092,14 +1092,14 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
 
     /**
      * Removes the glow shulker previously spawned for this wave, if any.
-     * Safe to call multiple times — no-op once the entity id is cleared.
+     * Safe to call multiple times, no-op once the entity id is cleared.
      *
      * Also clears the chamber-remaining-mode standalone-glow record for this
      * spawner so the next wave-start can re-create it cleanly.
      */
     private fun removeGlowDisplay(wave: WaveState) {
         // Drop the standalone-glow record for this spawner if present (no entity
-        // to remove — the wave-attached entity is the one that was visible).
+        // to remove, the wave-attached entity is the one that was visible).
         plugin.chamberManager.getCachedChamberAt(wave.location)?.let { chamber ->
             chamberRemainingGlows[chamber.id]?.remove(wave.spawnerId)
         }
@@ -1118,12 +1118,12 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
     /**
      * Spawns a standalone glow shulker at a spawner location for chamber-remaining
      * mode. Same entity setup as [spawnGlowDisplay] but not attached to any
-     * [WaveState] — tracked in [chamberRemainingGlows] for later cleanup.
+     * [WaveState], tracked in [chamberRemainingGlows] for later cleanup.
      */
     private fun spawnStandaloneGlow(spawnerLocation: Location, isOminous: Boolean, chamberId: Int) {
         val world = spawnerLocation.world ?: return
         // Feet on block floor (Y offset 0) so the 1×1×1 shell outlines the spawner
-        // block exactly — see spawnGlowDisplay for why +0.5 Y reads as a block too high.
+        // block exactly, see spawnGlowDisplay for why +0.5 Y reads as a block too high.
         val center = spawnerLocation.clone().add(0.5, 0.0, 0.5)
         val spawnerKey = getSpawnerKey(spawnerLocation)
 
@@ -1177,7 +1177,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
      * Chamber-remaining mode refresh: for every uncleared spawner in [triggerWave]'s
      * chamber, ensure a glow is up. Uncleared = not in [chamberSpawnersCompletedThisCycle]
      * AND not the wave's own spawner (which already has its own wave-attached glow).
-     * Already-glowed standalones are left alone — re-spawning would just churn entities.
+     * Already-glowed standalones are left alone, re-spawning would just churn entities.
      */
     private fun refreshChamberRemainingGlows(triggerWave: WaveState) {
         val chamber = plugin.chamberManager.getCachedChamberAt(triggerWave.location)
@@ -1198,7 +1198,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
 
     /**
      * Returns every trial-spawner block location inside [chamber]. Lazy block-scan
-     * cached for the chamber's lifetime — resets preserve geometry, so the cache
+     * cached for the chamber's lifetime, resets preserve geometry, so the cache
      * survives across reset cycles. Mirrors the pattern used by [countSpawnersInChamber].
      */
     private fun spawnerLocationsInChamber(
@@ -1238,7 +1238,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
             val clean = hex.trim().removePrefix("#")
             org.bukkit.Color.fromRGB(clean.toInt(16))
         } catch (_: Exception) {
-            plugin.logger.warning("[SpawnerWave] Invalid glow color '$hex' — expected hex like #FFFF55")
+            plugin.logger.warning("[SpawnerWave] Invalid glow color '$hex', expected hex like #FFFF55")
             null
         }
     }

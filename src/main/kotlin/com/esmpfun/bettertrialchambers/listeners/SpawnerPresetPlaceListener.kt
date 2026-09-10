@@ -24,7 +24,7 @@ import org.bukkit.persistence.PersistentDataType
  * `simultaneous-mobs`, per-player scaling, `ticks-between-spawn`,
  * `spawn-range`) to the placed block. Vanilla only reads these fields from
  * INSIDE `normal_config`/`ominous_config`, and a preset's config is a
- * datapack *reference* string that can't carry per-field overrides — so the
+ * datapack *reference* string that can't carry per-field overrides, so the
  * item NBT cannot express them. Instead they're written here through Paper's
  * [org.bukkit.spawner.TrialSpawnerConfiguration] on top of the resolved
  * datapack config; `state.update()` bakes the merged config into the block.

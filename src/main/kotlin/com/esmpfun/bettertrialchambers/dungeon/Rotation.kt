@@ -8,7 +8,7 @@ import org.bukkit.block.BlockFace
  *
  * Coordinate and facing rotation are derived from the SAME linear map
  * (clockwise about +Y), so a connector's position and the facing it points
- * stay consistent after rotation — which is what lets the stitcher align two
+ * stay consistent after rotation, which is what lets the stitcher align two
  * pieces reliably.
  */
 enum class Rotation {

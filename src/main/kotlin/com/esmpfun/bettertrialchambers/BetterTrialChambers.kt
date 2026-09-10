@@ -101,16 +101,16 @@ class BetterTrialChambers : JavaPlugin() {
     lateinit var trialSpawnerIndex: com.esmpfun.bettertrialchambers.managers.TrialSpawnerIndex
         private set
 
-    // Custom mob provider registry (v1.3.0) — always contains VanillaMobProvider;
+    // Custom mob provider registry (v1.3.0), always contains VanillaMobProvider;
     // additional providers (MythicMobs, ...) are registered after soft-deps are up.
     lateinit var trialMobProviderRegistry: com.esmpfun.bettertrialchambers.providers.TrialMobProviderRegistry
         private set
 
-    // Spawner preset manager (v1.3.1) — backs `/trial give <preset>`.
+    // Spawner preset manager (v1.3.1), backs `/trial give <preset>`.
     lateinit var spawnerPresetManager: SpawnerPresetManager
         private set
 
-    // Module registry (v1.3.3) — lifecycle hub for premium add-on plugins
+    // Module registry (v1.3.3), lifecycle hub for premium add-on plugins
     // and third-party integrations implementing TCPModule.
     lateinit var moduleRegistry: com.esmpfun.bettertrialchambers.api.TCPModuleRegistry
         private set
@@ -190,8 +190,8 @@ class BetterTrialChambers : JavaPlugin() {
         // Merge keys added in newer versions into the user's existing settings/text files.
         // saveResource/saveDefaultConfig only write when the file is ABSENT, so upgraders would
         // otherwise never get new config options or message keys (the latter showing as
-        // "<missing: …>" in-game). Additive + comment-preserving + .bak backup. User-content
-        // files (loot.yml, spawner_presets.yml, dungeon.yml) are deliberately NOT merged —
+        // "<missing: ...>" in-game). Additive + comment-preserving + .bak backup. User-content
+        // files (loot.yml, spawner_presets.yml, dungeon.yml) are deliberately NOT merged,
         // they're authored by the server owner and merging would fight their edits.
         mergeYamlDefaults("config.yml")
         reloadConfig() // pull the merged keys into getConfig()
@@ -200,7 +200,7 @@ class BetterTrialChambers : JavaPlugin() {
         // v1.3.0: sanity-check numeric config values; clamp with warnings rather than hard-fail
         com.esmpfun.bettertrialchambers.config.ConfigValidator.validate(this)
 
-        // v1.8.0: PluginPulse updater (replaces the old UpdateChecker) — Modrinth
+        // v1.8.0: PluginPulse updater (replaces the old UpdateChecker), Modrinth
         // primary, GitHub Releases fallback, clickable admin notices, and (when
         // enabled in config) checksum-verified downloads staged into the server's
         // update folder for install on the next restart. Runs after config load
@@ -230,7 +230,7 @@ class BetterTrialChambers : JavaPlugin() {
             .apply { if (onMc26) track("mc26") }
             .apply {
                 // Opt-in no-restart updates (/trial update apply). The engine
-                // refuses on Folia and when other plugins depend on TCP —
+                // refuses on Folia and when other plugins depend on TCP,
                 // restart-install remains the default and recommended path.
                 if (config.getBoolean("update.allow-hot-reload", false)) {
                     reloadEngine(io.github.darkstarworks.pluginpulse.hotreload.HotReloadEngine.create())
@@ -241,7 +241,7 @@ class BetterTrialChambers : JavaPlugin() {
         updateSubcommand = UpdateSubcommand(updater)
 
         // v1.4.1: warn when the user's messages.yml is missing keys this version expects.
-        // Pure log output — never modifies the file, never blocks startup. See the user
+        // Pure log output, never modifies the file, never blocks startup. See the user
         // bug report where `<missing: gui.loot-table-list.table-name-normal>` reached the
         // GUI because the deployed messages.yml was an older copy.
         com.esmpfun.bettertrialchambers.config.MessagesSchemaValidator.validate(this)
@@ -473,10 +473,10 @@ class BetterTrialChambers : JavaPlugin() {
                     snapshotReminderService.startScheduler()
 
                     // v1.5.0 GUI migration: central VcGui click/drag/close dispatcher.
-                    // Replaces the standalone LootDepositListener — bulk-deposit
+                    // Replaces the standalone LootDepositListener, bulk-deposit
                     // close handling now lives in LootDepositView.handleClose,
                     // routed through this listener like every other VcGui view.
-                    // Coexists with InventoryFramework's listener during the transition —
+                    // Coexists with InventoryFramework's listener during the transition,
                     // VcGuiListener only routes events whose inventory holder is a BaseHolder,
                     // so IF-backed views are unaffected.
                     server.pluginManager.registerEvents(
@@ -498,7 +498,7 @@ class BetterTrialChambers : JavaPlugin() {
                     )
 
                     // v1.5.15: shield registered chambers from land-claim plugins
-                    // (Residence / Lands / GriefPrevention) via reflection — no compile-time
+                    // (Residence / Lands / GriefPrevention) via reflection, no compile-time
                     // dependency. Each integration is gated by its own config toggle + plugin
                     // presence. Also scans for pre-existing claim conflicts and logs them.
                     claimIntegrationManager =
@@ -519,7 +519,7 @@ class BetterTrialChambers : JavaPlugin() {
                     }
 
                     // v1.5.18: stop AdvancedEnchantments custom enchants (Blast Mining, etc.)
-                    // from breaking blocks inside chambers — their effect path ignores the
+                    // from breaking blocks inside chambers, their effect path ignores the
                     // BlockBreakEvent cancel. Registered only when AE is installed; gated live
                     // by protection.block-advanced-enchantments.
                     if (com.esmpfun.bettertrialchambers.integrations.AdvancedEnchantmentsHook.isAvailable(this@BetterTrialChambers)) {
@@ -656,7 +656,7 @@ class BetterTrialChambers : JavaPlugin() {
         // Close any of our menus players still have open. Two reasons: after a shutdown
         // the menu can no longer respond to clicks, so leaving it open is confusing; and
         // an open menu keeps this copy of the plugin in memory until the player closes
-        // it. Closing here still runs each menu's normal close handling — items in a
+        // it. Closing here still runs each menu's normal close handling, items in a
         // deposit chest are handed back rather than lost. Shutdown runs on the server's
         // main thread and no work can be scheduled for later at this point, so these
         // close immediately rather than being queued.
@@ -760,15 +760,15 @@ class BetterTrialChambers : JavaPlugin() {
      * Adds keys introduced in newer versions to an existing bundled YAML file ([resourceName],
      * e.g. `config.yml` / `messages.yml`). `saveDefaultConfig()` / `saveResource(..., false)`
      * only write a file when it's ABSENT, so a server that installed an earlier build never gets
-     * new options or message keys — features run on code defaults that can't be configured, and
-     * new messages render as `<missing: …>` in-game.
+     * new options or message keys, features run on code defaults that can't be configured, and
+     * new messages render as `<missing: ...>` in-game.
      *
      * Every key present in the jar's default but missing from the user's file is added, carrying
      * its comment across; existing values, comments, and order are left untouched. A `<file>.bak`
      * is written first as a safety net. No-op when nothing is missing or the file doesn't exist
      * yet (a fresh install already has the complete default).
      *
-     * Intended for settings/text files with canonical defaults — NOT for user-content files like
+     * Intended for settings/text files with canonical defaults, NOT for user-content files like
      * `loot.yml` / `spawner_presets.yml` / `dungeon.yml`, where re-adding defaults would clobber
      * the owner's edits.
      */
@@ -791,7 +791,7 @@ class BetterTrialChambers : JavaPlugin() {
 
         for (key in missing) {
             current.set(key, defaults.get(key))
-            // setComments is Paper 1.18+ — keep each key's doc comment in the file.
+            // setComments is Paper 1.18+, keep each key's doc comment in the file.
             runCatching {
                 current.setComments(key, defaults.getComments(key))
                 current.setInlineComments(key, defaults.getInlineComments(key))
@@ -844,7 +844,7 @@ class BetterTrialChambers : JavaPlugin() {
      *
      * Accepts either a YAML list (preferred) or a single string; returns empty
      * list if the key is absent. Runs `{placeholder}` substitution on every
-     * line but does NOT add the chat prefix or convert color codes — callers
+     * line but does NOT add the chat prefix or convert color codes, callers
      * decide what to do with the raw strings.
      */
     fun getMessageList(key: String, vararg replacements: Pair<String, Any?>): List<String> {
@@ -929,7 +929,7 @@ class BetterTrialChambers : JavaPlugin() {
      * colour.
      *
      * For full MiniMessage fidelity (gradients, clickable text, hover
-     * tooltips), use [getMessageComponent] instead — modern Bukkit/Paper
+     * tooltips), use [getMessageComponent] instead, modern Bukkit/Paper
      * APIs all accept `Component`.
      */
     fun getMessage(key: String, vararg replacements: Pair<String, Any?>): String {
@@ -940,7 +940,7 @@ class BetterTrialChambers : JavaPlugin() {
     /**
      * Gets a message from messages.yml as a fully-styled Adventure
      * [net.kyori.adventure.text.Component]. Full MiniMessage fidelity is
-     * preserved end-to-end — gradients, click events, hover events, and
+     * preserved end-to-end, gradients, click events, hover events, and
      * custom fonts all render correctly when the result is delivered via
      * `Player.sendMessage(Component)` or other Component-accepting APIs.
      *
@@ -971,7 +971,7 @@ class BetterTrialChambers : JavaPlugin() {
      * toggle's label injected into `toggle-name-enabled`). The OUTER [getMessage] /
      * [getMessageComponent] / [getGuiText] then parses the combined string exactly once.
      *
-     * **Do NOT use [getMessage] / [getMessageComponent] for nested sub-values** — those add the
+     * **Do NOT use [getMessage] / [getMessageComponent] for nested sub-values**, those add the
      * chat prefix and pre-render to legacy `§` section codes, which the outer parse (MiniMessage +
      * `&` only) cannot re-read. The result is visible raw codes and an embedded "[TCP]" prefix in
      * the middle of the line. This was a recurring bug class; [rawMessage] exists to kill it.
@@ -985,7 +985,7 @@ class BetterTrialChambers : JavaPlugin() {
     }
 
     /**
-     * Translatable "Normal" / "Ominous" label for the `{type}` placeholder — from the
+     * Translatable "Normal" / "Ominous" label for the `{type}` placeholder, from the
      * `vault-type-normal` / `vault-type-ominous` message keys (English fallback). Used for vault
      * and trial-key types so the word can be localized everywhere it's shown.
      */
@@ -999,7 +999,7 @@ class BetterTrialChambers : JavaPlugin() {
     /**
      * Internal helper: looks up the raw message string, performs
      * `{placeholder}` substitution, and prepends the chat prefix when
-     * appropriate. The result is still a raw MM-or-legacy string — the
+     * appropriate. The result is still a raw MM-or-legacy string, the
      * caller decides whether to render to Component or legacy section.
      */
     private fun rawMessageWithPrefix(
@@ -1015,7 +1015,7 @@ class BetterTrialChambers : JavaPlugin() {
         }
 
         // Skip prefix for list items, headers, help entries, boss bars,
-        // and any GUI key (`gui.*`) — same rules as before v1.4.0.
+        // and any GUI key (`gui.*`), same rules as before v1.4.0.
         val shouldAddPrefix = !key.contains("list-item") &&
                 !key.contains("header") &&
                 !key.contains("help-") &&
@@ -1043,7 +1043,7 @@ class BetterTrialChambers : JavaPlugin() {
             }
             logger.info("Migration complete. The old plugins/TrialChamberPro/ folder was kept as a backup and can be deleted once everything works.")
         } catch (e: Exception) {
-            logger.severe("Legacy data-folder migration failed: ${e.message} — fix or migrate manually, then restart.")
+            logger.severe("Legacy data-folder migration failed: ${e.message}. Fix or migrate manually, then restart.")
         }
     }
 }

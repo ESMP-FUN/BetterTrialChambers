@@ -15,17 +15,17 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
  *
  * **How the conversion works** (cheap, no Component round-trip):
  * 1. Pre-convert legacy `&[0-9a-fk-or]` codes to their MiniMessage tag
- *    equivalents (`&a` → `<green>`, `&l` → `<bold>`, `&r` → `<reset>`).
+ *    equivalents (`&a` -> `<green>`, `&l` -> `<bold>`, `&r` -> `<reset>`).
  * 2. Pre-convert legacy `&#RRGGBB` hex codes to MiniMessage hex tags
  *    (`<#RRGGBB>`).
  * 3. Run the resulting string through [MiniMessage.deserialize].
  *
  * The pre-conversion uses unclosed MM tags (`<green>` rather than
  * `<green>...</green>`), which MiniMessage handles by applying the style
- * forward until reset — matching legacy `&`-code semantics exactly.
+ * forward until reset, matching legacy `&`-code semantics exactly.
  *
  * **Mixed input is fully supported:** `&aHello <gradient:red:gold>world</gradient>`
- * produces green "Hello " followed by a red→gold gradient "world".
+ * produces green "Hello " followed by a red->gold gradient "world".
  *
  * **Section codes (`§`) are not pre-converted.** Bukkit's section character
  * is a runtime artefact (the result of legacy parsing) and should never
@@ -74,8 +74,8 @@ object MessageParser {
      * for backwards compatibility with code paths that haven't migrated to
      * Component-based output yet.
      *
-     * MiniMessage features that have no legacy equivalent — gradients,
-     * click events, hover events, fonts — degrade to plain text or a single
+     * MiniMessage features that have no legacy equivalent, gradients,
+     * click events, hover events, fonts, degrade to plain text or a single
      * representative colour. For full fidelity use [parse] (returns a
      * Component) instead.
      */

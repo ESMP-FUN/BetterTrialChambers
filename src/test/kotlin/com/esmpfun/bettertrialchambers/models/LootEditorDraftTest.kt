@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 /**
  * Smoke tests for [LootEditorDraft]. The draft is a passive mutable container,
  * but the dirty-flag plus the detail that `guaranteed` and `weighted` are
- * mutable lists drives a lot of the GUI's copy/preserve behavior — these tests
+ * mutable lists drives a lot of the GUI's copy/preserve behavior, these tests
  * pin down the contract. v1.3.0 Phase 5.
  */
 class LootEditorDraftTest {

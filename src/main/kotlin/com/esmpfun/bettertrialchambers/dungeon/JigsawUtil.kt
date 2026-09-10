@@ -8,14 +8,14 @@ import org.bukkit.block.data.BlockData
  * ([RoomTemplateManager]) and `.nbt` structure import ([StructureImporter]),
  * so orientation handling stays one implementation.
  *
- * Only horizontal jigsaw fronts become connectors — the stitcher joins rooms
+ * Only horizontal jigsaw fronts become connectors, the stitcher joins rooms
  * through horizontal doorways only. Jigsaw pool/name/final_state NBT is not
  * exposed by the Bukkit API, so connectors carry position + facing only.
  */
 object JigsawUtil {
 
     // Resolved against the Bukkit interface, not the CraftBukkit implementation
-    // class — the latter is remapped per server build and may not be accessible.
+    // class, the latter is remapped per server build and may not be accessible.
     private val jigsawInterface: Class<*>? =
         runCatching { Class.forName("org.bukkit.block.data.type.Jigsaw") }.getOrNull()
 
@@ -27,7 +27,7 @@ object JigsawUtil {
      * block isn't a jigsaw).
      *
      * Read reflectively and matched on the enum constant's name because
-     * `Jigsaw.getOrientation()` changed return type in 1.21.5 — it was
+     * `Jigsaw.getOrientation()` changed return type in 1.21.5, it was
      * `org.bukkit.block.data.type.Jigsaw.Orientation` and became the top-level
      * `org.bukkit.block.Orientation`. A direct call compiled against either one
      * throws `NoSuchMethodError` on the other, so naming the type at all would

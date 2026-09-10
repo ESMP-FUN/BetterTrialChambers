@@ -34,7 +34,7 @@ object NBTUtil {
             is TrialSpawner -> captureTrialSpawner(state)
             is Vault -> captureVault(state)
             is DecoratedPot -> captureDecoratedPot(state)
-            // v1.7.2: decoration/utility tile entities — before this, only the four
+            // v1.7.2: decoration/utility tile entities, before this, only the four
             // types above survived a reset; signs/heads/banners/etc. restored blank.
             // Note: Lectern/Jukebox/ChiseledBookshelf are TileStateInventoryHolder but
             // NOT org.bukkit.block.Container, so these branches don't shadow Container.
@@ -64,7 +64,7 @@ object NBTUtil {
      * mob counts, spawn interval/range, reward tables) and the preset tag.
      * A restore into a RECREATED block entity (spawner block destroyed before
      * the reset, or a dungeon room template stamped into air) starts from
-     * vanilla defaults with EMPTY spawn potentials — without this capture the
+     * vanilla defaults with EMPTY spawn potentials, without this capture the
      * spawner came back permanently inactive.
      */
     private fun captureTrialSpawner(spawner: TrialSpawner): Map<String, Any> {
@@ -192,7 +192,7 @@ object NBTUtil {
      * UNROLLED loot table (empty inventory + a `LootTable`/seed) until a player
      * first opens it. We capture the loot-table key + seed when present so the
      * container can be re-armed on restore (a plain BlockData restore wipes the
-     * block entity, losing the loot table — which is why container loot did not
+     * block entity, losing the loot table, which is why container loot did not
      * survive resets before v1.5.9). When no loot table is set (already rolled,
      * or admin-filled), we capture the literal contents instead.
      */
@@ -215,7 +215,7 @@ object NBTUtil {
 
     // ==================== v1.7.2 decoration tile entities ====================
     // Snapshot maps must hold only plain JDK-serializable values (String/Boolean/
-    // Int/List/Map) — snapshot files are Java-serialized. Components are stored as
+    // Int/List/Map), snapshot files are Java-serialized. Components are stored as
     // Gson-serialized JSON strings (lossless round-trip).
 
     private val gson = net.kyori.adventure.text.serializer.gson.GsonComponentSerializer.gson()
@@ -475,7 +475,7 @@ object NBTUtil {
     }
 
     /**
-     * Brushable block (suspicious sand/gravel): mirrors the container pattern —
+     * Brushable block (suspicious sand/gravel): mirrors the container pattern,
      * re-arm the unrolled loot table when present, else the literal buried item.
      */
     private fun captureBrushableBlock(brushable: org.bukkit.block.BrushableBlock): Map<String, Any> = try {
@@ -554,7 +554,7 @@ object NBTUtil {
                     // Re-arm with seed 0 (vanilla's "no fixed seed") rather than the
                     // captured worldgen seed. A fixed nonzero seed makes every reset
                     // re-roll IDENTICAL loot; seed 0 tells vanilla to use a fresh
-                    // random source on next open — "vanilla, but repeatable". v1.6.3.
+                    // random source on next open, "vanilla, but repeatable". v1.6.3.
                     lootable.setLootTable(table, 0L)
                 }
             } else {
@@ -622,7 +622,7 @@ object NBTUtil {
             // v2.0.1: if the block entity was RECREATED (spawner block destroyed
             // before the reset, or a dungeon room template stamped into air), the
             // live configuration is the vanilla default with EMPTY spawn
-            // potentials — the spawner would restore permanently inactive.
+            // potentials, the spawner would restore permanently inactive.
             // Rebuild both configurations from the captured data in that case.
             // A surviving block entity keeps its own (richer) config untouched:
             // SpawnerEntry can't round-trip the `equipment` sub-compound, so we

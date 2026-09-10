@@ -82,7 +82,7 @@ class ShippedMessagesTest {
     }
 
     private companion object {
-        /** A whole `gui.…` key written out as a literal in the source. */
+        /** A whole `gui....` key written out as a literal in the source. */
         val KEY_PATTERN = Regex("\"(gui\\.[A-Za-z0-9_.-]+)\"")
     }
 }

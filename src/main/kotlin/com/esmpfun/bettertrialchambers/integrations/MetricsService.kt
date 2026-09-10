@@ -12,13 +12,13 @@ import dev.faststats.data.Metric
  * chamber counts, and which premium modules are installed alongside BTC free.
  *
  * Respect knobs (either disables collection entirely):
- *  - BTC's own `metrics.enabled` in config.yml — checked here, and when false the
+ *  - BTC's own `metrics.enabled` in config.yml, checked here, and when false the
  *    context is never constructed, so nothing is sent and no config file is written.
  *  - FastStats' server-wide opt-out at `plugins/faststats/config.properties`
  *    (`enabled=false`, or the narrower `submitMetrics` / `submitErrors` flags).
  *    Equivalent to the old `plugins/bStats/config.yml`.
  *
- * Note that FastStats deliberately submits **nothing on its first run** — it
+ * Note that FastStats deliberately submits **nothing on its first run**, it
  * writes the opt-out file and waits for the next server start so owners get a
  * chance to opt out first. A fresh install showing no data for one boot is
  * expected, not a misconfiguration.
@@ -27,7 +27,7 @@ import dev.faststats.data.Metric
  * v2.0.7). When switched on it reports BTC's own uncaught exceptions so bugs
  * surface without waiting for someone to open a ticket. Scoped and filtered:
  *  - `contextAware(classLoader)` binds it to THIS plugin's class loader, so other
- *    plugins' exceptions are never captured — only ours.
+ *    plugins' exceptions are never captured, only ours.
  *  - Server-wide kill switch remains `submitErrors=false` in
  *    `plugins/faststats/config.properties`.
  *  - Extra anonymisation on top of the SDK's built-ins (see [buildErrorTracker]).
@@ -38,7 +38,7 @@ import dev.faststats.data.Metric
 object MetricsService {
 
     /**
-     * FastStats project token for BetterTrialChambers. Not a secret — it ships
+     * FastStats project token for BetterTrialChambers. Not a secret, it ships
      * inside the distributed jar and identifies the project, exactly as the old
      * bStats service id did. Blank disables metrics init entirely.
      */
@@ -50,7 +50,7 @@ object MetricsService {
     fun init(plugin: BetterTrialChambers): String {
         if (PROJECT_TOKEN.isBlank()) return "Disabled (no project token)"
         if (!plugin.config.getBoolean("metrics.enabled", true)) return "Disabled (config)"
-        // Guard against a double init (e.g. hot-reload) — ready() warns and ignores,
+        // Guard against a double init (e.g. hot-reload), ready() warns and ignores,
         // but two contexts would mean two submission schedulers.
         if (context != null) return "Enabled"
 
@@ -60,13 +60,13 @@ object MetricsService {
         // A pre-release build briefly used `metrics.error-tracking` defaulting to true.
         // That was never published, but mergeYamlDefaults writes new keys into the
         // deployed config.yml at startup, so any server that ran it still carries a
-        // literal `error-tracking: true` line — a value nobody chose. Renaming the key
+        // literal `error-tracking: true` line, a value nobody chose. Renaming the key
         // rather than just flipping its default means that stale line can't silently
         // switch reporting on.
         val legacyKey = "metrics.error-tracking"
         if (plugin.config.isSet(legacyKey)) {
             plugin.logger.info(
-                "config.yml: '$legacyKey' is no longer used — error reporting is now opt-in via " +
+                "config.yml: '$legacyKey' is no longer used, error reporting is now opt-in via " +
                     "'metrics.error-reporting' (default false). The old line is inert and can be deleted."
             )
         }
@@ -108,7 +108,7 @@ object MetricsService {
                 }
                 .create()
 
-            // Must run on the main thread and inside enable — on Paper this also
+            // Must run on the main thread and inside enable, on Paper this also
             // registers the server exception handlers. Phase 10 already executes
             // inside scheduler.runTask, so we're on the right thread here.
             ctx.ready()
@@ -129,12 +129,12 @@ object MetricsService {
      * no-arg overload) keeps that unambiguous: other plugins' exceptions are
      * never ours to report.
      *
-     * **Cancellation.** Coroutine cancellation is normal control flow here —
+     * **Cancellation.** Coroutine cancellation is normal control flow here,
      * `ResetManager` rethrows `CancellationException` by design, and shutdown
      * cancels `pluginScope`. Reporting those would bury real bugs. Note the SDK
      * matches ignored types by EXACT class (`getClass()` against a Set), not
      * `isAssignableFrom`, so registering `CancellationException` alone would miss
-     * kotlinx's `JobCancellationException` subclass — hence the message pattern
+     * kotlinx's `JobCancellationException` subclass, hence the message pattern
      * alongside it.
      *
      * **Redaction.** The SDK already strips IPv4/IPv6 addresses, home-directory
@@ -158,7 +158,7 @@ object MetricsService {
 
     /**
      * Releases the SDK's submission scheduler. Without this a `/reload` (or any
-     * disable/enable cycle) would leak the previous context's threads — bStats
+     * disable/enable cycle) would leak the previous context's threads, bStats
      * needed no such call, so this is new in v2.0.5.
      */
     fun shutdown() {

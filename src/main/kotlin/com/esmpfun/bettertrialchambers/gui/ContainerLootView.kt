@@ -21,7 +21,7 @@ class ContainerLootHolder : BaseHolder()
  * paginated list of materialized templates (left-click = edit, right-click =
  * teleport), and bulk actions (materialize all, clear player copies, reset
  * templates). All strings under `gui.container-loot.*`. Mirrors
- * [VaultManagementView] (incl. the `runBlocking` fetch — see the deferred
+ * [VaultManagementView] (incl. the `runBlocking` fetch, see the deferred
  * async-GUI refactor note in the project docs).
  */
 class ContainerLootView(
@@ -93,7 +93,7 @@ class ContainerLootView(
     private fun headerItem(enabled: Boolean, templates: Int, copies: Int): ItemStack =
         GuiComponents.infoItem(plugin, Material.BARREL,
             "gui.container-loot.header-name", "gui.container-loot.header-lore",
-            // Pass the RAW message (legacy `&` form) — not getMessage(), which
+            // Pass the RAW message (legacy `&` form), not getMessage(), which
             // returns a section-coded string that breaks the lore's MiniMessage
             // re-parse and renders the `&` codes literally.
             "enabled" to (plugin.getMessageList(

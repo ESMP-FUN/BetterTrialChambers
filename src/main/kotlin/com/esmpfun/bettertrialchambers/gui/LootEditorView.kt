@@ -21,16 +21,16 @@ import org.bukkit.event.inventory.ClickType
 import org.bukkit.inventory.ItemStack
 
 /**
- * Holder for the loot-editor GUI. Empty payload — the editor's state
+ * Holder for the loot-editor GUI. Empty payload, the editor's state
  * (draft, dirty flag, discard intent) lives on the [LootEditorView] itself.
  */
 class LootEditorHolder : BaseHolder()
 
 /**
- * Loot editor — edits a single loot table (or one pool of a multi-pool table).
+ * Loot editor, edits a single loot table (or one pool of a multi-pool table).
  * All strings from `messages.yml` under `gui.loot-editor.*` (v1.3.0).
  *
- * v1.5.0 — migrated from InventoryFramework to the in-house VcGui framework.
+ * v1.5.0, migrated from InventoryFramework to the in-house VcGui framework.
  * Layout is identical (6 rows; rows 0–3 = loot entries, rows 4–5 = controls);
  * the change is purely in event handling (central [com.esmpfun.bettertrialchambers.gui.framework.VcGuiListener]
  * dispatch, partial-cancel for safe bottom-inventory actions).
@@ -90,7 +90,7 @@ class LootEditorView(
         val baseName: String
         val source: LootTable?
         if (chamber != null) {
-            // Edit whatever the chamber's vaults actually roll — an override points
+            // Edit whatever the chamber's vaults actually roll, an override points
             // them at a different table, and writing to `chamber-<name>` instead
             // would save into a table nothing reads (v2.0.3).
             baseName = MenuService.effectiveTableName(chamber, kind)
@@ -217,7 +217,7 @@ class LootEditorView(
         lore += plugin.getGuiText(if (li.enabled) "gui.loot-editor.item-enabled" else "gui.loot-editor.item-disabled")
         if (plugin.lootManager.isLegacy(li)) {
             lore += Component.empty()
-            lore += Component.text("⚠ Legacy entry — re-add to capture NBT", NamedTextColor.GOLD)
+            lore += Component.text("⚠ Legacy entry, re-add to capture NBT", NamedTextColor.GOLD)
                 .decoration(TextDecoration.ITALIC, false)
         }
         lore += Component.empty()
@@ -302,7 +302,7 @@ class LootEditorView(
         // Clear controls region.
         for (s in 36..53) set(s, null)
 
-        // Row 4 (slots 36..44) — page navigation, drawn only when the entries
+        // Row 4 (slots 36..44), page navigation, drawn only when the entries
         // overflow one page; otherwise the row stays empty as a visual gap
         // between the loot-entry grid (rows 0-3) and the action row.
         val totalPages = totalPages()
@@ -321,7 +321,7 @@ class LootEditorView(
             })
         }
 
-        // Row 5 (slots 45..53) — bottom-area controls.
+        // Row 5 (slots 45..53), bottom-area controls.
         // Save at (0, 5) = slot 45
         val saveLoreKey = if (draft.dirty) "gui.loot-editor.save-lore-dirty" else "gui.loot-editor.save-lore-clean"
         val save = GuiComponents.infoItem(plugin, Material.GREEN_CONCRETE,
@@ -362,8 +362,8 @@ class LootEditorView(
         })
 
         // Slot 47 (2, 5) is context-sensitive:
-        //   WEIGHTED    → "Draws per Opening" (min/max rolls)
-        //   INDEPENDENT → "Max Items" cap (0 = unlimited); rolls don't apply.
+        //   WEIGHTED    -> "Draws per Opening" (min/max rolls)
+        //   INDEPENDENT -> "Max Items" cap (0 = unlimited); rolls don't apply.
         if (modeIndependent) {
             val capLabel = if (draft.maxItems <= 0) "∞" else draft.maxItems.toString()
             val maxItems = GuiComponents.infoItem(plugin, Material.PAPER,
@@ -466,7 +466,7 @@ class LootEditorView(
                         .decoration(TextDecoration.ITALIC, false)
                 )
                 lore(listOf(
-                    Component.text("Opens a chest — drag or shift-click", NamedTextColor.GRAY)
+                    Component.text("Opens a chest, drag or shift-click", NamedTextColor.GRAY)
                         .decoration(TextDecoration.ITALIC, false),
                     Component.text("items in, then close to add them all", NamedTextColor.GRAY)
                         .decoration(TextDecoration.ITALIC, false),
@@ -536,7 +536,7 @@ class LootEditorView(
                 weightedItems = draft.weighted.toList(),
                 commandRewards = existingTable?.commandRewards ?: emptyList(),
                 // Preserve economy rewards across a GUI edit (the editor only
-                // touches items) — otherwise saving would silently drop them.
+                // touches items), otherwise saving would silently drop them.
                 economyRewards = existingTable?.economyRewards ?: emptyList(),
                 rollMode = draft.rollMode,
                 maxItems = draft.maxItems
@@ -567,14 +567,14 @@ class LootEditorView(
     }
 
     companion object {
-        /** Entries per page — the full 4-row grid (slots 0..35). */
+        /** Entries per page, the full 4-row grid (slots 0..35). */
         private const val ENTRIES_PER_PAGE = 36
     }
 }
 
 /**
  * Build the title Component for the editor. Pulled out of the class body so
- * we can pass it into `super(title = ...)` — Kotlin requires super-call args
+ * we can pass it into `super(title = ...)`, Kotlin requires super-call args
  * be expressions, no class-member access. Primary-constructor parameters
  * (`plugin`, `chamber`, etc.) ARE in scope here, so the title pulls straight
  * from `gui.loot-editor.title-*` like every other localized string.
