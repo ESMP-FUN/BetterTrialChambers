@@ -19,12 +19,12 @@ import java.util.concurrent.atomic.AtomicInteger
  *
  * **Paper-only.** FAWE has no current Folia support, and plain (non-async)
  * WorldEdit can't run off the main thread, so this only engages when FAWE
- * specifically is installed and the server isn't Folia — otherwise callers fall
+ * specifically is installed and the server isn't Folia, otherwise callers fall
  * back to [BlockRestorer].
  *
  * Block *data* goes through the EditSession; tile-entity NBT (spawner/vault/pot)
  * is applied afterwards via Bukkit on the owning region thread, exactly as
- * [BlockRestorer] does — including resetting trial-spawner state so reset
+ * [BlockRestorer] does, including resetting trial-spawner state so reset
  * spawners drop keys again.
  */
 class FaweResetPlacer(private val plugin: BetterTrialChambers) {

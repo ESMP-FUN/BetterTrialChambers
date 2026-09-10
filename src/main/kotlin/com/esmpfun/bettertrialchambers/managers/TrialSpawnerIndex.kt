@@ -19,13 +19,13 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * Populated by [com.esmpfun.bettertrialchambers.listeners.TrialSpawnerIndexListener]:
  *
- *   - `ChunkLoadEvent` → `rescanChunk(chunk's tile entities filtered to TRIAL_SPAWNER)`.
+ *   - `ChunkLoadEvent` -> `rescanChunk(chunk's tile entities filtered to TRIAL_SPAWNER)`.
  *     Cheap (no block iteration; uses the already-cached tile-entity list).
- *   - `BlockBreakEvent` for `TRIAL_SPAWNER` → `remove(pos)`.
- *   - `BlockPlaceEvent` for `TRIAL_SPAWNER` → `add(pos)`.
+ *   - `BlockBreakEvent` for `TRIAL_SPAWNER` -> `remove(pos)`.
+ *   - `BlockPlaceEvent` for `TRIAL_SPAWNER` -> `add(pos)`.
  *
  * Plus a startup sweep over every loaded Overworld chunk via `seedFromLoadedChunks`
- * — symmetric to `ChamberDiscoveryManager`'s startup sweep — so we don't have to
+ *, symmetric to `ChamberDiscoveryManager`'s startup sweep, so we don't have to
  * wait for the first `ChunkLoadEvent` after enable to populate seeded chambers.
  *
  * The index is purely transient cache; correctness comes from the listener
@@ -45,7 +45,7 @@ class TrialSpawnerIndex {
 
     /** Single world's chunk-keyed spawner positions. */
     private class WorldIndex {
-        /** Chunk key (packed chunkX|chunkZ) → set of packed block positions. */
+        /** Chunk key (packed chunkX|chunkZ) -> set of packed block positions. */
         val chunks = ConcurrentHashMap<Long, MutableSet<Long>>()
     }
 
@@ -121,7 +121,7 @@ class TrialSpawnerIndex {
         for (chunkX in minChunkX..maxChunkX) {
             for (chunkZ in minChunkZ..maxChunkZ) {
                 val set = wi.chunks[packChunk(chunkX, chunkZ)] ?: continue
-                // Snapshot under the set's monitor — the synchronized wrapper
+                // Snapshot under the set's monitor, the synchronized wrapper
                 // requires explicit `synchronized` for safe iteration.
                 val snapshot: LongArray
                 synchronized(set) {
@@ -147,7 +147,7 @@ class TrialSpawnerIndex {
     }
 
     /**
-     * Drop every entry for a world — used when a world unloads. Keeping stale
+     * Drop every entry for a world, used when a world unloads. Keeping stale
      * `World` UUIDs around is harmless (queries are scoped by world), but the
      * `Set<Long>` memory is worth reclaiming.
      */
@@ -179,7 +179,7 @@ class TrialSpawnerIndex {
     fun size(): Int = worlds.values.sumOf { wi -> wi.chunks.values.sumOf { it.size } }
 
     // -------- packing helpers --------
-    // Chunk key: 32-bit X in high half, 32-bit Z in low half — same shape as
+    // Chunk key: 32-bit X in high half, 32-bit Z in low half, same shape as
     // Mojang's `ChunkPos.asLong`.
     private fun packChunk(chunkX: Int, chunkZ: Int): Long =
         (chunkX.toLong() shl 32) or (chunkZ.toLong() and 0xFFFFFFFFL)

@@ -7,14 +7,14 @@
 #
 #     /trial give <preset> [player] [amount]
 #
-# The given item is a real trial_spawner block — placing it in the world
+# The given item is a real trial_spawner block. Placing it in the world
 # produces a working spawner with the configured normal_config / ominous_config
 # / cooldown / range etc. baked in (via the `block_entity_data` data
 # component, the same NBT vanilla `/give` accepts).
 #
 # IMPORTANT: `normal_config` and `ominous_config` are RESOURCE LOCATIONS
 # pointing at trial-spawner configs DEFINED IN A DATAPACK. The plugin does
-# NOT generate these for you — install or write the datapack separately. See:
+# NOT generate these for you. Install or write the datapack separately. See:
 #   https://minecraft.wiki/w/Trial_Spawner#Spawner_configuration
 #
 # Hardening note: there is intentionally NO `material:` field. Every preset
@@ -24,7 +24,7 @@
 #
 # ABOUT REST TIMES (`target-cooldown-length`):
 # This is how long a spawner rests after players beat its wave, before it can be
-# used again. It is written in ticks — 20 ticks is one second, so 36000 is
+# used again. It is written in ticks: 20 ticks is one second, so 36000 is
 # 30 minutes, the same as normal Minecraft.
 #
 # If you write a rest time into a preset, spawners placed from that preset use
@@ -33,7 +33,7 @@
 # number here, you meant it.
 #
 # If you LEAVE THE LINE OUT, spawners from that preset simply follow the
-# server-wide setting like any other spawner. That is usually the easier choice —
+# server-wide setting like any other spawner. That is usually the easier choice;
 # you set the rest time once in config.yml and every spawner obeys it.
 #
 # If you would rather force every spawner onto the server-wide setting, presets
@@ -45,7 +45,7 @@
 presets:
 
   # Example: a tougher zombie spawner. Replace these config IDs with ones
-  # from your own datapack — these references are illustrative only and will
+  # from your own datapack. These references are illustrative only and will
   # error-log at item-place time if your server doesn't have a matching
   # datapack registered.
   #

@@ -43,7 +43,7 @@ import org.bukkit.event.player.PlayerTeleportEvent
  */
 class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
 
-    /** Last time (ms) each player was shown a protection-denied message — for spam suppression. */
+    /** Last time (ms) each player was shown a protection-denied message, for spam suppression. */
     private val lastDenyMessage = java.util.concurrent.ConcurrentHashMap<java.util.UUID, Long>()
 
     /**
@@ -126,7 +126,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
             for (name in config.getStringList("protection.tunnel-breaking.blocks")) {
                 val mat = Material.matchMaterial(name.trim())
                 if (mat != null && mat.isBlock) blocks += mat
-                else plugin.logger.warning("[Protection] tunnel-breaking.blocks: unknown material '$name' — skipped")
+                else plugin.logger.warning("[Protection] tunnel-breaking.blocks: unknown material '$name'; skipped")
             }
         }
         val shellDepth = config.getInt("protection.tunnel-breaking.shell-depth", 3).coerceIn(0, 64)
@@ -149,7 +149,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
      *
      * Only active when `protection.auto-pause-on-destruction: true`.
      * `protection.auto-pause-threshold` (default 6) sets how many critical blocks must
-     * be broken before the pause fires — so 1–2 stray breaks don't trigger it, but
+     * be broken before the pause fires, so 1–2 stray breaks don't trigger it, but
      * systematic demolition (≥ threshold) does.
      *
      * The counter resets to zero whenever the chamber's pause state changes (via
@@ -198,7 +198,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onPvp(event: EntityDamageByEntityEvent) {
         if (!plugin.config.getBoolean("protection.enabled", true)) return
-        if (plugin.config.getBoolean("protection.allow-pvp", true)) return // PvP allowed → nothing to do
+        if (plugin.config.getBoolean("protection.allow-pvp", true)) return // PvP allowed -> nothing to do
 
         val victim = event.entity as? Player ?: return
         val attacker = when (val damager = event.damager) {
@@ -223,7 +223,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     /**
      * Blocks **teleporting into** a registered chamber from outside it when
      * `protection.prevent-teleport-into-chamber: true`. Catches `/tpa`, `/tpahere`, `/home`,
-     * `/warp`, `/tp`, ender pearls, chorus fruit — any teleport, since it hooks the teleport
+     * `/warp`, `/tp`, ender pearls, chorus fruit, any teleport, since it hooks the teleport
      * itself rather than specific commands. Players with `tcp.bypass.entry`, spectators, and
      * creative-mode players are exempt (this also covers TCP's own spectator-entry teleport,
      * which sets SPECTATOR before teleporting). Walking in through the entrance is unaffected.
@@ -310,7 +310,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     /**
      * v1.5.7: blocks placing functioning VAULT blocks outside registered
      * chambers. A wild vault is a permanent vanilla loot dispenser TCP can't
-     * manage (no per-player tracking, no resets, no loot tables) — and
+     * manage (no per-player tracking, no resets, no loot tables), and
      * out-of-chamber vault mechanics are TCP-VaultCrates' domain. Admins
      * holding the bypass permission (default op) can still place them, so
      * crate setup and creative building are unaffected.
@@ -361,7 +361,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         if (!plugin.config.getBoolean("protection.prevent-mob-griefing", true)) return
 
         // v1.7.2: filter per BLOCK, not by the explosion center's chamber. The old
-        // check resolved the chamber at the CENTER — a creeper/TNT detonating just
+        // check resolved the chamber at the CENTER, a creeper/TNT detonating just
         // outside the wall wasn't "in" any chamber, so its blast destroyed chamber
         // blocks unprotected (same outside-in hole the AdvancedEnchantments check
         // had before 1.5.21). Cache-only, sync-safe.
@@ -373,7 +373,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     /**
      * v1.7.2: block-sourced explosions (bed/respawn-anchor in the wrong dimension,
      * exploding TNT minecart rails, etc.) fire BlockExplodeEvent, not
-     * EntityExplodeEvent — they previously bypassed chamber protection entirely.
+     * EntityExplodeEvent, they previously bypassed chamber protection entirely.
      * Same per-block filter as [onEntityExplode].
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -403,7 +403,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     }
 
     /**
-     * Returns true when TCP should yield to WorldGuard at [location] — i.e.
+     * Returns true when TCP should yield to WorldGuard at [location], i.e.
      * `protection.worldguard-integration` is on, WG is installed, and a WG region
      * there grants [player] build rights (membership, an explicit `build` allow,
      * or WG bypass). Callers `return` early (skip TCP protection) when this is

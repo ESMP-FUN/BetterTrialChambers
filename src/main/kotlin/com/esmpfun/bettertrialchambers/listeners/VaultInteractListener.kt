@@ -65,7 +65,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
             VaultType.NORMAL
         }
 
-        // Skip plugin logic for vaults outside registered chambers — allow vanilla behavior
+        // Skip plugin logic for vaults outside registered chambers, allow vanilla behavior
         val chamberForVault = plugin.chamberManager.getCachedChamberAt(block.location)
         if (chamberForVault == null) {
             if (plugin.config.getBoolean("debug.verbose-logging", false)) {
@@ -128,7 +128,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
         }
 
         // Handle plugin-managed vaults. VANILLA mode hands the vault straight back
-        // to Minecraft — we don't cancel, don't take the key, don't roll our loot.
+        // to Minecraft, we don't cancel, don't take the key, don't roll our loot.
         val lootMode = VaultLootMode.resolve(plugin)
         if (lootMode != VaultLootMode.VANILLA) {
             event.isCancelled = true // We'll handle the vault opening ourselves
@@ -161,7 +161,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
             // The timestamp check above handles expiration - removing explicitly causes
             // a race condition at the 5-second boundary where the remove() races with
             // new events checking the lock
-            // v1.7.2: remember which hotbar slot held the key at click time — the
+            // v1.7.2: remember which hotbar slot held the key at click time, the
             // open flow is async and the player may scroll slots before delivery.
             val keySlot = player.inventory.heldItemSlot
 
@@ -199,7 +199,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
         // v2.0.8: a bypassing player also leaves NO trace on the vault. Marking them
         // used to write into Minecraft's own "already rewarded" list, so an admin who
         // tested a few vaults silently locked themselves out of them for plain
-        // Minecraft — which is what made switching to VANILLA mode look like it had
+        // Minecraft, which is what made switching to VANILLA mode look like it had
         // broken vaults entirely. In SHARED mode it would also have claimed the vault
         // for the whole server.
         if (player.hasPermission("btc.bypass.cooldown")) {
@@ -302,7 +302,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
             VaultType.OMINOUS -> plugin.config.getLong("vaults.ominous-cooldown-hours", 0)
         }
 
-        // Timed cooldown elapsed → free reopen (clear the hold so
+        // Timed cooldown elapsed -> free reopen (clear the hold so
         // openVault can mark it fresh and re-record the timestamp).
         var cooldownRemainingMs = 0L
         if (cooldownHours > 0) {
@@ -324,7 +324,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
         }
 
         // v1.5.7: key-to-reopen. With vaults.reopen-cost-keys > 0, a player
-        // can pay that many matching keys to reopen now — an instant paid
+        // can pay that many matching keys to reopen now, an instant paid
         // alternative to waiting out the cooldown (or to a permanent lock).
         val reopenCost = plugin.config.getInt("vaults.reopen-cost-keys", 0)
         if (reopenCost > 0) {
@@ -347,7 +347,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                 openVault(player, vaultData, vaultType, location, keySlot)
                 return
             }
-            // Reopen offered but the player can't afford it — tell them the
+            // Reopen offered but the player can't afford it, tell them the
             // price instead of the dead-end "locked" message.
             routeVaultFeedback(
                 player, location, false,
@@ -383,7 +383,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
 
     /**
      * Key-to-reopen payment: verifies the player's main hand holds at least
-     * [cost] matching trial keys, and pre-consumes `cost - 1` of them — the
+     * [cost] matching trial keys, and pre-consumes `cost - 1` of them, the
      * normal [openVault] flow consumes the final key on success, so the total
      * paid equals [cost]. Runs on the player's entity thread (Folia-safe).
      *
@@ -425,7 +425,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
      *
      * Uses Paper's native Vault API to mark player as rewarded (addRewardedPlayer).
      *
-     * @param markUsed when false the vault is left completely untouched — no entry in
+     * @param markUsed when false the vault is left completely untouched, no entry in
      *   Minecraft's own "already rewarded" list and no open record of our own. Used for
      *   players opening with `btc.bypass.cooldown` so admin testing can't quietly lock a
      *   vault for its real owner (or, in SHARED mode, claim it for the whole server).
@@ -444,7 +444,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
             chamber, vaultType, vaultData.lootTable
         )
 
-        // v1.3.3: PreVaultOpenEvent — give third-party plugins (e.g. premium
+        // v1.3.3: PreVaultOpenEvent, give third-party plugins (e.g. premium
         // Vault Crate / custom-keys module) a chance to cancel the open or
         // substitute a different loot table. Fired AFTER all gates passed
         // (cooldown, spam-click, key validation) but BEFORE any side effects.
@@ -605,8 +605,8 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                     showSuccessParticles(player, player.location, vaultType)
 
                     // Consume the trial key - ONLY if we got this far (loot was generated
-                    // and given). v1.7.2: consume from where the key actually IS — the
-                    // click→delivery gap is async, and blindly decrementing itemInMainHand
+                    // and given). v1.7.2: consume from where the key actually IS, the
+                    // click->delivery gap is async, and blindly decrementing itemInMainHand
                     // ate whatever the player had scrolled to (sword, blocks, anything).
                     consumeOneKey(player, keySlot, vaultType)
 
@@ -725,7 +725,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
     /**
      * Routes a single vault-interaction outcome to the configured feedback
      * channel (v1.5.8). In TEXT mode (default) it sends [message] and runs the
-     * supplied [vanillaSound] block — byte-identical to the pre-v1.5.8 path. In
+     * supplied [vanillaSound] block, byte-identical to the pre-v1.5.8 path. In
      * HOLOGRAM mode it shows a per-player ✓/✗ display above the vault with the
      * pillager sound instead, suppressing the chat line and the vanilla sound.
      * Particles/advancements at each call site are unaffected.
@@ -773,7 +773,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
      * v1.7.2: helper for post-delivery key consumption. Prefers the hotbar slot
      * held at click time; if the player scrolled away, finds any stack of the
      * matching key material; consumes NOTHING (with a log line) when no key is
-     * found — loot was already delivered, so we fail in the player's favor
+     * found, loot was already delivered, so we fail in the player's favor
      * rather than eat an unrelated item.
      */
     private fun consumeOneKey(player: org.bukkit.entity.Player, preferredSlot: Int, vaultType: VaultType) {
@@ -785,7 +785,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
         val slot = if (inv.getItem(preferredSlot)?.type == keyMaterial) preferredSlot
                    else inv.first(keyMaterial)
         if (slot < 0) {
-            plugin.logger.warning("Vault opened by ${player.name} but no ${keyMaterial.name} found to consume (moved/dropped mid-open?) — key not charged.")
+            plugin.logger.warning("Vault opened by ${player.name} but no ${keyMaterial.name} found to consume (moved/dropped mid-open?), key not charged.")
             return
         }
         val stack = inv.getItem(slot) ?: return
@@ -801,7 +801,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
      * each with the owner UUID and a drop timestamp when owner-only pickup is
      * enabled.
      *
-     * v1.7.2: schedules the drops on the VAULT's region thread — the caller is
+     * v1.7.2: schedules the drops on the VAULT's region thread, the caller is
      * on the player's entity thread, and if the player moved/teleported during
      * the async open, dropping at the vault from that thread is a cross-region
      * write on Folia. Fire-and-forget is fine: nothing downstream depends on

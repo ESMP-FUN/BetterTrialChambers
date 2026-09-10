@@ -308,7 +308,7 @@ class VaultManager(private val plugin: BetterTrialChambers) {
 
     /**
      * Persists a player's freshly-earned capped-loot claims. `ONCE` items are stored globally
-     * (chamber_id = -1); `PER_CHAMBER` items under [chamberId]. Idempotent — re-recording an
+     * (chamber_id = -1); `PER_CHAMBER` items under [chamberId]. Idempotent, re-recording an
      * existing claim is a no-op. Uncapped (`PER_RESET`) items are ignored.
      */
     suspend fun recordLootRedemptions(
@@ -581,7 +581,7 @@ class VaultManager(private val plugin: BetterTrialChambers) {
      * locks a vault for the whole server once anybody opens it, so the claim is
      * simply the EARLIEST recorded open. No extra storage is needed: the existing
      * per-player open records already carry it, and they're wiped for the vault on
-     * every chamber reset by [resetAllCooldowns] — which is exactly when a shared
+     * every chamber reset by [resetAllCooldowns], which is exactly when a shared
      * vault should become available again.
      *
      * @return opener UUID paired with the claim time in milliseconds, or null if unclaimed
@@ -613,7 +613,7 @@ class VaultManager(private val plugin: BetterTrialChambers) {
     }
 
     /**
-     * Clears every player's hold on every vault in a chamber — both the plugin's
+     * Clears every player's hold on every vault in a chamber, both the plugin's
      * own records and Minecraft's built-in "already rewarded" list.
      *
      * Used by `/trial vault unlockall` and offered after switching

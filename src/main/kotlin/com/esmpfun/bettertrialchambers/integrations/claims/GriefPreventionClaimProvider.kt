@@ -11,7 +11,7 @@ import org.bukkit.entity.Player
  * `getClaim()` (create), via `getLesserBoundaryCorner()` / `getGreaterBoundaryCorner()`.
  * The actor is `getCreator()` (create) or `getModifier()` (resize); a non-player (console)
  * source is left alone. `ClaimExtendEvent` (vertical auto-extend) is intentionally not
- * guarded — it isn't a territorial claim of new ground.
+ * guarded, it isn't a territorial claim of new ground.
  */
 class GriefPreventionClaimProvider : ClaimProvider {
     override val id = "griefprevention"

@@ -15,7 +15,7 @@ import org.bukkit.entity.LivingEntity
  *
  *   `ENTITY_TYPE`   e.g. `ZOMBIE`, `BLAZE`, `WITHER_SKELETON`
  *
- * A `:abilities` suffix is tolerated for backward compatibility but ignored —
+ * A `:abilities` suffix is tolerated for backward compatibility but ignored,
  * the upstream `makeInfernal` method picks abilities randomly from config.
  *
  * Upstream (SpigotMC 2156 fork, okocraft/InfernalMobs):

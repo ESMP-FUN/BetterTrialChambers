@@ -40,7 +40,7 @@ class SpawnerKeyDropOwnerListener(private val plugin: BetterTrialChambers) : Lis
             val droppedAt = readDropTime(item) ?: return
             val elapsedMs = System.currentTimeMillis() - droppedAt
             if (elapsedMs >= graceSeconds * 1000L) {
-                return // grace expired — free-for-all
+                return // grace expired, free-for-all
             }
         }
 

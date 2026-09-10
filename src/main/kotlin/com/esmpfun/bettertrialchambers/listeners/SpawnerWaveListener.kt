@@ -72,7 +72,7 @@ class SpawnerWaveListener(private val plugin: BetterTrialChambers) : Listener {
             // Wild spawner - configure cooldown if setting is enabled
             configureWildSpawnerCooldown(block, isOminous)
 
-            // v1.4.0: WildSpawnerResolver seam — let a registered service
+            // v1.4.0: WildSpawnerResolver seam, let a registered service
             // (typically the planned premium "Wild Custom-Mob Spawners"
             // module) substitute the vanilla spawn with a custom-provider
             // mob. Mirrors the chamber-mode replace-after-spawn flow below.
@@ -86,7 +86,7 @@ class SpawnerWaveListener(private val plugin: BetterTrialChambers) : Listener {
         // The vanilla trial spawner has already produced `entity` and credited it internally
         // (tracked UUID, wave counter, etc.). We remove that entity the same tick and spawn
         // the provider's custom mob at the same location, then record THAT as the tracked
-        // wave mob. The vanilla spawner's state machine stays intact — we've just swapped
+        // wave mob. The vanilla spawner's state machine stays intact, we've just swapped
         // the creature under its feet.
         if (chamber != null && chamber.hasCustomMobProvider(isOminous)) {
             val providerId = chamber.customMobProvider
@@ -120,18 +120,18 @@ class SpawnerWaveListener(private val plugin: BetterTrialChambers) : Listener {
                         }
                         return
                     } else {
-                        plugin.logger.warning("[CustomProvider] ${provider.id} returned null for mobId '$mobId' — wave will undercount this spawn")
+                        plugin.logger.warning("[CustomProvider] ${provider.id} returned null for mobId '$mobId', wave will undercount this spawn")
                         return
                     }
                 } catch (e: Throwable) {
                     if (originalRemoved) {
-                        // The vanilla entity is already gone — recording it would
+                        // The vanilla entity is already gone, recording it would
                         // put a dead entity into the wave and stall the counter
                         // until sweepWaves papers over it.
-                        plugin.logger.warning("[CustomProvider] Replace-after-spawn failed post-remove (${provider.id}:$mobId): ${e.message} — wave will undercount this spawn")
+                        plugin.logger.warning("[CustomProvider] Replace-after-spawn failed post-remove (${provider.id}:$mobId): ${e.message}, wave will undercount this spawn")
                         return
                     }
-                    plugin.logger.warning("[CustomProvider] Replace-after-spawn failed (${provider.id}:$mobId): ${e.message} — falling back to vanilla")
+                    plugin.logger.warning("[CustomProvider] Replace-after-spawn failed (${provider.id}:$mobId): ${e.message}, falling back to vanilla")
                     // fall through to vanilla tracking
                 }
             }
@@ -167,7 +167,7 @@ class SpawnerWaveListener(private val plugin: BetterTrialChambers) : Listener {
      * Reads the `tcp:preset_id` PDC tag off the spawner block (written at
      * place-time by `SpawnerPresetPlaceListener`) so the resolver knows
      * which TCP preset the spawner was placed from. Spawners placed by
-     * other means (vanilla `/give`, schematic) carry no tag → presetId
+     * other means (vanilla `/give`, schematic) carry no tag -> presetId
      * passes as null.
      *
      * @return `true` if the spawn was replaced and the caller should `return`
@@ -199,7 +199,7 @@ class SpawnerWaveListener(private val plugin: BetterTrialChambers) : Listener {
             if (custom == null) {
                 plugin.logger.warning(
                     "[WildSpawnerResolver] ${provider.id} returned null for mobId '$mobId' at " +
-                        "${spawnerLocation.blockX},${spawnerLocation.blockY},${spawnerLocation.blockZ} — wave will undercount"
+                        "${spawnerLocation.blockX},${spawnerLocation.blockY},${spawnerLocation.blockZ}, wave will undercount"
                 )
                 return true  // we removed the original; nothing to record
             }
@@ -227,10 +227,10 @@ class SpawnerWaveListener(private val plugin: BetterTrialChambers) : Listener {
         } catch (e: Throwable) {
             plugin.logger.warning(
                 "[WildSpawnerResolver] Replacement failed (${provider.id}:$mobId): ${e.message}" +
-                    if (originalRemoved) " — wave will undercount this spawn" else " — falling back to vanilla"
+                    if (originalRemoved) ", wave will undercount this spawn" else ", falling back to vanilla"
             )
             // If the original entity was already removed, the caller must NOT
-            // record it — a dead entity in the wave stalls the counter until
+            // record it, a dead entity in the wave stalls the counter until
             // sweepWaves catches it. Only fall back to vanilla recording when
             // the failure happened before the removal.
             originalRemoved
@@ -353,7 +353,7 @@ class SpawnerWaveListener(private val plugin: BetterTrialChambers) : Listener {
     }
 
     /**
-     * Tears down any active wave when its trial spawner is broken — otherwise the boss bar
+     * Tears down any active wave when its trial spawner is broken, otherwise the boss bar
      * lingers (its tracked mobs may still be alive elsewhere, so it never satisfies the
      * normal completion conditions).
      */
@@ -365,7 +365,7 @@ class SpawnerWaveListener(private val plugin: BetterTrialChambers) : Listener {
         plugin.spawnerWaveManager.cancelWaveAt(loc)
         // A non-active spawner may carry a chamber-remaining standalone glow.
         plugin.spawnerWaveManager.removeStandaloneGlowAt(loc)
-        // The chamber's spawner count just changed — drop the cached count so
+        // The chamber's spawner count just changed, drop the cached count so
         // ChamberClearedEvent's all-spawners threshold re-scans.
         plugin.chamberManager.getCachedChamberAt(loc)?.let {
             plugin.spawnerWaveManager.invalidateChamberSpawnerCaches(it.id)
@@ -386,14 +386,14 @@ class SpawnerWaveListener(private val plugin: BetterTrialChambers) : Listener {
      * v1.5.0: catch chamber exits that aren't a walking move.
      *
      * [onPlayerMove] above is the only call site of `removePlayerFromDistantWaves`,
-     * and it only fires when the player's block coordinates change — `PlayerMoveEvent`
+     * and it only fires when the player's block coordinates change, `PlayerMoveEvent`
      * does NOT fire for teleports, respawns, or world changes. Without these three
      * extra hooks the boss bar attaches forever when a player leaves a chamber by
      * any non-walking exit (die-and-respawn, `/spawn`, `/home`, plugin teleports,
      * end portals, etc.). Reported in v1.4.7 against a die-inside, respawn-elsewhere
      * scenario.
      *
-     * Each handler runs `removePlayerFromDistantWaves` one tick later — at the time
+     * Each handler runs `removePlayerFromDistantWaves` one tick later, at the time
      * the event fires, `player.location` may still be the source position, so we wait
      * a tick for the destination to settle. The cleanup itself cross-world-checks and
      * distance-checks every tracked wave; bars attached to spawners that are no

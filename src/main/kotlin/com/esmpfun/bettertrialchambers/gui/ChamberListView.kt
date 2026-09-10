@@ -16,12 +16,12 @@ import org.bukkit.inventory.ItemStack
 class ChamberListHolder : BaseHolder()
 
 /**
- * Paginated chamber list view — 36 chambers per page with prev/next and a create-help card.
+ * Paginated chamber list view, 36 chambers per page with prev/next and a create-help card.
  * All strings from `messages.yml` under `gui.chamber-list.*` (v1.3.0; migrated to VcGui in v1.5.0).
  *
  * NB: still uses `runBlocking { ... }` to fetch locked-vault counts during construction.
  * Per the deferred-refactor entry, that should become an async-build/sync-show pattern
- * eventually — out of scope for the framework migration itself.
+ * eventually, out of scope for the framework migration itself.
  */
 class ChamberListView(
     private val plugin: BetterTrialChambers,

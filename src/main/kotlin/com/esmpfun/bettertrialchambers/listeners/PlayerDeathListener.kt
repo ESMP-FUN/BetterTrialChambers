@@ -24,7 +24,7 @@ class PlayerDeathListener(private val plugin: BetterTrialChambers) : Listener {
 
     /**
      * Drop any pending spectator offer when a player disconnects on the death
-     * screen — otherwise the entry (and its Location → world reference) lingers
+     * screen, otherwise the entry (and its Location -> world reference) lingers
      * until they rejoin and respawn, which may be never.
      */
     @EventHandler(priority = EventPriority.MONITOR)
@@ -52,7 +52,7 @@ class PlayerDeathListener(private val plugin: BetterTrialChambers) : Listener {
 
         // Set custom death message synchronously (while event is still being processed)
         if (plugin.config.getBoolean("messages.custom-death-message", false)) {
-            // v1.4.0: deathMessage takes a Component — use the MM-aware
+            // v1.4.0: deathMessage takes a Component, use the MM-aware
             // getMessageComponent directly instead of wrapping legacy String.
             event.deathMessage(
                 plugin.getMessageComponent("player-died-in-chamber",

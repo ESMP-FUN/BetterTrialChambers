@@ -10,7 +10,7 @@ import org.bukkit.Material
 class HelpMenuHolder : BaseHolder()
 
 /**
- * Help menu view — mirrors `/trial help`. v1.4.x rewrite, v1.5.0 to VcGui.
+ * Help menu view, mirrors `/trial help`. v1.4.x rewrite, v1.5.0 to VcGui.
  */
 class HelpMenuView(
     private val plugin: BetterTrialChambers,

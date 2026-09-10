@@ -26,7 +26,7 @@ class ConfigValidatorTest {
 
     @Test
     fun `validate returns 0 for an empty config`() {
-        // No keys present → nothing to clamp
+        // No keys present -> nothing to clamp
         val config = mockk<FileConfiguration>(relaxed = true)
         every { config.contains(any<String>()) } returns false
         val plugin = mockPluginWith(config)

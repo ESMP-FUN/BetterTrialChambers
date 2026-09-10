@@ -9,7 +9,7 @@ import org.bukkit.Bukkit
  * Why this is separate from [WorldEditUtil]: the JVM links (and bytecode-verifies)
  * a whole class the first time any of its methods is called. [WorldEditUtil] has
  * methods with `catch (IncompleteRegionException)` clauses, so verifying it forces
- * the loader to resolve `com.sk89q.worldedit.*` — which throws
+ * the loader to resolve `com.sk89q.worldedit.*`, which throws
  * `NoClassDefFoundError` when WorldEdit isn't installed. That means the very check
  * meant to guard WorldEdit usage couldn't run without WorldEdit present (it crashed
  * chamber resets and `/trial generate wand` on servers without WE). Keeping the guard

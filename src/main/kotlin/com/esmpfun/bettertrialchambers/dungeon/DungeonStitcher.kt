@@ -3,14 +3,14 @@ package com.esmpfun.bettertrialchambers.dungeon
 import kotlin.random.Random
 
 /**
- * Assembles a dungeon layout from room shapes — the pure, deterministic core
+ * Assembles a dungeon layout from room shapes, the pure, deterministic core
  * (no Bukkit world access; [org.bukkit.block.BlockFace] is just an enum).
  *
  * Model: rooms are placed **walled**; the stitcher records the doorway cells to
  * carve open for each successful join, so any connector left unused simply stays
  * a wall (no separate capping step). Two rooms joined at a connector are placed
  * face-adjacent (their inclusive boxes never overlap), and the two doorway cells
- * sit either side of the shared wall plane → a clean passage once carved.
+ * sit either side of the shared wall plane -> a clean passage once carved.
  *
  * Same [seed] ⇒ identical layout.
  */
@@ -37,7 +37,7 @@ class DungeonStitcher {
 
         while (open.isNotEmpty() && roomCount < params.maxRooms) {
             val conn = open.removeAt(rng.nextInt(open.size))
-            val a = tryAttach(conn, shapes, boxes, rng) ?: continue // no fit → connector stays a wall
+            val a = tryAttach(conn, shapes, boxes, rng) ?: continue // no fit -> connector stays a wall
             placeRoom(a.shape, a.rot, a.offX, a.offY, a.offZ, a.usedConnector, placements, boxes, open)
             // Carve both sides of the join: the open room's cell and the new room's cell across the wall.
             doorways.add(Doorway(conn.x, conn.y, conn.z, conn.outward))

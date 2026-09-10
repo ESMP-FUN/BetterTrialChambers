@@ -19,7 +19,7 @@ data class Connector(
 }
 
 /**
- * The geometry the stitcher needs about a room — no block data. [tags] carry
+ * The geometry the stitcher needs about a room, no block data. [tags] carry
  * roles like `entrance` / `vault` / `boss` (set as a capture argument).
  */
 data class RoomShape(

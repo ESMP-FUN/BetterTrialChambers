@@ -9,16 +9,16 @@ import org.bukkit.event.HandlerList
 
 /**
  * Fired after a trial-spawner wave mob has been spawned and recorded by
- * `SpawnerWaveManager` — covers BOTH vanilla spawns AND replacement spawns
+ * `SpawnerWaveManager`; covers BOTH vanilla spawns AND replacement spawns
  * produced by a custom mob provider (MythicMobs, EliteMobs, etc.).
  *
  * Not cancellable; the entity already exists in the world. To prevent or
- * substitute spawns, intercept earlier — either via Bukkit's
+ * substitute spawns, intercept earlier: either via Bukkit's
  * `CreatureSpawnEvent` with `SpawnReason.TRIAL_SPAWNER`, or by registering a
  * `TrialMobProvider` on the chamber.
  *
  * The point of this event is to give third-party plugins a single hook with
- * **chamber + wave context attached** — what `CreatureSpawnEvent` doesn't
+ * **chamber + wave context attached**, which is what `CreatureSpawnEvent` doesn't
  * carry. Useful for difficulty scaling (level the mob based on wave
  * progress), boss-bar augmentation, ML/analytics, or seasonal modifiers
  * that need to know "which chamber, which spawner, normal or ominous wave".
@@ -41,7 +41,7 @@ import org.bukkit.event.HandlerList
  * @property spawnerLocation The trial spawner block that produced this mob.
  * @property chamber         The registered chamber this spawner belongs to.
  *                           **Null for wild spawners** (placed outside any
- *                           registered chamber) — listeners that only care
+ *                           registered chamber); listeners that only care
  *                           about chamber spawns should bail when this is
  *                           null.
  * @property isOminous       Whether this is an ominous-wave spawn.

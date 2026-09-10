@@ -8,7 +8,7 @@ package com.esmpfun.bettertrialchambers.models
  * The `normalConfig` / `ominousConfig` strings are *resource locations* that
  * point at a datapack-defined trial spawner config (e.g.
  * `namespace:basic_zombie`). The plugin doesn't validate that the
- * datapack exists — that's the server owner's responsibility — but the field
+ * datapack exists, that's the server owner's responsibility, but the field
  * IS quoted as a string in the produced NBT so an inline-compound form will
  * not parse correctly here. Keep configs in datapacks.
  *
@@ -19,12 +19,12 @@ package com.esmpfun.bettertrialchambers.models
  * [ticksBetweenSpawn], [spawnRange]) override the referenced datapack
  * config's values. Vanilla only reads these from inside the configuration
  * compound (not the block-entity top level), so they are NOT baked into the
- * item NBT — `SpawnerPresetPlaceListener` applies them to the block at place
+ * item NBT, `SpawnerPresetPlaceListener` applies them to the block at place
  * time via Paper's `TrialSpawnerConfiguration` API.
  *
  * Note: the preset can ONLY produce `Material.TRIAL_SPAWNER` items by design;
  * there is no `material` field in the YAML schema. Other block types (vaults,
- * etc.) are out of scope for the free tier — they belong to a separate
+ * etc.) are out of scope for the free tier, they belong to a separate
  * "vault preset" / custom-key system in the planned premium module.
  */
 data class SpawnerPreset(

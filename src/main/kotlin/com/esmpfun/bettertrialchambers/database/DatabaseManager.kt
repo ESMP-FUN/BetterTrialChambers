@@ -14,7 +14,7 @@ import java.sql.SQLException
  * Manages database connections using HikariCP connection pooling.
  * Supports both SQLite and MySQL databases.
  *
- * **v1.4.0 — open for extension.** This class is `open` so third-party
+ * **v1.4.0, open for extension.** This class is `open` so third-party
  * plugins (notably a planned premium "Network Sync" module adding Postgres
  * / MariaDB / Redis support) can subclass and register their implementation
  * via Bukkit's [org.bukkit.plugin.ServicesManager] at higher priority. The
@@ -72,7 +72,7 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
         val rawPrefix = config.getString("database.table-prefix", TableNames.DEFAULT_PREFIX)
         if (!TableNames.isValid(rawPrefix)) {
             plugin.logger.warning(
-                "Invalid database.table-prefix '$rawPrefix' (letters/digits/underscore, max 16 chars) — falling back to '${TableNames.DEFAULT_PREFIX}'"
+                "Invalid database.table-prefix '$rawPrefix' (letters/digits/underscore, max 16 chars), falling back to '${TableNames.DEFAULT_PREFIX}'"
             )
         }
         tables = TableNames.of(rawPrefix)
@@ -98,7 +98,7 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
 
         // Verify the live schema matches what the code expects, then heal/report drift.
         // Catches tables created by a much older build (or externally) that CREATE TABLE
-        // IF NOT EXISTS won't update — e.g. a player_stats table missing newer columns.
+        // IF NOT EXISTS won't update, e.g. a player_stats table missing newer columns.
         verifyAndHealSchema()
     }
 
@@ -271,7 +271,7 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
                 // contents each player's first-open copy is cloned from, one
                 // row per container position. Materialized once (by rolling the
                 // block's vanilla loot table) on first access, editable by ops
-                // (sneak-open), and — unlike per-player copies — PERSISTS across
+                // (sneak-open), and, unlike per-player copies, PERSISTS across
                 // chamber resets so edits stick. Cascade-deleted with the chamber.
                 stmt.execute(
                     """
@@ -386,7 +386,7 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
                     }
                 }
 
-                // v1.4.3: Chamber paused state — keeps the DB record while suspending all active behavior
+                // v1.4.3: Chamber paused state, keeps the DB record while suspending all active behavior
                 try {
                     stmt.execute("ALTER TABLE ${tables.chambers} ADD COLUMN is_paused BOOLEAN NOT NULL DEFAULT 0")
                     plugin.logger.info("Migration executed: Added is_paused column")
@@ -477,9 +477,9 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
     }
 
     /**
-     * `player_stats` columns the self-check can safely add to an older table (name → the
+     * `player_stats` columns the self-check can safely add to an older table (name -> the
      * column definition for `ALTER TABLE ADD COLUMN`). The primary key (`player_uuid`) is
-     * intentionally absent — it can't be added to a populated table, so its absence is
+     * intentionally absent, it can't be added to a populated table, so its absence is
      * reported loudly instead.
      */
     private val healablePlayerStatsColumns = linkedMapOf(
@@ -565,7 +565,7 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
      * disturbing any other plugin's `player_stats` table on a shared database.
      *
      * - **Recovery (for the 1.5.16 metadata bug):** if a `tcp_player_stats` exists but has no
-     *   `player_uuid` column, it isn't ours — it was wrongly renamed from a foreign `player_stats`
+     *   `player_uuid` column, it isn't ours, it was wrongly renamed from a foreign `player_stats`
      *   by a bug in `actualColumns`. If the `player_stats` name is free, rename it back so the
      *   other plugin gets its table (and data) returned; TCP then creates its own fresh table.
      * - **Adopt:** if a legacy `player_stats` is unmistakably TCP's (has `player_uuid`) and the
@@ -576,7 +576,7 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
         val target = tables.playerStats
         val targetCols = actualColumns(conn, target)
         if (targetCols.isNotEmpty()) {
-            if ("player_uuid" in targetCols) return // ours already — nothing to do
+            if ("player_uuid" in targetCols) return // ours already, nothing to do
             // Not ours. Only the historical tcp_ name can carry the 1.5.16 wrong-rename bug;
             // put the foreign table back if its original name is free.
             if (target == LEGACY_NAMESPACED_STATS_TABLE && actualColumns(conn, LEGACY_STATS_TABLE).isEmpty()) {
@@ -590,7 +590,7 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
                 // fall through: with player_stats restored, the adopt step below sees a foreign
                 // table (no player_uuid) and leaves it, and createTables makes a fresh stats table.
             } else {
-                plugin.logger.severe("'$target' exists but isn't TCP's — can't auto-reconcile. TCP stats are disabled until resolved; see /trial debug schema.")
+                plugin.logger.severe("'$target' exists but isn't TCP's, can't auto-reconcile. TCP stats are disabled until resolved; see /trial debug schema.")
                 return
             }
         }
@@ -613,7 +613,7 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
     /**
      * Creation-time signature columns per legacy base table name. A legacy unprefixed table
      * is adopted (renamed under the configured prefix) only when it has every one of these
-     * columns — i.e. it's unmistakably TCP's, not another plugin's same-named table.
+     * columns, i.e. it's unmistakably TCP's, not another plugin's same-named table.
      * Deliberately excludes columns added by later ALTER-TABLE migrations, so installs
      * skipping several versions still match.
      */
@@ -646,9 +646,9 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
      *
      * Safety: a table is only renamed when it exists, the prefixed target does NOT exist, and
      * its columns contain that table's [legacyTableSignatures] set. If both old and new exist,
-     * it's logged SEVERE and skipped — never clobbered. On SQLite the batch runs with
+     * it's logged SEVERE and skipped, never clobbered. On SQLite the batch runs with
      * `PRAGMA foreign_keys=OFF` so intermediate states can't trip constraint checks (modern
-     * SQLite rewrites child FK references automatically on `ALTER TABLE … RENAME TO`).
+     * SQLite rewrites child FK references automatically on `ALTER TABLE ... RENAME TO`).
      */
     private fun migrateTablePrefix(conn: Connection) {
         val prefix = tables.prefix
@@ -658,14 +658,14 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
         for (base in TableNames.LEGACY_BASE_NAMES) {
             val target = "$prefix$base"
             val oldCols = actualColumns(conn, base)
-            if (oldCols.isEmpty()) continue // no legacy table — fresh install or already migrated
+            if (oldCols.isEmpty()) continue // no legacy table, fresh install or already migrated
             val signature = legacyTableSignatures[base] ?: continue
             if (!oldCols.containsAll(signature)) {
-                plugin.logger.info("Leaving table '$base' alone — it doesn't match TCP's schema (likely another plugin's table).")
+                plugin.logger.info("Leaving table '$base' alone, it doesn't match TCP's schema (likely another plugin's table).")
                 continue
             }
             if (actualColumns(conn, target).isNotEmpty()) {
-                plugin.logger.severe("Both '$base' and '$target' exist — cannot auto-migrate table prefix for '$base'. TCP will use '$target'; reconcile or remove the legacy '$base' manually.")
+                plugin.logger.severe("Both '$base' and '$target' exist; cannot auto-migrate table prefix for '$base'. TCP will use '$target'; reconcile or remove the legacy '$base' manually.")
                 continue
             }
             renames += base to target
@@ -690,7 +690,7 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
                             if (sqlite) stmt.execute("DROP INDEX IF EXISTS $index")
                             else stmt.execute("DROP INDEX $index ON $prefix$base")
                         } catch (_: SQLException) {
-                            // best effort — a leftover index is harmless
+                            // best effort, a leftover index is harmless
                         }
                     }
                 } finally {
@@ -699,7 +699,7 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
             }
             plugin.logger.info("Renamed ${renames.size} legacy table(s) to prefix '$prefix'.")
         } catch (e: SQLException) {
-            plugin.logger.severe("Table-prefix migration failed: ${e.message}. TCP may create empty prefixed tables alongside your legacy data — restore from backup or rename manually.")
+            plugin.logger.severe("Table-prefix migration failed: ${e.message}. TCP may create empty prefixed tables alongside your legacy data. Restore from backup or rename manually.")
         }
     }
 
@@ -715,8 +715,8 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
                 while (rs.next()) {
                     // CRITICAL: getColumns() treats '_' and '%' in the table-name pattern as
                     // SQL wildcards, so it can return rows for OTHER tables (e.g. the pattern
-                    // "player_stats" also matches "playerXstats"). Filter to the exact table —
-                    // and to the current catalog — so we never union foreign tables' columns.
+                    // "player_stats" also matches "playerXstats"). Filter to the exact table,
+                    // and to the current catalog, so we never union foreign tables' columns.
                     val rowTable = rs.getString("TABLE_NAME") ?: continue
                     if (!rowTable.equals(table, ignoreCase = true)) continue
                     if (catalog != null) {
@@ -727,7 +727,7 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
                 }
             }
         } catch (_: Exception) {
-            // metadata not available — leave empty
+            // metadata not available, leave empty
         }
         return cols
     }

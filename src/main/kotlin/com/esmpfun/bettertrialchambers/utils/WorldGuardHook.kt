@@ -12,7 +12,7 @@ import org.bukkit.plugin.Plugin
  * region owners/staff can work inside chambers that overlap their regions.
  *
  * All WorldGuard/WorldEdit classes are referenced only inside method bodies and
- * are reached only after [isAvailable] — so the class loads fine on servers
+ * are reached only after [isAvailable], so the class loads fine on servers
  * without WorldGuard (the API is a `compileOnly` dependency).
  */
 object WorldGuardHook {
@@ -24,12 +24,12 @@ object WorldGuardHook {
     }
 
     /**
-     * True when TCP should DEFER to WorldGuard at [location] for [player] — i.e.
+     * True when TCP should DEFER to WorldGuard at [location] for [player], i.e.
      * a WG region covers the point and grants this player build rights (or they
      * hold WG bypass). When true, the caller skips TCP's own protection.
      *
      * Returns false when WG is absent/errors, there is no region at the point,
-     * or the player has no build rights there — so TCP protection applies as
+     * or the player has no build rights there, so TCP protection applies as
      * normal. **Only call after [isAvailable] returns true.**
      */
     fun grantsBuild(player: Player, location: Location): Boolean {
@@ -42,7 +42,7 @@ object WorldGuardHook {
             if (platform.sessionManager.hasBypass(localPlayer, weWorld)) return true
             val weLoc = com.sk89q.worldedit.bukkit.BukkitAdapter.adapt(location)
             val query = platform.regionContainer.createQuery()
-            // No WG region here → don't disable TCP protection at this spot.
+            // No WG region here -> don't disable TCP protection at this spot.
             if (query.getApplicableRegions(weLoc).size() == 0) return false
             // A region covers it: defer only if WG would let this player build
             // (membership or an explicit allow on the BUILD flag).

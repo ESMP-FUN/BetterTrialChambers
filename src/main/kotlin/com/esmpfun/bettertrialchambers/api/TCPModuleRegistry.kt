@@ -16,7 +16,7 @@ import java.util.concurrent.CopyOnWriteArrayList
  * order they registered, and [shutdownAll] unloads them in reverse. This
  * matters when modules depend on each other (a dependent module
  * registered later sees its dependency unloaded first only if it
- * registered later — modules with cross-dependencies should declare them
+ * registered later; modules with cross-dependencies should declare them
  * via Bukkit's `softdepend` so the plugin manager handles the order).
  *
  * **Lifecycle integration**:
@@ -55,7 +55,7 @@ class TCPModuleRegistry(private val plugin: BetterTrialChambers) : Listener {
      * module is queued and loaded by [loadAllPending] when TCP finishes
      * its async startup.
      *
-     * Re-registering an id is rejected with a warning — modules are
+     * Re-registering an id is rejected with a warning; modules are
      * expected to be singletons.
      */
     fun register(module: TCPModule) {
@@ -79,7 +79,7 @@ class TCPModuleRegistry(private val plugin: BetterTrialChambers) : Listener {
     /**
      * Manually unregister a module. Invokes [TCPModule.onUnload] on the
      * primary thread, then removes the module from the registry. Safe to
-     * call multiple times — second call is a no-op.
+     * call multiple times; the second call is a no-op.
      */
     fun unregister(id: String) {
         val module = modules.remove(id) ?: return

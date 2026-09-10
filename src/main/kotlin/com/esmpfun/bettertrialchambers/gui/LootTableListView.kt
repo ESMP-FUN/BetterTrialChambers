@@ -12,7 +12,7 @@ import org.bukkit.inventory.ItemStack
 class LootTableListHolder : BaseHolder()
 
 /**
- * Loot table list view — browse all loot tables for direct editing.
+ * Loot table list view, browse all loot tables for direct editing.
  * All strings from `messages.yml` under `gui.loot-table-list.*` (v1.3.0;
  * migrated to VcGui in v1.5.0).
  */

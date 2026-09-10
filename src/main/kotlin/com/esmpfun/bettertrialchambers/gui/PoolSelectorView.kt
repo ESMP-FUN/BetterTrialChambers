@@ -14,13 +14,13 @@ import org.bukkit.inventory.ItemStack
 class PoolSelectorHolder : BaseHolder()
 
 /**
- * Pool selector view — pick which pool of a multi-pool loot table to edit.
+ * Pool selector view, pick which pool of a multi-pool loot table to edit.
  * v1.3.0; migrated to VcGui in v1.5.0.
  *
  * Edge case preserved: if the table is missing or legacy-format, the IF
  * version short-circuited to open the loot editor directly. We can't do
  * that pre-open from inside super(...), so the caller (MenuService) must
- * handle that branch — or this view opens, shows nothing, and the user
+ * handle that branch, or this view opens, shows nothing, and the user
  * clicks back. To preserve behavior we just route Back to chamber detail
  * in those cases via empty layout.
  */
@@ -49,7 +49,7 @@ class PoolSelectorView(
 
         if (table == null || table.isLegacyFormat()) {
             // Short-circuit handled by the caller in MenuService.openPoolSelect /
-            // openGlobalPoolSelect — they redirect to openLootEditor before this
+            // openGlobalPoolSelect, they redirect to openLootEditor before this
             // view ever opens. As a safety net here, populate a back button only.
             set(45, GuiComponents.backVcItem(plugin, "gui.common.dest-loot") { ctx ->
                 if (chamber != null) {

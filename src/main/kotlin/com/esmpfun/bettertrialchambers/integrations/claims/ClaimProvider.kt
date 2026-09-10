@@ -20,7 +20,7 @@ data class ClaimAttempt(
  * One land-claim plugin integration (Residence / Lands / GriefPrevention).
  *
  * Implementations talk to their plugin **purely via reflection**, so TCP carries no
- * compile-time dependency on — or version pin to — any of them. The integration binds
+ * compile-time dependency on, or version pin to, any of them. The integration binds
  * to whatever version the server actually runs; if a method is missing the call simply
  * yields null and that event/scan is skipped rather than throwing.
  */
@@ -51,7 +51,7 @@ interface ClaimProvider {
     fun findConflicts(plugin: BetterTrialChambers, chambers: List<Chamber>): Map<Chamber, List<String>>
 }
 
-/** Reflection helpers shared by the providers — every call is null-safe. */
+/** Reflection helpers shared by the providers, every call is null-safe. */
 internal object Refl {
     /** Invoke a no-arg public method [name] on [target], or null on any failure. */
     fun call(target: Any?, name: String): Any? = try {

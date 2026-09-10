@@ -9,12 +9,12 @@ import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 
 /**
- * Paper Dialog renderer for the setup tour — the primary UI when the Dialog API is present.
+ * Paper Dialog renderer for the setup tour, the primary UI when the Dialog API is present.
  *
  * **References Paper-only Dialog classes** (via [DialogPromptManager]); only ever instantiated
  * when [DialogPromptManager.isAvailable]. The dialog *title* is a neutral "Setup" header (so it
  * isn't mistaken for a warning), and the **setting name leads the body** as a bold heading right
- * above its description. Buttons run in-process — apply via the controller, then show the next
+ * above its description. Buttons run in-process, apply via the controller, then show the next
  * step's dialog.
  */
 class SetupTourDialog(
@@ -101,9 +101,9 @@ class SetupTourDialog(
             }
         }
         if (index > 0) {
-            list += DialogPromptManager.Action(Component.text("← Prev", NamedTextColor.GRAY)) { prev(player) }
+            list += DialogPromptManager.Action(Component.text("Prev", NamedTextColor.GRAY)) { prev(player) }
         }
-        list += DialogPromptManager.Action(Component.text("Skip Question →", NamedTextColor.GRAY)) { next(player) }
+        list += DialogPromptManager.Action(Component.text("Skip Question", NamedTextColor.GRAY)) { next(player) }
         list += DialogPromptManager.Action(Component.text("⏸ Pause Setup", NamedTextColor.YELLOW)) {
             controller.pause(player.uniqueId)
             player.sendMessage(plugin.getMessageComponent("setup.paused"))

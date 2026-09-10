@@ -14,10 +14,10 @@ import java.util.concurrent.TimeUnit
 class ChamberDetailHolder : BaseHolder()
 
 /**
- * Chamber detail view — central management screen for a single chamber.
+ * Chamber detail view, central management screen for a single chamber.
  * All strings from `messages.yml` under `gui.chamber-detail.*` (v1.3.0;
  * migrated to VcGui in v1.5.0). Layout slots match the original
- * (StaticPane (col, row)) — converted to `row * 9 + col` indices.
+ * (StaticPane (col, row)), converted to `row * 9 + col` indices.
  */
 class ChamberDetailView(
     private val plugin: BetterTrialChambers,
@@ -183,7 +183,7 @@ class ChamberDetailView(
      * it's the one that confused admins: the chamber has been pointed at a table
      * that other chambers may share, so an edit here reaches further than the
      * chamber you're standing in. Saying that on the item is the only warning most
-     * operators will ever see — they don't read changelogs.
+     * operators will ever see, they don't read changelogs.
      */
     private fun createLootItem(
         kind: MenuService.LootKind,
@@ -247,7 +247,7 @@ class ChamberDetailView(
         val enabled = plugin.config.getBoolean("chests.per-player-loot", false)
         return GuiComponents.infoItem(plugin, Material.CHEST,
             "gui.chamber-detail.container-loot-name", "gui.chamber-detail.container-loot-lore",
-            // Raw message (legacy `&`) — getMessage() returns section codes that
+            // Raw message (legacy `&`), getMessage() returns section codes that
             // break the lore's MiniMessage re-parse (renders `&` codes literally).
             "status" to (plugin.getMessageList(
                 if (enabled) "gui.container-loot.status-on" else "gui.container-loot.status-off"
@@ -369,7 +369,7 @@ class ChamberDetailView(
                                 player.sendMessage(plugin.getMessageComponent("gui-chamber-reset-complete", "chamber" to chamber.name))
                                 player.closeInventory()
                             } else {
-                                // Reset returned false (e.g. an error during restoration) —
+                                // Reset returned false (e.g. an error during restoration),
                                 // don't claim success and leave the operator wondering.
                                 player.sendMessage(plugin.getMessageComponent("gui-reset-failed", "error" to "Check console for details"))
                             }
