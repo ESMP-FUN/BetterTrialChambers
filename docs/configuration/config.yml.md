@@ -1361,7 +1361,7 @@ metrics:
   error-reporting: true
 ```
 
-_(Added in 1.5.7. Provider switched from bStats to [FastStats](https://faststats.dev) in 2.0.5.)_ Anonymous aggregate usage metrics: database backend, whether discovery is on, glow mode, chamber-count bucket, and which premium modules are installed. No player data is ever collected.
+_(Added in 1.5.7. Provider switched from bStats to [FastStats](https://faststats.dev) in 2.0.5.)_ Anonymous aggregate usage metrics. No player data is ever collected. What is sent: server software and Minecraft version, database backend, which features are on (auto-discovery, per-player container loot, spawner glow mode, custom mob provider, reset interval band), rough chamber counts and sizes, how many chambers lack a snapshot, which other plugins BTC can hook, which premium modules are installed, and how many resets, vault opens, and chamber clears happened since the last report.
 
 - `enabled` (**default `true`**): set `false` to stop this plugin sending anything. To disable metrics for every FastStats plugin on the server, set `enabled=false` in `plugins/faststats/config.properties` (the replacement for the old `plugins/bStats/config.yml`).
 - Nothing is sent on the first run: FastStats writes the opt-out file and waits for the next restart, so you get a chance to opt out first.
@@ -1374,7 +1374,7 @@ Automatically report BetterTrialChambers' own errors so bugs get fixed without y
 
 - Only this plugin's errors are captured, never another plugin's.
 - Before anything is sent, IP addresses, file paths containing your username, database credentials, and player UUIDs are replaced with placeholders. Player names, chat, inventories, coordinates, and world data are never included.
-- Each report also carries the plugin version, your Minecraft version, your database type (sqlite or mysql), whether the server runs Folia, and a rough chamber-count band, so a fix can target the right setup.
+- Each report also carries the plugin version, your Minecraft version, your database type (sqlite or mysql), whether the server runs Folia, a rough chamber-count band, and which BTC operation was running, so a fix can target the right setup.
 - Routine shutdown and reload cancellations are filtered out.
 
 To turn error reports off across every FastStats plugin, set `submitErrors=false` in `plugins/faststats/config.properties`.

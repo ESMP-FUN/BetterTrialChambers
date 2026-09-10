@@ -650,8 +650,12 @@ setup:
 chests:
   per-player-loot: false
 
-# Anonymous usage metrics (FastStats). No player data is collected, just
-# aggregate config/feature usage that guides development priorities.
+# Anonymous usage metrics (FastStats). No player data is collected. What is sent:
+# server software and Minecraft version, database type, which features are on
+# (auto-discovery, per-player container loot, spawner glow, custom mob provider,
+# reset interval band), rough chamber counts and sizes, which other plugins BTC
+# can hook, and how many resets / vault opens / chamber clears happened since the
+# last report. It guides where development time goes.
 # Server-wide opt-out for ALL FastStats plugins: set enabled=false in
 # plugins/faststats/config.properties (replaces the old plugins/bStats/config.yml).
 # Note: FastStats submits nothing on its first run, it writes that opt-out file
@@ -665,10 +669,11 @@ metrics:
   # Only exceptions thrown by THIS plugin are sent; other plugins' errors are
   # never captured. Before anything leaves your server, IP addresses, file paths
   # containing your username, database credentials and player UUIDs are stripped
-  # out and replaced with placeholders. Each report also carries the plugin
-  # version, your database type (sqlite or mysql), whether the server runs Folia,
-  # and a rough chamber-count band, so a fix can target the right setup. Player
-  # names, chat, inventories and world data are never included.
+  # out and replaced with placeholders. Each report also carries the plugin and
+  # Minecraft version, your database type (sqlite or mysql), whether the server
+  # runs Folia, a rough chamber-count band, and which BTC operation was running,
+  # so a fix can target the right setup. Player names, chat, inventories and world
+  # data are never included.
   # (Server-wide off switch: submitErrors=false in plugins/faststats/config.properties.)
   error-reporting: true
 

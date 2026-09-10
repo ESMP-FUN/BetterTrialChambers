@@ -460,6 +460,12 @@ class ResetManager(private val plugin: BetterTrialChambers) {
             // tell the operator. CancellationException is rethrown above.
             plugin.logger.severe("Failed to reset chamber ${chamber.name}: ${e.javaClass.simpleName}: ${e.message}")
             e.printStackTrace()
+            com.esmpfun.bettertrialchambers.integrations.MetricsService.reportHandled(
+                e, "chamber-reset",
+                "volume" to chamber.getVolume(),
+                "reason" to reason.name,
+                "manual" to (initiatingPlayer != null),
+            )
             false
         }
     }
