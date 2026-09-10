@@ -1358,7 +1358,7 @@ See [Commands](../reference/commands.md) for the `/trial update` subcommands.
 ```yaml
 metrics:
   enabled: true
-  error-reporting: false
+  error-reporting: true
 ```
 
 _(Added in 1.5.7. Provider switched from bStats to [FastStats](https://faststats.dev) in 2.0.5.)_ Anonymous aggregate usage metrics: database backend, whether discovery is on, glow mode, chamber-count bucket, and which premium modules are installed. No player data is ever collected.
@@ -1368,12 +1368,13 @@ _(Added in 1.5.7. Provider switched from bStats to [FastStats](https://faststats
 
 <details>
 
-<summary><code>error-reporting</code> (2.0.7+)</summary>
+<summary><code>error-reporting</code></summary>
 
-Automatically report BetterTrialChambers' own errors. **Default:** `false`, opt-in.
+Automatically report BetterTrialChambers' own errors so bugs get fixed without you filing a ticket. **Default:** `true`. Set to `false` to turn it off.
 
 - Only this plugin's errors are captured, never another plugin's.
 - Before anything is sent, IP addresses, file paths containing your username, database credentials, and player UUIDs are replaced with placeholders. Player names, chat, inventories, coordinates, and world data are never included.
+- Each report also carries the plugin version, your Minecraft version, your database type (sqlite or mysql), whether the server runs Folia, and a rough chamber-count band, so a fix can target the right setup.
 - Routine shutdown and reload cancellations are filtered out.
 
 To turn error reports off across every FastStats plugin, set `submitErrors=false` in `plugins/faststats/config.properties`.

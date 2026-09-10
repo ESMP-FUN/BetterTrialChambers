@@ -23,14 +23,16 @@ import dev.faststats.data.Metric
  * chance to opt out first. A fresh install showing no data for one boot is
  * expected, not a misconfiguration.
  *
- * Error reporting is **opt-in** (`metrics.error-reporting`, default false since
- * v2.0.7). When switched on it reports BTC's own uncaught exceptions so bugs
- * surface without waiting for someone to open a ticket. Scoped and filtered:
+ * Error reporting is **on by default** (`metrics.error-reporting`, set false to
+ * turn off). It reports BTC's own uncaught exceptions so bugs surface without
+ * waiting for someone to open a ticket. Scoped and filtered:
  *  - `contextAware(classLoader)` binds it to THIS plugin's class loader, so other
  *    plugins' exceptions are never captured, only ours.
- *  - Server-wide kill switch remains `submitErrors=false` in
+ *  - Server-wide off switch remains `submitErrors=false` in
  *    `plugins/faststats/config.properties`.
- *  - Extra anonymisation on top of the SDK's built-ins (see [buildErrorTracker]).
+ *  - Extra anonymisation on top of the SDK's built-ins, plus fixed non-player
+ *    context (plugin/MC version, database type, Folia, chamber-count band) so a
+ *    fix can target the right setup. See [buildErrorTracker].
  *
  * Metric suppliers are [java.util.concurrent.Callable]s evaluated by the SDK on
  * its own submission schedule; every one below reads cheap in-memory state only.
@@ -54,27 +56,21 @@ object MetricsService {
         // but two contexts would mean two submission schedulers.
         if (context != null) return "Enabled"
 
-        // Opt-in by default: sending exception data is a bigger step than anonymous
-        // counters, so it's the owner's call.
-        //
-        // A pre-release build briefly used `metrics.error-tracking` defaulting to true.
-        // That was never published, but mergeYamlDefaults writes new keys into the
-        // deployed config.yml at startup, so any server that ran it still carries a
-        // literal `error-tracking: true` line, a value nobody chose. Renaming the key
-        // rather than just flipping its default means that stale line can't silently
-        // switch reporting on.
+        // The unpublished pre-release key `metrics.error-tracking` is dead. It is
+        // read only to tell an owner the line is inert, since mergeYamlDefaults may
+        // have written it into their deployed config.yml.
         val legacyKey = "metrics.error-tracking"
         if (plugin.config.isSet(legacyKey)) {
             plugin.logger.info(
-                "config.yml: '$legacyKey' is no longer used, error reporting is now opt-in via " +
-                    "'metrics.error-reporting' (default false). The old line is inert and can be deleted."
+                "config.yml: '$legacyKey' is no longer used. Error reporting is controlled by " +
+                    "'metrics.error-reporting' (on by default). The old line is inert and can be deleted."
             )
         }
-        val errorReporting = plugin.config.getBoolean("metrics.error-reporting", false)
+        val errorReporting = plugin.config.getBoolean("metrics.error-reporting", true)
 
         return try {
             val ctx = BukkitContext.Factory(plugin, PROJECT_TOKEN)
-                .also { if (errorReporting) it.errorTrackerService(buildErrorTracker()) }
+                .also { if (errorReporting) it.errorTrackerService(buildErrorTracker(plugin)) }
                 .metrics { factory ->
                     factory
                         .addMetric(Metric.string("database_type") {
@@ -88,13 +84,7 @@ object MetricsService {
                             else plugin.config.getString("spawner-waves.glow-mode", "wave-active") ?: "wave-active"
                         })
                         .addMetric(Metric.string("chamber_count") {
-                            when (val n = plugin.chamberManager.getCachedChamberNames().size) {
-                                0 -> "0"
-                                in 1..10 -> "1-10"
-                                in 11..50 -> "11-50"
-                                in 51..100 -> "51-100"
-                                else -> if (n <= 250) "101-250" else "250+"
-                            }
+                            chamberCountBucket(plugin.chamberManager.getCachedChamberNames().size)
                         })
                         .addMetric(Metric.numberMap("premium_modules") {
                             val map = HashMap<String, Number>()
@@ -146,8 +136,8 @@ object MetricsService {
      *  - player UUIDs, so the "no player data is collected" promise stays literally
      *    true even when a stack trace happens to carry one.
      */
-    private fun buildErrorTracker(): ErrorTracker =
-        ErrorTracker.contextAware(MetricsService::class.java.classLoader)
+    private fun buildErrorTracker(plugin: BetterTrialChambers): ErrorTracker {
+        val tracker = ErrorTracker.contextAware(MetricsService::class.java.classLoader)
             .ignoreError(java.util.concurrent.CancellationException::class.java)
             .ignoreError("(?i).*\\b(?:job|coroutine)\\b.*\\bcancell?ed\\b.*")
             .anonymize("(?i)([?&;](?:user|username|password|pass|pwd)=)[^&;\\s\"']*", "$1[hidden]")
@@ -155,6 +145,30 @@ object MetricsService {
                 "\\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\b",
                 "[uuid hidden]"
             )
+
+        // Non-inferrable context attached to every report. Read once at startup;
+        // all four are effectively fixed for the server's lifetime and none carry
+        // player data. They let a fix target the setup a crash came from.
+        runCatching {
+            tracker.attributes
+                .put("btc_version", plugin.pluginMeta.version)
+                .put("mc_version", plugin.server.minecraftVersion)
+                .put("database", plugin.databaseManager.databaseType.toString().lowercase())
+                .put("folia", plugin.scheduler.isFolia)
+                .put("chambers", chamberCountBucket(plugin.chamberManager.getCachedChamberNames().size))
+        }
+        return tracker
+    }
+
+    /** Coarse fleet band for a chamber count. Shared by the metric and the error context. */
+    private fun chamberCountBucket(n: Int): String = when (n) {
+        0 -> "0"
+        in 1..10 -> "1-10"
+        in 11..50 -> "11-50"
+        in 51..100 -> "51-100"
+        in 101..250 -> "101-250"
+        else -> "250+"
+    }
 
     /**
      * Releases the SDK's submission scheduler. Without this a `/reload` (or any
