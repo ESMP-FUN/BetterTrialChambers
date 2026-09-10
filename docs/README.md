@@ -1,79 +1,70 @@
 # Welcome
 
-Transform Minecraft's Trial Chambers from single-use dungeons into renewable, multiplayer-ready content. Automatic resets, per-player vault loot, custom rewards, griefing protection — and it works on every natural chamber in your world without any setup per-chamber.
+BetterTrialChambers makes Minecraft's Trial Chambers reusable on a multiplayer server: every player gets their own vault loot, chambers reset on a schedule, and spawners are protected from griefing. It can find and manage every natural chamber in your world with no per-chamber setup.
 
 ***
 
-## The problem it solves
+## Features
 
-Vanilla Trial Chambers weren't designed for multiplayer. The first player takes everything, vaults stay locked forever, and griefers can destroy spawners. On a server with more than one player, chambers become single-use content almost immediately.
-
-BetterTrialChambers fixes all of that: every player gets their own loot roll, chambers reset on a schedule, spawners are protected, and progression is tracked. The plugin can find and manage natural chambers automatically — no WorldEdit, no commands per chamber.
-
-***
-
-## What you can do
-
-* **Automatic resets** — chambers restore on schedule, with warnings before the reset fires.
-* **Per-player vaults** — every player gets their own loot roll with their own cooldown.
-* **Full protection** — block break / place, container access, mob griefing, WorldGuard-aware, and claim-plugin-aware (Residence / Lands / GriefPrevention can't claim a chamber).
-* **Statistics & leaderboards** — track vaults opened, mobs killed, chambers completed, time spent.
-* **Custom loot** — multi-pool tables, command rewards, potions, tipped arrows, custom plugin items (Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible), resource-pack items via `custom-model-data`.
-* **Auto-discovery** — opt-in; the plugin finds and registers every natural chamber on its own.
-* **Admin GUI** — `/trial menu` handles everything. No YAML editing required.
-* **Spawner wave tracking** — boss bar shows progress as players fight.
-* **Spectator mode** — dead players can watch teammates finish the chamber.
-* **PlaceholderAPI** — 20+ placeholders for scoreboards, holograms, tab lists.
-* **Full translation support** — every user-facing string lives in `messages.yml`.
+* **Automatic resets.** Chambers restore on a schedule, with warnings before each reset.
+* **Per-player vaults.** Every player gets their own loot roll and cooldown. Optional `SHARED` mode for one reward per vault, server-wide.
+* **Protection.** Block break/place, container access, mob griefing, PvP. WorldGuard-aware and claim-plugin-aware (Residence, Lands, GriefPrevention).
+* **Statistics and leaderboards.** Vaults opened, mobs killed, chambers completed, time spent.
+* **Custom loot.** Multi-pool tables, command rewards, potions, tipped arrows, custom-plugin items (Nexo, ItemsAdder, Oraxen, CraftEngine, MythicCrucible), resource-pack items via `custom-model-data`.
+* **Auto-discovery.** Opt-in. Finds and registers natural chambers automatically, no WorldEdit needed.
+* **Admin GUI.** `/trial menu` covers everything without editing YAML.
+* **Spawner wave tracking.** Boss bar shows progress during a fight.
+* **Spectator mode.** Dead players can watch teammates finish.
+* **Custom mob providers.** MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens.
+* **PlaceholderAPI.** 20+ placeholders for scoreboards, holograms, tab lists.
+* **Full translation.** Every user-facing string is in `messages.yml`.
 
 ***
 
 ## Requirements
 
-* **Minecraft 1.21.1+** (use the `-mc26` build for Minecraft 26.x)
-* **Paper, Folia, Purpur, or Pufferfish**
-* **Java 21+**
-* _Optional:_ WorldEdit / FAWE, WorldGuard, Residence / Lands / GriefPrevention, AdvancedEnchantments, PlaceholderAPI, Vault, LuckPerms, Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible
+* **Minecraft 1.21.1+.** Use the `-mc26` build for Minecraft 26.x, or the `-mc263` build for 26.3+.
+* **Paper, Folia, Purpur, or Pufferfish.**
+* **Java 21+** (Minecraft 26.3 servers run on Java 25).
+* _Optional:_ WorldEdit / FAWE, WorldGuard, Residence / Lands / GriefPrevention, AdvancedEnchantments, PlaceholderAPI, Vault, LuckPerms, Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible.
 
 ***
 
 ## Where to go next
 
-[installation.md](getting-started/installation.md) -> Install the JAR and get the server running. Two minutes.
+[installation.md](getting-started/installation.md) - Install the JAR and start the server.
 
-[quick-start.md](getting-started/quick-start.md) -> **Start here.** Run `/trial setup`, turn on auto-discovery, and BTC manages every natural Trial Chamber for you — no per-chamber work.
+[quick-start.md](getting-started/quick-start.md) - Run `/trial setup`, turn on auto-discovery, done.
 
-[basic-configuration.md](getting-started/basic-configuration.md) -> Walk through the config settings most servers actually tweak.
+[basic-configuration.md](getting-started/basic-configuration.md) - The settings most servers change.
 
-[config.yml.md](configuration/config.yml.md) -> Full `config.yml` reference. Includes the auto-discovery plug-and-play setup.
+[config.yml.md](configuration/config.yml.md) - Full `config.yml` reference.
 
-[loot.yml.md](configuration/loot.yml.md) -> Everything about loot tables — pools, custom items, command rewards.
+[loot.yml.md](configuration/loot.yml.md) - Loot tables: pools, custom items, command rewards.
 
-[your-first-chamber.md](getting-started/your-first-chamber.md) -> No natural chambers (superflat / one-block / custom worldgen)? Register a chamber by hand.
+[your-first-chamber.md](getting-started/your-first-chamber.md) - Register a chamber by hand (superflat / custom worldgen).
 
-[troubleshooting.md](troubleshooting.md) -> Something not working? Most issues have a known cause. Check here first.
+[troubleshooting.md](troubleshooting.md) - Known issues and their fixes.
 
 ***
 
 ## Premium add-ons
 
-BetterTrialChambers is the free foundation. Two premium modules extend it further:
+Both require BetterTrialChambers and are sold on [Voxel.shop](https://voxel.shop/) and [esmp.fun](https://esmp.fun/).
 
-[**Wild Spawners**](https://esmp.fun/) — Place trial spawners anywhere on the survival map, not just inside registered chambers. Players receive spawner items via shop plugins or staff commands, place them wherever they like, and custom-plugin mobs (MythicMobs, EliteMobs, etc.) spawn correctly. Includes configurable mining-and-redeploy (no Silk Touch required), per-spawner holograms, griefing protection, and a full in-game preset editor.
+[**Wild Spawners**](https://esmp.fun/) - Place trial spawners anywhere on the map, not just inside registered chambers. Players get spawner items from a shop or staff, place them freely, and custom-plugin mobs spawn correctly. Includes mining-and-redeploy without Silk Touch, per-spawner holograms, griefing protection, and an in-game preset editor.
 
-[**Vault Crates**](https://esmp.fun/) — Turn any vanilla Vault block into a loot crate. Players open crates with keys earned in-game or purchased in a shop. Supports two-tier crates (normal / ominous), weighted loot pools, per-player and server-wide reset modes, and crate-key drops from Wild Spawners mob kills. Full in-game editor included.
-
-Both modules require BetterTrialChambers and are available on [Voxel.shop](https://voxel.shop/) and [esmp.fun](https://esmp.fun/) (Stripe + crypto, for regions where Voxel's payment processors don't operate).
+[**Vault Crates**](https://esmp.fun/) - Turn any vanilla Vault block into a key-opened loot crate. Two-tier crates (normal / ominous), weighted loot pools, per-player and server-wide reset modes, and crate-key drops from Wild Spawners mob kills. In-game editor included.
 
 ***
 
 ## Support
 
-* [**GitHub Issues**](https://github.com/ESMP-FUN/BetterTrialChambers/issues) — bug reports, feature requests
-* [**Discord**](https://dc.esmp.fun) — community support, announcements
-* [**Modrinth**](https://modrinth.com/plugin/trialchamberpro) — downloads and release notes
+* [**GitHub Issues**](https://github.com/ESMP-FUN/BetterTrialChambers/issues) - bug reports, feature requests
+* [**Discord**](https://dc.esmp.fun) - community support, announcements
+* [**Modrinth**](https://modrinth.com/plugin/trialchamberpro) - downloads and release notes
 
-Source-available — free to use, no redistribution (see [LICENSE](https://github.com/ESMP-FUN/BetterTrialChambers/blob/master/LICENSE)). Made with Kotlin by [darkstarworks](https://github.com/darkstarworks).
+Source-available, free to use, no redistribution (see [LICENSE](https://github.com/ESMP-FUN/BetterTrialChambers/blob/master/LICENSE)).
 
 ***
 
