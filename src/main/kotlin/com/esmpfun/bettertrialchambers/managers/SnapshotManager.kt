@@ -438,6 +438,7 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
         } catch (e: Exception) {
             plugin.logger.severe("Failed to scan snapshot ${file.name}: ${e.message}")
             e.printStackTrace()
+            com.esmpfun.bettertrialchambers.integrations.MetricsService.reportHandled(e, "snapshot-scan")
             null
         }
     }
