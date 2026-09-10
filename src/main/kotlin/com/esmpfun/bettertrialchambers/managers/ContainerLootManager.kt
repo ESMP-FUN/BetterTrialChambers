@@ -18,7 +18,7 @@ import java.util.UUID
  * Backs the opt-in `chests.per-player-loot` feature: every player gets a
  * private copy of a chamber container's contents, stored one row per
  * (container position, player) in `player_container_loot`. The real block's
- * inventory is never modified — it stays the pristine template every new
+ * inventory is never modified, it stays the pristine template every new
  * player's copy is cloned from.
  *
  * Lifecycle: rows are cleared per chamber on reset ([clearChamber], called
@@ -138,7 +138,7 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
      * Loads an OP OVERRIDE for a container (a template with `op_edited = 1`), or
      * null when none exists. Unlike [loadTemplate] this ignores auto-registry
      * rows (`op_edited = 0`), which are GUI listing entries only and must NOT
-     * freeze loot — untouched containers always roll fresh per player. v1.6.3.
+     * freeze loot, untouched containers always roll fresh per player. v1.6.3.
      */
     suspend fun loadOverride(
         chamberId: Int,
@@ -203,7 +203,7 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
     ) = withContext(Dispatchers.IO) {
         val encoded = encodeContents(contents)
         // A scan/registry save marks the row as NOT op-edited (op_edited = 0): it
-        // lists the container in the management GUI but never freezes loot —
+        // lists the container in the management GUI but never freezes loot,
         // untouched containers roll fresh per player. An op edit goes through
         // updateTemplateContents, which flips the flag to 1 (an override).
         val sql = if (plugin.databaseManager.databaseType == DatabaseManager.DatabaseType.MYSQL) {
@@ -272,7 +272,7 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
 
     /**
      * One stored template: its position, decoded contents, container icon, and
-     * whether an op has edited it ([opEdited] — edited templates persist across
+     * whether an op has edited it ([opEdited], edited templates persist across
      * resets; auto-rolled ones re-roll).
      */
     data class TemplateRow(
@@ -381,7 +381,7 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
     }
 
     /**
-     * Drops every player's container copies for a chamber — fresh loot for
+     * Drops every player's container copies for a chamber, fresh loot for
      * everyone after a reset. Shared templates are intentionally KEPT (op edits
      * persist across resets). Cheap no-op when the feature is unused. Returns
      * the number of copies removed.

@@ -78,7 +78,7 @@ class RoomTemplateManager(private val plugin: BetterTrialChambers) {
                                 if (face != null) {
                                     connectors.add(Connector(rel.first, rel.second, rel.third, face))
                                 } else {
-                                    plugin.logger.warning("Room '$id': jigsaw at $x,$y,$z has a vertical/unsupported orientation — treated as wall, no connector.")
+                                    plugin.logger.warning("Room '$id': jigsaw at $x,$y,$z has a vertical/unsupported orientation, treated as wall, no connector.")
                                 }
                             }
                             block.type != Material.AIR ->

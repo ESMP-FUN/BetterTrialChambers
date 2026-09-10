@@ -8,7 +8,7 @@ import org.bukkit.entity.Player
 
 /**
  * Residence integration. Guards `ResidenceCreationEvent` / `ResidenceAreaAddEvent` /
- * `ResidenceSubzoneCreationEvent` — each exposes `getPlayer()` and a `getPhysicalArea()`
+ * `ResidenceSubzoneCreationEvent`, each exposes `getPlayer()` and a `getPhysicalArea()`
  * `CuboidArea` (`getLowLocation()` / `getHighLocation()`).
  */
 class ResidenceClaimProvider : ClaimProvider {

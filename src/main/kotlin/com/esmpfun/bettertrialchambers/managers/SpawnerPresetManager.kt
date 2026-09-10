@@ -17,7 +17,7 @@ import java.io.File
  *
  * Introduced in v1.3.1.
  *
- * **Hardening:** the YAML schema has no `material` field — every preset
+ * **Hardening:** the YAML schema has no `material` field, every preset
  * always produces `Material.TRIAL_SPAWNER`. This is deliberate: the planned
  * premium custom-keys / vault-crate module owns vault presets and any other
  * block types. Keeping the free tier strictly trial-spawner-only makes the
@@ -25,7 +25,7 @@ import java.io.File
  *
  * **Thread-safety:** [presets] is a snapshot read; reloads atomically swap
  * the map reference. `getItem` is safe to call from any thread (it does not
- * touch Bukkit world state — only an ItemFactory parse, which is safe).
+ * touch Bukkit world state, only an ItemFactory parse, which is safe).
  */
 class SpawnerPresetManager(private val plugin: BetterTrialChambers) {
 
@@ -150,7 +150,7 @@ class SpawnerPresetManager(private val plugin: BetterTrialChambers) {
 
     private fun buildBlockEntitySnbt(preset: SpawnerPreset): String {
         // Build the SNBT compound by hand. We deliberately keep this string-based
-        // rather than reaching for NMS — Paper exposes no Bukkit-API path to
+        // rather than reaching for NMS, Paper exposes no Bukkit-API path to
         // construct an arbitrary CompoundTag for the BLOCK_ENTITY_DATA component,
         // and ItemFactory.createItemStack happily accepts the SNBT string form.
         //
@@ -158,7 +158,7 @@ class SpawnerPresetManager(private val plugin: BetterTrialChambers) {
         // normal_config / ominous_config / required_player_range /
         // target_cooldown_length. The config-scoped fields (total_mobs,
         // simultaneous_mobs, the per-player scaling pair, ticks_between_spawn,
-        // spawn_range) live INSIDE the trial spawner configuration compound —
+        // spawn_range) live INSIDE the trial spawner configuration compound,
         // and since our configs are datapack *references* (strings), those
         // overrides can't be expressed in item NBT at all. They are applied at
         // place time by SpawnerPresetPlaceListener.applyConfigOverrides on top

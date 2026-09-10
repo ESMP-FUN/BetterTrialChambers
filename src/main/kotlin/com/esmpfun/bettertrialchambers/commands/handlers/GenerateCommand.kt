@@ -11,7 +11,7 @@ import org.bukkit.entity.Player
 import kotlin.math.ceil
 
 /**
- * `/trial generate <mode> ...` — handles the four generation modes (`value`,
+ * `/trial generate <mode> ...`, handles the four generation modes (`value`,
  * `coords`, `wand`, `blocks`) and the `value save|list|delete` sub-ops.
  *
  * Extracted from `TCPCommand.handleGenerate` in v1.3.0 Phase 3 along with all
@@ -21,7 +21,7 @@ import kotlin.math.ceil
  *
  * Minimum chamber dimensions ([MIN_XZ] / [MIN_Y]) are duplicated here rather
  * than imported from `TCPCommand` because they're a property of the generation
- * flow, not the dispatcher — and `TCPCommand` no longer references them after
+ * flow, not the dispatcher, and `TCPCommand` no longer references them after
  * extraction.
  */
 class GenerateCommand(private val plugin: BetterTrialChambers) : SubcommandHandler {
@@ -231,8 +231,8 @@ class GenerateCommand(private val plugin: BetterTrialChambers) : SubcommandHandl
 
     /**
      * Shared async chamber-creation flow. Pulled out of the four mode branches
-     * since each had near-identical "check duplicate name → create → optional
-     * scan → optional snapshot" sequences.
+     * since each had near-identical "check duplicate name -> create -> optional
+     * scan -> optional snapshot" sequences.
      */
     private fun createChamberAsync(sender: CommandSender, name: String, loc1: Location, loc2: Location) {
         plugin.launchAsync {
@@ -281,7 +281,7 @@ class GenerateCommand(private val plugin: BetterTrialChambers) : SubcommandHandl
             return false
         }
 
-        // Default matches ConfigValidator + discovery (was 500000 here — drifted)
+        // Default matches ConfigValidator + discovery (was 500000 here, drifted)
         val maxVolume = plugin.config.getInt("generation.max-volume", 750000).coerceAtLeast(1)
         if (volume > maxVolume) {
             sender.sendMessage(plugin.getMessageComponent("error-region-too-large",
@@ -349,7 +349,7 @@ class GenerateCommand(private val plugin: BetterTrialChambers) : SubcommandHandl
         val dx = maxOf(MIN_XZ, ceil(kotlin.math.sqrt(requiredArea.toDouble())).toInt())
         var dz = maxOf(MIN_XZ, ceil(requiredArea.toDouble() / dx.toDouble()).toInt())
         var dy = MIN_Y
-        // v1.7.2: compute in Long — dx*dy*dz as Int could overflow (and wrap negative,
+        // v1.7.2: compute in Long, dx*dy*dz as Int could overflow (and wrap negative,
         // sneaking past the max-volume check) for absurd `blocks` amounts.
         var volume = dx.toLong() * dy * dz
 

@@ -27,7 +27,7 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
      * Incremental restore session: feed it batches of blocks as they stream off
      * disk and it places them on the correct region threads, so a restore never
      * needs the whole snapshot in memory at once. Call [submitBatch] repeatedly,
-     * then [finish] — which suspends until every scheduled region-thread batch
+     * then [finish], which suspends until every scheduled region-thread batch
      * has actually run (callers rely on this: ResetManager clears vault
      * rewarded_players and resets spawner state immediately after).
      *
@@ -71,7 +71,7 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
                         // newer Java than the server runtime throws UnsupportedClassVersionError
                         // (a LinkageError, not an Exception) the moment a WE class is touched.
                         // WorldEdit is only a soft dependency here (//undo integration), so a
-                        // broken/incompatible install must degrade gracefully — never abort the
+                        // broken/incompatible install must degrade gracefully, never abort the
                         // reset. The undo hint is simply skipped.
                         plugin.logger.warning(
                             "WorldEdit //undo integration unavailable (${e.javaClass.simpleName}: ${e.message}); " +
@@ -231,7 +231,7 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
      *
      * Snapshots skip air to save space (see [com.esmpfun.bettertrialchambers.managers.SnapshotManager]),
      * so [restoreBlocks] alone never reverts blocks placed into formerly-empty
-     * cells — lava, cobble, anything. This pass walks the chamber volume and
+     * cells, lava, cobble, anything. This pass walks the chamber volume and
      * sets every cell that is (a) not present in the snapshot and (b) currently
      * non-air back to AIR, so player additions don't survive a reset.
      *

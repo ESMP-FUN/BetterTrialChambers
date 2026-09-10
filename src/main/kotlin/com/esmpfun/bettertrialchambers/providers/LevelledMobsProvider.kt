@@ -10,7 +10,7 @@ import org.bukkit.entity.LivingEntity
 /**
  * LevelledMobs integration via reflection (v1.3.0).
  *
- * LevelledMobs doesn't add new mob types — it levels existing ones. This
+ * LevelledMobs doesn't add new mob types, it levels existing ones. This
  * provider therefore spawns a vanilla [EntityType] and then asks LevelledMobs
  * to apply a level. Mob id format:
  *

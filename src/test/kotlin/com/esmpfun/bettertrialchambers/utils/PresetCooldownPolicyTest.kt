@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 /**
- * Tests for [PresetCooldownPolicy] — who wins between a preset's own
+ * Tests for [PresetCooldownPolicy], who wins between a preset's own
  * `target-cooldown-length` and the server-wide spawner cooldown. v2.0.8.
  *
  * This is the rule users hit as "the global cooldown setting is being ignored",

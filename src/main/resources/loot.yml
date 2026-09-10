@@ -482,18 +482,18 @@ loot-tables:
 #
 #   mode: weighted     (DEFAULT)
 #     Each opening makes min-rolls..max-rolls draws; each draw picks exactly ONE
-#     item with probability weight / (sum of weights). Weights are RELATIVE — only
-#     their ratio matters — and the same item can drop on multiple draws.
+#     item with probability weight / (sum of weights). Weights are RELATIVE, only
+#     their ratio matters, and the same item can drop on multiple draws.
 #
 #   mode: independent
 #     Every enabled item rolls ON ITS OWN: it drops when random(0-100) < weight,
 #     so here `weight` is read as that item's absolute 0-100% chance. Chances are
 #     independent and do NOT need to total 100%. min-rolls/max-rolls (and the LUCK
 #     bonus) are ignored. Optionally add `max-items: N` to keep at most N of the
-#     items that passed (chosen at random) — 0 or omitted = no cap. Ideal for large
+#     items that passed (chosen at random). 0 or omitted = no cap. Ideal for large
 #     tables where hand-balancing relative weights is impractical.
 #
-# Example — a 3-item independent pool where each item has its own drop rate and at
+# Example: a 3-item independent pool where each item has its own drop rate and at
 # most 2 can drop per opening:
 #
 #  loot-per-item:
@@ -605,7 +605,7 @@ loot-tables:
 # ====== OMINOUS BOTTLES (BAD OMEN) ======
 # Ominous Bottles are the real minecraft:ominous_bottle item (v1.7.1+): they
 # give Bad Omen when drunk, triggering an Ominous Trial. They can ONLY hold
-# Bad Omen — that's a game rule, not a plugin limit. In vanilla, normal
+# Bad Omen, and that's a game rule, not a plugin limit. In vanilla, normal
 # vaults drop them at levels I-II and ominous vaults at III-V, with the
 # level rolled randomly per drop.
 #
@@ -616,19 +616,19 @@ loot-tables:
 #        weight: 5.0
 #        potion-level: 2               # 0=I, 1=II, 2=III, 3=IV, 4=V
 #
-#      # Random level per drop (like vanilla — this is the ominous-vault range):
+#      # Random level per drop (like vanilla, this is the ominous-vault range):
 #      - type: OMINOUS_BOTTLE
 #        amount-min: 1
 #        amount-max: 1
 #        weight: 2.0
-#        potion-level-min: 2           # Bad Omen III…
-#        potion-level-max: 4           # …to V, rolled each time
+#        potion-level-min: 2           # Bad Omen III
+#        potion-level-max: 4           # up to V, rolled each time
 #
-# Note: custom names/lore work on ominous bottles too, but aren't needed —
+# Note: custom names/lore work on ominous bottles too, but aren't needed;
 # the real item already displays as "Ominous Bottle" with its own texture.
 #
 # For OTHER special effects (HERO_OF_THE_VILLAGE, LUCK, GLOWING, etc.) use a
-# POTION with custom-effect-type — those have no dedicated item in the game:
+# POTION with custom-effect-type, since those have no dedicated item in the game:
 #
 #      - type: POTION
 #        weight: 2.0
@@ -886,7 +886,7 @@ loot-tables:
 #   - "xp add {player} 500"
 
 # ============================================================================
-# ECONOMY (MONEY) REWARDS (v1.5.12+) — native Vault integration
+# ECONOMY (MONEY) REWARDS (v1.5.12+): native Vault integration
 # ============================================================================
 # A cleaner, economy-plugin-agnostic alternative to `eco give` command rewards:
 # pays money straight through the Vault API, so it works with EssentialsX, CMI,
@@ -907,7 +907,7 @@ loot-tables:
 #        weight: 10.0
 #    economy-rewards:
 #      - weight: 100.0        # % chance this payout fires (100 = always)
-#        min: 250.0           # random amount between min and max…
+#        min: 250.0           # random amount between min and max
 #        max: 1500.0
 #        display-name: "Coins"   # optional, currently informational
 #
@@ -923,12 +923,12 @@ loot-tables:
 # ============================================================================
 # VANILLA / DATAPACK LOOT TABLE PASSTHROUGH (v1.5.7+)
 # ============================================================================
-# A pool entry can reference any loot table registered on the server — the
+# A pool entry can reference any loot table registered on the server. The
 # vanilla trial chamber tables or one from your own datapack. When the entry
 # is rolled, the referenced table is populated and EVERY item it generates is
 # added to the drop (amount-min/max do not apply).
 #
-# Example — 30% of rolls defer to the real vanilla vault table:
+# Example: 30% of rolls defer to the real vanilla vault table:
 #
 #   my-table:
 #     pools:

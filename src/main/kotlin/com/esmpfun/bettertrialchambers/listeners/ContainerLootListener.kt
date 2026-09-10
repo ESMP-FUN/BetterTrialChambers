@@ -38,21 +38,21 @@ import java.util.concurrent.ConcurrentHashMap
  * dispenser/dropper sees their own private copy of its contents, so the second
  * player into a chamber doesn't find gutted containers.
  *
- * How it works (v1.6.3 rework — UniqueLoot-style independent rolls):
+ * How it works (v1.6.3 rework, UniqueLoot-style independent rolls):
  *  - On open, the player gets THEIR contents: (1) their saved copy if any, else
  *    (2) an OP **override** (a `container_template` row with `op_edited = 1`)
  *    cloned fresh, else (3) a **fresh, independent roll** of the block's vanilla
  *    loot table. Two players opening the same untouched container get different
- *    loot — true Lootr behaviour.
+ *    loot, true Lootr behaviour.
  *  - The block's loot table is NEVER consumed: the interact open is cancelled
  *    and [onLootGenerate] re-applies the table if anything tries to roll it. So
  *    after a reset clears per-player copies ([ContainerLootManager.clearChamber]),
- *    the next open rolls fresh again — "vanilla, but repeatable".
+ *    the next open rolls fresh again, "vanilla, but repeatable".
  *  - **No frozen auto-template.** `container_template` holds two kinds of row:
  *    `op_edited = 0` registry entries (so the container lists in the management
- *    GUI — they never affect loot) and `op_edited = 1` OP overrides (cloned to
+ *    GUI, they never affect loot) and `op_edited = 1` OP overrides (cloned to
  *    every player, still per-player, re-cloned each reset).
- *  - **Editing is GUI-only** (`/trial menu` → chamber → Container Loot, or
+ *  - **Editing is GUI-only** (`/trial menu` -> chamber -> Container Loot, or
  *    `/trial container edit`). Editing a container saves an override; shift-left /
  *    `/trial container resetone` reverts it to vanilla. The old in-world sneak-edit
  *    is gone (it interfered with normal opening).
@@ -60,7 +60,7 @@ import java.util.concurrent.ConcurrentHashMap
  *  - Double chests are keyed by the left half so both halves share one 54-slot copy.
  *  - Containers placed by players inside a chamber are PDC-tagged at place time
  *    and keep vanilla behaviour.
- *  - Hopper movement in/out of an eligible container is cancelled — automation
+ *  - Hopper movement in/out of an eligible container is cancelled, automation
  *    would drain or pollute the source.
  *
  * Container loot tables are also captured/restored by the snapshot system
@@ -86,7 +86,7 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
     /**
      * Marks an op editing a container's override (saved back to container_template
      * with `op_edited = 1` via [onContainerClose]). [returnChamber] is set when the
-     * editor was opened from the management GUI/command — closing it reopens the
+     * editor was opened from the management GUI/command, closing it reopens the
      * Container Loot view (the "back" button a deposit-style inventory can't have).
      */
     class TemplateHolder(
@@ -138,14 +138,14 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
         if (openDebounce.size > 100) openDebounce.entries.removeIf { now - it.value > 10_000 }
 
         // Resolve the normalized key block (left half of a double chest) and the
-        // inventory size SYNCHRONOUSLY — we're on the block's region thread now.
+        // inventory size SYNCHRONOUSLY, we're on the block's region thread now.
         val inv = container.inventory
         val holder = inv.holder
         val keyBlock = if (holder is DoubleChest) (holder.leftSide as? Chest)?.block ?: block else block
         val size = if (holder is DoubleChest) 54 else inv.size
         val pos = ContainerLootManager.ContainerPos(keyBlock.x, keyBlock.y, keyBlock.z)
         val keyLoc = keyBlock.location
-        // Read the block material now (on the region thread) — block access off
+        // Read the block material now (on the region thread), block access off
         // the region thread throws.
         val keyMaterial = keyBlock.type
 
@@ -156,7 +156,7 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
             //  3. a fresh independent roll of the container's vanilla loot table.
             // The loot table is never consumed (block open is cancelled + the
             // LootGenerateEvent guard re-applies it), so after a reset clears the
-            // copy, the next open rolls fresh again — "vanilla, but repeatable".
+            // copy, the next open rolls fresh again, "vanilla, but repeatable".
             val existing = plugin.containerLootManager.loadContents(chamber.id, pos, player.uniqueId)
             val contents = when {
                 existing != null -> existing
@@ -165,7 +165,7 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
             }
 
             // Ensure a registry row exists so the container shows up in the
-            // management GUI. op_edited = 0 (auto) — this row never freezes loot;
+            // management GUI. op_edited = 0 (auto), this row never freezes loot;
             // it's a listing entry only. Skip if a row already exists so we never
             // clobber an existing override's op_edited flag.
             if (existing == null && !plugin.containerLootManager.hasTemplate(chamber.id, pos)) {
@@ -186,7 +186,7 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
      * keeps re-rolling forever. Mirrors UniqueLoot's approach.
      *
      * Only acts on REAL block containers inside a non-paused, non-player-placed
-     * chamber position — plugin rolls into virtual inventories (our own
+     * chamber position, plugin rolls into virtual inventories (our own
      * per-player materialize) have a null/non-block holder and pass straight
      * through, so loot still generates for those.
      */
@@ -197,7 +197,7 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
         val block: Block = when (holder) {
             is DoubleChest -> (holder.leftSide as? Chest)?.block ?: return
             is BlockInventoryHolder -> holder.block
-            else -> return // virtual inventory (our materialize) or non-container — leave alone
+            else -> return // virtual inventory (our materialize) or non-container, leave alone
         }
         if (block.type !in ELIGIBLE) return
         val chamber = plugin.chamberManager.getCachedChamberAt(block.location) ?: return
@@ -236,7 +236,7 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
                     // Contents-only update so the stored container icon is preserved.
                     plugin.containerLootManager.updateTemplateContents(holder.chamberId, holder.pos, contents)
                 }
-                // Opened from the management GUI/command → land back in the
+                // Opened from the management GUI/command -> land back in the
                 // Container Loot view (the "back" affordance). One tick later so
                 // we're not re-opening an inventory inside the close event.
                 holder.returnChamber?.let { chamber ->
@@ -253,7 +253,7 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
      * v1.7.2: persists any private-copy / template-editor inventories still open
      * when the plugin disables. Previously `pluginScope.cancel()` could discard
      * the async close-save, silently losing whatever the player had taken out of
-     * (or left in) their open copy. Saves synchronously (runBlocking — the DB
+     * (or left in) their open copy. Saves synchronously (runBlocking, the DB
      * pool is still open at this point in onDisable), then closes the view.
      */
     fun shutdown() {
@@ -314,7 +314,7 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
     /**
      * Materializes a container's template on the block's region thread: rolls
      * the vanilla loot table into a fresh inventory (the only way to get the
-     * real generated loot — the live inventory is empty until vanilla opens
+     * real generated loot, the live inventory is empty until vanilla opens
      * it), or falls back to the live contents when there is no loot table.
      * Handles single containers and double chests (each half rolled separately).
      */
@@ -424,7 +424,7 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
                                         ?.has(playerPlacedKey, PersistentDataType.BYTE) == true) continue
                                 val holder = te.inventory.holder
                                 val keyBlock = if (holder is DoubleChest) (holder.leftSide as? Chest)?.block ?: b else b
-                                if (holder is DoubleChest && keyBlock != b) continue // right half — handled by the left
+                                if (holder is DoubleChest && keyBlock != b) continue // right half, handled by the left
                                 val size = if (holder is DoubleChest) 54 else te.inventory.size
                                 results.add(
                                     Triple(
@@ -453,7 +453,7 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
 
     /**
      * Opens a container's shared template for editing (used by the GUI and the
-     * `/trial container` command). Does nothing if no template exists yet — the
+     * `/trial container` command). Does nothing if no template exists yet, the
      * caller should materialize first. Saved back to `container_template` by the
      * existing [onContainerClose] handler.
      */

@@ -8,7 +8,7 @@ import org.bukkit.event.Event
 import org.bukkit.event.HandlerList
 
 /**
- * Fired immediately before a chamber begins resetting. Cancellable — listeners
+ * Fired immediately before a chamber begins resetting. Cancellable; listeners
  * may abort the reset entirely (e.g. to defer it until a region is empty, or to
  * substitute a custom reset implementation).
  *

@@ -13,7 +13,7 @@ import org.bukkit.entity.Entity
  * [com.esmpfun.bettertrialchambers.managers.SpawnerWaveManager] exactly
  * like a vanilla mob would be.
  *
- * Implementations must be non-blocking — they are called from the main/region
+ * Implementations must be non-blocking, they are called from the main/region
  * thread during a live event. If async work is required, schedule it internally
  * and return null to skip this spawn.
  */

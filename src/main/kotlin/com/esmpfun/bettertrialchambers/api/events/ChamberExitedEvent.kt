@@ -8,7 +8,7 @@ import org.bukkit.event.HandlerList
 
 /**
  * Fired when a [Player] crosses out of the bounding box of a registered, non-paused
- * [Chamber] — the boundary-crossing transition from "inside chamber" to "outside
+ * [Chamber]. This is the boundary-crossing transition from "inside chamber" to "outside
  * chamber" detected by [com.esmpfun.bettertrialchambers.listeners.PlayerMovementListener].
  *
  * Fires exactly once per exit. The matching entry fires [ChamberEnteredEvent]. A
@@ -16,7 +16,7 @@ import org.bukkit.event.HandlerList
  * for the new.
  *
  * Unlike the time-tracking and exit-message logic which is gated on
- * `statistics.*` config flags, this event always fires when exit is detected —
+ * `statistics.*` config flags, this event always fires when exit is detected;
  * downstream listeners that need to react to chamber presence shouldn't have
  * their behaviour silently disabled by the server admin's stats preferences.
  *

@@ -47,7 +47,7 @@ class DungeonGenerator(
         }
         val all = templates.loadAll()
         if (all.isEmpty()) {
-            plugin.logger.warning("No room templates found — capture some first.")
+            plugin.logger.warning("No room templates found, capture some first.")
             return false
         }
         val byId = all.associateBy { it.id }

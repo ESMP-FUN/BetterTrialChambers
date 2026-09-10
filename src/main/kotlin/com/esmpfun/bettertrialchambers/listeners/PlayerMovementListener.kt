@@ -42,7 +42,7 @@ class PlayerMovementListener(private val plugin: BetterTrialChambers) : Listener
         val to = event.to
 
         // Only check when crossing block boundaries (major performance optimization).
-        // Done first — applies to both event-firing AND stats paths; sub-block movement
+        // Done first, applies to both event-firing AND stats paths; sub-block movement
         // can't change chamber membership.
         if (from.blockX == to.blockX &&
             from.blockY == to.blockY &&
@@ -55,7 +55,7 @@ class PlayerMovementListener(private val plugin: BetterTrialChambers) : Listener
 
     /**
      * v1.7.2: teleports do NOT fire PlayerMoveEvent (PlayerTeleportEvent has its
-     * own handler list) — so `/tp`, `/home`, ender pearls and the reset eviction
+     * own handler list), so `/tp`, `/home`, ender pearls and the reset eviction
      * itself crossed chamber boundaries without firing entry/exit events, leaving
      * stale time tracking and a stale playersInChambers entry. Same transition
      * logic as movement.
@@ -66,8 +66,8 @@ class PlayerMovementListener(private val plugin: BetterTrialChambers) : Listener
     }
 
     /**
-     * v1.7.2: joining inside a chamber (logout inside → login) never registered
-     * as an entry until the first move — time tracking and the public
+     * v1.7.2: joining inside a chamber (logout inside -> login) never registered
+     * as an entry until the first move, time tracking and the public
      * ChamberEnteredEvent started late. Entry message suppressed (relogging
      * shouldn't re-announce).
      */
@@ -113,7 +113,7 @@ class PlayerMovementListener(private val plugin: BetterTrialChambers) : Listener
     }
 
     /**
-     * Common entry handling — fires the public [ChamberEnteredEvent] unconditionally,
+     * Common entry handling, fires the public [ChamberEnteredEvent] unconditionally,
      * then runs the stats / advancement / message side-effects when their respective
      * config flags are on. Pulled out of the move handler so a chamber-to-chamber
      * transition can reuse it without duplicating the body.
@@ -125,7 +125,7 @@ class PlayerMovementListener(private val plugin: BetterTrialChambers) : Listener
         statsEnabled: Boolean,
         sendEntryMessage: Boolean,
     ) {
-        // Public event — always fires regardless of stats config.
+        // Public event, always fires regardless of stats config.
         plugin.server.pluginManager.callEvent(ChamberEnteredEvent(player, chamber))
 
         if (statsEnabled) {
@@ -134,7 +134,7 @@ class PlayerMovementListener(private val plugin: BetterTrialChambers) : Listener
         }
 
         // Grant "Minecraft: Trial(s) Edition" advancement (must run on entity thread).
-        // Only grant to survival/adventure players — not spectators or creative.
+        // Only grant to survival/adventure players, not spectators or creative.
         plugin.scheduler.runAtEntity(player, Runnable {
             if (player.isOnline &&
                 (player.gameMode == GameMode.SURVIVAL || player.gameMode == GameMode.ADVENTURE)) {
@@ -145,7 +145,7 @@ class PlayerMovementListener(private val plugin: BetterTrialChambers) : Listener
             }
         })
 
-        // Optional: Send entry message (suppressed on chamber→chamber transitions).
+        // Optional: Send entry message (suppressed on chamber->chamber transitions).
         if (sendEntryMessage && plugin.config.getBoolean("messages.chamber-entry-message", false)) {
             player.sendMessage(
                 plugin.getMessageComponent("chamber-entered", "chamber" to chamber.name)
@@ -154,7 +154,7 @@ class PlayerMovementListener(private val plugin: BetterTrialChambers) : Listener
     }
 
     /**
-     * Common exit handling — fires the public [ChamberExitedEvent] unconditionally,
+     * Common exit handling, fires the public [ChamberExitedEvent] unconditionally,
      * then runs the stats / message side-effects when their respective config flags
      * are on.
      */
@@ -165,7 +165,7 @@ class PlayerMovementListener(private val plugin: BetterTrialChambers) : Listener
         statsEnabled: Boolean,
         sendExitMessage: Boolean,
     ) {
-        // Public event — always fires regardless of stats config.
+        // Public event, always fires regardless of stats config.
         plugin.server.pluginManager.callEvent(ChamberExitedEvent(player, chamber))
 
         if (statsEnabled) {
@@ -174,7 +174,7 @@ class PlayerMovementListener(private val plugin: BetterTrialChambers) : Listener
             flushPlayerTime(uuid)
         }
 
-        // Optional: Send exit message (suppressed on chamber→chamber transitions).
+        // Optional: Send exit message (suppressed on chamber->chamber transitions).
         if (sendExitMessage && plugin.config.getBoolean("messages.chamber-exit-message", false)) {
             player.sendMessage(plugin.getMessageComponent("chamber-exited"))
         }
@@ -187,7 +187,7 @@ class PlayerMovementListener(private val plugin: BetterTrialChambers) : Listener
         val location = player.location
 
         // Fire ChamberExitedEvent for any player who disconnects while inside a chamber
-        // — keeps the entry/exit pair balanced for downstream listeners (e.g. MT's HUD
+        //, keeps the entry/exit pair balanced for downstream listeners (e.g. MT's HUD
         // that allocates per-player state on entry). Decoupled from stats so it fires
         // whether or not time-tracking is on.
         movementScope.launch {

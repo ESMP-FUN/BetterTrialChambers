@@ -16,7 +16,7 @@ import org.bukkit.persistence.PersistentDataType
  * Allows players to recover TCP-preset trial spawners that were placed outside
  * any registered chamber ("orphaned" spawners).
  *
- * Vanilla trial spawners can never be mined for a drop — they always drop
+ * Vanilla trial spawners can never be mined for a drop, they always drop
  * nothing regardless of tool or enchantment. TCP's protection listener only
  * guards spawners *inside* chambers; outside a chamber it returns early,
  * leaving vanilla's silent-drop behaviour in place. This creates a usability
@@ -24,15 +24,15 @@ import org.bukkit.persistence.PersistentDataType
  * permanently stuck there.
  *
  * Fix:
- *   - Silk Touch tool → cancel vanilla nothing-drop, drop the full preset item
+ *   - Silk Touch tool -> cancel vanilla nothing-drop, drop the full preset item
  *     (PDC tag intact for re-placement), play the vanilla break effect.
- *   - No Silk Touch → cancel the break entirely, send a hint. Prevents
+ *   - No Silk Touch -> cancel the break entirely, send a hint. Prevents
  *     accidental permanent loss.
  *
  * TCP-WildSpawners (when installed) handles wild-preset spawner recovery
  * without Silk Touch via its own configurable hardness system. There is no
  * conflict: WildSpawners drives mining via [BlockDamageEvent] and sets the
- * block to AIR directly — [BlockBreakEvent] never fires for spawners it
+ * block to AIR directly, [BlockBreakEvent] never fires for spawners it
  * manages, so this listener only ever runs when WildSpawners is absent.
  *
  * "Orphaned" means: block has `tcp:preset_id` on its TileState AND
@@ -56,7 +56,7 @@ class OrphanSpawnerMineListener(private val plugin: BetterTrialChambers) : Liste
         val presetId = tileState.persistentDataContainer
             .get(presetIdKey, PersistentDataType.STRING) ?: return
 
-        // If inside a registered chamber, leave it alone — ProtectionListener handles that.
+        // If inside a registered chamber, leave it alone, ProtectionListener handles that.
         if (plugin.chamberManager.getCachedChamberAt(block.location) != null) return
 
         event.isCancelled = true

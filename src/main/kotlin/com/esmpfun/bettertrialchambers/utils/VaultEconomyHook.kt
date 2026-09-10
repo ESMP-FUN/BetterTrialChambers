@@ -6,7 +6,7 @@ import org.bukkit.plugin.Plugin
 /**
  * Optional Vault economy integration (v1.5.12). Lets loot tables pay out money
  * (`economy-rewards`) through whatever economy plugin is registered with Vault
- * (EssentialsX, CMI, etc.) — provider-agnostic via the Vault API.
+ * (EssentialsX, CMI, etc.), provider-agnostic via the Vault API.
  *
  * Every Vault/Economy class reference lives inside a method that is reached only
  * after the `Vault` plugin-presence guard, so this class loads fine on servers

@@ -7,7 +7,7 @@ import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerJoinEvent
 
 /**
- * Gentle, capped nudge toward `/trial setup` — never forced.
+ * Gentle, capped nudge toward `/trial setup`, never forced.
  *
  * On an admin's join, if they've **never touched** the setup tour, posts a one-line
  * clickable hint. Throttled to at most once a week and at most [MAX_REMINDERS] times ever
@@ -25,12 +25,12 @@ class SetupReminderService(
     @EventHandler(priority = EventPriority.MONITOR)
     fun onPlayerJoin(event: PlayerJoinEvent) {
         if (!plugin.config.getBoolean("setup.reminder.enabled", true)) return
-        if (state.completed) return                       // finished → never nudge
+        if (state.completed) return                       // finished -> never nudge
         val player = event.player
         if (!player.hasPermission("btc.admin.setup")) return
         val now = System.currentTimeMillis()
 
-        // 1) "You started but stopped" follow-up — one-time, a week after a Stop.
+        // 1) "You started but stopped" follow-up, one-time, a week after a Stop.
         if (state.touched) {
             if (state.followUpEpoch != 0L && !state.followUpShown && now >= state.followUpEpoch) {
                 send(player) {
@@ -41,7 +41,7 @@ class SetupReminderService(
             return
         }
 
-        // 2) Initial reminders — up to MAX_REMINDERS, at most weekly, while never-touched.
+        // 2) Initial reminders, up to MAX_REMINDERS, at most weekly, while never-touched.
         if (state.reminderCount >= MAX_REMINDERS) return
         if (now - state.lastReminderEpoch < WEEK_MS) return
         send(player) {

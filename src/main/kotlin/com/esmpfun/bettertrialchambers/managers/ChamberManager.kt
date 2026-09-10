@@ -50,10 +50,10 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
     }
 
     // Registered chambers are a bounded registry of small objects, so ALL of them
-    // are kept cached — never size-evicted. The spatial/by-id lookups below
+    // are kept cached, never size-evicted. The spatial/by-id lookups below
     // (getCachedChamberAt / getCachedChamberById) back vault loot resolution,
     // spawner-wave tracking and tier scaling; under the old LRU cap (100) any
-    // evicted chamber silently fell through to vanilla behaviour — vanilla vault
+    // evicted chamber silently fell through to vanilla behaviour, vanilla vault
     // loot leaking, no scaling. ConcurrentHashMap also makes value iteration
     // safe without external locking.
     private val chamberCache = ConcurrentHashMap<String, Chamber>()
@@ -68,7 +68,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
     /**
      * First registered chamber whose bounds overlap the given axis-aligned box
      * (inclusive block coords) in [worldName], or null if none. Cache-only and
-     * synchronous — safe to call from an event handler.
+     * synchronous, safe to call from an event handler.
      */
     fun getIntersectingChamber(
         worldName: String,
@@ -392,7 +392,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      */
     suspend fun deleteChamber(name: String): Boolean = withContext(Dispatchers.IO) {
         try {
-            // Resolve BEFORE the row is gone — the wave manager cleanup below needs it.
+            // Resolve BEFORE the row is gone, the wave manager cleanup below needs it.
             val chamberForCleanup = chamberCache[name]
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement("DELETE FROM ${tables.chambers} WHERE name = ?").use { stmt ->
@@ -435,7 +435,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     suspend fun scanChamber(chamber: Chamber): Triple<Int, Int, Int> {
-        // A re-scan implies the spawner set may have changed — drop the wave
+        // A re-scan implies the spawner set may have changed, drop the wave
         // manager's cached count/locations so ChamberClearedEvent re-counts.
         runCatching { plugin.spawnerWaveManager.invalidateChamberSpawnerCaches(chamber.id) }
 
@@ -860,7 +860,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         // count always starts from zero after a pause or a resume.
                         resetDestructionCounter(chamberId)
                         // v1.7.2: pausing also cancels any scheduled reset countdown,
-                        // its warning messages, and a parked pending confirmation —
+                        // its warning messages, and a parked pending confirmation,
                         // previously "resets in 30 seconds!" kept firing for paused chambers.
                         if (paused) runCatching { plugin.resetManager.cancelScheduledFor(chamberId) }
                         plugin.logger.info("Chamber $chamberId ${if (paused) "paused" else "resumed"}")
@@ -1132,7 +1132,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      * merging a newly-discovered region into an existing chamber.
      *
      * Caller is responsible for re-scanning vaults/spawners and refreshing the
-     * snapshot afterwards if needed — this method only persists the new bounds.
+     * snapshot afterwards if needed, this method only persists the new bounds.
      */
     suspend fun updateBounds(
         chamberId: Int,
@@ -1162,7 +1162,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                                 updateCacheExpiry(chamber.name)
                             }
                         }
-                        // New bounds can contain a different spawner set — stale
+                        // New bounds can contain a different spawner set, stale
                         // counts make ChamberClearedEvent fire early or never.
                         runCatching { plugin.spawnerWaveManager.invalidateChamberSpawnerCaches(chamberId) }
                         plugin.logger.info("Updated bounds for chamber $chamberId: ($minX,$minY,$minZ)-($maxX,$maxY,$maxZ)")
@@ -1241,7 +1241,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
             val normalizedProvider = providerId?.lowercase()?.takeUnless { it == "vanilla" || it.isBlank() }
 
             plugin.databaseManager.connection.use { conn ->
-                // Build dynamic SQL — only touch columns the caller passed.
+                // Build dynamic SQL, only touch columns the caller passed.
                 val setClauses = mutableListOf("custom_mob_provider = ?")
                 if (normalIds != null) setClauses += "custom_mob_ids_normal = ?"
                 if (ominousIds != null) setClauses += "custom_mob_ids_ominous = ?"
