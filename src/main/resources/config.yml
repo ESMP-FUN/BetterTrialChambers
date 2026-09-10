@@ -658,18 +658,19 @@ chests:
 # and waits until the next restart, so owners get a chance to opt out first.
 metrics:
   enabled: true
-  # OPT-IN. Set to true to automatically report BetterTrialChambers' own errors,
-  # which helps get bugs fixed without you having to notice and file a report.
-  # Off by default, error reports are a bigger step than anonymous counters, so
-  # it's your call rather than something switched on for you.
+  # Automatically report BetterTrialChambers' own errors so bugs get fixed
+  # without you having to notice and file a report. On by default. Set to false
+  # to turn it off.
   #
-  # When enabled, only exceptions thrown by THIS plugin are sent; other plugins'
-  # errors are never captured. Before anything leaves your server, IP addresses,
-  # file paths containing your username, database credentials and player UUIDs are
-  # stripped out and replaced with placeholders. Player names, chat, inventories
-  # and world data are never included.
-  # (Server-wide equivalent: submitErrors=false in plugins/faststats/config.properties.)
-  error-reporting: false
+  # Only exceptions thrown by THIS plugin are sent; other plugins' errors are
+  # never captured. Before anything leaves your server, IP addresses, file paths
+  # containing your username, database credentials and player UUIDs are stripped
+  # out and replaced with placeholders. Each report also carries the plugin
+  # version, your database type (sqlite or mysql), whether the server runs Folia,
+  # and a rough chamber-count band, so a fix can target the right setup. Player
+  # names, chat, inventories and world data are never included.
+  # (Server-wide off switch: submitErrors=false in plugins/faststats/config.properties.)
+  error-reporting: true
 
 # Debug mode
 debug:
