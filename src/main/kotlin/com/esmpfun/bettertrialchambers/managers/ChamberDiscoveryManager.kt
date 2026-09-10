@@ -184,6 +184,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
         } catch (e: Exception) {
             plugin.logger.severe("[Discovery] Unexpected error during discovery: ${e.message}")
             e.printStackTrace()
+            com.esmpfun.bettertrialchambers.integrations.MetricsService.reportHandled(e, "chamber-discovery")
             finalizeFailed(key, "exception")
         }
     }
@@ -256,6 +257,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
                 } catch (e: Exception) {
                     plugin.logger.severe("[Discovery] Unexpected error during registration: ${e.message}")
                     e.printStackTrace()
+                    com.esmpfun.bettertrialchambers.integrations.MetricsService.reportHandled(e, "chamber-registration")
                     finalizeFailed(key, "registration exception")
                 }
             }

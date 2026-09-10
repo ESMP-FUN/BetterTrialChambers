@@ -144,8 +144,17 @@ class BetterTrialChambers : JavaPlugin() {
     @Volatile
     private var cachedMessages: org.bukkit.configuration.file.YamlConfiguration? = null
 
-    // Coroutine scope for async operations
-    private val pluginScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    // Coroutine scope for async operations. The handler catches anything that
+    // escapes a launchAsync block: it is logged, and (when error reporting is on)
+    // sent to FastStats, since an uncaught coroutine failure is exactly the kind
+    // of bug nobody files a ticket for.
+    private val coroutineErrorHandler = CoroutineExceptionHandler { _, t ->
+        if (t !is CancellationException) {
+            logger.log(java.util.logging.Level.SEVERE, "Uncaught error in a background task", t)
+            com.esmpfun.bettertrialchambers.integrations.MetricsService.reportHandled(t, "coroutine")
+        }
+    }
+    private val pluginScope = CoroutineScope(Dispatchers.Default + SupervisorJob() + coroutineErrorHandler)
 
     /**
      * Launch an asynchronous task tied to the plugin lifecycle (cancelled on disable).
@@ -586,6 +595,12 @@ class BetterTrialChambers : JavaPlugin() {
                             .register(this@BetterTrialChambers)
                     val metricsStatus =
                         com.esmpfun.bettertrialchambers.integrations.MetricsService.init(this@BetterTrialChambers)
+                    if (config.getBoolean("metrics.enabled", true)) {
+                        server.pluginManager.registerEvents(
+                            com.esmpfun.bettertrialchambers.listeners.MetricsListener(),
+                            this@BetterTrialChambers
+                        )
+                    }
                     logger.info("✓ Phase 10 Integrations: Ready")
                     logger.info("  - PlaceholderAPI: $placeholderAPIStatus")
                     logger.info("  - FastStats Metrics: $metricsStatus")
