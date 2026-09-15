@@ -3,7 +3,8 @@ import org.gradle.api.attributes.java.TargetJvmVersion
 plugins {
     kotlin("jvm") version "2.3.21"
     id("com.gradleup.shadow") version "9.0.0"
-    id("xyz.jpenilla.run-paper") version "2.3.1"
+    // 3.x talks to Paper's fill/v3 downloads API; 2.3.1 used the v2 API, which Paper sunset.
+    id("xyz.jpenilla.run-paper") version "3.0.2"
     // v1.3.3: enable Maven publication so Jitpack can serve TCP as a
     // compile-time dependency to premium add-on modules and third-party
     // integrations. Premium devs declare:
@@ -38,21 +39,7 @@ dependencies {
     // Paper API - 26.3 track (the `-mc263` build). plugin.yml's api-version '26.3'
     // keeps this jar to 26.3+ servers; the mc26 build targets 26.1.2 + api-version
     // '26.1', and the master build targets 1.21.7 + api-version '1.21'.
-    //
-    // PINNED TO 26.2 ON PURPOSE, FOR NOW. Checked again on 2026-09-06: Mojang is
-    // up to 26.3 Pre-Release 2 and PaperMC still publishes no 26.3 artifact.
-    // Their newest is 26.2.build.121-stable and the 26.3 work is still on the
-    // unpublished `dev/26.3` branch, which is being actively worked on (cushions,
-    // poplar boats, and two new entity-removal events landed there on 2026-09-05
-    // and 06). 26.2 is the closest API that exists, and every 26.3 change audited
-    // so far is additive from a plugin's point of view, so the 26.3-only code
-    // paths in this branch are written defensively (capability checks /
-    // reflection) rather than against classes we cannot compile against.
-    //
-    // WHEN PAPER PUBLISHES 26.3: bump this to the 26.3 build, then work through
-    // the sites marked `TODO(26.3-api)` in the source - each one names exactly
-    // what to re-check.
-    compileOnly("io.papermc.paper:paper-api:26.2.build.121-stable")
+    compileOnly("io.papermc.paper:paper-api:26.3.build.5-alpha")
 
     // Log4j core (bundled by the server at runtime) — for the console log filter
     // that mutes vanilla trial-spawner spam.
@@ -135,10 +122,7 @@ tasks {
         // Configure the Minecraft version for our task.
         // This is the only required configuration besides applying the plugin.
         // Your plugin's jar (or shadowJar if present) will be used automatically.
-        // run-paper can only download versions PaperMC has actually published,
-        // so this stays on the newest published release until a 26.3 build exists.
-        // For real 26.3 testing use the vanilla pre-release server jar by hand.
-        minecraftVersion("26.2")
+        minecraftVersion("26.3")
     }
 }
 

@@ -30,7 +30,7 @@ BetterTrialChambers fixes all of that: every player gets their own loot roll, ch
 
 ## Requirements
 
-* **Minecraft 1.21.1+** (use the `-mc26` build for Minecraft 26.x)
+* **Minecraft 1.21.1+** (use the `-mc26` build for Minecraft 26.0 to 26.2, and `-mc263` for 26.3)
 * **Paper, Folia, Purpur, or Pufferfish**
 * **Java 21+**
 * *Optional:* WorldEdit / FAWE, WorldGuard, Residence / Lands / GriefPrevention, PlaceholderAPI, Vault, LuckPerms, Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible

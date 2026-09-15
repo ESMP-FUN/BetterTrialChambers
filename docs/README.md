@@ -23,7 +23,7 @@ BetterTrialChambers makes Minecraft's Trial Chambers reusable on a multiplayer s
 
 ## Requirements
 
-* **Minecraft 1.21.1+.** Use the `-mc26` build for Minecraft 26.x, or the `-mc263` build for 26.3+.
+* **Minecraft 1.21.1+.** Use the `-mc26` build for Minecraft 26.0 to 26.2, or the `-mc263` build for 26.3.
 * **Paper, Folia, Purpur, or Pufferfish.**
 * **Java 21+** (Minecraft 26.3 servers run on Java 25).
 * _Optional:_ WorldEdit / FAWE, WorldGuard, Residence / Lands / GriefPrevention, AdvancedEnchantments, PlaceholderAPI, Vault, LuckPerms, Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible.
