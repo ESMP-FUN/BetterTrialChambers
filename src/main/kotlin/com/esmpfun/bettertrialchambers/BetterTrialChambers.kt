@@ -212,9 +212,18 @@ class BetterTrialChambers : JavaPlugin() {
             "auto-stage", "auto" -> UpdateMode.AUTO_STAGE
             else -> UpdateMode.NOTIFY
         }
-        val onMc26 = runCatching {
-            server.minecraftVersion.substringBefore('.').toInt() >= 26
-        }.getOrDefault(false)
+        val mcVersion = runCatching {
+            server.minecraftVersion.substringBefore('-').split('.').mapNotNull { it.toIntOrNull() }
+        }.getOrDefault(emptyList())
+        val major = mcVersion.getOrElse(0) { 0 }
+        val minor = mcVersion.getOrElse(1) { 0 }
+        val onMc26 = major >= 26
+        // This download is built for 26.0 to 26.2 and still runs on 26.3, but it
+        // follows the wrong updates there, so say so once at startup.
+        if (major > 26 || (major == 26 && minor >= 3)) {
+            logger.warning("You are using the download for Minecraft 26.0 to 26.2, but this server runs $major.$minor.")
+            logger.warning("Please switch to the BetterTrialChambers jar ending in -mc263, so you get the right updates.")
+        }
         updater = Updater.builder(this)
             .source(ModrinthSource("trialchamberpro"))
             .fallbackSource(GitHubReleasesSource("ESMP-FUN/BetterTrialChambers"))
