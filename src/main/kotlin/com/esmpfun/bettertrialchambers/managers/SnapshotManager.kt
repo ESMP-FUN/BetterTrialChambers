@@ -60,9 +60,20 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
          * say which Minecraft made them, which is the same position
          * everything was in before, and is safe because an older file
          * always reads on a newer game.
+         *
+         * 6 adds the far corner of the region that was captured, straight
+         * after the origin. Air is not written out, so the blocks in a file
+         * cannot say how far the capture reached; without this a chamber with
+         * air along an edge looks like a snapshot that no longer covers it.
          */
-        const val FORMAT_VERSION = 5
+        const val FORMAT_VERSION = 6
         const val FORMAT_VERSION_MIN = 2
+
+        /**
+         * Written as the far corner when it genuinely is not known, which is
+         * only the case for a file rewritten from the pre-streamed format.
+         */
+        const val UNKNOWN_BOUND = Int.MIN_VALUE
 
         // How a block's contents were stored, written as one byte per block from
         // version 4 onwards. Before that the same slot was a true/false for "has
@@ -118,7 +129,10 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
         worldName: String,
         originX: Int,
         originY: Int,
-        originZ: Int
+        originZ: Int,
+        maxX: Int,
+        maxY: Int,
+        maxZ: Int,
     ) : AutoCloseable {
         private val out = DataOutputStream(
             BufferedOutputStream(GZIPOutputStream(FileOutputStream(file)), 1 shl 16)
@@ -141,6 +155,9 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
             out.writeInt(originX)
             out.writeInt(originY)
             out.writeInt(originZ)
+            out.writeInt(maxX)
+            out.writeInt(maxY)
+            out.writeInt(maxZ)
         }
 
         fun writeBlock(relX: Int, relY: Int, relZ: Int, snapshot: BlockSnapshot) {
@@ -253,7 +270,7 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
         val midZ = (chamber.minZ + chamber.maxZ) / 2.0
 
         val writer = withContext(Dispatchers.IO) {
-            SnapshotWriter(tempFile, chamber.world, originX, originY, originZ)
+            SnapshotWriter(tempFile, chamber.world, originX, originY, originZ, chamber.maxX, chamber.maxY, chamber.maxZ)
         }
 
         try {
@@ -387,7 +404,19 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
         val blockCount: Int,
         val minX: Int, val minY: Int, val minZ: Int,
         val maxX: Int, val maxY: Int, val maxZ: Int,
-        val sortedPositions: LongArray
+        val sortedPositions: LongArray,
+        /**
+         * The region the capture actually covered, which is wider than the
+         * blocks in the file whenever the chamber has air along an edge. Null
+         * for a file written before the format recorded it.
+         */
+        val captured: CapturedRegion? = null,
+    )
+
+    /** The box a snapshot was taken from, in world coordinates. */
+    class CapturedRegion(
+        val minX: Int, val minY: Int, val minZ: Int,
+        val maxX: Int, val maxY: Int, val maxZ: Int,
     )
 
     /**
@@ -494,8 +523,12 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
         var maxX = Int.MIN_VALUE; var maxY = Int.MIN_VALUE; var maxZ = Int.MIN_VALUE
         var positions = LongArray(4096)
         var count = 0
+        var captured: CapturedRegion? = null
 
-        val streamed = streamV2Blocks(input, label, batchSize = 8192, readTiles = false) { batch ->
+        val streamed = streamV2Blocks(
+            input, label, batchSize = 8192, readTiles = false,
+            onCapturedRegion = { captured = it },
+        ) { batch ->
             for ((location, _) in batch) {
                 if (worldName.isEmpty()) worldName = location.world?.name ?: ""
                 val x = location.blockX; val y = location.blockY; val z = location.blockZ
@@ -508,7 +541,7 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
 
         val sorted = positions.copyOf(count)
         sorted.sort()
-        return SnapshotScan(worldName, streamed, minX, minY, minZ, maxX, maxY, maxZ, sorted)
+        return SnapshotScan(worldName, streamed, minX, minY, minZ, maxX, maxY, maxZ, sorted, captured)
     }
 
     /** Builds a [SnapshotScan] from fully-loaded legacy data. */
@@ -538,7 +571,10 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
     private fun migrateLegacySnapshot(file: File, data: SnapshotData) {
         val tempFile = File(file.parentFile, file.name + ".tmp")
         try {
-            SnapshotWriter(tempFile, data.worldName, data.originX, data.originY, data.originZ).use { writer ->
+            SnapshotWriter(
+                tempFile, data.worldName, data.originX, data.originY, data.originZ,
+                UNKNOWN_BOUND, UNKNOWN_BOUND, UNKNOWN_BOUND,
+            ).use { writer ->
                 data.blocks.forEach { (relativePos, snapshot) ->
                     writer.writeBlock(relativePos.first, relativePos.second, relativePos.third, snapshot)
                 }
@@ -652,6 +688,7 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
         batchSize: Int,
         readTiles: Boolean,
         onEntity: (DecorationEntities.Captured) -> Unit = {},
+        onCapturedRegion: (CapturedRegion?) -> Unit = {},
         onBatch: suspend (List<Pair<Location, BlockSnapshot>>) -> Unit
     ): Int? {
         val version = input.readByte().toInt()
@@ -678,6 +715,18 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
         val originX = input.readInt()
         val originY = input.readInt()
         val originZ = input.readInt()
+
+        if (version >= 6) {
+            val capMaxX = input.readInt()
+            val capMaxY = input.readInt()
+            val capMaxZ = input.readInt()
+            onCapturedRegion(
+                if (capMaxX == UNKNOWN_BOUND) null
+                else CapturedRegion(originX, originY, originZ, capMaxX, capMaxY, capMaxZ)
+            )
+        } else {
+            onCapturedRegion(null)
+        }
 
         if (worldName.isBlank()) {
             plugin.logger.warning("Invalid snapshot $label: empty world name")
