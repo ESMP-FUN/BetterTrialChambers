@@ -1,8 +1,6 @@
 package com.esmpfun.bettertrialchambers.utils
 
-import org.bukkit.Bukkit
 import org.bukkit.Material
-import org.bukkit.NamespacedKey
 import org.bukkit.Tag
 
 /**
@@ -23,18 +21,17 @@ import org.bukkit.Tag
  *
  * - `#minecraft:dangerous_for_teleportation` - fire, soul fire, lava cauldron,
  *   campfire, soul campfire, cactus, magma block, sweet berry bush, wither rose,
- *   pointed dripstone, powder snow. Verified against the 26.3 Pre-Release 1
- *   server jar; it is BTC's old hand-written list almost exactly.
+ *   pointed dripstone, powder snow. It is BTC's old hand-written list almost
+ *   exactly.
  * - `#minecraft:entities_can_teleport_to` - currently defined as
  *   `#minecraft:blocks_motion`, which is the game's own notion of "something
  *   with a collision box you can stand on top of".
  *
  * ### Falling back
  *
- * Both tags are **new in 26.3** and do not exist on 26.2 or earlier (confirmed
- * by diffing the two servers' tag folders). A missing tag is therefore expected
- * rather than an error, and each lookup falls back to the hand-written behaviour
- * this class replaced, so the same code is correct on either server.
+ * Both tags are new in 26.3. A server that does not define one is not an error
+ * here: that lookup falls back to the hand-written behaviour this class
+ * replaced.
  */
 object TeleportSafety {
 
@@ -53,16 +50,11 @@ object TeleportSafety {
     )
 
     /**
-     * Tags are resolved on first use rather than at class-load, because
-     * [Bukkit.getTag] needs a running server. [runCatching] covers the unit-test
-     * case where there is no server at all.
+     * Resolved on first use rather than at class-load, because reading a tag
+     * needs a running server. [runCatching] covers there being none at all.
      */
-    private val dangerousTag: Tag<Material>? by lazy { lookup("dangerous_for_teleportation") }
-    private val canStandOnTag: Tag<Material>? by lazy { lookup("entities_can_teleport_to") }
-
-    private fun lookup(tagName: String): Tag<Material>? = runCatching {
-        Bukkit.getTag(Tag.REGISTRY_BLOCKS, NamespacedKey.minecraft(tagName), Material::class.java)
-    }.getOrNull()
+    private val dangerousTag: Tag<Material>? by lazy { runCatching { Tag.DANGEROUS_FOR_TELEPORTATION }.getOrNull() }
+    private val canStandOnTag: Tag<Material>? by lazy { runCatching { Tag.ENTITIES_CAN_TELEPORT_TO }.getOrNull() }
 
     /** True when landing on top of [material] would immediately hurt the player. */
     fun isDangerousToLandOn(material: Material): Boolean =

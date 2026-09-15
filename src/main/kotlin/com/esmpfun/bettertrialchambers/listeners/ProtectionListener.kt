@@ -24,6 +24,8 @@ import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.block.BlockSpreadEvent
 import org.bukkit.event.block.LeavesDecayEvent
 import org.bukkit.event.block.SpongeAbsorbEvent
+import io.papermc.paper.event.entity.EntityBreakByEntityEvent
+import io.papermc.paper.event.entity.EntityBreakEvent
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.hanging.HangingBreakByEntityEvent
 import org.bukkit.event.hanging.HangingBreakEvent
@@ -547,10 +549,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
      * world.
      *
      * Asks the same question the snapshot asks, so what a reset puts back and
-     * what protection defends can never drift apart. That matters for the
-     * cushions added in 26.3: they are not hung on a wall the way a painting is,
-     * so the two handlers below never see one, and this is the only thing
-     * standing between a cushion and anyone who fancies it.
+     * what protection defends can never drift apart.
      */
     private fun isDecoration(entity: org.bukkit.entity.Entity): Boolean =
         com.esmpfun.bettertrialchambers.utils.DecorationEntities.isDecoration(entity)
@@ -578,16 +577,31 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         event.isCancelled = true
     }
 
-    // The two handlers above only ever see something hung on a wall. A cushion is
-    // not, so 26.3 adds its own way of saying one has been taken:
-    // `io.papermc.paper.event.entity.EntityBreakEvent` (cancellable, with a
-    // reason of ENTITY, EXPLOSION, OBSTRUCTION, PHYSICS or DEFAULT) and
-    // `EntityBreakByEntityEvent`, which also names who did it.
-    //
-    // TODO(26.3-api): when Paper publishes 26.3, add a handler for those two
-    // shaped exactly like the pair above, so a cushion inside a chamber is
-    // defended the same way a painting is. Until then the damage handler further
-    // down is what covers them.
+    /**
+     * A cushion is not hung on a wall, so the two handlers above never see one.
+     * 26.3 says a cushion has been taken with [EntityBreakEvent] instead, and
+     * with [EntityBreakByEntityEvent] when someone did it by hand.
+     *
+     * Both arrive here: the two events share one handler list, so the subclass
+     * is checked for rather than listened to separately, which also keeps the
+     * bypass permission from depending on which handler runs first.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onEntityBreak(event: EntityBreakEvent) {
+        if (protectionOff("protect-decorations", true)) return
+        if (!isDecoration(event.entity)) return
+        val location = event.entity.location
+        protectedChamberAt(location) ?: return
+        val remover = (event as? EntityBreakByEntityEvent)?.remover
+        if (remover is Player) {
+            if (remover.hasPermission("btc.bypass.protection")) return
+            if (deferToWorldGuard(location, remover)) return
+            event.isCancelled = true
+            notifyBlocked(remover, "cannot-break-blocks")
+            return
+        }
+        event.isCancelled = true
+    }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onArmorStandManipulate(event: PlayerArmorStandManipulateEvent) {

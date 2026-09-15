@@ -213,17 +213,13 @@ class BetterTrialChambers : JavaPlugin() {
         // primary, GitHub Releases fallback, clickable admin notices, and (when
         // enabled in config) checksum-verified downloads staged into the server's
         // update folder for install on the next restart. Runs after config load
-        // because update.* keys drive its mode. `-mc26` releases are matched
-        // automatically when the server itself runs MC 26+.
+        // because update.* keys drive its mode.
         val updateMode = when (config.getString("update.mode", "notify")!!.lowercase()) {
             "check-only", "check", "silent" -> UpdateMode.CHECK_ONLY
             "download" -> UpdateMode.DOWNLOAD
             "auto-stage", "auto" -> UpdateMode.AUTO_STAGE
             else -> UpdateMode.NOTIFY
         }
-        val onMc26 = runCatching {
-            server.minecraftVersion.substringBefore('.').toInt() >= 26
-        }.getOrDefault(false)
         updater = Updater.builder(this)
             .source(ModrinthSource("trialchamberpro"))
             .fallbackSource(GitHubReleasesSource("ESMP-FUN/BetterTrialChambers"))
@@ -236,7 +232,9 @@ class BetterTrialChambers : JavaPlugin() {
             .changelogUrl("https://raw.githubusercontent.com/ESMP-FUN/BetterTrialChambers/master/src/main/resources/update.txt")
             .userAgentContact("https://github.com/ESMP-FUN/BetterTrialChambers")
             .requireHash(config.getBoolean("update.require-hash", true))
-            .apply { if (onMc26) track("mc26") }
+            // This jar only loads on 26.3 and newer, so it always follows the
+            // 26.3 release line. 1.21.x and 26.0-26.2 have their own downloads.
+            .track("mc263")
             .apply {
                 // Opt-in no-restart updates (/trial update apply). The engine
                 // refuses on Folia and when other plugins depend on TCP,

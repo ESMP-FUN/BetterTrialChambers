@@ -230,14 +230,13 @@ object NBTUtil {
      * "click here" command sign inside a chamber would quietly stop working the
      * first time the chamber reset.
      *
-     * BTC's 26.3 branch still compiles against the 26.2 API (Paper has not
-     * published a 26.3 one yet), so the switch is reached by looking the methods
-     * up on the running server rather than calling them directly. On a server
-     * that does not have them, every call here does nothing, which is the correct
-     * behaviour for 26.2 and earlier.
+     * Paper's 26.3 API has no getter or setter for it (checked against
+     * 26.3.build.5 on 2026-09-16), so the switch is reached by looking the
+     * methods up on the running server instead. On a server that does not have
+     * them, every call here does nothing.
      *
-     * TODO(26.3-api): when Paper publishes 26.3, replace this whole object with
-     * the direct getter/setter and delete the lookup.
+     * TODO(26.3-api): when Paper exposes the switch, replace this whole object
+     * with the direct getter/setter and delete the lookup.
      */
     private object SignOpFeatures {
         private val getter by lazy {

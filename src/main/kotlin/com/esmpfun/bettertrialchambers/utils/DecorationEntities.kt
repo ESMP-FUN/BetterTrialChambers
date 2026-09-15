@@ -8,6 +8,7 @@ import org.bukkit.block.data.BlockData
 import org.bukkit.block.structure.Mirror
 import org.bukkit.block.structure.StructureRotation
 import org.bukkit.entity.ArmorStand
+import org.bukkit.entity.Cushion
 import org.bukkit.entity.Display
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Hanging
@@ -146,11 +147,7 @@ object DecorationEntities {
             entity is Hanging -> true      // item frames, glow item frames, paintings
             entity is ArmorStand -> true
             entity is Display -> true      // text, item and block displays
-            // Cushions arrived in 26.3, so there is no name for them in the
-            // older versions this also has to build against. Asked for by id
-            // instead, which works on any version and simply never matches on
-            // one that has no cushions.
-            entity.type.key.value().endsWith("cushion") -> true
+            entity is Cushion -> true
             else -> false
         }
     }
