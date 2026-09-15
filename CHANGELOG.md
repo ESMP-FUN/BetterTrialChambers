@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [Unreleased]
+### Changed
+- **This download now tells you when a newer one fits your server.** The `-mc26` jar is built for Minecraft 26.0 to 26.2. It still starts on 26.3, but it follows the wrong updates there, so on a 26.3 server the console now asks you once at startup to switch to the `-mc263` download.
+
 ## [2.1.0] - 2026-07-31
 ### Added
 - **Limit how often a player can win a specific item.** Every loot item now has a "redeemable" setting with three choices: **Every reset** (the old behaviour — winnable again after each reset), **Once per chamber** (each player wins it only once from that chamber, even after it resets), or **Once ever** (each player wins it only once, ever, anywhere on the server). Once a player has won a capped item it quietly drops out of their own rolls and the other loot fills the gap — everyone else is unaffected. Perfect for making armour trims drop without letting them be farmed by resetting the same chamber. Set it in-game on an item's amount page with the new **"How often can a player get this?"** button, or add a `redeemable: once | per-chamber | per-reset` line in `loot.yml`. Existing loot is unchanged — the default matches how loot has always worked.
