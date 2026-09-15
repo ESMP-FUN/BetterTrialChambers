@@ -913,15 +913,29 @@ class ResetManager(private val plugin: BetterTrialChambers) {
         // intentionally lets players build inside chambers.
         //
         // SAFETY: the clear region is the INTERSECTION of the chamber bounds and
-        // the snapshot's own coverage. If the chamber AABB grew after capture
-        // (e.g. a discovery merge), clearing the full chamber bounds would wipe
-        // everything in the annexed volume that the snapshot can't put back,
+        // the region the snapshot was taken from. If the chamber AABB grew after
+        // capture (e.g. a discovery merge), clearing the full chamber bounds would
+        // wipe everything in the annexed volume that the snapshot can't put back,
         // terrain, builds, the lot. Never clear ground the snapshot doesn't cover.
+        //
+        // A file written before the format recorded that region falls back to the
+        // box its blocks sit in, which is all it can say. That understates the
+        // capture wherever the chamber has air along an edge, so it clears less
+        // than it could - never more - and says nothing about it.
         if (plugin.config.getBoolean("reset.clear-added-blocks", true)) {
             val world = chamber.getWorld()
             if (world != null) {
-                if (scan.minX > chamber.minX || scan.minY > chamber.minY || scan.minZ > chamber.minZ ||
-                    scan.maxX < chamber.maxX || scan.maxY < chamber.maxY || scan.maxZ < chamber.maxZ
+                val captured = scan.captured
+                val snapMinX = captured?.minX ?: scan.minX
+                val snapMinY = captured?.minY ?: scan.minY
+                val snapMinZ = captured?.minZ ?: scan.minZ
+                val snapMaxX = captured?.maxX ?: scan.maxX
+                val snapMaxY = captured?.maxY ?: scan.maxY
+                val snapMaxZ = captured?.maxZ ?: scan.maxZ
+                if (captured != null && (
+                        snapMinX > chamber.minX || snapMinY > chamber.minY || snapMinZ > chamber.minZ ||
+                            snapMaxX < chamber.maxX || snapMaxY < chamber.maxY || snapMaxZ < chamber.maxZ
+                        )
                 ) {
                     plugin.logger.warning(
                         "Snapshot for chamber ${chamber.name} covers a smaller region than the chamber " +
@@ -929,12 +943,12 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                             "region; run /trial snapshot create ${chamber.name} to recapture the full bounds."
                     )
                 }
-                val clrMinX = maxOf(chamber.minX, scan.minX)
-                val clrMinY = maxOf(chamber.minY, scan.minY)
-                val clrMinZ = maxOf(chamber.minZ, scan.minZ)
-                val clrMaxX = minOf(chamber.maxX, scan.maxX)
-                val clrMaxY = minOf(chamber.maxY, scan.maxY)
-                val clrMaxZ = minOf(chamber.maxZ, scan.maxZ)
+                val clrMinX = maxOf(chamber.minX, snapMinX)
+                val clrMinY = maxOf(chamber.minY, snapMinY)
+                val clrMinZ = maxOf(chamber.minZ, snapMinZ)
+                val clrMaxX = minOf(chamber.maxX, snapMaxX)
+                val clrMaxY = minOf(chamber.maxY, snapMaxY)
+                val clrMaxZ = minOf(chamber.maxZ, snapMaxZ)
                 if (clrMinX <= clrMaxX && clrMinY <= clrMaxY && clrMinZ <= clrMaxZ) {
                     blockRestorer.clearAddedBlocks(
                         world,
@@ -1077,15 +1091,6 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                     if (loc.blockX > snapMaxX) snapMaxX = loc.blockX
                     if (loc.blockY > snapMaxY) snapMaxY = loc.blockY
                     if (loc.blockZ > snapMaxZ) snapMaxZ = loc.blockZ
-                }
-                if (snapMinX > chamber.minX || snapMinY > chamber.minY || snapMinZ > chamber.minZ ||
-                    snapMaxX < chamber.maxX || snapMaxY < chamber.maxY || snapMaxZ < chamber.maxZ
-                ) {
-                    plugin.logger.warning(
-                        "Snapshot for chamber ${chamber.name} covers a smaller region than the chamber " +
-                            "bounds (chamber likely grew after capture). Clearing only the snapshot-covered " +
-                            "region; run /trial snapshot create ${chamber.name} to recapture the full bounds."
-                    )
                 }
                 val clrMinX = maxOf(chamber.minX, snapMinX)
                 val clrMinY = maxOf(chamber.minY, snapMinY)
