@@ -24,27 +24,25 @@ class MythicMobsProvider(private val plugin: BetterTrialChambers) : TrialMobProv
     override val id: String = "mythicmobs"
     override val displayName: String = "MythicMobs"
 
-    @Volatile private var cachedAvailable: Boolean? = null
+    /** Whether this plugin's classes are on the server; fixed for the run. */
+    @Volatile private var classPresent: Boolean? = null
 
     override fun isAvailable(): Boolean {
-        cachedAvailable?.let { return it }
-        val pluginPresent = Bukkit.getPluginManager().getPlugin("MythicMobs")?.isEnabled == true
-        if (!pluginPresent) {
-            cachedAvailable = false
-            return false
-        }
+        // Asked of the plugin manager every time on purpose: it is a map lookup,
+        // and caching the answer meant a plugin that starts after this one was
+        // written off for the rest of the server's run. Only whether its classes
+        // are there is remembered, which cannot change while the server is up.
+        if (Bukkit.getPluginManager().getPlugin("MythicMobs")?.isEnabled != true) return false
+        classPresent?.let { return it }
         return try {
             Class.forName("io.lumine.mythic.bukkit.MythicBukkit")
-            cachedAvailable = true
+            classPresent = true
             true
         } catch (_: Throwable) {
-            cachedAvailable = false
+            classPresent = false
             false
         }
     }
-
-    /** Clears the availability cache, call if MythicMobs is reloaded at runtime. */
-    fun invalidate() { cachedAvailable = null }
 
     override fun spawnMob(mobId: String, location: Location, ominous: Boolean): Entity? {
         if (!isAvailable()) return null
