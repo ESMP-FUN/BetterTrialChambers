@@ -35,10 +35,13 @@ class LandsClaimProvider : ClaimProvider {
 
     override fun findConflicts(plugin: BetterTrialChambers, chambers: List<Chamber>): Map<Chamber, List<String>> {
         val integration = landsIntegration(plugin) ?: return emptyMap()
+        // Asked of the API interface, not of the object's own class: Lands hands
+        // back an internal implementation that is not public, and a method found
+        // on that cannot be invoked.
         val byChunk = try {
-            integration.javaClass.getMethod(
+            Refl.classOrNull("me.angeschossen.lands.api.LandsIntegration")?.getMethod(
                 "getLandByChunk", World::class.java, Int::class.javaPrimitiveType, Int::class.javaPrimitiveType,
-            )
+            ) ?: return emptyMap()
         } catch (_: Throwable) {
             return emptyMap()
         }
