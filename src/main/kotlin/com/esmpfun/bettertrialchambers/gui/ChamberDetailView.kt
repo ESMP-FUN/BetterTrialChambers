@@ -100,6 +100,10 @@ class ChamberDetailView(
             "name" to chamber.label())
 
     private fun handleRenameClick(player: Player) {
+        if (!player.hasPermission("btc.admin.create")) {
+            player.sendMessage(plugin.getMessageComponent("no-permission"))
+            return
+        }
         com.esmpfun.bettertrialchambers.listeners.ChamberRenameInputListener
             .awaitInput(player.uniqueId, chamber.id)
         player.closeInventory()
@@ -355,6 +359,10 @@ class ChamberDetailView(
     }
 
     private fun handleResetChamberClick(player: Player, left: Boolean, right: Boolean, shift: Boolean) {
+        if (!player.hasPermission("btc.admin.reset")) {
+            player.sendMessage(plugin.getMessageComponent("no-permission"))
+            return
+        }
         when {
             shift && right -> {
                 player.sendMessage(plugin.getMessageComponent("gui-forcing-reset", "chamber" to chamber.name))
@@ -387,6 +395,10 @@ class ChamberDetailView(
     }
 
     private fun handleExitPlayersClick(player: Player, left: Boolean, right: Boolean, shift: Boolean) {
+        if (!player.hasPermission("btc.admin.reset")) {
+            player.sendMessage(plugin.getMessageComponent("no-permission"))
+            return
+        }
         val playersInChamber = chamber.getPlayersInside()
         if (playersInChamber.isEmpty()) {
             player.sendMessage(plugin.getMessageComponent("gui-no-players-in-chamber"))
@@ -404,6 +416,10 @@ class ChamberDetailView(
     }
 
     private fun handleSnapshotClick(player: Player, left: Boolean, shift: Boolean) {
+        if (!player.hasPermission("btc.admin.snapshot")) {
+            player.sendMessage(plugin.getMessageComponent("no-permission"))
+            return
+        }
         when {
             shift && left -> {
                 val snapshotFile = chamber.getSnapshotFile()
