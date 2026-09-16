@@ -3,7 +3,6 @@ package com.esmpfun.bettertrialchambers.listeners
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
 import org.bukkit.GameMode
 import org.bukkit.Material
-import org.bukkit.block.Container
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -336,7 +335,11 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         if (event.hand != org.bukkit.inventory.EquipmentSlot.HAND) return
 
         val block = event.clickedBlock ?: return
-        if (block.state !is Container) return
+        // Every block that holds items, not only the ones with a chest-style
+        // screen. A shelf, a lectern, a jukebox, a chiseled bookshelf and a
+        // decorated pot all hand items over on a click and none of them is a
+        // Container, so checking for that alone left them open.
+        if (block.state !is io.papermc.paper.block.TileStateInventoryHolder) return
 
         val player = event.player
         val location = block.location
