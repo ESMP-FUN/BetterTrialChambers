@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap
  * ignores TCP's `BlockBreakEvent` cancel, so they could bypass chamber protection (and the per
  * block deny message flooded chat). When `protection.block-advanced-enchantments` is on and AE is
  * installed, TCP cancels AE's cancellable `EnchantActivateEvent` for a player standing in a
- * registered chamber (unless they hold `tcp.bypass.protection`), stopping the effect outright.
+ * registered chamber (unless they hold `btc.bypass.protection`), stopping the effect outright.
  * Enchant names listed in `protection.advanced-enchantments-allowlist` are still permitted
  * (e.g. combat enchants you want to keep working inside chambers).
  *
@@ -81,7 +81,7 @@ object AdvancedEnchantmentsHook {
             if (!affectsChamber(plugin, player)) return
 
             if (player.hasPermission("btc.bypass.protection")) {
-                dbg(plugin, "enchant '${enchant ?: "?"}' allowed for ${player.name}: has tcp.bypass.protection (note: OPs have this by default)")
+                dbg(plugin, "enchant '${enchant ?: "?"}' allowed for ${player.name}: has btc.bypass.protection (note: OPs have this by default)")
                 return
             }
 

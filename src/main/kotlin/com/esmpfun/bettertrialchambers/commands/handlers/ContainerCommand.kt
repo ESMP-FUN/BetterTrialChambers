@@ -18,7 +18,7 @@ import org.bukkit.entity.Player
  *   tp <chamber> <#>         , teleport to a template (index from `list`)
  *   edit <chamber> <#>       , open a template to edit it
  *
- * Gated on `tcp.admin.containers`. Output is localized via the
+ * Gated on `btc.admin.containers`. Output is localized via the
  * `container-*` keys in messages.yml (v1.7.1).
  */
 class ContainerCommand(private val plugin: BetterTrialChambers) : SubcommandHandler {
