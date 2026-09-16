@@ -1019,7 +1019,12 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      * @return True if the update was applied
      */
     suspend fun setDisplayName(chamberId: Int, displayName: String?): Boolean = withContext(Dispatchers.IO) {
-        val clean = displayName?.trim()?.takeIf { it.isNotEmpty() }
+        // A display name is announced to everyone and styled on the way out, so
+        // anything in it that would be clickable, hoverable or a line of its own
+        // is taken out here. Colours and bold survive.
+        val clean = displayName
+            ?.let { com.esmpfun.bettertrialchambers.utils.DisplayText.sanitize(it) }
+            ?.takeIf { it.isNotEmpty() }
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement("UPDATE ${tables.chambers} SET display_name = ? WHERE id = ?").use { stmt ->
