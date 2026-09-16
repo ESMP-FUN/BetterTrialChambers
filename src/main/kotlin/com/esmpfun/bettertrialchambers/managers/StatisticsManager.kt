@@ -312,7 +312,7 @@ class StatisticsManager(private val plugin: BetterTrialChambers) {
                         } else {
                             // Create new stats entry
                             val newStats = PlayerStats(playerUuid = playerUuid)
-                            saveStats(newStats)
+                            insertEmptyStatsIfAbsent(playerUuid)
                             newStats
                         }
                     }
@@ -327,47 +327,38 @@ class StatisticsManager(private val plugin: BetterTrialChambers) {
     }
 
     /**
-     * Saves statistics to the database.
+     * Writes an empty row for a player who has none yet.
+     *
+     * Deliberately leaves an existing row alone. This used to replace the row
+     * outright, and a count recorded between finding no row and writing this one
+     * (a mob killed the same moment stats were first read) was wiped back to
+     * zero. Counting itself never comes through here; it is done by the database
+     * in [atomicIncrement].
      */
-    private fun saveStats(stats: PlayerStats) {
+    private fun insertEmptyStatsIfAbsent(playerUuid: UUID) {
         plugin.databaseManager.connection.use { conn ->
-            // Use database-specific upsert syntax
             val isSQLite = plugin.databaseManager.databaseType ==
                 com.esmpfun.bettertrialchambers.database.DatabaseManager.DatabaseType.SQLITE
-
             val sql = if (isSQLite) {
                 """
-                INSERT OR REPLACE INTO $statsTable
+                INSERT INTO $statsTable
                 (player_uuid, chambers_completed, normal_vaults_opened, ominous_vaults_opened,
                  mobs_killed, deaths, time_spent, last_updated)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, 0, 0, 0, 0, 0, 0, ?)
+                ON CONFLICT(player_uuid) DO NOTHING
                 """
             } else {
                 """
                 INSERT INTO $statsTable
                 (player_uuid, chambers_completed, normal_vaults_opened, ominous_vaults_opened,
                  mobs_killed, deaths, time_spent, last_updated)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE
-                    chambers_completed = VALUES(chambers_completed),
-                    normal_vaults_opened = VALUES(normal_vaults_opened),
-                    ominous_vaults_opened = VALUES(ominous_vaults_opened),
-                    mobs_killed = VALUES(mobs_killed),
-                    deaths = VALUES(deaths),
-                    time_spent = VALUES(time_spent),
-                    last_updated = VALUES(last_updated)
+                VALUES (?, 0, 0, 0, 0, 0, 0, ?)
+                ON DUPLICATE KEY UPDATE player_uuid = player_uuid
                 """
             }
-
             conn.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, stats.playerUuid.toString())
-                stmt.setInt(2, stats.chambersCompleted)
-                stmt.setInt(3, stats.normalVaultsOpened)
-                stmt.setInt(4, stats.ominousVaultsOpened)
-                stmt.setInt(5, stats.mobsKilled)
-                stmt.setInt(6, stats.deaths)
-                stmt.setLong(7, stats.timeSpent)
-                stmt.setLong(8, stats.lastUpdated)
+                stmt.setString(1, playerUuid.toString())
+                stmt.setLong(2, System.currentTimeMillis())
                 stmt.executeUpdate()
             }
         }

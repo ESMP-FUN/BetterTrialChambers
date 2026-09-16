@@ -238,22 +238,32 @@ class PlayerMovementListener(private val plugin: BetterTrialChambers) : Listener
         currentPlayers.forEach { uuid ->
             val entryTime = playerEntryTimes[uuid] ?: return@forEach
             val timeSpent = (currentTime - entryTime) / 1000 // Convert to seconds
-
-            if (timeSpent > 0) {
-                updates[uuid] = timeSpent
-                playerEntryTimes[uuid] = currentTime // Reset entry time
-            }
+            if (timeSpent > 0) updates[uuid] = timeSpent
         }
+        if (updates.isEmpty()) return
 
-        // Batch update all players in a single transaction
-        if (updates.isNotEmpty()) {
+        // Batch update all players in a single transaction. The clocks are only
+        // moved on once that has gone in: moving them first meant a database
+        // hiccup threw away everybody's last five minutes, where leaving them
+        // alone simply counts that time again on the next flush.
+        try {
             plugin.statisticsManager.batchAddTimeSpent(updates)
-            // Only when asked for. This runs every five minutes for as long as
-            // anybody is stood in a chamber, so on a busy server it was a few
-            // hundred lines a day saying nothing had gone wrong.
-            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-                plugin.logger.info("Flushed time tracking for ${updates.size} players")
-            }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            plugin.logger.warning(
+                "Could not record time spent in chambers for ${updates.size} player(s): ${e.message}. " +
+                    "It stays counted and goes in with the next update."
+            )
+            return
+        }
+        updates.keys.forEach { playerEntryTimes[it] = currentTime }
+
+        // Only when asked for. This runs every five minutes for as long as
+        // anybody is stood in a chamber, so on a busy server it was a few
+        // hundred lines a day saying nothing had gone wrong.
+        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+            plugin.logger.info("Flushed time tracking for ${updates.size} players")
         }
     }
 
