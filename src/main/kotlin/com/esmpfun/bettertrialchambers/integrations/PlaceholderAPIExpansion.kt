@@ -48,16 +48,32 @@ class PlaceholderAPIExpansion(
     private val identifier: String = "btc"
 ) : PlaceholderExpansion() {
 
-    // Cache for leaderboard data (refreshed every 60 seconds)
-    private var leaderboardCache: MutableMap<String, List<Pair<String, Int>>> = mutableMapOf()
-    private var lastLeaderboardRefresh: Long = 0
+    // Cache for leaderboard data (refreshed every 60 seconds). Written by a
+    // background lookup and read by whatever thread asks for a placeholder, so
+    // the map is concurrent, the timestamp is volatile and the in-progress flag
+    // is atomic: as plain fields, a finished refresh was not guaranteed to be
+    // seen, which could leave the boards frozen on stale numbers.
+    private val leaderboardCache = ConcurrentHashMap<String, List<Pair<String, Int>>>()
+    @Volatile private var lastLeaderboardRefresh: Long = 0
     private val leaderboardCacheDuration = 60000L // 1 minute
-    private var leaderboardRefreshInProgress = false
+    private val leaderboardRefreshInProgress = java.util.concurrent.atomic.AtomicBoolean(false)
 
     // Local stats cache with 30-second TTL (mirrors StatisticsManager but avoids blocking calls)
     private val statsCache = ConcurrentHashMap<java.util.UUID, CachedStats>()
+
+    /**
+     * Who is already being looked up.
+     *
+     * A scoreboard asks for these placeholders many times a second per player.
+     * Without this, every one of those asks while a lookup was still running
+     * started another, so one slow database turned a handful of players into
+     * hundreds of queries at once and used up the connection pool. The
+     * leaderboard cache below has always worked this way.
+     */
+    private val statsRefreshInFlight = ConcurrentHashMap.newKeySet<java.util.UUID>()
     private data class CachedStats(val stats: com.esmpfun.bettertrialchambers.managers.StatisticsManager.PlayerStats, val timestamp: Long)
     private val statsCacheTtl = 30000L // 30 seconds
+    private val MAX_CACHED_PLAYERS = 500
 
     override fun getIdentifier(): String = identifier
 
@@ -185,18 +201,33 @@ class PlaceholderAPIExpansion(
             return cached.stats
         }
 
-        // Trigger async refresh (non-blocking)
-        plugin.launchAsync {
-            try {
-                val freshStats = plugin.statisticsManager.getStats(uuid)
-                statsCache[uuid] = CachedStats(freshStats, System.currentTimeMillis())
-            } catch (_: Exception) {
-                // Ignore errors during background refresh
+        // Trigger async refresh (non-blocking), one at a time per player
+        if (statsRefreshInFlight.add(uuid)) {
+            plugin.launchAsync {
+                try {
+                    val freshStats = plugin.statisticsManager.getStats(uuid)
+                    statsCache[uuid] = CachedStats(freshStats, System.currentTimeMillis())
+                } catch (_: Exception) {
+                    // Ignore errors during background refresh
+                } finally {
+                    statsRefreshInFlight.remove(uuid)
+                    pruneStatsCache()
+                }
             }
         }
 
         // Return stale cached data or defaults
         return cached?.stats ?: com.esmpfun.bettertrialchambers.managers.StatisticsManager.PlayerStats(uuid)
+    }
+
+    /**
+     * Drops entries for players nobody has asked about in a while, so the cache
+     * does not keep a row for everyone who has ever been on the server.
+     */
+    private fun pruneStatsCache() {
+        if (statsCache.size <= MAX_CACHED_PLAYERS) return
+        val cutoff = System.currentTimeMillis() - statsCacheTtl * 10
+        statsCache.entries.removeIf { it.value.timestamp < cutoff }
     }
 
     /**
@@ -297,8 +328,7 @@ class PlaceholderAPIExpansion(
         if (now - lastLeaderboardRefresh < leaderboardCacheDuration) return
 
         // Prevent multiple concurrent refreshes
-        if (leaderboardRefreshInProgress) return
-        leaderboardRefreshInProgress = true
+        if (!leaderboardRefreshInProgress.compareAndSet(false, true)) return
 
         // Trigger async refresh (non-blocking)
         plugin.launchAsync {
@@ -324,7 +354,7 @@ class PlaceholderAPIExpansion(
             } catch (_: Exception) {
                 // Ignore errors during background refresh
             } finally {
-                leaderboardRefreshInProgress = false
+                leaderboardRefreshInProgress.set(false)
             }
         }
     }
