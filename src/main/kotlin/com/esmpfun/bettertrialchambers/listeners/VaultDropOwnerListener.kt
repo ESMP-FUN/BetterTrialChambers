@@ -21,22 +21,41 @@ class VaultDropOwnerListener(private val plugin: BetterTrialChambers) : Listener
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onPickup(event: EntityPickupItemEvent) {
-        val picker = event.entity as? Player ?: return
         val item = event.item
         val ownerId = readOwner(item) ?: return
+        if (!stillOwned(item)) return
 
-        val graceSeconds = plugin.config.getLong("vaults.drop-loot-owner-grace-seconds", 30L)
-        if (graceSeconds > 0) {
-            val droppedAt = readDropTime(item) ?: return
-            val elapsedMs = System.currentTimeMillis() - droppedAt
-            if (elapsedMs >= graceSeconds * 1000L) {
-                return // grace expired, free-for-all
-            }
+        // A mob can pick an item up too, and a zombie wandering off with someone's
+        // reward is the same loss to them as another player taking it.
+        val picker = event.entity as? Player
+        if (picker == null) {
+            event.isCancelled = true
+            return
         }
 
         if (picker.uniqueId != ownerId && !picker.hasPermission("btc.bypass.droplock")) {
             event.isCancelled = true
         }
+    }
+
+    /**
+     * A hopper, a hopper minecart or a chest minecart takes items without any
+     * player being involved, and that never came through the handler above: a
+     * hopper put down next to the drop collected everybody's vault loot.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onHopperPickup(event: org.bukkit.event.inventory.InventoryPickupItemEvent) {
+        val item = event.item
+        readOwner(item) ?: return
+        if (stillOwned(item)) event.isCancelled = true
+    }
+
+    /** True while this drop is still held for whoever it belongs to. */
+    private fun stillOwned(item: Item): Boolean {
+        val graceSeconds = plugin.config.getLong("vaults.drop-loot-owner-grace-seconds", 30L)
+        if (graceSeconds <= 0) return true // held until it despawns
+        val droppedAt = readDropTime(item) ?: return false
+        return System.currentTimeMillis() - droppedAt < graceSeconds * 1000L
     }
 
     private fun readOwner(item: Item): UUID? {
