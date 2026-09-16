@@ -55,16 +55,15 @@ BetterTrialChambers fixes all of that: every player gets their own loot roll, ch
 
 ## Premium add-ons
 
-BetterTrialChambers is the free foundation. Two premium modules extend it further:
+BetterTrialChambers is the free foundation. Three premium modules extend it further:
 
-**[Wild Spawners](https://esmp.fun/plugins)** — Place trial spawners anywhere on the survival map, not just inside registered chambers. Players receive spawner items via shop plugins or staff commands, place them wherever they like, and custom-plugin mobs (MythicMobs, EliteMobs, etc.) spawn correctly. Includes configurable mining-and-redeploy (no Silk Touch required), per-spawner holograms, griefing protection, and a full in-game preset editor.
+**[Wild Spawners](https://esmp.fun/plugins/wild-spawners)** — Place trial spawners anywhere on the survival map, not just inside registered chambers. Players receive spawner items via shop plugins or staff commands, place them wherever they like, and custom-plugin mobs (MythicMobs, EliteMobs, etc.) spawn correctly. Includes configurable mining-and-redeploy (no Silk Touch required), per-spawner holograms, griefing protection, and a full in-game preset editor.
 
-**[Vault Crates](https://esmp.fun/plugins)** — Turn any vanilla Vault block into a loot crate. Players open crates with keys earned in-game or purchased in a shop. Supports two-tier crates (normal / ominous), weighted loot pools, per-player and server-wide reset modes, and crate-key drops from Wild Spawners mob kills. Full in-game editor included.
+**[Vault Crates](https://esmp.fun/plugins/vault-crates)** — Turn any vanilla Vault block into a loot crate. Players open crates with keys earned in-game or purchased in a shop. Supports two-tier crates (normal / ominous), weighted loot pools, per-player and server-wide reset modes, and crate-key drops from Wild Spawners mob kills. Full in-game editor included.
 
-**[Mythic Trials](https://esmp.fun/plugins)**
-Per-player chamber progression with Mythic difficulty tiers. Every chamber clear bumps each participant's personal tier (T1–T20, then opt-in Mythic M1–M5): mobs scale in health, damage, speed, armor, gear and tactics — gear-adaptive AI, themed rooms, anti-heal, true damage — while rewards scale with them. In-chamber HUD, per-chamber leaderboards, seasons with seasonal loot, and full custom-mob-provider support. Built on BTC's ChamberClearedEvent, so it works on every registered chamber automatically.
+**[Mythic Trials](https://esmp.fun/plugins/mythic-trials)** — Per-player chamber progression with Mythic difficulty tiers. Every chamber clear bumps each participant's personal tier (T1–T20, then opt-in Mythic M1–M5): mobs scale in health, damage, speed, armor, gear and tactics — gear-adaptive AI, themed rooms, anti-heal, true damage — while rewards scale with them. In-chamber HUD, per-chamber leaderboards, seasons with seasonal loot, and full custom-mob-provider support. Built on BTC's ChamberClearedEvent, so it works on every registered chamber automatically.
 
-All modules require BetterTrialChambers and are available [esmp.fun](https://esmp.fun/) (Stripe + crypto, for regions where certain payment processors don't operate).
+All three require BetterTrialChambers and are sold on [esmp.fun](https://esmp.fun/) (Stripe + crypto, for regions where certain payment processors don't operate).
 
 ---
 
