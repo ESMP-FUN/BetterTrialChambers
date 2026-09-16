@@ -331,6 +331,13 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
                     "idx_${tables.playerVaults}_player ON ${tables.playerVaults}(player_uuid)",
                     "idx_${tables.spawners}_chamber ON ${tables.spawners}(chamber_id)",
                     "idx_${tables.playerLootRedemptions}_player ON ${tables.playerLootRedemptions}(player_uuid)",
+                    // Every click on a vault looks it up by where it is. The table's own
+                    // unique key starts with the chamber, which a lookup by position alone
+                    // cannot use, so without this each click reads the whole table.
+                    "idx_${tables.vaults}_pos ON ${tables.vaults}(x, y, z)",
+                    // Shared-vault claims and cooldown clearing ask by vault. The primary
+                    // key starts with the player, so it does not answer that either.
+                    "idx_${tables.playerVaults}_vault ON ${tables.playerVaults}(vault_id)",
                 )
                 try {
                     // Use IF NOT EXISTS where supported; wrap in try/catch for MySQL which may not support it on older versions
