@@ -32,6 +32,9 @@ unknown-command: "&cUnknown subcommand. Use /trial help for help."
 
 # Chamber management
 chamber-created: "&aChamber &e{chamber}&a created successfully!"
+# Shown when the name typed for a new chamber cannot be used. The name also names
+# the chamber's save file, which is why it has to stay simple.
+chamber-name-invalid: "&cThe name &e{name}&c cannot be used. Use letters, numbers, - and _ only, up to 32 characters. You can set a prettier name to show in announcements afterwards with &f/trial rename&c."
 discovery-registered: "&aAuto-discovered chamber &e{name}&a with &f{vaults}&a vaults and &f{spawners}&a spawners."
 discovery-merged: "&aExpanded chamber &e{name}&a, absorbed &f{vaults}&a vaults and &f{spawners}&a spawners from an adjacent region."
 generation-cancelled-name-in-use: "&eGeneration cancelled: &cname {name} is already in use."
