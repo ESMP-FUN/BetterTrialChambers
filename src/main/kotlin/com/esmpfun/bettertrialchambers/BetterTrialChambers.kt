@@ -617,6 +617,12 @@ class BetterTrialChambers : JavaPlugin() {
                     // point load immediately.
                     moduleRegistry.loadAllPending()
 
+                    // Anyone already back on the server from before it stopped, who was
+                    // spectating at the time, is put back as they were. The join handler
+                    // that normally does this waits for the plugin to be ready, which on
+                    // a restart is usually after the first players are in.
+                    spectatorManager.restoreCrashedSpectators()
+
                     // Sweep already-loaded chunks for chambers that existed before the
                     // ChunkLoadEvent listener was registered (spawn regions, pre-loaded worlds).
                     chamberDiscoveryManager.runStartupSweep()
