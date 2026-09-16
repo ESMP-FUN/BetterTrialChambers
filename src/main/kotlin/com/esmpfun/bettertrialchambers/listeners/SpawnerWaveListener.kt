@@ -84,10 +84,10 @@ class SpawnerWaveListener(private val plugin: BetterTrialChambers) : Listener {
         // v1.3.0: Replace-after-spawn for chambers with a non-vanilla mob provider.
         //
         // The vanilla trial spawner has already produced `entity` and credited it internally
-        // (tracked UUID, wave counter, etc.). We remove that entity the same tick and spawn
-        // the provider's custom mob at the same location, then record THAT as the tracked
-        // wave mob. The vanilla spawner's state machine stays intact, we've just swapped
-        // the creature under its feet.
+        // (tracked UUID, wave counter, etc.). The provider's own mob is spawned at the same
+        // spot, and only then is the vanilla one taken away and the custom one recorded as
+        // the tracked wave mob. The vanilla spawner's state machine stays intact, we've just
+        // swapped the creature under its feet.
         if (chamber != null && chamber.hasCustomMobProvider(isOminous)) {
             val providerId = chamber.customMobProvider
             val provider = plugin.trialMobProviderRegistry.get(providerId)
@@ -95,12 +95,15 @@ class SpawnerWaveListener(private val plugin: BetterTrialChambers) : Listener {
 
             if (provider != null && provider.id != "vanilla" && mobId != null && provider.isAvailable()) {
                 val replaceLoc = entity.location.clone()
-                var originalRemoved = false
                 try {
-                    entity.remove()
-                    originalRemoved = true
+                    // Spawn the replacement BEFORE taking the vanilla mob away. The other
+                    // way round, a provider that could not spawn (its plugin updated and
+                    // moved its API, its mob id was renamed) left the wave one mob short
+                    // with nothing to make it up, so the spawner never finished, the
+                    // chamber never cleared and no key ever dropped.
                     val custom = provider.spawnMob(mobId, replaceLoc, isOminous)
                     if (custom != null) {
+                        entity.remove()
                         plugin.spawnerWaveManager.recordMobSpawn(spawnerLocation, custom, isOminous)
                         location.getNearbyPlayers(detectionRadius.toDouble()).forEach { player ->
                             plugin.spawnerWaveManager.addPlayerToWave(player, spawnerLocation)
@@ -120,18 +123,17 @@ class SpawnerWaveListener(private val plugin: BetterTrialChambers) : Listener {
                         }
                         return
                     } else {
-                        plugin.logger.warning("[CustomProvider] ${provider.id} returned null for mobId '$mobId', wave will undercount this spawn")
-                        return
+                        plugin.logger.warning(
+                            "[CustomProvider] ${provider.id} could not spawn '$mobId'; the ordinary mob is " +
+                                "left in its place so the wave can still be finished"
+                        )
+                        // fall through to vanilla tracking
                     }
                 } catch (e: Throwable) {
-                    if (originalRemoved) {
-                        // The vanilla entity is already gone, recording it would
-                        // put a dead entity into the wave and stall the counter
-                        // until sweepWaves papers over it.
-                        plugin.logger.warning("[CustomProvider] Replace-after-spawn failed post-remove (${provider.id}:$mobId): ${e.message}, wave will undercount this spawn")
-                        return
-                    }
+                    // The vanilla mob is only removed once a replacement exists, so
+                    // whatever went wrong, there is still a mob to track.
                     plugin.logger.warning("[CustomProvider] Replace-after-spawn failed (${provider.id}:$mobId): ${e.message}, falling back to vanilla")
+                    if (!entity.isValid) return // replacement went in, then something else failed
                     // fall through to vanilla tracking
                 }
             }
@@ -191,18 +193,19 @@ class SpawnerWaveListener(private val plugin: BetterTrialChambers) : Listener {
         if (provider.id == "vanilla" || !provider.isAvailable()) return false
 
         val replaceLoc = originalEntity.location.clone()
-        var originalRemoved = false
         return try {
-            originalEntity.remove()
-            originalRemoved = true
+            // Replacement first, removal second: see the same ordering in the chamber
+            // path above. A provider that cannot spawn must not cost the wave a mob.
             val custom = provider.spawnMob(mobId, replaceLoc, isOminous)
             if (custom == null) {
                 plugin.logger.warning(
-                    "[WildSpawnerResolver] ${provider.id} returned null for mobId '$mobId' at " +
-                        "${spawnerLocation.blockX},${spawnerLocation.blockY},${spawnerLocation.blockZ}, wave will undercount"
+                    "[WildSpawnerResolver] ${provider.id} could not spawn '$mobId' at " +
+                        "${spawnerLocation.blockX},${spawnerLocation.blockY},${spawnerLocation.blockZ}; the " +
+                        "ordinary mob is left in its place so the wave can still be finished"
                 )
-                return true  // we removed the original; nothing to record
+                return false  // keep the vanilla mob, caller records it
             }
+            originalEntity.remove()
             plugin.spawnerWaveManager.recordMobSpawn(spawnerLocation, custom, isOminous)
             originalEntity.location.getNearbyPlayers(detectionRadius.toDouble()).forEach { p ->
                 plugin.spawnerWaveManager.addPlayerToWave(p, spawnerLocation)
@@ -226,14 +229,13 @@ class SpawnerWaveListener(private val plugin: BetterTrialChambers) : Listener {
             true
         } catch (e: Throwable) {
             plugin.logger.warning(
-                "[WildSpawnerResolver] Replacement failed (${provider.id}:$mobId): ${e.message}" +
-                    if (originalRemoved) ", wave will undercount this spawn" else ", falling back to vanilla"
+                "[WildSpawnerResolver] Replacement failed (${provider.id}:$mobId): ${e.message}, " +
+                    "falling back to the ordinary mob"
             )
-            // If the original entity was already removed, the caller must NOT
-            // record it, a dead entity in the wave stalls the counter until
-            // sweepWaves catches it. Only fall back to vanilla recording when
-            // the failure happened before the removal.
-            originalRemoved
+            // The vanilla mob is only removed once a replacement exists. If it is
+            // still there the caller records it; if it is gone the replacement went
+            // in and was recorded already.
+            !originalEntity.isValid
         }
     }
 
