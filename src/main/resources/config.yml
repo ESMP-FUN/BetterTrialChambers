@@ -303,6 +303,10 @@ protection:
     # 3 = only the outer 3-block shell (dig in, but can't strip-mine the interior).
     # 0 = anywhere in the chamber.
     shell-depth: 3
+  # Stop players taking from or putting things into anything inside a chamber that
+  # holds items: chests, barrels, hoppers, shelves, lecterns, jukeboxes, and pots.
+  # Vaults are never covered by this, so loot still works.
+  # Leave this off unless you keep your own containers inside a chamber.
   prevent-container-access: false
   # How long (ms) to wait before re-showing a "can't break/place/access here" message to
   # the same player. Stops chat spam when one action affects many blocks at once, e.g. an
@@ -535,8 +539,10 @@ spawner-waves:
   # NOTE: in v1.2.27..v1.5.3 this used an Interaction entity which is silently glow-immune;
   #       the feature has only actually rendered visible outlines from v1.5.4 onward.
   glow-active-spawners: false
-  glow-color-normal: "#FFFF55"  # Outline color for normal trial spawners (hex RGB)
-  glow-color-ominous: "#A020F0" # Outline color for ominous trial spawners (hex RGB)
+  # Outline colours (hex RGB). Minecraft only draws an outline in one of its own
+  # sixteen colours, so whatever you put here is matched to the closest of those.
+  glow-color-normal: "#FFFF55"  # normal trial spawners (comes out yellow)
+  glow-color-ominous: "#A020F0" # ominous trial spawners (comes out purple)
 
   # Glow mode (v1.5.4), controls *which* spawners glow when glow-active-spawners is true.
   #   wave-active        (default), only the spawner with the currently-active wave glows.
