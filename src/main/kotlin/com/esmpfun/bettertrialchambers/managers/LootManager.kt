@@ -1381,7 +1381,8 @@ class LootManager(private val plugin: BetterTrialChambers) {
      * Resolves a MythicCrucible item via the MythicMobs API chain:
      *   MythicBukkit.inst().getItemManager().getItem(String) -> Optional<MythicItem>
      *     -> MythicItem.generateItemStack(int) -> AbstractItemStack (BukkitItemStack at runtime)
-     *     -> BukkitItemStack.build() -> org.bukkit.inventory.ItemStack
+     *     -> BukkitItemStack.getItemStack() -> org.bukkit.inventory.ItemStack
+     *        (build() on 4.x and early 5.x; both are tried)
      *
      * MythicCrucible is an addon of MythicMobs, Crucible items are registered into the Mythic item
      * manager, so we query through the MythicBukkit API rather than a Crucible-specific entry point.
@@ -1400,7 +1401,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
             plugin.logger.warning("MythicCrucible item not found: '$itemId' (is the item defined in a Mythic/Crucible item file?)")
             null
         } else {
-            // generateItemStack(int) -> AbstractItemStack; on Bukkit it's BukkitItemStack which has build() -> ItemStack
+            // generateItemStack(int) -> AbstractItemStack; on Bukkit that is a BukkitItemStack
             val abstractStack = com.esmpfun.bettertrialchambers.utils.Reflect
                 .method(mythicItem.javaClass, "generateItemStack", Int::class.javaPrimitiveType!!)
                 ?.invoke(mythicItem, 1)
@@ -1408,7 +1409,11 @@ class LootManager(private val plugin: BetterTrialChambers) {
                 plugin.logger.warning("MythicCrucible.generateItemStack returned null for '$itemId'")
                 null
             } else {
-                com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(abstractStack, "build") as? ItemStack
+                // Mythic renamed this: 4.x and early 5.x built the Bukkit stack with
+                // build(), current 5.x (checked against 5.13.1) exposes getItemStack()
+                // instead. Asking for both keeps every version working.
+                (com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(abstractStack, "getItemStack")
+                    ?: com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(abstractStack, "build")) as? ItemStack
             }
         }
     } catch (e: Exception) {
