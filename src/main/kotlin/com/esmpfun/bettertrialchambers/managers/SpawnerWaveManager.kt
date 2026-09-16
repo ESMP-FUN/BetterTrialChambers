@@ -356,6 +356,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
         val world = spawnerLocation.world ?: return
         val ent = world.getEntity(entityId) ?: return
         plugin.scheduler.runAtEntity(ent, Runnable {
+            com.esmpfun.bettertrialchambers.utils.GlowTeams.release(entityId)
             try { ent.remove() } catch (_: Throwable) { /* already gone */ }
         })
     }
@@ -1062,14 +1063,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
                         )
                     }
                     if (color != null) {
-                        try {
-                            // Reflective so we don't hard-bind to a specific Paper API revision.
-                            // Falls back to the default team-less white outline on older forks.
-                            s.javaClass.getMethod("setGlowColorOverride", org.bukkit.Color::class.java)
-                                .invoke(s, color)
-                        } catch (_: Throwable) {
-                            // Older fork / API: leave the outline white. Better than nothing.
-                        }
+                        com.esmpfun.bettertrialchambers.utils.GlowTeams.apply(s, color)
                     }
                 }
                 wave.glowEntityId = entity.uniqueId
@@ -1107,6 +1101,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
         wave.glowEntityId = null
         val world = wave.location.world ?: return
         plugin.scheduler.runAtLocation(wave.location, Runnable {
+            com.esmpfun.bettertrialchambers.utils.GlowTeams.release(id)
             try {
                 world.getEntity(id)?.remove()
             } catch (_: Throwable) {
@@ -1160,10 +1155,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
                         )
                     }
                     if (color != null) {
-                        try {
-                            s.javaClass.getMethod("setGlowColorOverride", org.bukkit.Color::class.java)
-                                .invoke(s, color)
-                        } catch (_: Throwable) { /* white fallback */ }
+                        com.esmpfun.bettertrialchambers.utils.GlowTeams.apply(s, color)
                     }
                 }
                 chamberRemainingGlows.computeIfAbsent(chamberId) { ConcurrentHashMap() }[spawnerKey] = entity.uniqueId
@@ -1222,6 +1214,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
             for (world in plugin.server.worlds) {
                 val ent = world.getEntity(entityId) ?: continue
                 plugin.scheduler.runAtEntity(ent, Runnable {
+                    com.esmpfun.bettertrialchambers.utils.GlowTeams.release(entityId)
                     try { ent.remove() } catch (_: Throwable) { /* already gone */ }
                 })
                 break
@@ -1284,6 +1277,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
         chamberSpawnerCountCache.clear()
         // v1.5.4: drop any chamber-remaining standalone glow entities tied to active chambers.
         chamberRemainingGlows.keys.toList().forEach { clearChamberRemainingGlows(it) }
+        com.esmpfun.bettertrialchambers.utils.GlowTeams.clearAll()
         chamberSpawnerLocationsCache.clear()
     }
 
