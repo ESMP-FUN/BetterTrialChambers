@@ -1112,6 +1112,7 @@ discovery:
   enabled: false
   use-structure-bounds: true
   structure-max-volume: 15000000
+  max-scan-blocks: 50000
   max-radius-xz: 60
   max-radius-y: 45
   min-vaults-plus-spawners: 2
@@ -1157,6 +1158,14 @@ For very large datapack chambers, raise `global.blocks-per-tick` and consider `g
 <summary><code>max-radius-xz</code> / <code>max-radius-y</code></summary>
 
 Caps on the block scan, in blocks. **Defaults:** `60`, `45`. Prevents a runaway scan if the match rule catches something larger than a vanilla chamber. Lower if you see over-registration.
+
+</details>
+
+<details>
+
+<summary><code>max-scan-blocks</code></summary>
+
+How many blocks one search of a chamber may look at before it stops. **Default:** `50000`, which a vanilla chamber fits inside comfortably. Only the block-scan path uses it, so ordinary generated chambers (measured from the game's own structure bounds) are unaffected. If a chamber stops short, the console says so and points you at `/trial scan add <chamber>`; raise this if a datapack builds much larger chambers.
 
 </details>
 
