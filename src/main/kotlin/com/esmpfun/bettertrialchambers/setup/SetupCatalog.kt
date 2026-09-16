@@ -16,8 +16,8 @@ object SetupCatalog {
         SetupStep.Toggle("discovery", "discovery.enabled", default = false, cpuImpact = CpuImpact.LITTLE),
         SetupStep.Toggle("auto-snapshot", "discovery.auto-snapshot", default = false, cpuImpact = CpuImpact.LITTLE),
         SetupStep.Toggle("drop-loot", "vaults.drop-loot-at-vault", default = false),
-        SetupStep.Toggle("reset-confirm", "reset.reset-require-confirmation", default = false),
-        SetupStep.Toggle("fawe", "reset.use-fawe", default = false, requiresPlugin = "FastAsyncWorldEdit"),
+        SetupStep.Toggle("reset-confirm", "global.reset-require-confirmation", default = false),
+        SetupStep.Toggle("fawe", "global.use-fawe", default = false, requiresPlugin = "FastAsyncWorldEdit"),
 
         // ── Choice: how often chambers auto-reset ──────────────────────────────
         // 6 options (even count) so the 2-column button grid lays out cleanly with the
