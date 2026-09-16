@@ -1143,6 +1143,13 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                                 updateCacheExpiry(chamber.name)
                             }
                         }
+                        // Drop whatever was already planned for this chamber. Without
+                        // this the reset queued under the old interval still stands,
+                        // including its warnings, so a change from two days to one hour
+                        // only takes effect after the chamber has reset once more, and
+                        // turning resets off (0) lets one more through. The scheduler
+                        // re-plans from the new interval within the minute.
+                        runCatching { plugin.resetManager.cancelScheduledFor(chamberId) }
                         plugin.logger.info("Updated reset interval for chamber $chamberId to $intervalSeconds seconds")
                     }
                     updated
