@@ -39,7 +39,7 @@ dependencies {
     // Paper API - 26.3 track (the `-mc263` build). plugin.yml's api-version '26.3'
     // keeps this jar to 26.3+ servers; the mc26 build targets 26.1.2 + api-version
     // '26.1', and the master build targets 1.21.7 + api-version '1.21'.
-    compileOnly("io.papermc.paper:paper-api:26.3.build.5-alpha")
+    compileOnly("io.papermc.paper:paper-api:26.3.build.7-alpha")
 
     // Log4j core (bundled by the server at runtime) — for the console log filter
     // that mutes vanilla trial-spawner spam.
