@@ -225,8 +225,12 @@ class BetterTrialChambers : JavaPlugin() {
             logger.warning("Please switch to the BetterTrialChambers jar ending in -mc263, so you get the right updates.")
         }
         updater = Updater.builder(this)
-            .source(ModrinthSource("trialchamberpro"))
-            .fallbackSource(GitHubReleasesSource("ESMP-FUN/BetterTrialChambers"))
+            // Project id rather than slug, so a rename on Modrinth can't break checks.
+            .source(ModrinthSource("ownTWGOH"))
+            // One GitHub release carries every build, so pick this build's jar by name.
+            .fallbackSource(GitHubReleasesSource("ESMP-FUN/BetterTrialChambers", null) { name ->
+                name.lowercase().endsWith("-mc26.jar")
+            })
             .mode(updateMode)
             .checkInterval(java.time.Duration.ofHours(
                 config.getLong("update.check-interval-hours", 6L).coerceAtLeast(1)))
