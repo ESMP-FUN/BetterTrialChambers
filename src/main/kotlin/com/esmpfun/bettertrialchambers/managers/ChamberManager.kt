@@ -60,6 +60,55 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
     private val chamberCache = ConcurrentHashMap<String, Chamber>()
     private val cacheExpiry = ConcurrentHashMap<String, Long>()
 
+    /**
+     * The one box per world that holds every chamber in it, as
+     * min X, min Z, max X, max Z.
+     *
+     * [getCachedChamberAt] runs on events that fire constantly (flowing water
+     * raises one per block per few ticks) and otherwise has to try every
+     * chamber in turn. Almost every one of those questions is about somewhere
+     * with no chamber anywhere near it, and this answers those without looking
+     * at a single chamber.
+     *
+     * Rebuilt from the cache whenever the cache changes, which happens when a
+     * chamber is registered, edited or removed and never on a hot path. Writing
+     * the cache goes through [cachePut] / [cacheRemove] / [cacheClear] so this
+     * cannot drift from it.
+     */
+    private val worldBounds = ConcurrentHashMap<String, IntArray>()
+
+    private fun cachePut(chamber: Chamber) {
+        chamberCache[chamber.name] = chamber
+        rebuildWorldBounds()
+    }
+
+    private fun cacheRemove(name: String) {
+        chamberCache.remove(name)
+        rebuildWorldBounds()
+    }
+
+    private fun cacheClear() {
+        chamberCache.clear()
+        worldBounds.clear()
+    }
+
+    private fun rebuildWorldBounds() {
+        val rebuilt = HashMap<String, IntArray>()
+        for (chamber in chamberCache.values) {
+            val box = rebuilt[chamber.world]
+            if (box == null) {
+                rebuilt[chamber.world] = intArrayOf(chamber.minX, chamber.minZ, chamber.maxX, chamber.maxZ)
+            } else {
+                box[0] = minOf(box[0], chamber.minX)
+                box[1] = minOf(box[1], chamber.minZ)
+                box[2] = maxOf(box[2], chamber.maxX)
+                box[3] = maxOf(box[3], chamber.maxZ)
+            }
+        }
+        worldBounds.keys.retainAll(rebuilt.keys)
+        worldBounds.putAll(rebuilt)
+    }
+
     fun getCachedChambers(): List<Chamber> = chamberCache.values.sortedByDescending { it.createdAt }
 
     fun getCachedChamberById(id: Int): Chamber? = chamberCache.values.firstOrNull { it.id == id }
@@ -171,7 +220,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         )
 
                         // Cache the chamber
-                        chamberCache[name] = chamber
+                        cachePut(chamber)
                         updateCacheExpiry(name)
 
                         plugin.logger.info("Created chamber: $name (${chamber.getVolume()} blocks)")
@@ -210,7 +259,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
 
         // Load from database
         return loadChamberFromDb(name)?.also {
-            chamberCache[name] = it
+            cachePut(it)
             updateCacheExpiry(name)
         }
     }
@@ -330,10 +379,10 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         // Refresh cache with updated data
                         val refreshed = loadChamberFromDb(chamberName)
                         if (refreshed != null) {
-                            chamberCache[chamberName] = refreshed
+                            cachePut(refreshed)
                             updateCacheExpiry(chamberName)
                         } else {
-                            chamberCache.remove(chamberName)
+                            cacheRemove(chamberName)
                             cacheExpiry.remove(chamberName)
                         }
                         plugin.logger.info("Set exit location for chamber: $chamberName")
@@ -362,10 +411,10 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         // Refresh cache with updated data instead of invalidating only
                         val refreshed = loadChamberFromDb(chamberName)
                         if (refreshed != null) {
-                            chamberCache[chamberName] = refreshed
+                            cachePut(refreshed)
                             updateCacheExpiry(chamberName)
                         } else {
-                            chamberCache.remove(chamberName)
+                            cacheRemove(chamberName)
                             cacheExpiry.remove(chamberName)
                         }
                     }
@@ -410,7 +459,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
 
                     if (deleted) {
                         // Remove from cache
-                        chamberCache.remove(name)
+                        cacheRemove(name)
                         cacheExpiry.remove(name)
 
                         // Delete snapshot file
@@ -748,7 +797,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      * Clears the chamber cache and reloads all chambers from database.
      */
     fun clearCache() {
-        chamberCache.clear()
+        cacheClear()
         cacheExpiry.clear()
         plugin.logger.info("Chamber cache cleared, reloading from database...")
 
@@ -757,7 +806,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
             try {
                 val chambers = getAllChambers()
                 chambers.forEach { chamber ->
-                    chamberCache[chamber.name] = chamber
+                    cachePut(chamber)
                 }
                 plugin.logger.info("Reloaded ${chambers.size} chambers into cache")
             } catch (e: Exception) {
@@ -773,7 +822,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
         try {
             val all = getAllChambers()
             all.forEach { chamber ->
-                chamberCache[chamber.name] = chamber
+                cachePut(chamber)
                 updateCacheExpiry(chamber.name)
             }
             plugin.logger.info("Preloaded ${all.size} chambers into cache")
@@ -804,10 +853,10 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
     suspend fun reloadFromStore(name: String): Chamber? {
         val fresh = loadChamberFromDb(name)
         if (fresh != null) {
-            chamberCache[name] = fresh
+            cachePut(fresh)
             updateCacheExpiry(name)
         } else {
-            chamberCache.remove(name)
+            cacheRemove(name)
             cacheExpiry.remove(name)
         }
         return fresh
@@ -819,7 +868,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      * cross-server invalidation when an immediate re-read isn't needed.
      */
     fun invalidateChamber(name: String) {
-        chamberCache.remove(name)
+        cacheRemove(name)
         cacheExpiry.remove(name)
     }
 
@@ -838,13 +887,18 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
         // block per few ticks). A server with no chambers registered should pay
         // nothing at all for having the plugin installed.
         //
-        // TODO(perf): this walks every chamber. Each step is cheap, because
-        //  Chamber.contains compares the world name before anything else, but it
-        //  is still linear in the number of chambers on a hot path. The fix is a
-        //  chunk-keyed index like TrialSpawnerIndex already uses for spawners.
-        //  Left alone for now because the cache is written in a dozen places and
-        //  an index that misses one of them is worse than a scan that cannot.
+        // Somewhere with no chamber near it is answered by the world's own box
+        // (see [worldBounds]) without trying a single chamber, which is what
+        // almost every one of these questions is. Inside that box it still walks
+        // the chambers in that world; a chunk-keyed index like the one the
+        // spawner index uses would be the next step if that ever shows up in a
+        // timing report.
         if (chamberCache.isEmpty()) return null
+        val world = location.world?.name ?: return null
+        val box = worldBounds[world] ?: return null
+        val x = location.blockX
+        val z = location.blockZ
+        if (x < box[0] || x > box[2] || z < box[1] || z > box[3]) return null
         return chamberCache.values.firstOrNull { it.contains(location) }
     }
 
@@ -871,7 +925,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         if (chamber != null) {
                             val refreshed = loadChamberFromDb(chamber.name)
                             if (refreshed != null) {
-                                chamberCache[chamber.name] = refreshed
+                                cachePut(refreshed)
                                 updateCacheExpiry(chamber.name)
                             }
                         }
@@ -912,7 +966,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         if (chamber != null) {
                             val refreshed = loadChamberFromDb(chamber.name)
                             if (refreshed != null) {
-                                chamberCache[chamber.name] = refreshed
+                                cachePut(refreshed)
                                 updateCacheExpiry(chamber.name)
                             }
                         }
@@ -942,7 +996,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         if (chamber != null) {
                             val refreshed = loadChamberFromDb(chamber.name)
                             if (refreshed != null) {
-                                chamberCache[chamber.name] = refreshed
+                                cachePut(refreshed)
                                 updateCacheExpiry(chamber.name)
                             }
                         }
@@ -977,7 +1031,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         if (chamber != null) {
                             val refreshed = loadChamberFromDb(chamber.name)
                             if (refreshed != null) {
-                                chamberCache[chamber.name] = refreshed
+                                cachePut(refreshed)
                                 updateCacheExpiry(chamber.name)
                             }
                         }
@@ -1033,10 +1087,10 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         // Refresh cache with updated data
                         val refreshed = loadChamberFromDb(chamberName)
                         if (refreshed != null) {
-                            chamberCache[chamberName] = refreshed
+                            cachePut(refreshed)
                             updateCacheExpiry(chamberName)
                         } else {
-                            chamberCache.remove(chamberName)
+                            cacheRemove(chamberName)
                             cacheExpiry.remove(chamberName)
                         }
                         plugin.logger.info("Set ${vaultType.displayName} loot table for chamber $chamberName to: ${tableName ?: "(default)"}")
@@ -1085,7 +1139,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         if (chamber != null) {
                             val refreshed = loadChamberFromDb(chamber.name)
                             if (refreshed != null) {
-                                chamberCache[chamber.name] = refreshed
+                                cachePut(refreshed)
                                 updateCacheExpiry(chamber.name)
                             }
                         }
@@ -1131,7 +1185,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         if (chamber != null) {
                             val refreshed = loadChamberFromDb(chamber.name)
                             if (refreshed != null) {
-                                chamberCache[chamber.name] = refreshed
+                                cachePut(refreshed)
                                 updateCacheExpiry(chamber.name)
                             }
                         }
@@ -1177,7 +1231,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         if (chamber != null) {
                             val refreshed = loadChamberFromDb(chamber.name)
                             if (refreshed != null) {
-                                chamberCache[chamber.name] = refreshed
+                                cachePut(refreshed)
                                 updateCacheExpiry(chamber.name)
                             }
                         }
@@ -1220,7 +1274,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         if (chamber != null) {
                             val refreshed = loadChamberFromDb(chamber.name)
                             if (refreshed != null) {
-                                chamberCache[chamber.name] = refreshed
+                                cachePut(refreshed)
                                 updateCacheExpiry(chamber.name)
                             }
                         }
@@ -1289,7 +1343,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         if (chamber != null) {
                             val refreshed = loadChamberFromDb(chamber.name)
                             if (refreshed != null) {
-                                chamberCache[chamber.name] = refreshed
+                                cachePut(refreshed)
                                 updateCacheExpiry(chamber.name)
                             }
                         }
