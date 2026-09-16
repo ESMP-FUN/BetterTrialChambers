@@ -35,7 +35,7 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
         "debug" to "btc.admin.reload",
         "delete" to "btc.admin.create",
         "info" to "btc.admin",
-        "key" to "btc.admin.menu",
+        "key" to "btc.admin.key",
         "leaderboard" to "btc.leaderboard",
         "lb" to "btc.leaderboard",
         "top" to "btc.leaderboard",
@@ -45,17 +45,18 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
         "pause" to "btc.admin.pause",
         "reload" to "btc.admin.reload",
         "rename" to "btc.admin.create",
-        "reset" to "btc.admin.menu",
+        "reset" to "btc.admin.reset",
         "resume" to "btc.admin.pause",
         "scan" to "btc.admin.scan",
         "setexit" to "btc.admin.create",
         "snapshot" to "btc.admin.snapshot",
         "stats" to "btc.stats",
         "update" to "btc.admin",
-        "vault" to "btc.admin.menu",
+        "vault" to "btc.admin.vault",
         // These are handled by their own classes rather than a method here;
         // same idea, the permission is the one that class checks first.
         "container" to "btc.admin.containers",
+        "containers" to "btc.admin.containers",
         "dungeon" to "btc.admin.generate",
         "generate" to "btc.admin.generate",
         "give" to "btc.give",
@@ -75,7 +76,7 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
     private val debugActions = listOf("schema")
 
     private val dungeonActions = listOf("pos1", "pos2", "capture", "generate", "list", "delete", "import")
-    private val containerActions = listOf("list", "materialize", "reset", "clearcopies", "tp", "edit")
+    private val containerActions = listOf("list", "materialize", "reset", "resetone", "clearcopies", "tp", "edit")
 
     private val snapshotActions = listOf("create", "update", "restore", "missing")
     private val updateActions = listOf("check", "download", "apply", "ignore", "unignore", "restore", "status")
@@ -92,63 +93,67 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
         alias: String,
         args: Array<out String>
     ): List<String>? {
+        // Past the subcommand, suggest nothing to someone who can't run it, so
+        // preset, schematic, template and loot table names stay private.
+        if (args.size > 1 && !canSee(sender, args[0].lowercase())) return emptyList()
         return when (args.size) {
             1 -> {
                 // First argument - subcommand, narrowed to what this person can run.
-                subcommands.filter { it.startsWith(args[0].lowercase()) && canSee(sender, it) }
+                subcommands.filter { it.startsWith(args[0], ignoreCase = true) && canSee(sender, it) }
             }
             2 -> {
                 // Second argument - depends on subcommand
                 when (args[0].lowercase()) {
-                    "snapshot" -> snapshotActions.filter { it.startsWith(args[1].lowercase()) }
-                    "update" -> updateActions.filter { it.startsWith(args[1].lowercase()) }
-                    "setup" -> setupActions.filter { it.startsWith(args[1].lowercase()) }
-                    "generate" -> listOf("value", "coords", "wand", "blocks").filter { it.startsWith(args[1].lowercase()) }
+                    "snapshot" -> snapshotActions.filter { it.startsWith(args[1], ignoreCase = true) }
+                    "update" -> updateActions.filter { it.startsWith(args[1], ignoreCase = true) }
+                    "setup" -> setupActions.filter { it.startsWith(args[1], ignoreCase = true) }
+                    "generate" -> listOf("value", "coords", "wand", "blocks").filter { it.startsWith(args[1], ignoreCase = true) }
                     "paste" -> {
                         // Schematic names
                         try {
-                            plugin.schematicManager.listSchematics().filter { it.startsWith(args[1].lowercase()) }
+                            plugin.schematicManager.listSchematics().filter { it.startsWith(args[1], ignoreCase = true) }
                         } catch (_: Exception) {
                             emptyList()
                         }
                     }
                     "scan" -> {
                         // `add` (grow bounds into missed sections) + chamber names.
-                        (listOf("add") + getChamberNames(sender)).filter { it.startsWith(args[1].lowercase()) }
+                        (listOf("add") + getChamberNames(sender)).filter { it.startsWith(args[1], ignoreCase = true) }
                     }
                     "setexit", "info", "delete", "pause", "resume", "rename", "menu" -> {
                         // Chamber names (menu: optional deep-link into the chamber's GUI)
-                        getChamberNames(sender).filter { it.startsWith(args[1].lowercase()) }
+                        getChamberNames(sender).filter { it.startsWith(args[1], ignoreCase = true) }
                     }
                     "reset" -> {
                         // Queue actions + chamber names
-                        (listOf("pending", "confirm") + getChamberNames(sender)).filter { it.startsWith(args[1].lowercase()) }
+                        (listOf("pending", "confirm") + getChamberNames(sender)).filter { it.startsWith(args[1], ignoreCase = true) }
                     }
                     "stats" -> {
-                        // Player names for stats
-                        plugin.server.onlinePlayers.map { it.name }.filter { it.startsWith(args[1], ignoreCase = true) }
+                        // Looking up someone else needs the extra permission.
+                        if (!sender.hasPermission("btc.admin.stats")) emptyList()
+                        else plugin.server.onlinePlayers.map { it.name }.filter { it.startsWith(args[1], ignoreCase = true) }
                     }
                     "leaderboard", "lb", "top" -> {
                         // Stat types for leaderboard
-                        statTypes.filter { it.startsWith(args[1].lowercase()) }
+                        statTypes.filter { it.startsWith(args[1], ignoreCase = true) }
                     }
                     "loot" -> {
                         // Loot subcommands
-                        lootActions.filter { it.startsWith(args[1].lowercase()) }
+                        lootActions.filter { it.startsWith(args[1], ignoreCase = true) }
                     }
                     "mobs" -> {
                         // Chamber name or the literal "providers"
                         (getChamberNames(sender) + "providers").filter { it.startsWith(args[1], ignoreCase = true) }
                     }
                     "give" -> {
-                        getPresetNames().filter { it.startsWith(args[1].lowercase()) }
+                        getPresetNames().filter { it.startsWith(args[1], ignoreCase = true) }
                     }
-                    "dungeon" -> dungeonActions.filter { it.startsWith(args[1].lowercase()) }
-                    "container", "containers" -> containerActions.filter { it.startsWith(args[1].lowercase()) }
-                    "claims" -> claimsActions.filter { it.startsWith(args[1].lowercase()) }
-                    "debug" -> debugActions.filter { it.startsWith(args[1].lowercase()) }
-                    "list" -> listOf("current").filter { it.startsWith(args[1].lowercase()) }
-                    "vault" -> vaultActions.filter { it.startsWith(args[1].lowercase()) }
+                    "dungeon" -> dungeonActions.filter { it.startsWith(args[1], ignoreCase = true) }
+                    "container", "containers" -> containerActions.filter { it.startsWith(args[1], ignoreCase = true) }
+                    "claims" -> claimsActions.filter { it.startsWith(args[1], ignoreCase = true) }
+                    "debug" -> debugActions.filter { it.startsWith(args[1], ignoreCase = true) }
+                    "list" -> listOf("current").filter { it.startsWith(args[1], ignoreCase = true) }
+                    "vault" -> vaultActions.filter { it.startsWith(args[1], ignoreCase = true) }
                     else -> emptyList()
                 }
             }
@@ -157,19 +162,19 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
                 when (args[0].lowercase()) {
                     "snapshot" -> when (args[1].lowercase()) {
                         // `create`/`update` also accept the literal `all` (bulk backfill).
-                        "create", "update" -> (listOf("all") + getChamberNames(sender)).filter { it.startsWith(args[2].lowercase()) }
+                        "create", "update" -> (listOf("all") + getChamberNames(sender)).filter { it.startsWith(args[2], ignoreCase = true) }
                         "missing" -> emptyList() // optional page number, no completion
-                        else -> getChamberNames(sender).filter { it.startsWith(args[2].lowercase()) }
+                        else -> getChamberNames(sender).filter { it.startsWith(args[2], ignoreCase = true) }
                     }
-                    "container", "containers" -> getChamberNames(sender).filter { it.startsWith(args[2].lowercase()) }
+                    "container", "containers" -> getChamberNames(sender).filter { it.startsWith(args[2], ignoreCase = true) }
                     "vault" -> when (args[1].lowercase()) {
                         // `unlockall` also accepts the literal `all` (every chamber at once).
-                        "unlockall" -> (listOf("all") + getChamberNames(sender)).filter { it.startsWith(args[2].lowercase()) }
-                        "reset" -> getChamberNames(sender).filter { it.startsWith(args[2].lowercase()) }
+                        "unlockall" -> (listOf("all") + getChamberNames(sender)).filter { it.startsWith(args[2], ignoreCase = true) }
+                        "reset" -> getChamberNames(sender).filter { it.startsWith(args[2], ignoreCase = true) }
                         else -> emptyList()
                     }
                     "scan" -> if (args[1].equals("add", ignoreCase = true))
-                        getChamberNames(sender).filter { it.startsWith(args[2].lowercase()) } else emptyList()
+                        getChamberNames(sender).filter { it.startsWith(args[2], ignoreCase = true) } else emptyList()
                     "dungeon" -> {
                         if (args[1].equals("delete", ignoreCase = true)) {
                             try { plugin.roomTemplateManager.list().filter { it.startsWith(args[2], ignoreCase = true) } }
@@ -187,7 +192,7 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
                             "value" -> {
                                 val ops = listOf("save", "list", "delete")
                                 val names = try { WEVarStore.list(plugin.dataFolder).map { it.first } } catch (_: Exception) { emptyList() }
-                                (ops + names).filter { it.startsWith(args[2].lowercase()) }
+                                (ops + names).filter { it.startsWith(args[2], ignoreCase = true) }
                             }
                             else -> emptyList()
                         }
@@ -195,14 +200,14 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
                     "loot" -> {
                         // Chamber names for set/clear/info
                         when (args[1].lowercase()) {
-                            "set", "clear", "info" -> getChamberNames(sender).filter { it.startsWith(args[2].lowercase()) }
+                            "set", "clear", "info" -> getChamberNames(sender).filter { it.startsWith(args[2], ignoreCase = true) }
                             else -> emptyList()
                         }
                     }
                     "mobs" -> {
                         // /trial mobs <chamber> <action>
                         if (args[1].equals("providers", ignoreCase = true)) emptyList()
-                        else mobsActions.filter { it.startsWith(args[2].lowercase()) }
+                        else mobsActions.filter { it.startsWith(args[2], ignoreCase = true) }
                     }
                     "give" -> {
                         // /trial give <preset> <player>
@@ -220,7 +225,7 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
                                 when (args[2].lowercase()) {
                                     "delete" -> {
                                         try { WEVarStore.list(plugin.dataFolder).map { it.first } } catch (_: Exception) { emptyList() }
-                                            .filter { it.startsWith(args[3].lowercase()) }
+                                            .filter { it.startsWith(args[3], ignoreCase = true) }
                                     }
                                     else -> emptyList()
                                 }
@@ -230,8 +235,8 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
                     }
                     "loot" -> {
                         when (args[1].lowercase()) {
-                            "set" -> vaultTypes.filter { it.startsWith(args[3].lowercase()) }
-                            "clear" -> (vaultTypes + "all").filter { it.startsWith(args[3].lowercase()) }
+                            "set" -> vaultTypes.filter { it.startsWith(args[3], ignoreCase = true) }
+                            "clear" -> (vaultTypes + "all").filter { it.startsWith(args[3], ignoreCase = true) }
                             else -> emptyList()
                         }
                     }
@@ -243,11 +248,17 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
                                     plugin.trialMobProviderRegistry.all().map { it.id }
                                 } catch (_: Exception) { emptyList() }
                                 (providers + listOf("vanilla", "none"))
-                                    .filter { it.startsWith(args[3].lowercase()) }
+                                    .filter { it.startsWith(args[3], ignoreCase = true) }
                             }
-                            "add", "remove" -> mobsWaveTypes.filter { it.startsWith(args[3].lowercase()) }
+                            "add", "remove" -> mobsWaveTypes.filter { it.startsWith(args[3], ignoreCase = true) }
                             else -> emptyList()
                         }
+                    }
+                    "vault" -> {
+                        // /trial vault reset <chamber> <player>
+                        if (args[1].equals("reset", ignoreCase = true))
+                            plugin.server.onlinePlayers.map { it.name }.filter { it.startsWith(args[3], ignoreCase = true) }
+                        else emptyList()
                     }
                     else -> emptyList()
                 }
@@ -258,10 +269,15 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
                         when (args[1].lowercase()) {
                             "set" -> {
                                 // Loot table names
-                                getLootTableNames().filter { it.startsWith(args[4].lowercase()) }
+                                getLootTableNames().filter { it.startsWith(args[4], ignoreCase = true) }
                             }
                             else -> emptyList()
                         }
+                    }
+                    "vault" -> {
+                        if (args[1].equals("reset", ignoreCase = true))
+                            vaultTypes.filter { it.startsWith(args[4], ignoreCase = true) }
+                        else emptyList()
                     }
                     else -> emptyList()
                 }
