@@ -1,30 +1,30 @@
-package com.esmpfun.bettertrialchambers.integrations.claims
+package com.esmpfun.bettertrialchambers.utils
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
-import com.esmpfun.bettertrialchambers.integrations.claims.fake.internalLand
+import com.esmpfun.bettertrialchambers.utils.fake.internalLand
 
-class ReflTest {
+class ReflectTest {
 
     @Test
     fun `a method on a public interface can be called on a non-public implementation`() {
-        assertEquals("Spawn Town", Refl.call(internalLand(), "getName"))
+        assertEquals("Spawn Town", Reflect.callNoArg(internalLand(), "getName"))
     }
 
     @Test
     fun `a missing method is null rather than an error`() {
-        assertNull(Refl.call(internalLand(), "getOwnerName"))
+        assertNull(Reflect.callNoArg(internalLand(), "getOwnerName"))
     }
 
     @Test
     fun `a null target is null`() {
-        assertNull(Refl.call(null, "getName"))
+        assertNull(Reflect.callNoArg(null, "getName"))
     }
 
     @Test
     fun `a class that is not on the server is null rather than an error`() {
-        assertNull(Refl.classOrNull("me.angeschossen.lands.api.LandsIntegration"))
+        assertNull(Reflect.classOrNull("me.angeschossen.lands.api.LandsIntegration"))
     }
 }
