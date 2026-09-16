@@ -100,6 +100,9 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
         // plugin, void death without an EntityDeathEvent); close out waves whose spawner block
         // has already entered cooldown vanilla-side or whose block no longer exists. Without this
         // the boss bar deadlocks at e.g. 2/6 forever when a tracked mob disappears silently.
+        // A crash leaves the outline teams behind with entries for markers that no
+        // longer exist. They are ours alone, so clearing them on start is safe.
+        com.esmpfun.bettertrialchambers.utils.GlowTeams.clearAll()
         sweepTask = try {
             plugin.scheduler.runTaskTimer(Runnable { sweepWaves() }, 100L, 100L)
         } catch (e: Throwable) {
