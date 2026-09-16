@@ -210,7 +210,7 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
     private fun handleUpdate(sender: CommandSender, args: Array<out String>) {
         // Delegates to the shaded PluginPulse handler: check (default),
         // download/install, ignore <v>, unignore <v>, restore, status.
-        // Permission (tcp.admin) is enforced inside handle().
+        // Permission (btc.admin) is enforced inside handle().
         if (!plugin.updateSubcommand.handle(sender, args.copyOfRange(1, args.size))) {
             sender.sendMessage(plugin.getMessageComponent("no-permission"))
         }

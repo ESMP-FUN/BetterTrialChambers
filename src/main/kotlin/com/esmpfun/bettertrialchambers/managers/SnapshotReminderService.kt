@@ -20,7 +20,7 @@ import java.io.File
  * - `interval-minutes` (default 30) , periodic console summary + admin chat ping
  * - `on-join` (default true)        , ping admins individually when they log in
  *
- * Notification target is anyone with `tcp.admin.snapshot` (the perm that lets them
+ * Notification target is anyone with `btc.admin.snapshot` (the perm that lets them
  * act on it via `/trial snapshot create`).
  */
 class SnapshotReminderService(private val plugin: BetterTrialChambers) : Listener {
