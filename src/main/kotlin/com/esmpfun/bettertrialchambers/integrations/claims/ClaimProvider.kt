@@ -53,48 +53,11 @@ interface ClaimProvider {
 
 /** Reflection helpers shared by the providers, every call is null-safe. */
 internal object Refl {
-    /** Invoke a no-arg public method [name] on [target], or null on any failure. */
-    fun call(target: Any?, name: String): Any? = try {
-        target?.let { reachable(it.javaClass, name)?.invoke(it) }
-    } catch (_: Throwable) {
-        null
-    }
-
-    /**
-     * A no-arg [name] method on [type] that can actually be invoked.
-     *
-     * These plugins hand back objects typed as a public API interface whose
-     * implementing class is not itself public. Asking the object's own class for
-     * the method finds it, and then invoking it is refused, so the integration
-     * quietly did nothing on exactly the plugins it was written for. Looking for
-     * the same method on a public interface or parent class first is what makes
-     * the call go through.
-     */
-    private fun reachable(type: Class<*>, name: String): java.lang.reflect.Method? {
-        val direct = try { type.getMethod(name) } catch (_: Throwable) { return null }
-        if (java.lang.reflect.Modifier.isPublic(direct.declaringClass.modifiers)) return direct
-
-        var c: Class<*>? = type
-        while (c != null) {
-            for (iface in c.interfaces) {
-                if (!java.lang.reflect.Modifier.isPublic(iface.modifiers)) continue
-                val m = try { iface.getMethod(name) } catch (_: Throwable) { null }
-                if (m != null) return m
-            }
-            if (java.lang.reflect.Modifier.isPublic(c.modifiers)) {
-                val m = try { c.getMethod(name) } catch (_: Throwable) { null }
-                if (m != null && java.lang.reflect.Modifier.isPublic(m.declaringClass.modifiers)) return m
-            }
-            c = c.superclass
-        }
-        // Nothing public declares it; ask for access to the one we found.
-        return try { direct.apply { isAccessible = true } } catch (_: Throwable) { null }
-    }
+    /** Invoke a no-arg method [name] on [target], or null on any failure. */
+    fun call(target: Any?, name: String): Any? =
+        com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(target, name)
 
     /** Resolve a class by name, or null if it isn't on the runtime classpath. */
-    fun classOrNull(name: String): Class<*>? = try {
-        Class.forName(name)
-    } catch (_: Throwable) {
-        null
-    }
+    fun classOrNull(name: String): Class<*>? =
+        com.esmpfun.bettertrialchambers.utils.Reflect.classOrNull(name)
 }
