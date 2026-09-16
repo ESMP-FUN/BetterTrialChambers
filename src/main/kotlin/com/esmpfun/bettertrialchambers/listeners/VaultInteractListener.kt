@@ -552,9 +552,26 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
         kotlinx.coroutines.suspendCancellableCoroutine<Unit> { continuation ->
             plugin.scheduler.runAtEntity(player, Runnable {
                 try {
-                    // Verify player still online
+                    // Persist any capped (once / per-chamber) items the player just earned,
+                    // so they're excluded from future rolls (v2.1.0). Recorded before the
+                    // handing over below because both ways of handing over do reach the
+                    // player: leaving mid-open drops the loot at the vault for them rather
+                    // than cancelling it, so a once-ever item must count as claimed either
+                    // way or it could be won twice.
+                    if (redeemCtx.newlyRedeemed.isNotEmpty()) {
+                        val earned = redeemCtx.newlyRedeemed.toList()
+                        plugin.launchAsync {
+                            plugin.vaultManager.recordLootRedemptions(player.uniqueId, vaultData.chamberId, earned)
+                        }
+                    }
+
+                    // The vault is already marked as opened for this player by now, so
+                    // quietly dropping the loot when they leave mid-open costs them the
+                    // reward until the chamber resets. Put it at the vault instead, held
+                    // for them for the same grace period a normal drop gets.
                     if (!player.isOnline) {
-                        plugin.logger.info("Player ${player.name} disconnected during vault open")
+                        plugin.logger.info("Player ${player.name} disconnected during vault open; loot left at the vault")
+                        ejectLootAtVault(loot, player, location)
                         continuation.resume(Unit) {}
                         return@Runnable
                     }
@@ -575,16 +592,6 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                                 }
                                 player.sendMessage(plugin.getMessageComponent("inventory-full"))
                             }
-                        }
-                    }
-
-                    // Persist any capped (once / per-chamber) items the player just earned,
-                    // so they're excluded from future rolls. Off-thread; only reached once
-                    // loot was actually delivered above (v2.1.0).
-                    if (redeemCtx.newlyRedeemed.isNotEmpty()) {
-                        val earned = redeemCtx.newlyRedeemed.toList()
-                        plugin.launchAsync {
-                            plugin.vaultManager.recordLootRedemptions(player.uniqueId, vaultData.chamberId, earned)
                         }
                     }
 
