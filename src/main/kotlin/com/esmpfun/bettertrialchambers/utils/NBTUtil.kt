@@ -225,10 +225,13 @@ object NBTUtil {
      *
      * Up to 26.2, clicking a sign whose text carried a command just ran it. In
      * 26.3 that only happens when the sign has this switch turned on, and a sign
-     * the game creates fresh has it off. That matters here because restoring a
-     * chamber rebuilds its signs: without carrying the switch across, an admin's
-     * "click here" command sign inside a chamber would quietly stop working the
-     * first time the chamber reset.
+     * the game creates fresh has it off.
+     *
+     * A chamber reset does not come through here: a snapshot saves each block
+     * the way the game itself saves it, which already carries the switch. What
+     * does come through here is a room imported from a structure file and a
+     * snapshot taken before that format, so this is what keeps an imported
+     * "click here" sign working.
      *
      * Paper's 26.3 API has no getter or setter for it (checked against
      * 26.3.build.5 on 2026-09-16), so the switch is reached by looking the
