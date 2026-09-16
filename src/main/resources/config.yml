@@ -579,6 +579,10 @@ discovery:
   structure-max-volume: 15000000
   max-radius-xz: 60                # BFS expansion cap on horizontal axes
   max-radius-y: 45                 # BFS expansion cap on vertical axis
+  # How many blocks one search of a chamber may look at before it stops. A
+  # vanilla chamber fits comfortably. Raise it if you use a datapack that builds
+  # much bigger chambers and the console says a chamber was only partly measured.
+  max-scan-blocks: 50000
   min-vaults-plus-spawners: 2      # Reject AABBs with fewer total vaults + spawners
   max-center-y: 10                 # Reject if AABB center Y > this (chambers gen deep underground)
   auto-snapshot: false             # Snapshot on registration (expensive for large chambers)
