@@ -1,4 +1,4 @@
-package com.esmpfun.bettertrialchambers.integrations.claims.fake
+package com.esmpfun.bettertrialchambers.utils.fake
 
 /** The shape a claim plugin's API takes: a public interface. */
 interface FakeLand {

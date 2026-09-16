@@ -1312,7 +1312,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
             plugin.logger.warning("Nexo item not found: '$itemId'")
             null
         } else {
-            wrapper.javaClass.getMethod("build").invoke(wrapper) as? ItemStack
+            com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(wrapper, "build") as? ItemStack
         }
     } catch (e: Exception) {
         plugin.logger.warning("Failed to resolve Nexo item '$itemId': ${e.message}")
@@ -1327,7 +1327,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
             plugin.logger.warning("ItemsAdder item not found: '$itemId'")
             null
         } else {
-            instance.javaClass.getMethod("getItemStack").invoke(instance) as? ItemStack
+            com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(instance, "getItemStack") as? ItemStack
         }
     } catch (e: Exception) {
         plugin.logger.warning("Failed to resolve ItemsAdder item '$itemId': ${e.message}")
@@ -1342,7 +1342,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
             plugin.logger.warning("Oraxen item not found: '$itemId'")
             null
         } else {
-            builder.javaClass.getMethod("build").invoke(builder) as? ItemStack
+            com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(builder, "build") as? ItemStack
         }
     } catch (e: Exception) {
         plugin.logger.warning("Failed to resolve Oraxen item '$itemId': ${e.message}")
@@ -1370,7 +1370,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
             plugin.logger.warning("CraftEngine item not found: '$itemId'")
             null
         } else {
-            customItem.javaClass.getMethod("buildItemStack").invoke(customItem) as? ItemStack
+            com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(customItem, "buildItemStack") as? ItemStack
         }
     } catch (e: Exception) {
         plugin.logger.warning("Failed to resolve CraftEngine item '$itemId': ${e.message}")
@@ -1390,8 +1390,10 @@ class LootManager(private val plugin: BetterTrialChambers) {
     private fun resolveMythicCrucibleItem(itemId: String): ItemStack? = try {
         val mythicBukkitCls = Class.forName("io.lumine.mythic.bukkit.MythicBukkit")
         val instance = mythicBukkitCls.getMethod("inst").invoke(null)
-        val itemManager = instance.javaClass.getMethod("getItemManager").invoke(instance)
-        val optional = itemManager.javaClass.getMethod("getItem", String::class.java).invoke(itemManager, itemId) as java.util.Optional<*>
+        val itemManager = com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(instance, "getItemManager")
+            ?: return null
+        val optional = itemManager.javaClass.getMethod("getItem", String::class.java)
+            .invoke(itemManager, itemId) as java.util.Optional<*>
         val mythicItem = optional.orElse(null)
         if (mythicItem == null) {
             plugin.logger.warning("MythicCrucible item not found: '$itemId' (is the item defined in a Mythic/Crucible item file?)")
@@ -1403,7 +1405,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
                 plugin.logger.warning("MythicCrucible.generateItemStack returned null for '$itemId'")
                 null
             } else {
-                abstractStack.javaClass.getMethod("build").invoke(abstractStack) as? ItemStack
+                com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(abstractStack, "build") as? ItemStack
             }
         }
     } catch (e: Exception) {
