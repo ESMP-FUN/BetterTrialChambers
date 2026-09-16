@@ -50,11 +50,13 @@ BetterTrialChambers makes Minecraft's Trial Chambers reusable on a multiplayer s
 
 ## Premium add-ons
 
-Both require BetterTrialChambers and are sold on [Voxel.shop](https://voxel.shop/) and [esmp.fun](https://esmp.fun/).
+They require BetterTrialChambers and are sold on [ESMP.fun](https://esmp.fun/).
 
-[**Wild Spawners**](https://esmp.fun/) - Place trial spawners anywhere on the map, not just inside registered chambers. Players get spawner items from a shop or staff, place them freely, and custom-plugin mobs spawn correctly. Includes mining-and-redeploy without Silk Touch, per-spawner holograms, griefing protection, and an in-game preset editor.
+[**MythicTrials**](https://esmp.fun/plugins/mythic-trials) - Per-player chamber progression + Mythic difficulty tiers
 
-[**Vault Crates**](https://esmp.fun/) - Turn any vanilla Vault block into a key-opened loot crate. Two-tier crates (normal / ominous), weighted loot pools, per-player and server-wide reset modes, and crate-key drops from Wild Spawners mob kills. In-game editor included.
+[**Vault Crates**](https://esmp.fun/plugins/vault-crates) - Crate system built on real Trial Vault blocks
+
+[**Wild Spawners**](https://esmp.fun/plugins/wild-spawners) - Custom Trial Spawners for Better Trial Chambers
 
 ***
 
