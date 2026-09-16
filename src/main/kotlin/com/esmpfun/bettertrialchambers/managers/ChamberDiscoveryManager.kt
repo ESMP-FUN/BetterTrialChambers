@@ -230,7 +230,9 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
         boundsConfirmed: Boolean = false
     ) {
         val worldName = world.name
-        val name = "auto_${worldName}_${result.centerX}_${result.centerZ}"
+        val name = com.esmpfun.bettertrialchambers.utils.ChamberNames.sanitize(
+            "auto_${worldName}_${result.centerX}_${result.centerZ}"
+        )
 
         plugin.launchAsync {
             registrationMutex.withLock {

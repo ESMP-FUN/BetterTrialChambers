@@ -235,6 +235,10 @@ class GenerateCommand(private val plugin: BetterTrialChambers) : SubcommandHandl
      * scan -> optional snapshot" sequences.
      */
     private fun createChamberAsync(sender: CommandSender, name: String, loc1: Location, loc2: Location) {
+        if (!com.esmpfun.bettertrialchambers.utils.ChamberNames.isValid(name)) {
+            sender.sendMessage(plugin.getMessageComponent("chamber-name-invalid", "name" to name))
+            return
+        }
         plugin.launchAsync {
             val existing = plugin.chamberManager.getChamber(name)
             if (existing != null) {

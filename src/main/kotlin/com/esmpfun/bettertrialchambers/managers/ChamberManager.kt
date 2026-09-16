@@ -94,6 +94,14 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
         location2: Location,
         resetInterval: Long = plugin.config.getLong("global.default-reset-interval", 172800)
     ): Chamber? = withContext(Dispatchers.IO) {
+        // The name becomes the snapshot's file name, so anything that is not a
+        // plain name would write that file somewhere unintended or not at all.
+        if (!com.esmpfun.bettertrialchambers.utils.ChamberNames.isValid(name)) {
+            plugin.logger.warning(
+                "Cannot create chamber '$name': a name may only use letters, digits, - and _, up to 32 characters"
+            )
+            return@withContext null
+        }
         if (location1.world != location2.world) {
             plugin.logger.warning("Cannot create chamber with locations in different worlds")
             return@withContext null
@@ -769,6 +777,16 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                 updateCacheExpiry(chamber.name)
             }
             plugin.logger.info("Preloaded ${all.size} chambers into cache")
+            // Names have been checked since 2.1.1, but a chamber registered before
+            // that could carry one that cannot be a file name, and its snapshot then
+            // silently never saves. Say so once rather than at every reset.
+            all.filterNot { com.esmpfun.bettertrialchambers.utils.ChamberNames.isValid(it.name) }
+                .forEach {
+                    plugin.logger.warning(
+                        "Chamber '${it.name}' has a name that cannot be saved to a file. Snapshots and resets " +
+                            "will fail for it. Delete and re-register it with a name of letters, digits, - or _."
+                    )
+                }
         } catch (e: Exception) {
             plugin.logger.warning("Failed to preload chamber cache: ${e.message}")
         }
