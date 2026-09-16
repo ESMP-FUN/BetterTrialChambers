@@ -3,6 +3,7 @@ package com.esmpfun.bettertrialchambers.managers
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
 import com.esmpfun.bettertrialchambers.database.DatabaseManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.bukkit.inventory.ItemStack
 import java.io.ByteArrayInputStream
@@ -36,6 +37,21 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
     data class ContainerPos(val x: Int, val y: Int, val z: Int)
 
     /**
+     * One lock per player, so a copy is never read while the contents from the
+     * last time they closed one are still being written.
+     *
+     * Closing a container saves in the background. Without this, re-opening
+     * before that write landed read the older contents back, and anything taken
+     * out in between existed twice. Locking per player rather than per container
+     * keeps one small entry per player instead of one per container they ever
+     * opened, and only that player's own copies are involved either way.
+     */
+    private val copyLocks = java.util.concurrent.ConcurrentHashMap<UUID, kotlinx.coroutines.sync.Mutex>()
+
+    private fun copyLock(player: UUID) =
+        copyLocks.computeIfAbsent(player) { kotlinx.coroutines.sync.Mutex() }
+
+    /**
      * Loads a player's private contents for a container, or null when they
      * have no copy yet (first open).
      */
@@ -43,7 +59,7 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
         chamberId: Int,
         pos: ContainerPos,
         player: UUID
-    ): Array<ItemStack?>? = withContext(Dispatchers.IO) {
+    ): Array<ItemStack?>? = copyLock(player).withLock { withContext(Dispatchers.IO) {
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
@@ -63,7 +79,7 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
             plugin.logger.warning("[ContainerLoot] Load failed (${pos.x},${pos.y},${pos.z}/$player): ${e.message}")
             null
         }
-    }
+    } }
 
     /** Persists a player's private contents for a container (upsert). */
     suspend fun saveContents(
@@ -71,7 +87,7 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
         pos: ContainerPos,
         player: UUID,
         contents: Array<ItemStack?>
-    ) = withContext(Dispatchers.IO) {
+    ) = copyLock(player).withLock { withContext(Dispatchers.IO) {
         val encoded = encodeContents(contents)
         val sql = if (plugin.databaseManager.databaseType == DatabaseManager.DatabaseType.MYSQL) {
             """
@@ -103,7 +119,7 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
         } catch (e: Exception) {
             plugin.logger.warning("[ContainerLoot] Save failed (${pos.x},${pos.y},${pos.z}/$player): ${e.message}")
         }
-    }
+    } }
 
     /**
      * Loads the shared template (the canonical contents every first-open copy
