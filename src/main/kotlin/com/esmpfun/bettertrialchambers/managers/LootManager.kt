@@ -1392,15 +1392,18 @@ class LootManager(private val plugin: BetterTrialChambers) {
         val instance = mythicBukkitCls.getMethod("inst").invoke(null)
         val itemManager = com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(instance, "getItemManager")
             ?: return null
-        val optional = itemManager.javaClass.getMethod("getItem", String::class.java)
-            .invoke(itemManager, itemId) as java.util.Optional<*>
+        val optional = com.esmpfun.bettertrialchambers.utils.Reflect
+            .method(itemManager.javaClass, "getItem", String::class.java)
+            ?.invoke(itemManager, itemId) as? java.util.Optional<*> ?: return null
         val mythicItem = optional.orElse(null)
         if (mythicItem == null) {
             plugin.logger.warning("MythicCrucible item not found: '$itemId' (is the item defined in a Mythic/Crucible item file?)")
             null
         } else {
             // generateItemStack(int) -> AbstractItemStack; on Bukkit it's BukkitItemStack which has build() -> ItemStack
-            val abstractStack = mythicItem.javaClass.getMethod("generateItemStack", Int::class.javaPrimitiveType).invoke(mythicItem, 1)
+            val abstractStack = com.esmpfun.bettertrialchambers.utils.Reflect
+                .method(mythicItem.javaClass, "generateItemStack", Int::class.javaPrimitiveType!!)
+                ?.invoke(mythicItem, 1)
             if (abstractStack == null) {
                 plugin.logger.warning("MythicCrucible.generateItemStack returned null for '$itemId'")
                 null

@@ -67,8 +67,8 @@ class LevelledMobsProvider(private val plugin: BetterTrialChambers) : TrialMobPr
             val lmCls = Class.forName("io.github.arcaneplugins.levelledmobs.LevelledMobs")
             val lm = lmCls.getMethod("getInstance").invoke(null) ?: return entity
 
-            val levelInterface = runCatching { lm.javaClass.getMethod("getLevelInterface").invoke(lm) }
-                .getOrElse { runCatching { lm.javaClass.getMethod("getLevelManager").invoke(lm) }.getOrNull() }
+            val levelInterface = com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(lm, "getLevelInterface")
+                ?: com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(lm, "getLevelManager")
                 ?: return entity
 
             val apply = levelInterface.javaClass.methods.firstOrNull {
