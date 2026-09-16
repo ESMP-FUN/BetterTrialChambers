@@ -21,6 +21,11 @@ import org.bukkit.plugin.EventExecutor
  */
 class ClaimIntegrationManager(private val plugin: BetterTrialChambers) {
 
+    private companion object {
+        /** Misses before a provider is called broken, so one ignorable event stays quiet. */
+        const val UNREADABLE_WARN_AFTER = 3
+    }
+
     private val providers: List<ClaimProvider> = listOf(
         ResidenceClaimProvider(),
         LandsClaimProvider(),
@@ -29,6 +34,20 @@ class ClaimIntegrationManager(private val plugin: BetterTrialChambers) {
 
     /** A single shared listener instance is enough, dispatch happens in the executor. */
     private val listener = object : Listener {}
+
+    /**
+     * How often each provider has failed to make sense of a claim event, and
+     * whether it has ever managed one.
+     *
+     * These integrations read another plugin's events by reflection, so a rename
+     * on their side leaves the shield doing nothing at all, and it does that
+     * quietly. A provider that has never once read an event and has now missed
+     * several says so, once, instead of leaving an owner to find out when
+     * somebody claims a chamber.
+     */
+    private val unreadEvents = java.util.concurrent.ConcurrentHashMap<String, Int>()
+    private val everRead = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+    private val warnedUnreadable = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
 
     /** Providers whose plugin is installed (regardless of the config toggle). */
     private fun installedProviders(): List<ClaimProvider> = providers.filter { it.isAvailable(plugin) }
@@ -70,7 +89,8 @@ class ClaimIntegrationManager(private val plugin: BetterTrialChambers) {
     private fun handle(provider: ClaimProvider, event: Event) {
         if (!plugin.config.getBoolean(provider.configKey, true)) return
         try {
-            val attempt = provider.parseAttempt(event) ?: return
+            val attempt = provider.parseAttempt(event) ?: run { noteUnreadable(provider); return }
+            everRead.add(provider.id)
             val actor = attempt.actor ?: return // console / non-player source, leave alone
             if (actor.hasPermission(provider.bypassPermission)) return
 
@@ -89,6 +109,20 @@ class ClaimIntegrationManager(private val plugin: BetterTrialChambers) {
                 plugin.logger.warning("${provider.pluginName} claim guard error: ${t.message}")
             }
         }
+    }
+
+    /** Warns once when a provider looks like it can no longer read its plugin's events. */
+    private fun noteUnreadable(provider: ClaimProvider) {
+        if (provider.id in everRead) return
+        val misses = unreadEvents.merge(provider.id, 1, Int::plus) ?: 1
+        if (misses < UNREADABLE_WARN_AFTER) return
+        if (!warnedUnreadable.add(provider.id)) return
+        plugin.logger.warning(
+            "BetterTrialChambers could not read ${provider.pluginName}'s claim events, so chambers are NOT " +
+                "being shielded from ${provider.pluginName} claims. This usually means ${provider.pluginName} " +
+                "changed its API in an update. Please report it, and until then keep claims away from chambers " +
+                "by hand, or run /trial claims scan to find overlaps."
+        )
     }
 
     /**
