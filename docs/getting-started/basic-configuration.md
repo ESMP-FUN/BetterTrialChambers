@@ -497,7 +497,7 @@ Scarce resources, minimal on-screen feedback, long cooldowns for loot that means
 Most settings apply immediately. Exceptions:
 
 * Database settings need a full restart.
-* A changed reset interval affects the next reset, not a timer already counting down.
+* A changed reset interval replaces the reset already counting down; the new time is measured from the chamber's last reset, so a chamber already past that point resets within the minute.
 
 {% hint style="success" %}
 **Back up first.** Copy your `plugins/BetterTrialChambers/` folder before making big changes.

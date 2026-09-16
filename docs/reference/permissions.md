@@ -44,7 +44,7 @@ Every permission below is a `btc.*` node. The old `tcp.*` names from before v2.0
 | `btc.admin.containers` | The Container Loot GUI view and `/trial container ...` (per-player container loot). Only matters when `chests.per-player-loot` is on. | op |
 | `btc.admin.mobs` | `/trial mobs providers` and `/trial mobs <chamber> provider / add / remove / list` (custom mob providers). | op |
 | `btc.admin.menu` | `/trial menu` (opens the admin GUI). GUI actions still check the feature node behind them. | op |
-| `btc.admin.reload` | `/trial reload`. | op |
+| `btc.admin.reload` | `/trial reload`, and the Settings and Protection screens in the menu (they change the same file). | op |
 | `btc.admin.stats` | `/trial stats <player>` (view anyone's stats). | op |
 | `btc.give` | `/trial give <preset> [player] [amount]` (hand out preconfigured trial-spawner items). | op |
 

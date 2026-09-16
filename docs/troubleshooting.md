@@ -322,12 +322,12 @@ Cause: player-built structures using tuff bricks or copper blocks can match the 
 
 <details>
 
-<summary><strong>Nexo / ItemsAdder / Oraxen items don't drop</strong></summary>
+<summary><strong>Custom items from another plugin don't drop</strong></summary>
 
 1. Confirm the custom-item plugin is installed and loaded (`/plugins` shows it green).
 2. Confirm the item ID matches that plugin's docs exactly, including case.
-3. Confirm the `plugin:` field is `nexo`, `itemsadder`, or `oraxen` (case-insensitive, but typos fail silently).
-4. Set `debug.verbose-logging: true` and watch the console when a vault opens.
+3. Confirm the `plugin:` field is one of `nexo`, `itemsadder`, `oraxen`, `craftengine` or `mythiccrucible` (case does not matter; anything else is named in the console).
+4. Watch the console when a vault opens: a missing item id is reported by name.
 
 Example that works:
 
@@ -338,7 +338,7 @@ Example that works:
   weight: 5
 ```
 
-Cause: the `CUSTOM_ITEM` loot type resolves via reflection, so a wrong id or plugin name skips the item silently.
+Cause: the item is fetched from the other plugin when the vault is opened, so a wrong id means that entry is skipped and the rest of the loot still rolls. The console says which id could not be found.
 
 </details>
 

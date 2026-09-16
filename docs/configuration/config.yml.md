@@ -483,7 +483,7 @@ vaults:
 ```
 
 - `drop-loot-at-vault` (**default `false`**): when `true`, vault loot pops out of the block like vanilla instead of going straight into the opener's inventory. Command rewards and status effects still apply directly to the player.
-- `drop-loot-owner-only` (**default `true`**): only the opener can pick up the dropped items.
+- `drop-loot-owner-only` (**default `true`**): only the opener can pick up the dropped items. Hoppers, hopper minecarts and mobs cannot take them either while the lock holds.
 - `drop-loot-owner-grace-seconds` (**default `30`**): how long owner-only lasts. After this, anyone can pick the items up so they do not linger if the opener logs off. `0` = owner-locked until the item despawns.
 
 Players with `btc.bypass.droplock` (default: op) can always pick up dropped loot.
