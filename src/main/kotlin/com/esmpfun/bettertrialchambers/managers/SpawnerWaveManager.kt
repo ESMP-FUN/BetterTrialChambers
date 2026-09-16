@@ -92,15 +92,19 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
     // first chamber-remaining glow refresh and reused on subsequent waves in the cycle.
     private val chamberSpawnerLocationsCache = ConcurrentHashMap<Int, List<Location>>()
 
+    /** Held so the sweep stops with the plugin rather than ticking on into a shut-down manager. */
+    private var sweepTask: com.esmpfun.bettertrialchambers.scheduler.ScheduledTask? = null
+
     init {
         // Periodic sweep: drop UUIDs whose entity is gone (despawned, /kill, removed by another
         // plugin, void death without an EntityDeathEvent); close out waves whose spawner block
         // has already entered cooldown vanilla-side or whose block no longer exists. Without this
         // the boss bar deadlocks at e.g. 2/6 forever when a tracked mob disappears silently.
-        try {
+        sweepTask = try {
             plugin.scheduler.runTaskTimer(Runnable { sweepWaves() }, 100L, 100L)
         } catch (e: Throwable) {
             plugin.logger.warning("[SpawnerWave] Failed to schedule wave sweeper: ${e.message}")
+            null
         }
     }
 
@@ -1265,6 +1269,8 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
      * Cleans up all active waves (called on disable).
      */
     fun shutdown() {
+        sweepTask?.cancel()
+        sweepTask = null
         activeWaves.values.forEach { wave ->
             removeBossBar(wave)
         }

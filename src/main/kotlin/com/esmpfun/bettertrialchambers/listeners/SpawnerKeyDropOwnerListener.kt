@@ -23,7 +23,7 @@ import java.util.UUID
  *   - `tcp:spawner_key_owner` (STRING, UUID)
  *   - `tcp:spawner_key_dropped_at` (LONG, epoch millis)
  *
- * Bypass: `tcp.bypass.droplock` (shared with vault drops).
+ * Bypass: `btc.bypass.droplock` (shared with vault drops).
  * Grace window: `reset.spawner-key-drop-owner-grace-seconds` (default 30; `0` = owner-locked
  * until the item despawns naturally).
  */
