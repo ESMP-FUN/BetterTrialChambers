@@ -6,6 +6,8 @@ Press `Tab` while typing for suggestions (chamber names, player names, sub-actio
 
 **Argument style:** `<name>` is required, `[name]` is optional. `a|b` means pick one of the listed words.
 
+**Chamber names:** letters, numbers, `-` and `_`, up to 32 characters. The name is also the name of the chamber's save file, which is why it has to stay simple. For a prettier name in announcements, use `/trial rename` to set a display name, which can be anything you like.
+
 For the full permission list, see the [Permissions](permissions.md) page.
 
 ***
@@ -309,6 +311,8 @@ Sets a friendly display name for a chamber. The internal name (used in commands)
 **Permission:** `btc.admin.create`
 
 `none`, `reset`, or `-` clears the display name.
+
+Colours and formatting work here (`&6The Copper Vaults` or `<gold>The Copper Vaults</gold>`). Anything that would make the name clickable or hoverable is removed, because the name goes into announcements everyone sees.
 
 </details>
 
