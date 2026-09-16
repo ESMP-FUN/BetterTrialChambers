@@ -80,7 +80,10 @@ data class Chamber(
      * the internal [name]. Use this everywhere a chamber is shown to players; use [name]
      * for command lookups and database keys.
      */
-    fun label(): String = displayName?.takeIf { it.isNotBlank() } ?: name
+    fun label(): String = displayName?.takeIf { it.isNotBlank() }
+        ?.let { com.esmpfun.bettertrialchambers.utils.DisplayText.sanitize(it) }
+        ?.takeIf { it.isNotBlank() }
+        ?: name
 
     /**
      * Gets the loot table override for a specific vault type.
