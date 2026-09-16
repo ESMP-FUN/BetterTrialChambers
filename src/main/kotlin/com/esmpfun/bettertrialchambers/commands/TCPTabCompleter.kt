@@ -51,7 +51,7 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
         "setexit" to "btc.admin.create",
         "snapshot" to "btc.admin.snapshot",
         "stats" to "btc.stats",
-        "update" to "btc.admin.reload",
+        "update" to "btc.admin",
         "vault" to "btc.admin.menu",
         // These are handled by their own classes rather than a method here;
         // same idea, the permission is the one that class checks first.
@@ -78,7 +78,7 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
     private val containerActions = listOf("list", "materialize", "reset", "clearcopies", "tp", "edit")
 
     private val snapshotActions = listOf("create", "update", "restore", "missing")
-    private val updateActions = listOf("check", "download", "ignore", "unignore", "restore", "status")
+    private val updateActions = listOf("check", "download", "apply", "ignore", "unignore", "restore", "status")
     private val statTypes = listOf("chambers", "normal", "ominous", "mobs", "time")
     private val lootActions = listOf("set", "clear", "info", "list", "audit")
     private val vaultTypes = listOf("normal", "ominous")
