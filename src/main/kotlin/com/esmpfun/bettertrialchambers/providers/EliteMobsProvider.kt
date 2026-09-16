@@ -22,23 +22,25 @@ class EliteMobsProvider(private val plugin: BetterTrialChambers) : TrialMobProvi
     override val id: String = "elitemobs"
     override val displayName: String = "EliteMobs"
 
-    @Volatile private var cachedAvailable: Boolean? = null
+    /** Whether this plugin's classes are on the server; fixed for the run. */
+    @Volatile private var classPresent: Boolean? = null
 
     override fun isAvailable(): Boolean {
-        cachedAvailable?.let { return it }
-        val present = Bukkit.getPluginManager().getPlugin("EliteMobs")?.isEnabled == true
-        if (!present) { cachedAvailable = false; return false }
+        // Asked of the plugin manager every time on purpose: it is a map lookup,
+        // and caching the answer meant a plugin that starts after this one was
+        // written off for the rest of the server's run. Only whether its classes
+        // are there is remembered, which cannot change while the server is up.
+        if (Bukkit.getPluginManager().getPlugin("EliteMobs")?.isEnabled != true) return false
+        classPresent?.let { return it }
         return try {
             Class.forName("com.magmaguy.elitemobs.mobconstructor.custombosses.CustomBossEntity")
-            cachedAvailable = true
+            classPresent = true
             true
         } catch (_: Throwable) {
-            cachedAvailable = false
+            classPresent = false
             false
         }
     }
-
-    fun invalidate() { cachedAvailable = null }
 
     override fun spawnMob(mobId: String, location: Location, ominous: Boolean): Entity? {
         if (!isAvailable()) return null

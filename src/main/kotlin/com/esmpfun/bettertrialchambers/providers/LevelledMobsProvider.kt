@@ -25,16 +25,11 @@ class LevelledMobsProvider(private val plugin: BetterTrialChambers) : TrialMobPr
     override val id: String = "levelledmobs"
     override val displayName: String = "LevelledMobs"
 
-    @Volatile private var cachedAvailable: Boolean? = null
-
     override fun isAvailable(): Boolean {
-        cachedAvailable?.let { return it }
-        val present = Bukkit.getPluginManager().getPlugin("LevelledMobs")?.isEnabled == true
-        cachedAvailable = present
-        return present
+        // Asked every time: caching it meant a plugin that starts after this one
+        // was written off for the rest of the server's run.
+        return Bukkit.getPluginManager().getPlugin("LevelledMobs")?.isEnabled == true
     }
-
-    fun invalidate() { cachedAvailable = null }
 
     override fun spawnMob(mobId: String, location: Location, ominous: Boolean): Entity? {
         val (typeStr, levelPart) = parseId(mobId)
