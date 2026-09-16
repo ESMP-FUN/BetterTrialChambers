@@ -176,6 +176,17 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
                 return
             }
 
+            if (result.hitScanLimit) {
+                // The bounds are whatever the scan had reached when it stopped, so a
+                // chamber bigger than the limit registers short and resets only that
+                // much of it. Say so where an owner will see it.
+                plugin.logger.warning(
+                    "[Discovery] The chamber at ${seed.blockX},${seed.blockY},${seed.blockZ} is bigger than one " +
+                        "scan is allowed to look at, so only part of it was measured. Stand inside it and use " +
+                        "/trial scan add <chamber> to take in the rest, or raise 'discovery.max-scan-blocks'."
+                )
+            }
+
             if (!validateResult(result)) {
                 finalizeFailed(key, "AABB failed validation (vaults=${result.vaultCount}, spawners=${result.spawnerCount}, size=${result.sizeX}x${result.sizeY}x${result.sizeZ}, centerY=${result.centerY})")
                 return
@@ -670,7 +681,9 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
         val vaultCount: Int,
         val spawnerCount: Int,
         val structuralCount: Int,
-        val hitUnloadedChunks: Boolean
+        val hitUnloadedChunks: Boolean,
+        /** True when the scan stopped at its own limit, so these bounds may be short. */
+        val hitScanLimit: Boolean = false,
     ) {
         val sizeX get() = maxX - minX + 1
         val sizeY get() = maxY - minY + 1
@@ -706,7 +719,10 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
             intArrayOf(0, 0, 1), intArrayOf(0, 0, -1)
         )
 
-        val hardCap = 50_000 // safety bound on BFS node count
+        // Safety bound on how many positions one scan may look at. Raise it for a
+        // datapack chamber far bigger than a vanilla one; the scan stops at this
+        // number either way and says so.
+        val hardCap = plugin.config.getInt("discovery.max-scan-blocks", 50_000).coerceAtLeast(1_000)
 
         while (queue.isNotEmpty() && visited.size < hardCap) {
             val cur = queue.poll()
@@ -757,7 +773,8 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
 
         return BfsResult(
             minX, minY, minZ, maxX, maxY, maxZ,
-            vaults, spawners, structural, hitUnloaded
+            vaults, spawners, structural, hitUnloaded,
+            hitScanLimit = visited.size >= hardCap
         )
     }
 
