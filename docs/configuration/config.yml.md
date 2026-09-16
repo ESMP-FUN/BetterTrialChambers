@@ -561,7 +561,7 @@ When enabled, players may break the listed materials (default: the tuff-brick sh
 
 <summary><code>prevent-container-access</code></summary>
 
-Block opening chests, barrels, hoppers, and so on inside chambers. **Default:** `false`, because you usually want players opening pots and chests for loot. Set `true` if you have admin containers inside chambers.
+Block players taking from or adding to anything inside a chamber that holds items: chests, barrels, hoppers, shelves, lecterns, jukeboxes and decorated pots. Vaults are never affected, so vault loot still works. **Default:** `false`, because you usually want players opening chests for loot. Set `true` if you keep your own containers inside chambers.
 
 </details>
 
@@ -1057,7 +1057,7 @@ Stop wave mobs fighting each other. **Default:** `true`. In vanilla a stray skel
 
 <summary><code>glow-active-spawners</code> / <code>glow-color-normal</code> / <code>glow-color-ominous</code></summary>
 
-Draw a glowing outline around active trial spawners, visible through walls, to help players find them in a big chamber. **Defaults:** `glow-active-spawners: false`, colours `#FFFF55` (yellow, normal) and `#A020F0` (purple, ominous), as hex RGB. The outline is an invisible, invulnerable marker entity that cannot be hit or farmed, removed when the wave completes or the chamber resets.
+Draw a glowing outline around active trial spawners, visible through walls, to help players find them in a big chamber. **Defaults:** `glow-active-spawners: false`, colours `#FFFF55` (yellow, normal) and `#A020F0` (purple, ominous), as hex RGB. Minecraft only draws an outline in one of its own sixteen colours, so the colour you set is matched to the closest of those. The outline is an invisible, invulnerable marker entity that cannot be hit or farmed, removed when the wave completes or the chamber resets.
 
 Update to a recent build before enabling; older builds did not render the outline correctly.
 
