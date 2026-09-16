@@ -54,18 +54,19 @@ class MythicMobsProvider(private val plugin: BetterTrialChambers) : TrialMobProv
             val mobManager = mythicBukkitCls.getMethod("getMobManager").invoke(inst)
 
             // Signature: spawnMob(String, Location, double)
-            val spawnMethod = mobManager.javaClass.getMethod(
+            val spawnMethod = com.esmpfun.bettertrialchambers.utils.Reflect.method(
+                mobManager.javaClass,
                 "spawnMob",
                 String::class.java,
                 Location::class.java,
                 java.lang.Double.TYPE
-            )
+            ) ?: return null
             val activeMob = spawnMethod.invoke(mobManager, mobId, location, 1.0) ?: return null
 
             // ActiveMob may return Optional in some minor versions; handle both.
             val resolved: Any = if (activeMob is Optional<*>) activeMob.orElse(null) ?: return null else activeMob
-            val entityWrapper = resolved.javaClass.getMethod("getEntity").invoke(resolved) ?: return null
-            val bukkit = entityWrapper.javaClass.getMethod("getBukkitEntity").invoke(entityWrapper) as? Entity
+            val entityWrapper = com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(resolved, "getEntity") ?: return null
+            val bukkit = com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(entityWrapper, "getBukkitEntity") as? Entity
 
             if (bukkit == null && plugin.config.getBoolean("debug.verbose-logging", false)) {
                 plugin.logger.warning("[MythicMobsProvider] spawnMob '$mobId' returned entity wrapper with no Bukkit entity")
@@ -87,7 +88,7 @@ class MythicMobsProvider(private val plugin: BetterTrialChambers) : TrialMobProv
             val inst = mythicBukkitCls.getMethod("inst").invoke(null)
             val mobManager = mythicBukkitCls.getMethod("getMobManager").invoke(inst)
             // getMythicMob(String) typically returns Optional<MythicMob>
-            val getMethod = mobManager.javaClass.getMethod("getMythicMob", String::class.java)
+            val getMethod = com.esmpfun.bettertrialchambers.utils.Reflect.method(mobManager.javaClass, "getMythicMob", String::class.java) ?: return true
             val result = getMethod.invoke(mobManager, mobId)
             when (result) {
                 is Optional<*> -> result.isPresent

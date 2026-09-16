@@ -64,7 +64,7 @@ class CitizensProvider(private val plugin: BetterTrialChambers) : TrialMobProvid
                     var found: Any? = null
                     while (it.hasNext()) {
                         val npc = it.next() ?: continue
-                        val name = runCatching { npc.javaClass.getMethod("getName").invoke(npc) as? String }.getOrNull()
+                        val name = com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(npc, "getName") as? String
                         if (name?.equals(mobId, ignoreCase = true) == true) { found = npc; break }
                     }
                     found

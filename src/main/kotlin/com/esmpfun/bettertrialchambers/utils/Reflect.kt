@@ -23,19 +23,22 @@ object Reflect {
     }
 
     /** A no-arg [name] on [type] that can actually be invoked, or null. */
-    fun noArg(type: Class<*>, name: String): Method? {
-        val direct = try { type.getMethod(name) } catch (_: Throwable) { return null }
+    fun noArg(type: Class<*>, name: String): Method? = method(type, name)
+
+    /** [name] taking [params] on [type] that can actually be invoked, or null. */
+    fun method(type: Class<*>, name: String, vararg params: Class<*>): Method? {
+        val direct = try { type.getMethod(name, *params) } catch (_: Throwable) { return null }
         if (Modifier.isPublic(direct.declaringClass.modifiers)) return direct
 
         var c: Class<*>? = type
         while (c != null) {
             for (iface in c.interfaces) {
                 if (!Modifier.isPublic(iface.modifiers)) continue
-                val m = try { iface.getMethod(name) } catch (_: Throwable) { null }
+                val m = try { iface.getMethod(name, *params) } catch (_: Throwable) { null }
                 if (m != null) return m
             }
             if (Modifier.isPublic(c.modifiers)) {
-                val m = try { c.getMethod(name) } catch (_: Throwable) { null }
+                val m = try { c.getMethod(name, *params) } catch (_: Throwable) { null }
                 if (m != null && Modifier.isPublic(m.declaringClass.modifiers)) return m
             }
             c = c.superclass
