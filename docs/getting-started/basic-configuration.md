@@ -117,7 +117,7 @@ protection:
 | `enabled` | `true` | Master switch. `false` turns off every protection below. |
 | `prevent-block-break` | `true` | Players cannot break blocks in a chamber. |
 | `prevent-block-place` | `true` | Players cannot place blocks in a chamber. |
-| `prevent-container-access` | `false` | Players cannot open chests, barrels, and similar. Leave off unless you have a reason. |
+| `prevent-container-access` | `false` | Players cannot take from or add to anything that holds items: chests, barrels, hoppers, shelves, lecterns, jukeboxes, pots. Vaults still work. Leave off unless you have a reason. |
 | `allow-pvp` | `true` | `true` lets players fight inside chambers. `false` blocks player-on-player damage there. |
 | `prevent-mob-griefing` | `true` | Stops creepers, endermen, and the like from damaging chamber blocks. |
 
