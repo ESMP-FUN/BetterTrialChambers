@@ -85,6 +85,9 @@ class DungeonCommand(private val plugin: BetterTrialChambers) : SubcommandHandle
         val player = sender as? Player ?: return sender.sendMessage(plugin.getMessageComponent("player-only"))
         if (args.size < 3) return sender.sendMessage(plugin.getMessageComponent("dungeon-usage-generate"))
         val name = args[2]
+        if (!com.esmpfun.bettertrialchambers.utils.ChamberNames.isValid(name)) {
+            return sender.sendMessage(plugin.getMessageComponent("chamber-name-invalid", "name" to name))
+        }
         val seed = args.getOrNull(3)?.toLongOrNull() ?: System.nanoTime()
         val cfg = dungeonConfig()
         val origin = player.location.block.location
