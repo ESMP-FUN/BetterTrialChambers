@@ -1,6 +1,6 @@
 ---
 description: >-
-  The fastest way to get BetterTrialChambers running — and for most servers, the
+  The fastest way to get BetterTrialChambers running, and for most servers, the
   only setup you need.
 layout:
   width: default
@@ -24,61 +24,59 @@ layout:
 
 # Quick Start
 
-BetterTrialChambers can find and manage every natural Trial Chamber on your server **automatically**. No WorldEdit, no commands per chamber, nothing to repeat for each one. Run one guided tour, flip two switches, and you're done.
+Set up BetterTrialChambers so it finds and manages every natural Trial Chamber on your server by itself. This is the only setup most servers need. No WorldEdit, no per-chamber commands.
 
 ## 1. Run the setup tour
 
-Hop in-game as an operator and run:
+In-game as an operator, run:
 
 ```
 /trial setup
 ```
 
-Or simply click the green text, right in chat:
+Or click the green text in chat:
 
 <figure><img src="../.gitbook/assets/Screenshot 2026-06-27 153421.png" alt=""><figcaption></figcaption></figure>
 
-This opens a friendly, **opt-in** walkthrough of BTC's main settings — one at a time, in plain English, with **Enable / Skip / Disable** for each. Nothing is forced, and you can pause or stop at any point. On Paper 1.21.7+ it's a clean dialog UI; on older servers it's a clickable-chat version with the same content.
+The tour walks you through BTC's main settings one at a time, in plain English, with **Enable / Skip / Disable** for each. Nothing is forced. You can stop at any point and re-run it later. On Paper 1.21.7+ it is a dialog window; on older servers it is the same content as clickable chat.
 
 <figure><img src="../.gitbook/assets/Screenshot 2026-06-27 153509.png" alt=""><figcaption></figcaption></figure>
 
-## 2. Turn on the two that matter most
+## 2. Enable these two settings in the tour
 
-As the tour walks you through the settings, **Enable** these two — they're what make everything hands-off:
-
-* **Auto-discover Trial Chambers** — BTC finds naturally-generated chambers by itself as players explore, and registers each one for you. This is the magic.
-* **Snapshot discovered chambers** — automatically saves a backup of each chamber the moment it's found, so it's reset-ready instantly (a chamber needs a snapshot before it can reset).
+* **Auto-discover Trial Chambers.** BTC finds naturally-generated chambers as players explore and registers each one for you.
+* **Snapshot discovered chambers.** Saves a backup of each chamber the moment it is found. A chamber needs a snapshot before it can reset, so this makes it reset-ready right away.
 
 {% hint style="success" %}
-**That's the whole setup.** With those two on, every Trial Chamber your players walk into is registered, snapshotted, and put on an automatic reset schedule — no per-chamber work, ever.
+That is the whole setup. With those two on, every Trial Chamber a player walks into is registered, backed up, and put on an automatic reset schedule.
 {% endhint %}
 
-## 3. You're done
+## 3. Done
 
-From here on, BTC runs itself:
+From here on:
 
-* Players explore → chambers get **found and snapshotted automatically**.
-* Each chamber **resets on a schedule** (default every 2 days — change it in the tour or in [Basic Configuration](basic-configuration.md)).
-* Every player gets **their own loot** with their own cooldown, so the second person in doesn't find empty vaults.
+* Chambers are found and backed up automatically as players explore.
+* Each chamber resets on a schedule (default every 2 days). Change it in the tour or in [Basic Configuration](basic-configuration.md).
+* Every player gets their own loot with their own cooldown, so the second player into a chamber does not find empty vaults.
 
-Want to tune loot, reset timing, or protection? Head to [**Basic Configuration**](basic-configuration.md) — but you don't have to touch a thing to have a working, multiplayer-friendly Trial Chamber server.
+To adjust loot, reset timing, or protection, see [Basic Configuration](basic-configuration.md). You do not have to change anything to have a working setup.
 
 ## Good to know
 
 {% hint style="info" %}
-**One caveat for very old worlds.** Auto-discovery looks for the blocks a Trial Chamber is built from (tuff bricks, copper, vaults, trial spawners). On worlds that pre-date 1.21, players occasionally build decorative structures out of those same blocks, which the detector _could_ mistake for a chamber. On fresh or normal worlds there's no risk — and if a wrong one ever slips through, a quick `/trial delete <name>` removes it. The setup tour explains this when you reach the step.
+**Very old worlds:** Auto-discovery looks for the blocks a Trial Chamber is built from (tuff bricks, copper, vaults, trial spawners). On worlds from before 1.21, a decorative player build made of those blocks could be mistaken for a chamber. This does not happen on fresh or normal worlds. If a wrong one is ever registered, remove it with `/trial delete <name>`.
 {% endhint %}
 
 {% hint style="info" %}
-**Re-run it anytime.** `/trial setup` is always available, and a gentle reminder nudges operators who haven't run it yet. Prefer doing it by hand? Every setting lives in `config.yml` too — the tour just makes the good options easy to find.
+**Re-run anytime:** `/trial setup` is always available. Every setting it covers is also in `config.yml` if you prefer to edit it directly.
 {% endhint %}
 
 ## No natural chambers on your server?
 
-A few servers have **no naturally-generated Trial Chambers at all** — superflat / one-block worlds, custom world generation, or `generate-structures` turned off. If that's you, auto-discovery has nothing to find, and you'll register chambers by hand instead. Here's how:
+Some servers have no naturally-generated Trial Chambers: superflat and one-block worlds, custom world generation, or `generate-structures` turned off. If that is you, auto-discovery has nothing to find, and you register chambers by hand instead:
 
 {% content-ref url="your-first-chamber.md" %}
 [your-first-chamber.md](your-first-chamber.md)
 {% endcontent-ref %}
 
-For everyone else — you're already finished.
+For everyone else, you're already finished.

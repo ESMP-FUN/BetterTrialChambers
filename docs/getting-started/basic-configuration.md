@@ -1,74 +1,68 @@
 # Basic Configuration
 
-You've installed the plugin and created your first chamber. Now let's tune the basics to match your server's playstyle. This is a quick-start guide—for deep dives, check the full [config.yml reference](../configuration/config.yml.md).
+You have installed the plugin and created your first chamber. This page walks through the handful of settings most servers change on day one. For everything else, see the full [config.yml reference](../configuration/config.yml.md).
 
 {% hint style="info" %}
 **Config location:** `plugins/BetterTrialChambers/config.yml`
 
-After editing, run `/trial reload` to apply changes (no restart needed for most settings!)
+After editing, run `/trial reload` to apply your changes. Most settings take effect right away with no restart.
 {% endhint %}
 
 ***
 
-## The Three Settings You'll Change First
+## Change how often chambers reset
 
-### 1. Reset Interval
-
-**How often should chambers reset?**
+Set the time between automatic resets, in seconds.
 
 ```yaml
 global:
-  default-reset-interval: 172800  # 48 hours in seconds
+  default-reset-interval: 172800  # 48 hours
 ```
 
-**Default:** 48 hours (2 days)
+* **Key:** `global.default-reset-interval`
+* **Default:** `172800` (48 hours)
+* **Value:** a number of seconds. `0` turns automatic resets off completely, so chambers only reset when you run `/trial reset` or use the menu.
 
-**Common values:**
+Handy values:
 
-* **Daily:** `86400` (24 hours)
-* **Twice daily:** `43200` (12 hours)
-* **Weekly:** `604800` (7 days)
-* **Every 6 hours:** `21600` (for high-activity servers)
+| Interval | Seconds |
+| --- | --- |
+| Every 6 hours | `21600` |
+| Daily | `86400` |
+| Twice daily | `43200` |
+| Weekly | `604800` |
 
-**How to choose:**
-
-* **High activity server** (50+ players): 12-24 hours
-* **Medium activity** (20-50 players): 24-48 hours
-* **Small/casual** (<20 players): 48-168 hours
+Busier servers want shorter intervals so loot comes back sooner. It is easier to shorten an interval later than to explain to players why chambers changed sooner than expected.
 
 {% hint style="success" %}
-**Start longer, shorten later!** It's easier to speed up resets than deal with player complaints about too-frequent changes.
+**Start longer, shorten later.** Speeding resets up is painless. Slowing them down after players get used to fast loot causes complaints.
 {% endhint %}
+
+You can also give one chamber its own interval from the chamber settings menu (`/trial menu`, pick a chamber, Settings). That overrides the global value for that chamber only.
 
 ***
 
-### 2. Vault Cooldowns
+## Set a per-vault cooldown
 
-**How long before a player can loot the same vault again?**
+Control how long a player must wait before looting the same vault again.
 
 ```yaml
 vaults:
-  normal-cooldown-hours: 24
-  ominous-cooldown-hours: 48
+  normal-cooldown-hours: 0
+  ominous-cooldown-hours: 0
 ```
 
-**Default:** 24 hours (normal), 48 hours (ominous)
+* **Keys:** `vaults.normal-cooldown-hours`, `vaults.ominous-cooldown-hours`
+* **Default:** `0` for both
+* **Values:**
+  * `0` - vanilla style. Once a player opens a vault it stays shut for them until the chamber resets.
+  * any positive number - that many hours before the same player can open that vault again, even if the chamber has not reset.
 
-**Philosophy:**
+Ominous vaults usually hold better loot, so most servers give them the longer wait.
 
-* Normal vaults = more common, shorter cooldown
-* Ominous vaults = better loot, longer cooldown
+Changing these values does not touch cooldowns that are already running. New cooldowns use the new numbers.
 
-**Suggestions:**
-
-* **Match chamber resets:** If chambers reset every 24h, set cooldowns to 24h
-* **Independent progression:** Cooldowns longer than resets = players can't farm same vault repeatedly
-* **Fast-paced:** 6-12 hours for active servers
-* **Hardcore:** 72+ hours for scarce loot
-
-**Example setups:**
-
-Fast-paced server:
+Example, a fast server where vaults reopen well before the chamber resets:
 
 ```yaml
 global:
@@ -78,206 +72,205 @@ vaults:
   ominous-cooldown-hours: 12
 ```
 
-Balanced server:
+***
+
+## Choose who gets vault loot
+
+Decide whether each player gets their own reward, or vaults are first come first served, or the plugin stays out of the way entirely.
 
 ```yaml
-global:
-  default-reset-interval: 86400  # 24 hours
 vaults:
-  normal-cooldown-hours: 24
-  ominous-cooldown-hours: 48
+  loot-mode: PER_PLAYER
 ```
 
-Hardcore server:
+* **Key:** `vaults.loot-mode`
+* **Default:** `PER_PLAYER`
+* **Values:**
+  * `PER_PLAYER` - every player who reaches a vault gets their own roll from your loot tables. Ten players, ten rewards from the same vault.
+  * `SHARED` - the first player to open a vault takes it, and it stays shut for everyone else until the chamber resets. One vault, one reward. Your loot tables still apply. Needs `reset.reset-vault-cooldowns` left on (it is by default), otherwise a claimed vault never reopens.
+  * `VANILLA` - the plugin does not touch vaults at all. They behave exactly like a normal Minecraft world (crossbows, wind charges, and so on) and **your loot tables are ignored**. This is still one open per player, not shared.
 
-```yaml
-global:
-  default-reset-interval: 604800  # 7 days
-vaults:
-  normal-cooldown-hours: 168  # 7 days
-  ominous-cooldown-hours: 336  # 14 days
-```
+{% hint style="warning" %}
+After switching to `SHARED` or `VANILLA`, run `/trial vault unlockall all` once. Minecraft keeps its own record of who opened each vault, so players who already opened one will still find it shut until you clear it.
+{% endhint %}
 
 ***
 
-### 3. Protection Settings
+## Turn on griefing protection
 
-**Should players be able to break/place blocks in chambers?**
+Stop players changing chambers between resets.
 
 ```yaml
 protection:
   enabled: true
   prevent-block-break: true
   prevent-block-place: true
+  prevent-container-access: false
   allow-pvp: true
+  prevent-mob-griefing: true
 ```
 
-**Recommended settings:**
+* **Keys sit under `protection:`.** All of them only apply inside a registered chamber. Anyone with the `btc.bypass.protection` permission (operators included) ignores them.
 
-Survival server (prevent griefing):
+| Key | Default | What it does |
+| --- | --- | --- |
+| `enabled` | `true` | Master switch. `false` turns off every protection below. |
+| `prevent-block-break` | `true` | Players cannot break blocks in a chamber. |
+| `prevent-block-place` | `true` | Players cannot place blocks in a chamber. |
+| `prevent-container-access` | `false` | Players cannot take from or add to anything that holds items: chests, barrels, hoppers, shelves, lecterns, jukeboxes, pots. Vaults still work. Leave off unless you have a reason. |
+| `allow-pvp` | `true` | `true` lets players fight inside chambers. `false` blocks player-on-player damage there. |
+| `prevent-mob-griefing` | `true` | Stops creepers, endermen, and the like from damaging chamber blocks. |
+
+Survival server that wants peaceful farming:
 
 ```yaml
 protection:
   enabled: true
   prevent-block-break: true
   prevent-block-place: true
-  allow-pvp: false  # Peaceful farming
-```
-
-PvP/competitive server:
-
-```yaml
-protection:
-  enabled: true
-  prevent-block-break: true
-  prevent-block-place: true
-  allow-pvp: true  # Fight over loot!
-```
-
-Creative/build server:
-
-```yaml
-protection:
-  enabled: false  # Let admins build freely
-  # Or keep enabled and use btc.bypass.protection permission
+  allow-pvp: false
 ```
 
 {% hint style="warning" %}
-**Don't disable protection on public survival servers!** Players will grief your chambers. Use `btc.bypass.protection` permission for staff instead.
+**Do not disable protection on a public survival server.** Players will grief your chambers. Give staff the `btc.bypass.protection` permission instead.
 {% endhint %}
 
-**Controlling who can get&#x20;**_**in**_**&#x20;(1.5.20+).** Two optional, off-by-default toggles gate chamber entry — useful if players try to skip the intended way in:
-
-```yaml
-protection:
-  prevent-teleport-into-chamber: true   # block /tpa, /home, /warp, ender pearls, chorus fruit, etc. into a chamber
-  prevent-entry-without-permission: true # only players with btc.bypass.entry can walk in (rank-gated chambers)
-```
-
-`prevent-teleport-into-chamber` stops _every_ kind of teleport into a chamber (it hooks the teleport itself, not specific commands). `prevent-entry-without-permission` makes a chamber rank-only via the `btc.bypass.entry` permission (default: op). Spectators and creative-mode players are exempt from both. See the [protection config reference](../configuration/config.yml.md#prevent-teleport-into-chamber) for details.
-
-**Mass block-breakers (AdvancedEnchantments, vein miners).** Standard vein miners are blocked automatically inside chambers; effect-based enchants like AE _Blast Mining_ need `protection.block-advanced-enchantments: true`. See [that section](../configuration/config.yml.md#block-advanced-enchantments) for the why.
+There are more protection toggles for liquids, fire, pistons, decorations, and land-claim plugins. They are all on sensible defaults. See the [protection config reference](../configuration/config.yml.md#protection-settings) if you need to change them.
 
 ***
 
-## Tweaking Loot
+## Control who can get into a chamber
 
-Your loot tables live in `loot.yml`, not `config.yml`. Here's a quick example:
+Two off-by-default toggles stop players skipping the intended entrance.
+
+```yaml
+protection:
+  prevent-teleport-into-chamber: false
+  prevent-entry-without-permission: false
+```
+
+* **`prevent-teleport-into-chamber`** - set to `true` to block every kind of teleport into a chamber (`/tpa`, `/home`, `/warp`, `/tp`, ender pearls, chorus fruit, and so on). Walking in is unaffected.
+* **`prevent-entry-without-permission`** - set to `true` to make chambers rank-only. Only players with `btc.bypass.entry` (default: operators) can walk in. Use this for rank-gated chambers.
+
+Spectators and creative-mode players are exempt from both. See the [protection config reference](../configuration/config.yml.md#prevent-teleport-into-chamber) for details.
+
+***
+
+## Stop mass block-breakers
+
+Vein miners are blocked inside chambers automatically. Effect-based mining enchants (for example AdvancedEnchantments Blast Mining) break blocks through a different path and need their own switch.
+
+```yaml
+protection:
+  block-advanced-enchantments: false
+```
+
+Set to `true` (with AdvancedEnchantments installed) to cancel those enchant activations for players standing in a chamber. See [that section](../configuration/config.yml.md#block-advanced-enchantments) for the details.
+
+***
+
+## Adjust how much loot vaults give
+
+Loot tables live in `loot.yml`, not `config.yml`. Each table has one or more pools, and each pool decides how many items it hands out.
 
 ```yaml
 loot-tables:
   default:
-    min-rolls: 3
-    max-rolls: 5
+    pools:
+      - name: "main-reward"
+        min-rolls: 1
+        max-rolls: 1
 ```
 
-**What this means:**
+* **`min-rolls` / `max-rolls`** - the number of items that pool gives, picked at random between the two each time.
+* Raise both for a more generous table, lower both for a leaner one.
 
-* Each vault gives 3-5 random items from the loot pool
-* Higher rolls = more items per vault
-
-**Quick adjustments:**
-
-More generous:
-
-```yaml
-min-rolls: 5
-max-rolls: 8
-```
-
-More challenging:
-
-```yaml
-min-rolls: 1
-max-rolls: 3
-```
-
-For detailed loot customization, see the [loot.yml reference](../configuration/loot.yml.md).
+For anything more than this, see the [loot.yml reference](../configuration/loot.yml.md).
 
 ***
 
-## Performance Tuning
+## Speed up or slow down resets
 
-If you have large chambers or many players, tune these:
+Control how fast blocks are placed back during a reset.
 
 ```yaml
 global:
   blocks-per-tick: 500
 ```
 
-**`blocks-per-tick`** controls reset speed:
+* **Key:** `global.blocks-per-tick`
+* **Default:** `500`
+* **Values:** a number of blocks per game tick (there are 20 ticks per second).
+  * Lower (250 to 500) - slower resets, gentler on the server.
+  * Higher (1000 or more) - faster resets, more chance of a lag spike.
 
-* **Low (250-500):** Slower resets, less lag
-* **High (1000+):** Faster resets, possible lag spikes
+Raise it on a dedicated server with a good CPU. Keep it low on shared hosting, a budget VPS, or for very large chambers.
 
-**When to adjust:**
-
-* **Dedicated server with good CPU:** Increase to 1000+
-* **Shared hosting or budget VPS:** Keep at 250-500
-* **Massive chambers (50k+ blocks):** Lower to 250 to avoid lag
-
-**Test it:**
-
-```
-/trial reset YourChamber
-```
-
-Watch for lag. Adjust `blocks-per-tick` and test again.
+To test, run `/trial reset YourChamber`, watch for lag, then adjust and try again.
 
 ***
 
-## Reset Warnings
+## Change the reset warnings
 
-Players inside chambers get warnings before resets:
+Players inside a chamber get warned before it resets.
 
 ```yaml
 global:
   reset-warning-times: [300, 60, 30]
 ```
 
-**Default:** Warnings at 5 minutes, 1 minute, 30 seconds before reset
-
-**Adjustments:**
+* **Key:** `global.reset-warning-times`
+* **Default:** `[300, 60, 30]` (5 minutes, 1 minute, 30 seconds before reset)
+* **Value:** a list of times in seconds. An empty list `[]` means no warnings at all.
 
 More warnings:
 
 ```yaml
 reset-warning-times: [600, 300, 120, 60, 30, 10]
-# 10 min, 5 min, 2 min, 1 min, 30s, 10s
 ```
 
-Fewer warnings (less spam):
+Just one:
 
 ```yaml
 reset-warning-times: [60]
-# Only 1 minute warning
-```
-
-No warnings (surprise resets):
-
-```yaml
-reset-warning-times: []
 ```
 
 {% hint style="info" %}
-**Warnings are in seconds.** `300` = 5 minutes, `60` = 1 minute, `30` = 30 seconds.
+**These numbers are seconds.** `300` = 5 minutes, `60` = 1 minute, `30` = 30 seconds.
 {% endhint %}
 
 ***
 
-## Visual & Sound Settings
+## Choose where players go on reset
 
-Make vaults more noticeable with particles and sounds:
+When a chamber resets, players inside it are moved out.
+
+```yaml
+global:
+  teleport-players-on-reset: true
+  teleport-location: EXIT_POINT
+```
+
+* **`teleport-players-on-reset`** (default `true`) - move players out before the reset. Turning this off risks players being trapped in restored walls.
+* **`teleport-location`** (default `EXIT_POINT`) - where they land:
+  * `EXIT_POINT` - the chamber's set exit point.
+  * `OUTSIDE_BOUNDS` - just outside the chamber walls.
+  * `WORLD_SPAWN` - the world spawn point.
+
+***
+
+## Add particle and sound cues on vaults
+
+Make vault state easier to read at a glance.
 
 ```yaml
 vaults:
   show-cooldown-particles: true
   particles:
-    normal-available: VILLAGER_HAPPY     # Green sparkles = ready
-    normal-cooldown: SMOKE_NORMAL         # Gray smoke = on cooldown
-    ominous-available: SOUL_FIRE_FLAME    # Purple flames = ominous ready
-    ominous-cooldown: SOUL                # Soul particles = ominous cooldown
-
+    normal-available: VILLAGER_HAPPY
+    normal-cooldown: SMOKE_NORMAL
+    ominous-available: SOUL_FIRE_FLAME
+    ominous-cooldown: SOUL
   play-sound-on-open: true
   sounds:
     normal-open: BLOCK_VAULT_OPEN_SHUTTER
@@ -285,7 +278,10 @@ vaults:
     cooldown: BLOCK_NOTE_BLOCK_BASS
 ```
 
-**Want to disable visual feedback?**
+* **`show-cooldown-particles`** (default `true`) - particles around vaults showing whether they are ready or resting.
+* **`play-sound-on-open`** (default `true`) - a sound when a vault is opened or refused.
+
+Turn both off for a quieter look:
 
 ```yaml
 vaults:
@@ -293,65 +289,60 @@ vaults:
   play-sound-on-open: false
 ```
 
-**Want more subtle particles?**
+Subtler particles:
 
 ```yaml
 particles:
-  normal-available: END_ROD            # Subtle white particles
+  normal-available: END_ROD
   normal-cooldown: SMOKE_NORMAL
-  ominous-available: PORTAL            # Purple portal particles
+  ominous-available: PORTAL
   ominous-cooldown: ASH
 ```
 
-See [Spigot's Particle enum](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Particle.html) for all options.
+See [Spigot's Particle list](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Particle.html) for every option.
 
 ***
 
-## Statistics Settings
+## Turn statistics tracking on or off
 
-Track player activity and leaderboards:
+Track player activity for leaderboards and placeholders.
 
 ```yaml
 statistics:
   enabled: true
   track-time-spent: true
-  leaderboard-update-interval: 3600
+  track-chamber-completion: true
   top-players-count: 10
 ```
 
-**Disable statistics** (saves minimal database overhead):
+* **`enabled`** (default `true`) - master switch for all stat tracking.
+* **`track-time-spent`** (default `true`) - record how long players spend in chambers.
+* **`track-chamber-completion`** (default `true`) - count a completion for every player when a chamber is fully cleared.
+* **`top-players-count`** (default `10`) - how many players show on leaderboards.
+
+Turn tracking off entirely:
 
 ```yaml
 statistics:
   enabled: false
 ```
 
-**Show more players on leaderboards:**
-
-```yaml
-top-players-count: 25
-```
-
-**Update leaderboards more frequently:**
-
-```yaml
-leaderboard-update-interval: 1800  # 30 minutes instead of 1 hour
-```
-
 ***
 
-## Database Settings
+## Pick a database
 
-**SQLite (default, recommended for single servers):**
+Where the plugin stores its data.
 
 ```yaml
 database:
   type: SQLITE
 ```
 
-No other settings needed! Everything is stored in `data.db`.
+* **`database.type`** (default `SQLITE`)
+  * `SQLITE` - a single file in the plugin folder. Nothing to install. Right for almost every server.
+  * `MYSQL` - your own MySQL or MariaDB server, using the settings below. Worth it only if you run several servers that should share one set of chambers and stats.
 
-**MySQL (for networks with multiple servers):**
+MySQL settings (only used when `type` is `MYSQL`):
 
 ```yaml
 database:
@@ -359,30 +350,22 @@ database:
   host: localhost
   port: 3306
   database: trialchamberpro
-  username: your_username
-  password: your_password
+  username: root
+  password: ""
   pool-size: 10
 ```
 
 {% hint style="warning" %}
-**Database changes require a full restart,** not just `/trial reload`!
+**Database changes need a full server restart,** not just `/trial reload`.
 {% endhint %}
-
-**When to use MySQL:**
-
-* Running BungeeCord/Velocity with multiple servers
-* Need shared chamber data across servers
-* Want external database access
-
-**Otherwise, stick with SQLite.** It's faster and simpler for single-server setups.
 
 ***
 
-## Quick Config Templates
+## Quick config templates
 
 <details>
 
-<summary><strong>Casual Survival Server</strong></summary>
+<summary><strong>Casual survival server</strong></summary>
 
 ```yaml
 global:
@@ -406,13 +389,13 @@ statistics:
   enabled: true
 ```
 
-**Philosophy:** Generous cooldowns, peaceful gameplay, daily resets.
+Generous cooldowns, peaceful gameplay, daily resets.
 
 </details>
 
 <details>
 
-<summary><strong>Competitive/PvP Server</strong></summary>
+<summary><strong>Competitive / PvP server</strong></summary>
 
 ```yaml
 global:
@@ -437,13 +420,13 @@ statistics:
   track-time-spent: true
 ```
 
-**Philosophy:** Frequent resets, PvP enabled, competitive stat tracking.
+Frequent resets, PvP enabled, competitive stat tracking.
 
 </details>
 
 <details>
 
-<summary><strong>High-Activity Server</strong></summary>
+<summary><strong>High-activity server</strong></summary>
 
 ```yaml
 global:
@@ -468,13 +451,13 @@ performance:
   cache-duration-seconds: 600
 ```
 
-**Philosophy:** Fast resets, short cooldowns, optimized for many players.
+Fast resets, short cooldowns, tuned for many players.
 
 </details>
 
 <details>
 
-<summary><strong>Roleplay/Immersive Server</strong></summary>
+<summary><strong>Roleplay / immersive server</strong></summary>
 
 ```yaml
 global:
@@ -484,9 +467,9 @@ global:
 
 vaults:
   loot-mode: PER_PLAYER
-  normal-cooldown-hours: 168  # Weekly
-  ominous-cooldown-hours: 336  # Bi-weekly
-  show-cooldown-particles: false  # Less immersion-breaking
+  normal-cooldown-hours: 168   # Weekly
+  ominous-cooldown-hours: 336  # Every two weeks
+  show-cooldown-particles: false
   play-sound-on-open: false
 
 protection:
@@ -496,57 +479,59 @@ protection:
   allow-pvp: false
 
 statistics:
-  enabled: false  # Focus on roleplay, not stats
+  enabled: false
 ```
 
-**Philosophy:** Scarce resources, minimal UI feedback, long cooldowns for meaningful loot.
+Scarce resources, minimal on-screen feedback, long cooldowns for loot that means something.
 
 </details>
 
 ***
 
-## Applying Your Changes
+## Apply your changes
 
-1. **Edit** `plugins/BetterTrialChambers/config.yml`
-2. **Save** the file
-3. **Reload:** `/trial reload`
+1. Edit `plugins/BetterTrialChambers/config.yml`.
+2. Save the file.
+3. Run `/trial reload`.
 
 Most settings apply immediately. Exceptions:
 
-* **Database settings** require a full restart
-* **Chamber-specific intervals** affect new resets, not current timers
+* Database settings need a full restart.
+* A changed reset interval replaces the reset already counting down; the new time is measured from the chamber's last reset, so a chamber already past that point resets within the minute.
 
 {% hint style="success" %}
-**Backup before major changes!** Copy your `plugins/BetterTrialChambers/` folder before experimenting with config.
+**Back up first.** Copy your `plugins/BetterTrialChambers/` folder before making big changes.
+{% endhint %}
+
+{% hint style="info" %}
+YAML needs spaces, never tab characters, for indentation. One tab and the file fails to load.
 {% endhint %}
 
 ***
 
-## Common Questions
+## Common questions
 
-**"Do I need to restart after editing config?"** Usually no—`/trial reload` works for most settings. Only database changes require a restart.
+**Do I need to restart after editing config?** Usually no. `/trial reload` covers most settings. Only database changes need a restart.
 
-**"Can different chambers have different reset intervals?"** Not via config.yml (yet). All chambers use `default-reset-interval`. Per-chamber intervals are planned for future versions.
+**Can different chambers have different reset intervals?** Yes. The global `default-reset-interval` is the fallback. Set a per-chamber interval from the chamber settings menu (`/trial menu`, pick a chamber, Settings).
 
-**"What happens to existing cooldowns if I change vault cooldown hours?"** Existing cooldowns aren't retroactively changed. New cooldowns apply to future vault interactions.
+**What happens to running cooldowns if I change the cooldown hours?** Nothing. Cooldowns already counting down keep their old value. New cooldowns use the new number.
 
-**"Can I make a vault give out only one reward, to whoever gets there first?"** Yes — set `vaults.loot-mode: SHARED`. The first player to open a vault takes it and it stays shut for everybody else until the chamber resets. Your custom loot tables still apply.
+**Can a vault give one reward to whoever gets there first?** Yes. Set `vaults.loot-mode: SHARED`. The first player to open it takes it and it stays shut for everyone else until the chamber resets. Your loot tables still apply. Run `/trial vault unlockall all` once after switching.
 
-**"Can I turn the plugin's vault handling off entirely?"** Set `vaults.loot-mode: VANILLA`. Vaults then behave exactly as they do in a normal Minecraft world and your custom loot tables are ignored. Note this is **not** the same as shared loot — plain Minecraft is still one open **per player**. Run `/trial vault unlockall all` afterwards, or vaults players already opened will stay shut.
+**Can I turn the plugin's vault handling off entirely?** Set `vaults.loot-mode: VANILLA`. Vaults then behave like a normal Minecraft world and your loot tables are ignored. This is not the same as shared loot, plain Minecraft is still one open per player. Run `/trial vault unlockall all` afterwards or vaults players already opened stay shut.
 
-**"How do I make chambers reset faster without lag?"** Increase `blocks-per-tick` gradually (500 → 750 → 1000) and test for lag.
+**How do I make chambers reset faster without lag?** Raise `global.blocks-per-tick` in steps (500, then 750, then 1000) and test for lag between each change.
 
 ***
 
-## Next Steps
-
-Now that you've configured the basics, dive deeper:
+## Next steps
 
 {% content-ref url="../configuration/config.yml.md" %}
 [config.yml.md](../configuration/config.yml.md)
 {% endcontent-ref %}
 
-Complete reference for every config option.
+The complete reference for every config option.
 
 {% content-ref url="../configuration/loot.yml.md" %}
 [loot.yml.md](../configuration/loot.yml.md)
@@ -558,26 +543,24 @@ Customize what players get from vaults.
 [messages.yml.md](../configuration/messages.yml.md)
 {% endcontent-ref %}
 
-Change all player-facing messages to match your server's style.
+Change every player-facing message to match your server's style.
 
 ***
 
-## Pro Tips
+## Pro tips
 
 {% hint style="success" %}
-**Test in a dev environment first!** Create a test chamber and experiment with settings before applying to production.
+**Test in a dev environment first.** Make a test chamber and try settings there before touching production.
 {% endhint %}
 
 {% hint style="info" %}
-**Start conservative with cooldowns and intervals.** You can always make them shorter based on player feedback. Going the opposite direction causes complaints!
+**Start conservative with cooldowns and intervals.** Shortening them later based on player feedback is easy. Going the other way causes complaints.
 {% endhint %}
 
 {% hint style="warning" %}
-**Watch your server TPS during resets.** If TPS drops significantly, lower `blocks-per-tick` or increase `reset-warning-times` to spread resets out.
+**Watch your server TPS during resets.** If it drops, lower `global.blocks-per-tick` or spread resets out with more `reset-warning-times`.
 {% endhint %}
 
 {% hint style="success" %}
-**Join the discussion!** Check [GitHub Issues](https://github.com/ESMP-FUN/BetterTrialChambers/issues) for community config tips and common setups.
+**Join the discussion.** Check [GitHub Issues](https://github.com/ESMP-FUN/BetterTrialChambers/issues) for community config tips and common setups.
 {% endhint %}
-
-Happy configuring!
