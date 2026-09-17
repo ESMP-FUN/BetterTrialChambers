@@ -104,6 +104,10 @@ class MainMenuView(
             "gui.main-menu.reload-name", "gui.main-menu.reload-lore")
 
     private fun reloadConfig(player: Player) {
+        if (!player.hasPermission("btc.admin.reload")) {
+            player.sendMessage(plugin.getMessageComponent("no-permission"))
+            return
+        }
         player.sendMessage(plugin.getMessageComponent("config-reloading"))
         plugin.reloadPluginConfig()
         player.sendMessage(plugin.getMessageComponent("config-reloaded"))
