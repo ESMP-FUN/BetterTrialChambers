@@ -1,10 +1,14 @@
 <black>.
 <#FF7F50> ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
 <black>.
-<#008080>[2.1.0] <gray>- <white>2026-07-31
-<#FFD700>NEW: <white>Limit how often a player can win an item <gray>-<white> once ever, once per chamber, or every reset
-<#FFD700>NEW: <white>Makes armour trims drop without letting them be farmed by resetting
-<#FFD700>NEW: <white>Set it in-game on an item's amount page, or with a redeemable line in loot.yml
+<#008080>[2.2.0] <gray>- <white>2026-09-17
+<#FFD700>NEW: <white>Minecraft 26.3 support as its own download <gray>(<white>-mc263<gray>)
+<#FFD700>FIXED: <white>Editing a chamber's loot no longer wipes the server's default loot
+<#FFD700>FIXED: <white>Menu screens now check the permission behind each action
+<#FFD700>FIXED: <white>Update checks find the right download for your server
+<#FFD700>FIXED: <white>Chambers saved by TrialChamberPro load and reset again
+<#FFD700>FIXED: <white>Land-claim protection works on Residence, Lands and GriefPrevention
+<#FFD700>FIXED: <white>Many more fixes, see the full changelog
 <black>.
 <#FF7F50> ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
 <black>.
