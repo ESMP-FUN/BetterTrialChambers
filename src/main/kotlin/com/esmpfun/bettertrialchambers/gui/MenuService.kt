@@ -3,6 +3,7 @@ package com.esmpfun.bettertrialchambers.gui
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
 import com.esmpfun.bettertrialchambers.models.Chamber
 import com.esmpfun.bettertrialchambers.models.LootEditorDraft
+import com.esmpfun.bettertrialchambers.models.LootTable
 import org.bukkit.entity.Player
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -338,8 +339,7 @@ class MenuService(private val plugin: BetterTrialChambers) {
         // Short-circuit for legacy/missing tables, open the editor directly
         // (the old IF view returned an empty ChestGui in this case, which the
         // VcGui rewrite can't do cleanly from super(...)).
-        val tableName = effectiveTableName(chamber, kind)
-        val table = plugin.lootManager.getTable(tableName)
+        val table = chamberTableOrCopy(chamber, kind)
         if (table == null || table.isLegacyFormat()) {
             openLootEditor(player, chamber, kind, null)
             return
@@ -353,6 +353,20 @@ class MenuService(private val plugin: BetterTrialChambers) {
             globalLootEdit = false
         }
         view.open(player)
+    }
+
+    /**
+     * The chamber's own loot table, created in memory as a copy of the server default
+     * when it has none yet, so editing a chamber's loot never writes over the default.
+     * Vaults keep using the default until the copy is saved from the editor.
+     */
+    private fun chamberTableOrCopy(chamber: Chamber, kind: LootKind): LootTable? {
+        val name = effectiveTableName(chamber, kind)
+        plugin.lootManager.getTable(name)?.let { return it }
+        val fallback = plugin.lootManager.getTable(
+            if (kind == LootKind.NORMAL) "default" else "ominous-default"
+        ) ?: return null
+        return fallback.copy(name = name).also { plugin.lootManager.updateTable(it) }
     }
 
     fun openLootEditor(player: Player, chamber: Chamber, kind: LootKind, poolName: String? = null) {

@@ -319,13 +319,8 @@ class ChamberDetailView(
     // ==================== Click Handlers (verbatim from IF version) ====================
 
     private fun handleLootKindClick(player: Player, kind: MenuService.LootKind) {
-        val tableName = MenuService.effectiveTableName(chamber, kind)
-        val table = plugin.lootManager.getTable(tableName)
-        if (table != null && !table.isLegacyFormat()) {
-            menu.openPoolSelect(player, chamber, kind)
-        } else {
-            menu.openLootEditor(player, chamber, kind, null)
-        }
+        // Opens the chamber's pools, or the single-list editor when the table has none.
+        menu.openPoolSelect(player, chamber, kind)
     }
 
     private fun handleTeleport(player: Player, left: Boolean, right: Boolean) {
