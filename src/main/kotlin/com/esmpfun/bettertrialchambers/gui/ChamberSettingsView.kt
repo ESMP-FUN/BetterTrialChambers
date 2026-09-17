@@ -193,6 +193,10 @@ class ChamberSettingsView(
 
     private fun setExitLocation(player: Player) {
         val location = player.location
+        if (!chamber.world.equals(location.world?.name, ignoreCase = true)) {
+            player.sendMessage(plugin.getMessageComponent("exit-wrong-world", "chamber" to chamber.name, "world" to chamber.world))
+            return
+        }
         plugin.launchAsync {
             val success = plugin.chamberManager.updateExitLocation(
                 chamber.id, location.x, location.y, location.z, location.yaw, location.pitch
