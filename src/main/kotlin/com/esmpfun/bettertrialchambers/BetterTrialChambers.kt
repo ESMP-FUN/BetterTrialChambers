@@ -239,14 +239,6 @@ class BetterTrialChambers : JavaPlugin() {
             // This jar only loads on 26.3 and newer, so it always follows the
             // 26.3 release line. 1.21.x and 26.0-26.2 have their own downloads.
             .track("mc263")
-            .apply {
-                // Opt-in no-restart updates (/trial update apply). The engine
-                // refuses on Folia and when other plugins depend on TCP,
-                // restart-install remains the default and recommended path.
-                if (config.getBoolean("update.allow-hot-reload", false)) {
-                    reloadEngine(io.github.darkstarworks.pluginpulse.hotreload.HotReloadEngine.create())
-                }
-            }
             .build()
         updater.start()
         updateSubcommand = UpdateSubcommand(updater)

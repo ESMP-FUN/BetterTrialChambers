@@ -734,7 +734,7 @@ Checks for and installs BetterTrialChambers updates, looked up on Modrinth with 
 **Usage:**
 
 ```
-/trial update [check|status|download|apply|restore|ignore <version>|unignore <version>]
+/trial update [check|status|download|restore|ignore <version>|unignore <version>]
 ```
 
 **Permission:** `btc.admin`
@@ -742,7 +742,6 @@ Checks for and installs BetterTrialChambers updates, looked up on Modrinth with 
 * `check` (the default) checks now and reports.
 * `status` shows the last result without a network call.
 * `download` downloads the latest release, verifies its checksum, backs up the current jar, and stages the new one for the next restart. Needs `update.mode: download` or `auto-stage`.
-* `apply` swaps a staged update in without a restart. Needs `update.allow-hot-reload: true`; refused on Folia or when other plugins depend on BTC.
 * `restore` stages the most recent backup for the next restart.
 * `ignore <version>` / `unignore <version>` mute or unmute notifications for one version.
 

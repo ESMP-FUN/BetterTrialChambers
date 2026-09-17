@@ -1316,7 +1316,6 @@ update:
   mode: notify
   check-interval-hours: 6
   require-hash: true
-  allow-hot-reload: false
 ```
 
 <details>
@@ -1347,14 +1346,6 @@ Hours between automatic update checks. **Default:** `6`, minimum `1`.
 <summary><code>require-hash</code></summary>
 
 Refuse to install a downloaded jar unless its checksum matches the one the source published. **Default:** `true`. Leave on unless a release is genuinely missing hashes and you accept the risk.
-
-</details>
-
-<details>
-
-<summary><code>allow-hot-reload</code></summary>
-
-Let `/trial update apply` swap a staged update into place without a server restart. **Default:** `false`. If the new version fails to load, BTC rolls back to the backup it made before staging. Refused on Folia and while other plugins depend on BTC. Restarting is always safer.
 
 </details>
 
