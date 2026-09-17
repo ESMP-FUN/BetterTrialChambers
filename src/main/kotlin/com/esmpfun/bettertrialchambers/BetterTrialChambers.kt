@@ -250,14 +250,6 @@ class BetterTrialChambers : JavaPlugin() {
             .userAgentContact("https://github.com/ESMP-FUN/BetterTrialChambers")
             .requireHash(config.getBoolean("update.require-hash", true))
             .apply { if (onMc26) track("mc26") }
-            .apply {
-                // Opt-in no-restart updates (/trial update apply). The engine
-                // refuses on Folia and when other plugins depend on TCP,
-                // restart-install remains the default and recommended path.
-                if (config.getBoolean("update.allow-hot-reload", false)) {
-                    reloadEngine(io.github.darkstarworks.pluginpulse.hotreload.HotReloadEngine.create())
-                }
-            }
             .build()
         updater.start()
         updateSubcommand = UpdateSubcommand(updater)
