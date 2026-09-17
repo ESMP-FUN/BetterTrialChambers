@@ -318,6 +318,11 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
         val chamberName = args[1]
 
         plugin.launchAsync {
+            val chamber = plugin.chamberManager.getChamber(chamberName)
+            if (chamber != null && !chamber.world.equals(sender.world.name, ignoreCase = true)) {
+                sender.sendMessage(plugin.getMessageComponent("exit-wrong-world", "chamber" to chamber.name, "world" to chamber.world))
+                return@launchAsync
+            }
             val success = plugin.chamberManager.setExitLocation(chamberName, sender.location)
             if (success) {
                 sender.sendMessage(plugin.getMessageComponent("exit-set", "chamber" to chamberName))
