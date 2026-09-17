@@ -10,7 +10,7 @@ import org.bukkit.entity.LivingEntity
 /**
  * LevelledMobs integration via reflection (v1.3.0).
  *
- * LevelledMobs doesn't add new mob types — it levels existing ones. This
+ * LevelledMobs doesn't add new mob types, it levels existing ones. This
  * provider therefore spawns a vanilla [EntityType] and then asks LevelledMobs
  * to apply a level. Mob id format:
  *
@@ -25,16 +25,11 @@ class LevelledMobsProvider(private val plugin: BetterTrialChambers) : TrialMobPr
     override val id: String = "levelledmobs"
     override val displayName: String = "LevelledMobs"
 
-    @Volatile private var cachedAvailable: Boolean? = null
-
     override fun isAvailable(): Boolean {
-        cachedAvailable?.let { return it }
-        val present = Bukkit.getPluginManager().getPlugin("LevelledMobs")?.isEnabled == true
-        cachedAvailable = present
-        return present
+        // Asked every time: caching it meant a plugin that starts after this one
+        // was written off for the rest of the server's run.
+        return Bukkit.getPluginManager().getPlugin("LevelledMobs")?.isEnabled == true
     }
-
-    fun invalidate() { cachedAvailable = null }
 
     override fun spawnMob(mobId: String, location: Location, ominous: Boolean): Entity? {
         val (typeStr, levelPart) = parseId(mobId)
@@ -67,8 +62,8 @@ class LevelledMobsProvider(private val plugin: BetterTrialChambers) : TrialMobPr
             val lmCls = Class.forName("io.github.arcaneplugins.levelledmobs.LevelledMobs")
             val lm = lmCls.getMethod("getInstance").invoke(null) ?: return entity
 
-            val levelInterface = runCatching { lm.javaClass.getMethod("getLevelInterface").invoke(lm) }
-                .getOrElse { runCatching { lm.javaClass.getMethod("getLevelManager").invoke(lm) }.getOrNull() }
+            val levelInterface = com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(lm, "getLevelInterface")
+                ?: com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(lm, "getLevelManager")
                 ?: return entity
 
             val apply = levelInterface.javaClass.methods.firstOrNull {

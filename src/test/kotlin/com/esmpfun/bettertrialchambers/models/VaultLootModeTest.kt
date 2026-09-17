@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 import java.util.logging.Logger
 
 /**
- * Tests for [VaultLootMode.resolve] — the `vaults.loot-mode` setting plus its
+ * Tests for [VaultLootMode.resolve], the `vaults.loot-mode` setting plus its
  * fallback to the pre-v2.0.8 `vaults.per-player-loot` switch. v2.0.8.
  */
 class VaultLootModeTest {

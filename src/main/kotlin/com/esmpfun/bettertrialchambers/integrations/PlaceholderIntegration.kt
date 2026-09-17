@@ -3,13 +3,13 @@ package com.esmpfun.bettertrialchambers.integrations
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
 
 /**
- * Owns the lifecycle of the PlaceholderAPI expansions — handing them over when the
+ * Owns the lifecycle of the PlaceholderAPI expansions, handing them over when the
  * plugin starts and taking them back when it shuts down.
  *
  * **Why this lives in its own file.** PlaceholderAPI is an optional plugin, so its
  * classes are only present when the server owner actually installed it. Keeping every
  * mention of those classes inside this file means the main plugin class never names a
- * PlaceholderAPI type in a field or method signature — which is what lets the test
+ * PlaceholderAPI type in a field or method signature, which is what lets the test
  * suite build a stand-in for the plugin class without PlaceholderAPI on hand. Inlining
  * any of this back into the plugin class breaks the unit tests with a confusing
  * "lateinit property has not been initialized" error.

@@ -4,7 +4,7 @@ import com.esmpfun.bettertrialchambers.BetterTrialChambers
 import org.bukkit.command.CommandSender
 
 /**
- * `/trial mobs <providers | <chamber> <list|provider|add|remove> ...>` — manages
+ * `/trial mobs <providers | <chamber> <list|provider|add|remove> ...>`, manages
  * the per-chamber custom-mob provider configuration introduced in v1.3.0.
  *
  * Extracted from `TCPCommand.handleMobs` in v1.3.0 Phase 3.

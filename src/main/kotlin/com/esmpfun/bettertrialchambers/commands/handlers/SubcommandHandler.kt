@@ -5,11 +5,11 @@ import org.bukkit.command.CommandSender
 /**
  * Contract for an extracted `/trial <subcommand>` handler. Introduced in v1.3.0
  * Phase 3 to factor the largest branches of the [TCPCommand] dispatcher into
- * standalone classes — see `commands/handlers/` for concrete instances.
+ * standalone classes, see `commands/handlers/` for concrete instances.
  *
  * Handlers are constructed once at plugin enable, take any dependencies (the
  * plugin itself, managers) via constructor, and are invoked by `TCPCommand`'s
- * `when` chain. Small handlers (~ <50 lines) remain inline in `TCPCommand` —
+ * `when` chain. Small handlers (~ <50 lines) remain inline in `TCPCommand`,
  * extraction is reserved for branches large or complex enough that the
  * separation pays for itself.
  *

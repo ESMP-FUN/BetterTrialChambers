@@ -21,16 +21,16 @@ import org.bukkit.event.inventory.ClickType
 import org.bukkit.inventory.ItemStack
 
 /**
- * Holder for the loot-editor GUI. Empty payload — the editor's state
+ * Holder for the loot-editor GUI. Empty payload, the editor's state
  * (draft, dirty flag, discard intent) lives on the [LootEditorView] itself.
  */
 class LootEditorHolder : BaseHolder()
 
 /**
- * Loot editor — edits a single loot table (or one pool of a multi-pool table).
+ * Loot editor, edits a single loot table (or one pool of a multi-pool table).
  * All strings from `messages.yml` under `gui.loot-editor.*` (v1.3.0).
  *
- * v1.5.0 — migrated from InventoryFramework to the in-house VcGui framework.
+ * v1.5.0, migrated from InventoryFramework to the in-house VcGui framework.
  * Layout is identical (6 rows; rows 0–3 = loot entries, rows 4–5 = controls);
  * the change is purely in event handling (central [com.esmpfun.bettertrialchambers.gui.framework.VcGuiListener]
  * dispatch, partial-cancel for safe bottom-inventory actions).
@@ -82,6 +82,7 @@ class LootEditorView(
         maxRolls = source.maxRolls,
         rollMode = source.rollMode,
         maxItems = source.maxItems,
+        chance = source.chance,
         dirty = source.dirty
     )
 
@@ -89,7 +90,7 @@ class LootEditorView(
         val baseName: String
         val source: LootTable?
         if (chamber != null) {
-            // Edit whatever the chamber's vaults actually roll — an override points
+            // Edit whatever the chamber's vaults actually roll, an override points
             // them at a different table, and writing to `chamber-<name>` instead
             // would save into a table nothing reads (v2.0.3).
             baseName = MenuService.effectiveTableName(chamber, kind)
@@ -113,7 +114,8 @@ class LootEditorView(
                     minRolls = pool.minRolls,
                     maxRolls = pool.maxRolls,
                     rollMode = pool.rollMode,
-                    maxItems = pool.maxItems
+                    maxItems = pool.maxItems,
+                    chance = pool.chance
                 )
             }
         }
@@ -177,6 +179,10 @@ class LootEditorView(
         lore += plugin.getGuiText("gui.loot-editor.item-amount",
             "min" to li.amountMin, "max" to li.amountMax)
         val avgAmount = (li.amountMin + li.amountMax) / 2.0
+        // A pool that only runs some of the time hands out that much less. Without
+        // this the "you get about N of these" line reads four times too generous
+        // on vanilla's rare-item pool, which runs a quarter of the time.
+        val poolRuns = draft.chance.coerceIn(0.0, 1.0)
         val independent = draft.rollMode == LootRollMode.INDEPENDENT
         if (weighted) {
             if (independent) {
@@ -186,7 +192,7 @@ class LootEditorView(
                     "percent" to String.format("%.1f", chance))
                 if (li.enabled) {
                     lore += plugin.getGuiText("gui.loot-editor.item-expected",
-                        "count" to formatExpected(chance / 100.0 * avgAmount))
+                        "count" to formatExpected(chance / 100.0 * avgAmount * poolRuns))
                 }
             } else if (totalWeight > 0.0 && li.enabled) {
                 // WEIGHTED mode: show the raw weight AND the derived per-draw % so the
@@ -197,7 +203,7 @@ class LootEditorView(
                     "percent" to String.format("%.1f", chancePerDraw * 100.0))
 
                 val avgDraws = (draft.minRolls + draft.maxRolls) / 2.0
-                val expected = avgDraws * chancePerDraw * avgAmount
+                val expected = avgDraws * chancePerDraw * avgAmount * poolRuns
                 lore += plugin.getGuiText("gui.loot-editor.item-expected",
                     "count" to formatExpected(expected))
             } else {
@@ -206,12 +212,12 @@ class LootEditorView(
             }
         } else if (li.enabled) {
             lore += plugin.getGuiText("gui.loot-editor.item-expected",
-                "count" to formatExpected(avgAmount))
+                "count" to formatExpected(avgAmount * poolRuns))
         }
         lore += plugin.getGuiText(if (li.enabled) "gui.loot-editor.item-enabled" else "gui.loot-editor.item-disabled")
         if (plugin.lootManager.isLegacy(li)) {
             lore += Component.empty()
-            lore += Component.text("⚠ Legacy entry — re-add to capture NBT", NamedTextColor.GOLD)
+            lore += Component.text("⚠ Legacy entry, re-add to capture NBT", NamedTextColor.GOLD)
                 .decoration(TextDecoration.ITALIC, false)
         }
         lore += Component.empty()
@@ -296,7 +302,7 @@ class LootEditorView(
         // Clear controls region.
         for (s in 36..53) set(s, null)
 
-        // Row 4 (slots 36..44) — page navigation, drawn only when the entries
+        // Row 4 (slots 36..44), page navigation, drawn only when the entries
         // overflow one page; otherwise the row stays empty as a visual gap
         // between the loot-entry grid (rows 0-3) and the action row.
         val totalPages = totalPages()
@@ -315,7 +321,7 @@ class LootEditorView(
             })
         }
 
-        // Row 5 (slots 45..53) — bottom-area controls.
+        // Row 5 (slots 45..53), bottom-area controls.
         // Save at (0, 5) = slot 45
         val saveLoreKey = if (draft.dirty) "gui.loot-editor.save-lore-dirty" else "gui.loot-editor.save-lore-clean"
         val save = GuiComponents.infoItem(plugin, Material.GREEN_CONCRETE,
@@ -356,8 +362,8 @@ class LootEditorView(
         })
 
         // Slot 47 (2, 5) is context-sensitive:
-        //   WEIGHTED    → "Draws per Opening" (min/max rolls)
-        //   INDEPENDENT → "Max Items" cap (0 = unlimited); rolls don't apply.
+        //   WEIGHTED    -> "Draws per Opening" (min/max rolls)
+        //   INDEPENDENT -> "Max Items" cap (0 = unlimited); rolls don't apply.
         if (modeIndependent) {
             val capLabel = if (draft.maxItems <= 0) "∞" else draft.maxItems.toString()
             val maxItems = GuiComponents.infoItem(plugin, Material.PAPER,
@@ -402,6 +408,31 @@ class LootEditorView(
             })
         }
 
+        // How often the pool runs, at (3, 5) = slot 48. Only a pool of a
+        // multi-pool table has this; a table with one pool always runs.
+        if (poolName != null) {
+            val percent = (draft.chance * 100.0).toInt()
+            val chanceItem = GuiComponents.infoItem(plugin, Material.CLOCK,
+                "gui.loot-editor.chance-name", "gui.loot-editor.chance-lore",
+                "percent" to percent)
+            set(48, VcGuiItem.wrap(chanceItem) { ctx ->
+                val step = when (ctx.click) {
+                    ClickType.LEFT -> 5
+                    ClickType.RIGHT -> -5
+                    ClickType.SHIFT_LEFT -> 25
+                    ClickType.SHIFT_RIGHT -> -25
+                    else -> 0
+                }
+                if (step != 0) {
+                    draft.chance = ((percent + step).coerceIn(0, 100)) / 100.0
+                    draft.dirty = true
+                    refreshContent()   // the expected-per-opening figures move with it
+                    buildControls()
+                    update()
+                }
+            })
+        }
+
         // Add (from hand) at (4, 5) = slot 49
         val add = GuiComponents.infoItem(plugin, Material.LIME_DYE,
             "gui.loot-editor.add-name", "gui.loot-editor.add-lore")
@@ -435,7 +466,7 @@ class LootEditorView(
                         .decoration(TextDecoration.ITALIC, false)
                 )
                 lore(listOf(
-                    Component.text("Opens a chest — drag or shift-click", NamedTextColor.GRAY)
+                    Component.text("Opens a chest, drag or shift-click", NamedTextColor.GRAY)
                         .decoration(TextDecoration.ITALIC, false),
                     Component.text("items in, then close to add them all", NamedTextColor.GRAY)
                         .decoration(TextDecoration.ITALIC, false),
@@ -468,6 +499,21 @@ class LootEditorView(
 
     private fun saveDraft(player: Player) {
         val existingTable = plugin.lootManager.getTable(draft.tableName)
+
+        // Editing one pool of a table that has several. If the table has gone,
+        // or has stopped having pools, since this editor was opened, then the
+        // branch below would build a fresh single-pool table out of this one
+        // pool's contents and every other pool in it would be gone. Better to
+        // save nothing and say so.
+        if (poolName != null && (existingTable == null || existingTable.isLegacyFormat())) {
+            player.sendMessage(plugin.getMessageComponent("gui-loot-pool-vanished", "pool" to poolName))
+            plugin.logger.warning(
+                "Loot editor: '${draft.tableName}' no longer has a pool named '$poolName', " +
+                    "so the edit was not saved rather than risk replacing the whole table."
+            )
+            return
+        }
+
         val table = if (poolName != null && existingTable != null && !existingTable.isLegacyFormat()) {
             val updatedPools = existingTable.pools.map { pool ->
                 if (pool.name == poolName) {
@@ -476,7 +522,8 @@ class LootEditorView(
                         guaranteedItems = draft.guaranteed.toList(),
                         weightedItems = draft.weighted.toList(),
                         rollMode = draft.rollMode,
-                        maxItems = draft.maxItems
+                        maxItems = draft.maxItems,
+                        chance = draft.chance
                     )
                 } else pool
             }
@@ -489,7 +536,7 @@ class LootEditorView(
                 weightedItems = draft.weighted.toList(),
                 commandRewards = existingTable?.commandRewards ?: emptyList(),
                 // Preserve economy rewards across a GUI edit (the editor only
-                // touches items) — otherwise saving would silently drop them.
+                // touches items), otherwise saving would silently drop them.
                 economyRewards = existingTable?.economyRewards ?: emptyList(),
                 rollMode = draft.rollMode,
                 maxItems = draft.maxItems
@@ -520,14 +567,14 @@ class LootEditorView(
     }
 
     companion object {
-        /** Entries per page — the full 4-row grid (slots 0..35). */
+        /** Entries per page, the full 4-row grid (slots 0..35). */
         private const val ENTRIES_PER_PAGE = 36
     }
 }
 
 /**
  * Build the title Component for the editor. Pulled out of the class body so
- * we can pass it into `super(title = ...)` — Kotlin requires super-call args
+ * we can pass it into `super(title = ...)`, Kotlin requires super-call args
  * be expressions, no class-member access. Primary-constructor parameters
  * (`plugin`, `chamber`, etc.) ARE in scope here, so the title pulls straight
  * from `gui.loot-editor.title-*` like every other localized string.

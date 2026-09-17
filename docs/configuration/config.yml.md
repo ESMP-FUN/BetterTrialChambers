@@ -1,44 +1,44 @@
 # config.yml
 
-Your `config.yml` is the control panel for BetterTrialChambers. It's where you decide how chambers behave, when they reset, and how much protection you want. Let's break it down section by section.
+`config.yml` controls how chambers behave, when they reset, and how much protection is applied.
 
 {% hint style="info" %}
 **Location:** `plugins/BetterTrialChambers/config.yml`
 
-After making changes, reload with `/trial reload`
+After editing, run `/trial reload`. Database changes need a full server restart.
 {% endhint %}
 
 {% hint style="success" %}
-**Your config auto-updates (1.5.19+).** When you update BetterTrialChambers, any new options added in the release are merged into your existing `config.yml` on startup — **with their comments** — while your current values are left untouched. The previous file is saved as `config.yml.bak` first. So you'll always see new settings without having to delete and regenerate the file. (`messages.yml` updates the same way.)
+**Your config auto-updates (1.5.19+).** On update, new options are merged into your existing file with their comments; your current values are left alone. The old file is saved as `config.yml.bak` first. `messages.yml` updates the same way.
 {% endhint %}
 
 ***
 
 ## Reading config paths in this guide
 
-This guide refers to settings as **dotted paths** like `global.reset-complete-alert` or `vaults.normal-cooldown-hours`. That's the _display form_ — it's how the value is looked up from code, not how it's written in YAML. The actual `config.yml` is **nested**:
+Settings are written here as dotted paths like `global.reset-complete-alert`. That is the lookup form, not the YAML form. In the file the keys are nested:
 
 <table data-header-hidden><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>Documented path</td><td>What it looks like in <code>config.yml</code></td></tr><tr><td><code>global.reset-complete-alert: false</code></td><td><pre><code>global:
   reset-complete-alert: false
 </code></pre></td></tr><tr><td><code>vaults.normal-cooldown-hours: 1</code></td><td><pre><code>vaults:
   normal-cooldown-hours: 1
-</code></pre></td></tr><tr><td><code>protection.prevent-block-break: true</code></td><td><pre><code>protection:
-  prevent-block-break: true
 </code></pre></td></tr></tbody></table>
 
-So when a setting is documented as `foo.bar.baz`, add `baz` **inside** the existing `foo:` → `bar:` block. Don't paste `foo.bar.baz: value` as a flat line at the top level — YAML treats the dots as part of the key name, the plugin's `getBoolean("foo.bar.baz")` lookup never resolves it, and the change silently has no effect.
+When a setting is documented as `foo.bar.baz`, put `baz` inside the existing `foo:` section, nested under `bar:`. Do not paste `foo.bar.baz: value` as a flat line. If an edited setting seems to do nothing, check this first.
 
 {% hint style="warning" %}
-If you edit `config.yml` and a setting "doesn't seem to do anything," the first thing to check is whether you wrote it as a flat dotted key (`global.something: false`) instead of nesting it under the right section (`global:` → `something: false`).
+YAML requires spaces, never TAB characters. One TAB breaks the whole file silently.
 {% endhint %}
 
 ***
 
 ## Database Settings
 
+Chooses where BetterTrialChambers stores its data.
+
 ```yaml
 database:
-  type: SQLITE # SQLITE or MYSQL
+  type: SQLITE
   host: localhost
   port: 3306
   database: trialchamberpro
@@ -50,75 +50,69 @@ database:
 
 ### `type`
 
-**Options:** `SQLITE` or `MYSQL` **Default:** `SQLITE`
+Storage backend. **Options:** `SQLITE`, `MYSQL`. **Default:** `SQLITE`.
 
-SQLite is perfect for single servers—no setup required, everything in one file. MySQL is for networks where multiple servers need to share chamber data.
+- `SQLITE`: one file in the plugin folder, nothing to install. Use this unless you run several servers that must share chambers.
+- `MYSQL`: your own MySQL/MariaDB server, using the settings below. For networks that share one set of chambers and stats.
 
-{% hint style="success" %}
-**Stick with SQLite unless** you're running a network with BungeeCord/Velocity and need multiple servers to share chambers.
-{% endhint %}
+Everything needed for both is built into the plugin. (Before 2.0.8 the MySQL part was missing from the download.)
 
-{% hint style="info" %}
-**Nothing to install for either option.** Everything needed to talk to SQLite *and* MySQL is built into the plugin — you don't need to add any driver or library to your server. (Before 2.0.8 the MySQL piece was missing from the download and only worked if your server software happened to provide its own copy.)
-{% endhint %}
+### MySQL options (only used when `type: MYSQL`)
 
-### MySQL Options (only used when `type: MYSQL`)
-
-| Setting     | Description                                       |
-| ----------- | ------------------------------------------------- |
-| `host`      | Database server address                           |
-| `port`      | Usually `3306`                                    |
-| `database`  | Database name                                     |
-| `username`  | Database user                                     |
-| `password`  | User's password                                   |
-| `pool-size` | Connection pool size (10 is fine for most setups) |
+| Setting | Description |
+| ------- | ----------- |
+| `host` | Database server address |
+| `port` | Usually `3306` |
+| `database` | Database name |
+| `username` | Database user |
+| `password` | User's password |
+| `pool-size` | Number of pooled connections (**default `10`**, fine for most setups) |
 
 ### `table-prefix` (v1.7.0)
 
-**Default:** `tcp_` — letters, digits and underscores only, max 16 characters.
+Prefix on every BTC table name, so BTC can share a database with other plugins. **Default:** `tcp_`. Letters, digits and underscores only, max 16 characters; an invalid value logs a warning and falls back to `tcp_`.
 
-Every BTC table name starts with this prefix (`tcp_chambers`, `tcp_vaults`, …), so BTC can share a database with other plugins without name collisions. You only need to change it if another plugin already uses `tcp_`-prefixed tables.
-
-Existing installs are migrated automatically the first time 1.7.0 starts: BTC renames its old unprefixed tables (`chambers` → `tcp_chambers`, etc.), keeping all data and foreign keys. A same-named table that belongs to another plugin is detected by its columns and left untouched. The migration is a one-time, idempotent rename — no action needed on your side.
+Change it only if another plugin already uses `tcp_` tables. On the first 1.7.0 start, existing unprefixed tables (`chambers`, etc.) are renamed to `tcp_` automatically, keeping all data. A same-named table owned by another plugin is detected and left alone.
 
 ***
 
 ## Global Chamber Settings
 
+Reset timing, reset messages, teleport-on-reset, and the reset throttle.
+
 ```yaml
 global:
+  excluded-worlds: []
   default-reset-interval: 172800
   reset-warning-times: [300, 60, 30]
   reset-complete-alert: true
   reset-complete-audience: chamber
   reset-complete-permission: ""
+  broadcast-chamber-cleared: false
   teleport-players-on-reset: true
   teleport-location: EXIT_POINT
   blocks-per-tick: 500
   auto-snapshot-on-register: true
-  excluded-worlds: []
+  auto-scan-on-register: true
+  max-concurrent-resets: 1
+  reset-stagger-seconds: 5
+  reset-require-confirmation: false
+  suppress-trial-spawner-spam: true
+  use-fawe: false
 ```
 
 <details>
 
 <summary><code>excluded-worlds</code> (v1.8.1)</summary>
 
-**Default:** `[]` (no worlds excluded)
-
-Worlds where BetterTrialChambers stays completely inactive — useful when a second overworld-type world has Trial Chambers you want to leave vanilla. World names are case-insensitive.
+Worlds where BetterTrialChambers stays inactive. **Default:** `[]` (none). World names are case-insensitive.
 
 ```yaml
 excluded-worlds:
   - second_overworld
 ```
 
-In an excluded world:
-
-* Auto-discovery never registers chambers (including the startup sweep).
-* `/trial generate` and `/trial dungeon generate` are refused.
-* Wild trial spawners get no boss bars or wave tracking.
-
-Chambers that were already registered **before** the world was excluded keep working — remove them with `/trial delete <name>`.
+In an excluded world: auto-discovery never registers chambers, `/trial generate` and `/trial dungeon generate` are refused, and wild trial spawners get no boss bars or wave tracking. Chambers registered before the world was excluded keep working; remove them with `/trial delete <name>`.
 
 </details>
 
@@ -126,20 +120,10 @@ Chambers that were already registered **before** the world was excluded keep wor
 
 <summary><code>default-reset-interval</code></summary>
 
-**Default:** `172800` (48 hours) **Unit:** Seconds
+Seconds before a chamber automatically resets. **Default:** `172800` (48 hours). This is the default for every chamber unless overridden per-chamber.
 
-How long before chambers automatically reset. This is the default for ALL chambers unless overridden per-chamber.
-
-**Values:**
-
-* `0` or negative = **Disabled** (no automatic resets)
-* Daily: `86400`
-* Twice daily: `43200`
-* Weekly: `604800`
-
-{% hint style="info" %}
-**Disable automatic resets:** Set to `0` to disable automatic resets entirely. Chambers will only reset when manually triggered via `/trial reset <chamber>` or the GUI.
-{% endhint %}
+- `0` or negative: automatic resets off, reset only via `/trial reset` or the GUI.
+- Daily: `86400`. Twice daily: `43200`. Weekly: `604800`.
 
 </details>
 
@@ -147,64 +131,11 @@ How long before chambers automatically reset. This is the default for ALL chambe
 
 <summary><code>reset-warning-times</code></summary>
 
-**Default:** `[300, 60, 30]` **Unit:** Seconds before reset
-
-Players inside a chamber get warnings at these intervals. Default sends warnings at 5 minutes, 1 minute, and 30 seconds before reset.
-
-Remove entries to reduce spam:
+Seconds-before-reset at which players inside a chamber are warned. **Default:** `[300, 60, 30]` (5 min, 1 min, 30 s).
 
 ```yaml
-reset-warning-times: [60] # Only warn 1 minute before
+reset-warning-times: [60]   # only warn 1 minute before
 ```
-
-</details>
-
-<details>
-
-<summary><code>teleport-players-on-reset</code></summary>
-
-**Default:** `true`
-
-Kick players out when the chamber resets? If `false`, players stay inside (probably not what you want—spawners respawn, blocks reset, they might suffocate).
-
-</details>
-
-<details>
-
-<summary><code>teleport-location</code></summary>
-
-**Options:** `EXIT_POINT`, `OUTSIDE_BOUNDS`, `WORLD_SPAWN` **Default:** `EXIT_POINT`
-
-Where players go when kicked out:
-
-* **EXIT\_POINT:** Your `/trial setexit` location (recommended)
-* **OUTSIDE\_BOUNDS:** Just outside the chamber boundary
-* **WORLD\_SPAWN:** Server spawn point
-
-</details>
-
-<details>
-
-<summary><code>blocks-per-tick</code></summary>
-
-**Default:** `500`
-
-How many blocks to place per tick during resets. Higher = faster resets but more lag. Lower = slower but smoother.
-
-Adjust based on your server hardware:
-
-* Beefy dedicated server: `1000+`
-* Shared hosting: `250-500`
-
-</details>
-
-<details>
-
-<summary><code>auto-snapshot-on-register</code></summary>
-
-**Default:** `true`
-
-Automatically create a snapshot when registering a new chamber? Super convenient, but uses disk space. You can disable this if you want manual control.
 
 </details>
 
@@ -212,42 +143,30 @@ Automatically create a snapshot when registering a new chamber? Super convenient
 
 <summary><code>reset-complete-alert</code></summary>
 
-**Default:** `true`
-
-Whether the "chamber has been reset" message is sent at all. Set to `false` to suppress it everywhere. Can also be overridden per-chamber from the GUI (Chamber Settings), so you can keep it off globally but re-enable it for one flagship chamber.
-
-Use `reset-complete-audience` below to control **who** receives it.
+Whether the "chamber has been reset" message is sent at all. **Default:** `true`. Set `false` to suppress it everywhere. Can also be overridden per-chamber from the GUI. Use `reset-complete-audience` to control who receives it.
 
 </details>
 
 <details>
 
-<summary><code>reset-complete-audience</code></summary>
+<summary><code>reset-complete-audience</code> (2.0.4+)</summary>
 
-**Default:** `chamber` _(2.0.4+)_
-
-Who receives the reset-complete message.
+Who receives the reset-complete message. **Default:** `chamber`.
 
 | Value | Who sees it |
 | ----- | ----------- |
-| `chamber` | Only the players who were inside that chamber when it reset |
-| `server` | Every online player — the behaviour before 2.0.4 |
+| `chamber` | Only players who were inside that chamber when it reset |
+| `server` | Every online player (the pre-2.0.4 behaviour) |
 
-**Why the default changed:** the shipped message (`chamber-reset-complete`) doesn't name the chamber, so sent server-wide it's an unidentifiable line of chat for everyone who wasn't in it. On servers with many auto-discovered chambers, resets are deliberately staggered to protect TPS — which turned that into a steady drip of repeated messages for the whole server.
-
-If you set this to `server`, add `{chamber}` to the `chamber-reset-complete` entry in `messages.yml` so the line actually says which chamber reset. The placeholder is available in both modes.
+The shipped message does not name the chamber. If you set this to `server`, add `{chamber}` to the `chamber-reset-complete` entry in `messages.yml` so the line says which chamber reset.
 
 </details>
 
 <details>
 
-<summary><code>reset-complete-permission</code></summary>
+<summary><code>reset-complete-permission</code> (2.0.4+)</summary>
 
-**Default:** `""` (no gating) _(2.0.4+)_
-
-Optional permission node required to receive the reset-complete message. Applies in both audience modes — with `chamber`, a player must have been inside **and** hold the node.
-
-Leave empty to send to everyone in the chosen audience. Set it to any node you like (e.g. `btc.notify.reset`) and grant it through your permission plugin; it doesn't need to be pre-registered.
+Optional permission node required to receive the reset-complete message. **Default:** `""` (no gating). Applies in both audience modes; with `chamber` a player must have been inside and hold the node. Any node works (e.g. `btc.notify.reset`), granted through your permission plugin.
 
 </details>
 
@@ -255,121 +174,59 @@ Leave empty to send to everyone in the chosen audience. Set it to any node you l
 
 <summary><code>broadcast-chamber-cleared</code></summary>
 
-**Default:** `false`
-
-Server-wide broadcast when a chamber is fully **cleared** — every trial spawner in it finished its wave in a single run. Uses the chamber's display name and the players who took part (e.g. "Bastion has been cleared by Steve, Alex!"). This is distinct from `reset-complete-alert`, which fires on *reset*, not clear. Off by default.
+Server-wide broadcast when every trial spawner in a chamber finishes its wave in one run (e.g. "Bastion has been cleared by Steve, Alex!"). **Default:** `false`. Separate from `reset-complete-alert`, which fires on reset, not clear.
 
 </details>
 
 <details>
 
-<summary><code>spawner-cooldown-minutes</code></summary>
+<summary><code>teleport-players-on-reset</code></summary>
 
-**Default:** `-1` (vanilla behavior) **Unit:** Minutes
-
-> **Note:** in `config.yml` this key lives under the **`reset:`** section (`reset.spawner-cooldown-minutes`), not `global:`.
-
-Control how long trial spawners stay in cooldown after being completed. This affects when spawners can be reactivated after players defeat all mobs.
-
-**Values:**
-
-* `-1` = Use vanilla default (30 minutes / 36,000 ticks)
-* `0` = No cooldown (spawners reactivate immediately when players approach)
-* `1-60` = Custom cooldown in minutes
-
-{% hint style="info" %}
-**Use Cases:**
-
-* **Quick farming:** Set to `0` for instant reactivation—great for mob farms or high-activity servers
-* **Balanced gameplay:** Set to `5-15` minutes for faster resets than vanilla
-* **Vanilla experience:** Keep at `-1` for authentic Trial Chamber timing
-{% endhint %}
-
-{% hint style="success" %}
-**Per-Chamber Override:** You can set different cooldowns for individual chambers via the GUI (Chamber Settings → Spawner Cooldown) or database. Per-chamber settings override this global value.
-{% endhint %}
-
-{% hint style="warning" %}
-**This setting does not apply to preset spawners that set their own rest time.** If a preset in `spawner_presets.yml` has a `target-cooldown-length` line, spawners placed from it use **that** time and ignore this setting — the thinking being that if you wrote a number into a preset, you meant it.
-
-A preset that **leaves the line out** follows this setting like any other spawner. To force every spawner onto this one value, presets included, see [`spawner-cooldown-overrides-presets`](#spawner-cooldown-overrides-presets) below.
-{% endhint %}
+Move players out of a chamber when it resets. **Default:** `true`. If `false`, players stay inside during the reset and may suffocate.
 
 </details>
 
 <details>
 
-<summary><code>spawner-cooldown-overrides-presets</code></summary>
+<summary><code>teleport-location</code></summary>
 
-**Default:** `false`
+Where evicted players go. **Options:** `EXIT_POINT`, `OUTSIDE_BOUNDS`, `WORLD_SPAWN`. **Default:** `EXIT_POINT`.
 
-> **Note:** in `config.yml` this key lives under the **`reset:`** section (`reset.spawner-cooldown-overrides-presets`).
-
-Decides who wins when a preset spawner states its own rest time **and** you have a server-wide rest time set.
-
-* **`false` (default):** the preset's own `target-cooldown-length` wins for spawners placed from it. Presets that don't state a time follow the server-wide setting.
-* **`true`:** the server-wide `spawner-cooldown-minutes` (or the chamber's own override) applies to **every** spawner, presets included. Use this when you want one rest time everywhere and don't want to go editing presets.
-
-{% hint style="info" %}
-**"The global setting seems to be ignored!"** — this is almost always the preset rule at work. Check whether your presets have a `target-cooldown-length` line. Note that the value in the example preset, `36000` ticks, is **30 minutes**, which is also Minecraft's own default — so a preset and vanilla can look identical and hide the fact that your global setting isn't reaching those spawners.
-{% endhint %}
+- `EXIT_POINT`: the chamber's `/trial setexit` location (recommended).
+- `OUTSIDE_BOUNDS`: just outside the chamber wall.
+- `WORLD_SPAWN`: server spawn.
 
 </details>
 
 <details>
 
-<summary><code>wild-spawner-cooldown-minutes</code></summary>
+<summary><code>blocks-per-tick</code></summary>
 
-**Default:** `-1` (vanilla behavior) **Unit:** Minutes
-
-> **Note:** in `config.yml` this key lives under the **`reset:`** section (`reset.wild-spawner-cooldown-minutes`), not `global:`.
-
-Control cooldown for trial spawners **outside** of registered chambers (wild/unregistered Trial Chambers). This is a server-wide setting that affects all spawners not managed by BetterTrialChambers.
-
-**Values:**
-
-* `-1` = Use vanilla default (30 minutes)
-* `0` = No cooldown (spawners reactivate immediately)
-* `1-60` = Custom cooldown in minutes
-
-{% hint style="info" %}
-**Use Cases:**
-
-* **Server-wide fast farming:** Set to `0` for all wild spawners to reactivate instantly
-* **Consistent experience:** Match wild spawner behavior to your chamber settings
-* **Vanilla purists:** Keep at `-1` to leave unregistered chambers untouched
-{% endhint %}
-
-{% hint style="warning" %}
-**Bonus Feature:** When this setting is enabled (not -1), spawner wave tracking (boss bars) will also work in wild Trial Chambers, giving players progress feedback even in unregistered chambers!
-{% endhint %}
-
-{% hint style="warning" %}
-The preset rule applies here too: a preset spawner that states its own `target-cooldown-length` keeps it and ignores this setting, unless `spawner-cooldown-overrides-presets` is turned on.
-{% endhint %}
+How many blocks are placed per game tick during a reset. **Default:** `500` (about 10,000 per second). Higher is faster but heavier on the server; lower is slower but smoother. Range enforced 1 to 50000.
 
 </details>
 
-***
+<details>
 
-### Reset throttle, confirmation & FAWE
+<summary><code>auto-snapshot-on-register</code></summary>
 
-These `global:` keys control how automatic resets are scheduled and placed — important on servers with many (e.g. auto-discovered) chambers that come due at the same time.
+Take a snapshot automatically when a chamber is registered with `/trial generate`. **Default:** `true`. A chamber cannot be reset without a snapshot. Uses disk space.
 
-```yaml
-global:
-  max-concurrent-resets: 1        # how many chambers may reset simultaneously
-  reset-stagger-seconds: 5        # minimum gap between one reset finishing and the next starting
-  reset-require-confirmation: false  # park due chambers; an operator confirms them
-  use-fawe: false                 # place blocks via FastAsyncWorldEdit on scheduled resets
-  suppress-trial-spawner-spam: true  # mute vanilla "Trial Spawner ... has no detected players"
-```
+</details>
+
+<details>
+
+<summary><code>auto-scan-on-register</code></summary>
+
+Scan for vaults and trial spawners immediately after `/trial generate`, so you do not have to run `/trial scan` yourself. **Default:** `true`. Turn off if you register very large regions and prefer to scan them by hand later.
+
+</details>
 
 <details>
 
 <summary><code>max-concurrent-resets</code> / <code>reset-stagger-seconds</code></summary>
 
-Stop a wave of due chambers from all restoring at once and cratering TPS. Confirmed/queued resets respect these too.
+Throttle for automatic resets, so many chambers coming due at once do not all restore together and drop the server's tick rate. **Defaults:** `1` chamber at a time, `5` seconds minimum gap between one reset finishing and the next starting. Confirmed and queued resets respect these too.
 
 </details>
 
@@ -377,15 +234,7 @@ Stop a wave of due chambers from all restoring at once and cratering TPS. Confir
 
 <summary><code>reset-require-confirmation</code></summary>
 
-When `true`, a chamber that becomes due is **not** reset automatically; it's queued and online admins are notified. List with `/trial reset pending`, fire with `/trial reset confirm <chamber|all>` (they then run staggered).
-
-</details>
-
-<details>
-
-<summary><code>use-fawe</code></summary>
-
-When `true` and FastAsyncWorldEdit is installed, **scheduled** resets place blocks through one FAWE EditSession to smooth out lag on large chambers. **Paper-only** (ignored on Folia); manual `/trial reset` keeps the batched path so WorldEdit `//undo` still works; falls back automatically if FAWE is missing.
+When `true`, a chamber that becomes due is parked in a queue instead of resetting, and online admins are notified. **Default:** `false`. List the queue with `/trial reset pending`, release with `/trial reset confirm <chamber|all>` (still staggered).
 
 </details>
 
@@ -393,13 +242,23 @@ When `true` and FastAsyncWorldEdit is installed, **scheduled** resets place bloc
 
 <summary><code>suppress-trial-spawner-spam</code></summary>
 
-Mutes the vanilla console line `Trial Spawner at BlockPos{...} has no detected players`. New occurrences are prevented by the reset fixes; this hides the line for chambers still broken until their next reset.
+Mute the vanilla console line `Trial Spawner at BlockPos{...} has no detected players`. **Default:** `true`. New occurrences are already prevented by the reset fixes; this hides the line for spawners broken before you updated, until their chamber next resets.
+
+</details>
+
+<details>
+
+<summary><code>use-fawe</code></summary>
+
+Place blocks through FastAsyncWorldEdit during scheduled (automatic) resets, to smooth out lag on large chambers. **Default:** `false`. Needs FastAsyncWorldEdit installed. Paper only (ignored on Folia). Manual `/trial reset` keeps the normal path so WorldEdit `//undo` still works. Falls back automatically if FAWE is missing.
 
 </details>
 
 ***
 
 ## Chamber Display Names
+
+Gives each chamber a friendly name shown in reset and clear broadcasts and `/trial info`. The internal name used in commands never changes. Rename any chamber with `/trial rename <chamber> <name>` or the GUI.
 
 ```yaml
 naming:
@@ -408,18 +267,14 @@ naming:
     - Bastion
     - Ashfall Hollow
     - Solasta
-    # …
+    # ...
 ```
-
-Every chamber has a unique **internal name** (used in commands) plus an optional friendly **display name** shown in player-facing announcements (reset/clear broadcasts, `/trial info`). Rename any chamber with `/trial rename <chamber> <name>` or via the chamber GUI.
 
 <details>
 
 <summary><code>auto-assign</code></summary>
 
-**Default:** `true`
-
-Auto-assign a random unused display name from `name-pool` to each newly registered chamber (both manual `/trial generate` and auto-discovered). The internal name is unchanged. Set `false` to leave new chambers nameless until you rename them.
+Give each newly registered chamber (manual or auto-discovered) a random unused name from `name-pool`. **Default:** `true`. Set `false` to leave new chambers nameless until you rename them.
 
 </details>
 
@@ -427,44 +282,64 @@ Auto-assign a random unused display name from `name-pool` to each newly register
 
 <summary><code>name-pool</code></summary>
 
-The list of display names to draw from. A name already used by another chamber is skipped; when all are taken, new chambers fall back to their internal name until you add more or rename manually. The bundled list is just a starting set — add your own.
+The list of display names to draw from. A name already used by another chamber is skipped; when all are taken, new chambers use their internal name until you add more. The bundled list is a starting set; add your own.
 
 </details>
 
 ***
 
+## Extra Messages
+
+Optional player-facing messages, all off by default.
+
+```yaml
+messages:
+  chamber-entry-message: false
+  chamber-exit-message: false
+  custom-death-message: false
+```
+
+| Setting | Effect when `true` |
+| ------- | ------------------ |
+| `chamber-entry-message` | Tell a player when they walk into one of your chambers. Crossing straight from one chamber into another does not re-trigger it. |
+| `chamber-exit-message` | Tell a player when they leave one. |
+| `custom-death-message` | Use the plugin's wording when a player dies inside a chamber, instead of the server's usual death message. |
+
+***
+
 ## Generation Settings
 
-These settings control constraints when registering or generating chamber regions.
+Limits applied when registering or generating a chamber region.
 
 ```yaml
 generation:
-  # Maximum number of blocks allowed when generating/registering a chamber region
-  # Keep this manageable for your server hardware
   max-volume: 750000
   blocks:
-    # When using /trial generate blocks <amount>, we may need to round up to reach
-    # minimum viable dimensions (31x15x31). This is the maximum number of extra
-    # blocks allowed beyond the requested amount.
     rounding-allowance: 1000
 ```
 
+- `max-volume`: largest region (in blocks) allowed for `/trial generate`. **Default:** `750000`. Range enforced 1 to 5,000,000. For datapack-enlarged discovered chambers, `discovery.structure-max-volume` is used instead.
+- `blocks.rounding-allowance`: with `/trial generate blocks <amount>`, the most extra blocks allowed beyond the requested amount when rounding up to a solid box. **Default:** `1000`.
+
 Notes:
 
-* The plugin enforces a hard minimum region size of 31x15x31.
-* The `blocks` generator places the region in front of the player based on their facing.
-* If your requested amount is below minimum, it will be rounded up to that minimum.
-* If your requested amount is slightly above minimum or not factorizable cleanly, the plugin rounds up to form a solid box within the rounding allowance.
+- Hard minimum region size is 31 x 15 x 31.
+- The `blocks` generator places the region in front of the player, based on facing.
+- A requested amount below the minimum is rounded up to the minimum.
 
 ***
 
 ## Vault Settings
 
+Who gets vault loot, vault cooldowns, particles, sounds, and how a vault result is shown.
+
 ```yaml
 vaults:
   loot-mode: PER_PLAYER
-  normal-cooldown-hours: 24
-  ominous-cooldown-hours: 48
+  per-player-loot: true
+  normal-cooldown-hours: 0
+  ominous-cooldown-hours: 0
+  reopen-cost-keys: 0
   show-cooldown-particles: true
   particles:
     normal-available: VILLAGER_HAPPY
@@ -488,31 +363,27 @@ vaults:
     sounds:
       success: ENTITY_PILLAGER_CELEBRATE
       fail: ENTITY_PILLAGER_AMBIENT
+  drop-loot-at-vault: false
+  drop-loot-owner-only: true
+  drop-loot-owner-grace-seconds: 30
 ```
 
 <details>
 
 <summary><code>loot-mode</code></summary>
 
-**Default:** `PER_PLAYER`
+Who gets the loot from a vault inside your chambers. **Default:** `PER_PLAYER`.
 
-The big one — this decides **who gets the loot** from a vault inside one of your chambers.
-
-* **`PER_PLAYER` (recommended):** Every player who turns up gets **their own reward** from the same vault. Ten players, ten rewards. Your **custom loot tables** are used, and each player has their own cooldown. This is what most servers want.
-* **`SHARED`:** Whoever opens a vault **takes it**, and it stays shut for **everybody else** until the chamber resets. One vault, one reward, first come first served. Your custom loot tables are still used. Other players get a message naming whoever got there first, so it doesn't look broken.
-  * Relies on `reset.reset-vault-cooldowns` being left on (it is by default) — that's what frees claimed vaults at reset. With it off, a claimed vault never opens up again for anybody.
-* **`VANILLA`:** BTC **leaves vaults completely alone**. They open with plain Minecraft loot (crossbows, wind charges, etc.) — your custom loot tables are **ignored**, and there are no per-player cooldowns.
+- `PER_PLAYER`: every player gets their own reward from the same vault, from your custom loot tables, with their own cooldown. What most servers want.
+- `SHARED`: whoever opens a vault takes it; it stays shut for everyone else until the chamber resets. Your custom loot tables still apply. Other players are told who got there first. Needs `reset.reset-vault-cooldowns` left on (it is by default), or a claimed vault never reopens.
+- `VANILLA`: the plugin leaves vaults alone. Plain Minecraft loot, your loot tables ignored, no per-player cooldowns.
 
 {% hint style="danger" %}
-**Custom loot table being ignored? Getting vanilla items instead?** This is the #1 cause. If `loot-mode` is set to `VANILLA`, none of your loot tables apply — the vault just does its vanilla thing. Set it back to `PER_PLAYER` and run `/trial reload`.
-
-You can check the current setting in-game with `/trial info`.
+**Getting vanilla items instead of your loot table?** `loot-mode` is set to `VANILLA`. Set it back to `PER_PLAYER` and run `/trial reload`. Check the current value with `/trial info`.
 {% endhint %}
 
 {% hint style="warning" %}
-**Switching to `VANILLA`? Read this.** Minecraft keeps its **own** record of who has opened each vault, and BTC writes into that record while it is managing vaults. So the moment you switch to `VANILLA`, every player who already opened a vault will find it **shut** — no loot, and it won't even take their key. It looks exactly like the plugin broke vaults.
-
-Run **`/trial vault unlockall all`** after switching to clear those records and open every vault up again. BTC also reminds you about this when you `/trial reload` after the change.
+**Switching to `VANILLA`:** Minecraft keeps its own record of who opened each vault. Players who already opened one will find it shut with no loot. Run `/trial vault unlockall all` after switching to reopen them.
 {% endhint %}
 
 </details>
@@ -521,15 +392,7 @@ Run **`/trial vault unlockall all`** after switching to clear those records and 
 
 <summary><code>per-player-loot</code> (old setting)</summary>
 
-**Default:** `true`
-
-This is the older on/off switch that `loot-mode` replaced. It is still read **only when `loot-mode` is missing** from your config, so setups written before the change keep working: `true` behaves like `PER_PLAYER`, `false` behaves like `VANILLA`.
-
-If `loot-mode` is present, this line does nothing. There is no reason to add it to a new config.
-
-{% hint style="info" %}
-Its name caused a lot of confusion: setting it to `false` sounded like it would give you *shared* loot, but it actually handed vaults back to plain Minecraft — which is still one open **per player**, never shared. If shared loot is what you're after, that's `loot-mode: SHARED`.
-{% endhint %}
+The older on/off switch that `loot-mode` replaced. **Default:** `true`. Read only when `loot-mode` is missing (`true` behaves like `PER_PLAYER`, `false` like `VANILLA`), so old configs keep working. If `loot-mode` is present, this line does nothing; no need to add it to a new config.
 
 </details>
 
@@ -537,76 +400,37 @@ Its name caused a lot of confusion: setting it to `false` sounded like it would 
 
 <summary><code>normal-cooldown-hours</code> / <code>ominous-cooldown-hours</code></summary>
 
-**Default:** `0` (permanent until reset)
+Hours before a player can loot the same vault again. Separate values for normal and ominous. **Default:** `0` for both.
 
-How long before a player can loot the same vault again. Separate cooldowns for normal and ominous vaults.
+- `0` or negative: locked until the chamber resets (vanilla behaviour).
+- positive `N`: the vault reopens `N` hours after that player last opened it. A player who tries too early is shown the remaining time.
 
-**Values:**
-
-* `0` (or negative) = Permanent lock until chamber reset (vanilla behavior)
-* positive `N` = Timed cooldown — the vault reopens **N hours** after that player last opened it _(actually implemented since 1.5.12)_
-
-When a timed cooldown is set and a player tries to reopen too early, they're shown the remaining time. The open timestamp is tracked per player in the database; a **chamber reset is always a full unlock** regardless of the timed cooldown.
-
-{% hint style="info" %}
-**v1.2.21+:** Permanent (non-timed) vault locks use Paper's native Vault API (`hasRewardedPlayer`/`addRewardedPlayer`) for tracking:
-
-* Uses vanilla Minecraft's built-in player tracking
-* Locks automatically clear when the chamber is restored from snapshot
-* No database sync issues
-
-Timed cooldowns layer a per-player timestamp (in `player_vaults`) on top of that flag.
-
-**Note:** A timed cooldown only governs _reopening before a reset_ — the chamber's own reset interval still fully unlocks every vault when it fires. So a 6-hour cooldown on a chamber that resets every 48 hours lets a player loot the same vault up to \~8 times per cycle.
-{% endhint %}
-
-**Ideas:**
-
-* Vanilla behavior: `0` (permanent until chamber reset)
-* Short cooldowns: `1` or `6` hours (for active servers)
-* Long cooldowns: `72` or `168` hours (weekly)
-* Match chamber resets: `48` hours (synchronized gameplay)
+A chamber reset always unlocks every vault regardless of a timed cooldown. So a 6-hour cooldown on a chamber that resets every 48 hours lets a player loot the same vault about 8 times per cycle. Timed cooldowns were only actually implemented from 1.5.12.
 
 </details>
 
 <details>
 
-<summary><code>reopen-cost-keys</code></summary>
+<summary><code>reopen-cost-keys</code> (1.5.7+)</summary>
 
-**Default:** `0` (disabled) _(added in 1.5.7)_
-
-Key-to-reopen: when set to `N ≥ 1`, a player who has already opened a vault can open it **again** by paying `N` matching trial keys in total (a fresh open costs 1 key, so `1` = reopen at the same price, `2` = one extra key, and so on). Keys must be held in the main hand; when the player can't afford it, the locked message is replaced by a price hint.
-
-`0` keeps the standard behaviour: opened vaults stay locked until the cooldown elapses or the chamber resets. Time-based cooldowns and key-to-reopen can coexist — reopening is simply an instant paid alternative to waiting.
-
-{% hint style="warning" %}
-**Balance note:** with farms supplying trial keys, low reopen costs effectively turn vaults into key-powered crates. `2`–`3` is a reasonable starting price on survival servers.
-{% endhint %}
+Let a player reopen an already-used vault by paying this many matching trial keys in total (a fresh open costs 1). **Default:** `0` (off). `1` = reopen at the same price, `2` = one extra key, and so on. Keys must be held in the main hand. Works alongside timed cooldowns as an instant paid alternative to waiting. With trial-key farms, `2` to `3` is a reasonable price.
 
 </details>
 
 <details>
 
-<summary><code>show-cooldown-particles</code></summary>
+<summary><code>show-cooldown-particles</code> / <code>particles</code></summary>
 
-**Default:** `true`
+Show status particles above vaults. **Default:** `true`.
 
-Show particles above vaults to indicate status? Super helpful for players to see what's available.
+| Key | Meaning |
+| --- | ------- |
+| `normal-available` | Normal vault ready |
+| `normal-cooldown` | Normal vault on cooldown |
+| `ominous-available` | Ominous vault ready |
+| `ominous-cooldown` | Ominous vault on cooldown |
 
-</details>
-
-<details>
-
-<summary><code>particles</code></summary>
-
-Visual effects shown above vaults:
-
-* **normal-available:** Green sparkles = ready to open
-* **normal-cooldown:** Gray smoke = on cooldown
-* **ominous-available:** Soul flames = ominous vault ready
-* **ominous-cooldown:** Soul particles = ominous on cooldown
-
-See [Spigot's Particle enum](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Particle.html) for all options.
+Values come from [Spigot's Particle enum](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Particle.html).
 
 </details>
 
@@ -614,50 +438,42 @@ See [Spigot's Particle enum](https://hub.spigotmc.org/javadocs/spigot/org/bukkit
 
 <summary><code>play-sound-on-open</code> / <code>sounds</code></summary>
 
-**Default:** `true`
-
-Play sounds when vaults open or when someone tries to open during cooldown.
-
-Change sounds if you want custom feedback. See [Spigot's Sound enum](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Sound.html).
+Play a sound when a vault opens (`normal-open`, `ominous-open`) or when someone tries during cooldown (`cooldown`). **Default:** `true`. Values come from [Spigot's Sound enum](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Sound.html).
 
 </details>
 
 <details>
 
-<summary><code>feedback</code></summary>
+<summary><code>feedback</code> (1.5.8+)</summary>
 
-**Default:** `mode: TEXT` _(added in 1.5.8)_
+How a vault interaction is reported to the player. **Default:** `mode: TEXT`.
 
-Chooses how a vault interaction is reported to the player.
-
-* **`TEXT`** — the classic chat lines (`You opened a Normal Vault!`, `You need a Trial Key to open this vault!`, etc.). Unchanged from earlier versions.
-* **`HOLOGRAM`** — replaces those chat lines with a floating **green ✔ / red ✘** above the vault, visible **only to the player who interacted**, plus a sound. A tick on a successful open; a cross on every failure (no key, wrong key type, on cooldown/locked, can't afford a reopen). Cooldown/success particles and vanilla advancements still fire — only the chat line and the open/error sound are swapped for the hologram and its sound.
+- `TEXT`: chat lines ("You opened a Normal Vault!", "You need a Trial Key...", etc.).
+- `HOLOGRAM`: a floating green tick or red cross above the vault, visible only to that player, plus a sound. Replaces the chat line for every outcome. Particles and advancements still fire.
 
 ```yaml
 vaults:
   feedback:
     mode: HOLOGRAM
     hologram:
-      duration-ticks: 30      # how long the ✔/✘ stays (20 ticks = 1 second)
+      duration-ticks: 30      # how long the mark stays (20 ticks = 1 second)
       y-offset: 1.4           # height above the vault block
       scale: 1.5              # text size multiplier
       see-through: true       # render through blocks
-      success-text: "&a✔"     # shown on a successful open
-      fail-text: "&c✘"        # shown on any failure
+      success-text: "&a✔"
+      fail-text: "&c✘"
     sounds:
       success: ENTITY_PILLAGER_CELEBRATE
       fail: ENTITY_PILLAGER_AMBIENT
 ```
 
-{% hint style="info" %}
-`ENTITY_PILLAGER_CELEBRATE` and `ENTITY_PILLAGER_AMBIENT` are _random-variant_ sound events — Minecraft picks one of the bundled `.ogg` clips each time, so an exact variant (e.g. "celebrate2") can't be pinned without a resource pack. Set `success` / `fail` to any value from [Spigot's Sound enum](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Sound.html) (or a `namespace:path` key) to use your own.
-{% endhint %}
+`duration-ticks` range enforced 1 to 1200. `success` / `fail` accept any value from [Spigot's Sound enum](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Sound.html) or a `namespace:path` key. The two defaults are random-variant sounds, so a specific clip cannot be pinned without a resource pack.
 
 </details>
 
 <details>
 
-<summary><code>drop-loot-at-vault</code> · <code>drop-loot-owner-only</code> · <code>drop-loot-owner-grace-seconds</code></summary>
+<summary><code>drop-loot-at-vault</code> / <code>drop-loot-owner-only</code> / <code>drop-loot-owner-grace-seconds</code></summary>
 
 ```yaml
 vaults:
@@ -666,18 +482,19 @@ vaults:
   drop-loot-owner-grace-seconds: 30
 ```
 
-**Vanilla-style loot ejection.** When `drop-loot-at-vault` is `true`, vault loot pops out of the vault block (like vanilla) instead of going straight into the opener's inventory. Command rewards and status-effect rewards (Bad Omen, etc.) still apply directly to the player — only itemized loot is dropped.
+- `drop-loot-at-vault` (**default `false`**): when `true`, vault loot pops out of the block like vanilla instead of going straight into the opener's inventory. Command rewards and status effects still apply directly to the player.
+- `drop-loot-owner-only` (**default `true`**): only the opener can pick up the dropped items. Hoppers, hopper minecarts and mobs cannot take them either while the lock holds.
+- `drop-loot-owner-grace-seconds` (**default `30`**): how long owner-only lasts. After this, anyone can pick the items up so they do not linger if the opener logs off. `0` = owner-locked until the item despawns.
 
-* **`drop-loot-owner-only`** (default `true`) — only the player who opened the vault can pick up its dropped items.
-* **`drop-loot-owner-grace-seconds`** (default `30`) — how long owner-only enforcement lasts. After this window anyone can pick the items up, so they don't linger forever if the opener logs off. `0` = owner-locked until the item despawns naturally.
-
-Players with **`btc.bypass.droplock`** (default: op) can always pick up dropped loot. `drop-loot-at-vault` is off by default; the direct-to-inventory flow is used when it's disabled.
+Players with `btc.bypass.droplock` (default: op) can always pick up dropped loot.
 
 </details>
 
 ***
 
 ## Protection Settings
+
+Stops griefing and preserves chamber structures. Every setting here applies only inside a registered chamber, and anyone with `btc.bypass.protection` (includes operators) is exempt.
 
 ```yaml
 protection:
@@ -689,19 +506,25 @@ protection:
     blocks: [TUFF_BRICKS, TUFF_BRICK_SLAB, TUFF_BRICK_STAIRS, TUFF_BRICK_WALL, CHISELED_TUFF, CHISELED_TUFF_BRICKS, POLISHED_TUFF, POLISHED_TUFF_SLAB, POLISHED_TUFF_STAIRS, POLISHED_TUFF_WALL]
     shell-depth: 3
   prevent-container-access: false
-  allow-pvp: true
-  prevent-mob-griefing: true
-  worldguard-integration: true
-  residence-integration: true
-  lands-integration: true
-  griefprevention-integration: true
-  claim-conflict-scan-on-startup: true
   message-cooldown-ms: 1500
   block-advanced-enchantments: false
   advanced-enchantments-allowlist: []
   advanced-enchantments-block-radius: 2
   prevent-teleport-into-chamber: false
   prevent-entry-without-permission: false
+  allow-pvp: true
+  prevent-mob-griefing: true
+  prevent-liquid-flow: true
+  prevent-fire: true
+  prevent-piston-movement: true
+  protect-decorations: true
+  prevent-natural-decay: false
+  worldguard-integration: true
+  residence-integration: true
+  lands-integration: true
+  griefprevention-integration: true
+  claim-conflict-scan-on-startup: true
+  block-wild-vault-placement: true
   auto-pause-on-destruction: false
   auto-pause-threshold: 6
 ```
@@ -710,9 +533,7 @@ protection:
 
 <summary><code>enabled</code></summary>
 
-**Default:** `true`
-
-Master toggle for chamber protection. Turn this off to rely entirely on WorldGuard or other plugins.
+Master toggle for chamber protection. **Default:** `true`. Turn off to rely entirely on WorldGuard or another plugin.
 
 </details>
 
@@ -720,9 +541,7 @@ Master toggle for chamber protection. Turn this off to rely entirely on WorldGua
 
 <summary><code>prevent-block-break</code> / <code>prevent-block-place</code></summary>
 
-**Default:** `true`
-
-Stop players from breaking or placing blocks inside chambers. Prevents griefing and preserves your carefully-designed structures.
+Stop players breaking or placing blocks inside chambers. **Default:** `true` for both.
 
 </details>
 
@@ -730,13 +549,11 @@ Stop players from breaking or placing blocks inside chambers. Prevents griefing 
 
 <summary><code>tunnel-breaking</code> (v1.7.0)</summary>
 
-**Default:** `enabled: false`
+Lets players mine into a walled natural chamber without being able to farm it. **Default:** `enabled: false`.
 
-Solves the "how do players even get in?" problem. Naturally-generated Trial Chambers have no entrance — the only way in is to mine through the wall. With `prevent-block-break: true` players are locked out entirely; with it `false` they can farm the endlessly-restored tuff.
+When enabled, players may break the listed materials (default: the tuff-brick shell family) inside a registered chamber, but the broken blocks drop nothing (no items, no XP) and are restored on the next reset. Everything else stays protected.
 
-When enabled, players may break the listed materials (default: the tuff-brick shell family) inside registered chambers, but the broken blocks **never drop items or XP** — so there's nothing to farm — and the tunnel is restored on the next chamber reset.
-
-`shell-depth` limits how far in from the chamber's outer boundary tunnelling works: `3` means only the outer 3-block shell (dig in, but can't strip-mine the interior — players digging deeper get the `tunnel-only-outer-wall` message). `0` allows the listed blocks to be broken anywhere in the chamber.
+`shell-depth` (**default `3`**, range 0 to 64) limits how far in from the outer wall this works: `3` = only the outer 3-block shell; `0` = anywhere in the chamber.
 
 </details>
 
@@ -744,91 +561,28 @@ When enabled, players may break the listed materials (default: the tuff-brick sh
 
 <summary><code>prevent-container-access</code></summary>
 
-**Default:** `false`
-
-Block access to chests, barrels, hoppers, etc. Usually `false` because you WANT players opening decorated pots and chests for loot.
-
-Set to `true` if you have admin chests inside chambers that shouldn't be touched.
+Block players taking from or adding to anything inside a chamber that holds items: chests, barrels, hoppers, shelves, lecterns, jukeboxes and decorated pots. Vaults are never affected, so vault loot still works. **Default:** `false`, because you usually want players opening chests for loot. Set `true` if you keep your own containers inside chambers.
 
 </details>
 
 <details>
 
-<summary><code>allow-pvp</code></summary>
+<summary><code>message-cooldown-ms</code> (1.5.18+)</summary>
 
-**Default:** `true` _(implemented in 1.5.19)_
-
-Allow player-vs-player combat inside registered chambers. When `false`, BTC cancels player-on-player damage — both melee and player-shot projectiles — inside a chamber, and tells the attacker. `true` keeps vanilla behaviour (PvP follows your world/server rules). Players with `btc.bypass.protection` are exempt; mob damage and self-damage are never affected.
+Milliseconds to wait before re-showing a "you can't do that here" denial to the same player. **Default:** `1500`. Stops chat flooding when one action (a mining enchant, a vein miner, rapid clicking) hits many blocks. `0` disables the throttle.
 
 </details>
 
-<details>
-
-<summary><code>prevent-mob-griefing</code></summary>
-
-**Default:** `true`
-
-Stop mobs from breaking blocks (creeper explosions, endermen picking up blocks, etc.). Highly recommended unless you want chaos.
-
-</details>
-
-<details>
-
-<summary><code>worldguard-integration</code></summary>
-
-**Default:** `true` _(functional since 1.5.9)_
-
-If WorldGuard is installed, **respect its regions**: when a WorldGuard region covers a spot inside a chamber and grants the player build rights — region membership, an explicit `build` flag allow, or WorldGuard bypass — BetterTrialChambers yields and skips its own block-break / block-place / container-access protection there. This lets region owners and staff work inside chambers that overlap their regions without disabling BTC protection elsewhere. Where there is no WG region (or the player has no build rights), BTC protection applies as normal. Set to `false` to ignore WorldGuard entirely.
-
-</details>
-
-<details>
-
-<summary><code>residence-integration</code> / <code>lands-integration</code> / <code>griefprevention-integration</code></summary>
-
-**Default:** `true` _(added in 1.5.15)_
-
-If the matching land-claim plugin is installed, **stop players claiming a registered chamber**: BTC cancels that plugin's claim-create and claim-expand actions when the claimed area overlaps a chamber, and tells the player. This prevents someone fencing off a chamber and changing its claim flags to interfere with resets, loot, or protection. Each plugin has its own toggle and its own bypass permission (`btc.bypass.residence` / `btc.bypass.lands` / `btc.bypass.griefprevention`, default op). Servers without the plugin are unaffected — the integration only activates when the plugin is present. Existing claims aren't removed; see the conflict scan below.
-
-</details>
-
-<details>
-
-<summary><code>claim-conflict-scan-on-startup</code></summary>
-
-**Default:** `true` _(added in 1.5.15)_
-
-On startup, check every registered chamber against existing claims from the enabled land-claim plugins and log a warning for each overlap — including the chamber name, its location, and the claim owner. This surfaces pre-existing conflicts (e.g. a chamber registered on top of a claim made earlier) so you can resolve them. Re-run the scan at any time with **`/trial claims scan`**. Set to `false` to skip the automatic startup scan (the command still works).
-
-</details>
-
-<details>
-
-<summary><code>message-cooldown-ms</code></summary>
-
-**Default:** `1500` _(added in 1.5.18)_
-
-How long (in milliseconds) to wait before re-showing a "you can't break / place / access here" denial to the **same** player. A single action that affects many blocks at once — an AdvancedEnchantments _Blast Mining_ enchant, a vein miner, rapid clicking — used to print the message once per block and flood chat. The throttle collapses that to one line per window. Set `0` to disable throttling (every denied action messages again).
-
-</details>
-
-<details>
+<details id="block-advanced-enchantments">
 
 <summary><code>block-advanced-enchantments</code></summary>
 
-**Default:** `false` _(added in 1.5.18)_
+If [AdvancedEnchantments](https://www.spigotmc.org/resources/76519/) is installed, its custom enchants (e.g. Blast Mining) can break chamber blocks through their own path that ignores the normal block-break block. **Default:** `false`. When `true`, BTC cancels AE enchant activations that affect a registered chamber. Enchants in `advanced-enchantments-allowlist` are still allowed. Nothing happens on servers without AE.
 
-If [AdvancedEnchantments](https://www.spigotmc.org/resources/76519/) is installed, its custom enchants (e.g. _Blast Mining_) break blocks through their own effect path that **ignores BTC's block-break cancel** — so they can bypass chamber protection. Turn this on to make BTC cancel AE enchant activations that affect a registered chamber, stopping the effect (no break, no spam). Players with `btc.bypass.protection` are exempt, and enchants in `advanced-enchantments-allowlist` are still permitted. Off by default, so AE behaves normally until you opt in. Reflection-based — nothing happens on servers without AE.
-
-Since **1.5.21** this also catches mining a chamber wall from **just outside** it (Blast Mining the wall, AoE reaching across the boundary), not only when the player stands inside — see [`advanced-enchantments-block-radius`](config.yml.md#advanced-enchantments-block-radius) to tune the reach.
+Since 1.5.21 this also catches mining a chamber wall from just outside it; see `advanced-enchantments-block-radius`.
 
 {% hint style="info" %}
-**Do I need this for vein miners / hotkey area-miners?** Usually **no**. The real question for _any_ mass-breaker is whether it fires a normal, cancellable block-break for each block it removes:
-
-* **Hotkey-style area miners** (e.g. [VeinMiner](https://modrinth.com/plugin/veinminer)) simulate a player breaking each block — they fire a per-block break event, so BTC's standard block protection already cancels the ones inside a chamber. Nothing to enable; the only visible effect is the per-block denial, which `message-cooldown-ms` collapses to one line.
-* **Enchantment / skill effect engines** (AdvancedEnchantments and similar) often break blocks through their own pipeline that _doesn't_ fire that event — those are what `block-advanced-enchantments` is for.
-
-So: if a tool fires an ordinary block-break per block, it's covered automatically; if it has its own effect pipeline that skips block-break events, it needs an explicit guard like this one.
+**Vein miners and hotkey area-miners usually do not need this.** They simulate a normal block break per block, which the standard block protection already cancels. This setting is only for enchant or skill engines that break blocks through their own pipeline.
 {% endhint %}
 
 </details>
@@ -837,9 +591,7 @@ So: if a tool fires an ordinary block-break per block, it's covered automaticall
 
 <summary><code>advanced-enchantments-allowlist</code></summary>
 
-**Default:** `[]` _(added in 1.5.18)_
-
-Enchant names (lowercase, matching the AE enchant name) that stay **allowed** inside chambers even when `block-advanced-enchantments` is on. Use it to keep combat enchants working during a trial while still blocking block-breakers:
+Enchant names (lowercase, matching the AE name) that stay allowed inside chambers even when `block-advanced-enchantments` is on. **Default:** `[]`. Use it to keep combat enchants working while blocking block-breakers.
 
 ```yaml
 advanced-enchantments-allowlist:
@@ -853,75 +605,130 @@ advanced-enchantments-allowlist:
 
 <summary><code>advanced-enchantments-block-radius</code></summary>
 
-**Default:** `2` _(added in 1.5.21)_
+How far (in blocks) an AE mining blast can reach, used to catch mining a chamber wall from just outside. **Default:** `2` (covers a 5x5 area-miner). Range enforced 0 to 64 (practically capped at 16). The check is centred on the block being mined, expanded by this radius; if it touches a chamber, the enchant is blocked.
 
-How far (in blocks) an AE mining enchant's blast can reach — used to catch a player mining a chamber wall from **just outside** it. AE's event carries no block, so BTC ray-traces the block the player is looking at and checks a cube of that block **± this radius** against chamber bounds; if it touches a chamber, the enchant is blocked. The expansion is centred on the **mined block, not the player**.
-
-Set it to your **largest** blast enchant's radius:
-
-* `0` — block only when the mined block is _itself_ inside a chamber (no outside margin; zero over-blocking).
-* `2` _(default)_ — covers a 5×5 area-miner.
-* Higher — covers bigger area enchants, at the cost of also denying mining a little further out from chamber walls.
-
-Note this only affects the thin shell of blocks just outside a chamber; normal mining elsewhere is never touched. (Capped at 16.)
+- `0`: block only when the mined block is itself inside a chamber (no outside margin).
+- Higher: covers bigger area enchants, but also denies mining a little further out from chamber walls.
 
 </details>
 
-<details>
+<details id="prevent-teleport-into-chamber">
 
 <summary><code>prevent-teleport-into-chamber</code></summary>
 
-**Default:** `false` _(added in 1.5.20)_
-
-Stop players **teleporting into** a registered chamber from outside it, so they can't skip the intended entrance. Because it hooks the teleport itself rather than specific commands, it catches every method — `/tpa`, `/tpahere`, `/home`, `/warp`, `/tp`, ender pearls, chorus fruit, plugin teleports — in one place. Walking in on foot is unaffected. Players with **`btc.bypass.entry`** (default: op), spectators, and creative-mode players are exempt (the gamemode exemption also covers BTC's own spectator-mode entry teleport). Off by default.
+Stop players teleporting into a registered chamber from outside, so they cannot skip the entrance. **Default:** `false`. Hooks the teleport itself, so it catches `/tpa`, `/home`, `/warp`, `/tp`, ender pearls, chorus fruit, and plugin teleports. Walking in is unaffected. Players with `btc.bypass.entry` (default: op), spectators, and creative-mode players are exempt.
 
 </details>
 
 <details>
 
-<summary><code>prevent-entry-without-permission</code></summary>
+<summary><code>prevent-entry-without-permission</code> (1.5.20+)</summary>
 
-**Default:** `false` _(added in 1.5.20)_
-
-Gate **walking into** a chamber by rank: when `true`, only players with **`btc.bypass.entry`** (default: op) can enter a chamber on foot — everyone else is stopped at the boundary. Use it to make chambers rank-restricted (e.g. a VIP dungeon). Pair it with `prevent-teleport-into-chamber` to close the teleport route as well. Spectators and creative-mode players are exempt. Off by default. _(This check runs on player movement; it's lightweight — only firing on a block change while the toggle is on — but only enable it if you actually need rank-gated entry.)_
+Gate walking into a chamber by rank. **Default:** `false`. When `true`, only players with `btc.bypass.entry` (default: op) can enter on foot; everyone else is stopped at the boundary. Pair with `prevent-teleport-into-chamber` to close the teleport route too. Spectators and creative-mode players are exempt.
 
 </details>
 
 <details>
 
-<summary><code>block-wild-vault-placement</code></summary>
+<summary><code>allow-pvp</code> (1.5.19+)</summary>
 
-**Default:** `true` _(added in 1.5.7)_
-
-Cancels placing functioning VAULT blocks **outside** registered chambers. A wild vault is a permanent vanilla loot dispenser the plugin can't manage — no per-player tracking, no resets, no loot tables. Players holding `btc.bypass.vaultplace` (default: op) can always place them, so creative builds and crate setups are unaffected. Inside registered chambers the normal protection rules apply instead.
+Allow player-vs-player combat inside registered chambers. **Default:** `true` (PvP follows your world and server rules). When `false`, BTC cancels player-on-player melee and player-shot projectile damage inside a chamber. Mob damage and self-damage are never affected.
 
 </details>
 
 <details>
 
-<summary><code>auto-pause-on-destruction</code></summary>
+<summary><code>prevent-mob-griefing</code></summary>
 
-**Default:** `false`
-
-When `true`, a MONITOR-priority observer counts vault and trial spawner destructions inside each chamber. Once the count reaches `auto-pause-threshold`, the chamber is automatically paused and all ops with `btc.discovery.notify` permission receive a notification. The counter resets every time the chamber is paused, resumed, or reset.
-
-Designed for **hardcore/anarchy servers** where `prevent-block-break` is intentionally disabled. On servers with protection enabled, this setting is redundant (blocks can't be broken in the first place).
+Stop mobs changing chamber blocks (creeper explosions, endermen picking up blocks, etc.). **Default:** `true`.
 
 </details>
 
 <details>
 
-<summary><code>auto-pause-threshold</code></summary>
+<summary><code>prevent-liquid-flow</code></summary>
 
-**Default:** `6`
+Stop water and lava getting into a chamber. **Default:** `true`. Covers emptying a bucket inside one, pouring it just outside so it flows in, and a dispenser firing a bucket through the wall. Liquid that was part of the build keeps flowing.
 
-How many combined vault + trial spawner destructions inside a chamber must occur before `auto-pause-on-destruction` fires. Minimum effective value is `1`.
+</details>
 
-* **1-2** — catches individual mischief or accidents
-* **6 (default)** — targets systematic demolition (breaking 6 critical blocks suggests deliberate intent)
-* **10+** — only triggers on near-complete chamber destruction
+<details>
 
-The counter resets to zero on every pause/resume cycle and on chamber reset, so a resumed chamber always starts fresh.
+<summary><code>prevent-fire</code></summary>
+
+Stop fire being lit inside a chamber and stop it spreading if something catches. **Default:** `true`.
+
+</details>
+
+<details>
+
+<summary><code>prevent-piston-movement</code></summary>
+
+Stop pistons moving blocks into or out of a chamber. **Default:** `true`. A piston reaches twelve blocks, so without this someone can push blocks in or pull them out from outside the wall. A piston inside the same chamber as the blocks it moves is left alone, so redstone built into a chamber still works.
+
+</details>
+
+<details>
+
+<summary><code>protect-decorations</code></summary>
+
+Protect item frames, paintings, and armour stands. **Default:** `true`. These are not blocks, so the block settings never applied to them. Turning a frame or swapping its item is still allowed.
+
+</details>
+
+<details>
+
+<summary><code>prevent-natural-decay</code></summary>
+
+Stop the world slowly changing a chamber on its own: leaves dropping, grass and sculk spreading, ice and snow melting, crops and trees growing, sponges drying. **Default:** `false`, because a reset puts it back anyway. Turn on for a build that must stay exactly as placed between resets.
+
+</details>
+
+<details>
+
+<summary><code>worldguard-integration</code> (1.5.9+)</summary>
+
+If WorldGuard is installed, respect its regions. **Default:** `true`. Where a WorldGuard region grants a player build rights inside a chamber (membership, a `build` flag allow, or WG bypass), BTC skips its own block-break, block-place, and container protection there. Elsewhere BTC protection applies as normal. Set `false` to ignore WorldGuard.
+
+</details>
+
+<details>
+
+<summary><code>residence-integration</code> / <code>lands-integration</code> / <code>griefprevention-integration</code></summary>
+
+If the matching land-claim plugin is installed, stop players claiming a registered chamber. **Default:** `true` for each. BTC cancels that plugin's claim-create and claim-expand when the area overlaps a chamber. Each has its own bypass permission (`btc.bypass.residence` / `.lands` / `.griefprevention`, default: op). Servers without the plugin are unaffected. Existing claims are not removed; see the conflict scan below.
+
+</details>
+
+<details>
+
+<summary><code>claim-conflict-scan-on-startup</code></summary>
+
+On startup, check every registered chamber against existing claims from the enabled land-claim plugins and log a warning for each overlap (chamber name, location, claim owner). **Default:** `true`. Re-run any time with `/trial claims scan`. Set `false` to skip only the automatic startup scan.
+
+</details>
+
+<details>
+
+<summary><code>block-wild-vault-placement</code> (1.5.7+)</summary>
+
+Cancel placing working VAULT blocks outside registered chambers. **Default:** `true`. A wild vault is a permanent vanilla loot dispenser the plugin cannot manage. Players with `btc.bypass.vaultplace` (default: op) can always place them.
+
+</details>
+
+<details>
+
+<summary><code>auto-pause-on-destruction</code> / <code>auto-pause-threshold</code></summary>
+
+If enough vaults or trial spawners inside a chamber are destroyed, automatically pause the chamber: its database record stays, but resets, protection, tracking, and vault interactions are suspended. Resume with `/trial resume <name>` or the GUI. **Defaults:** `auto-pause-on-destruction: false`, `auto-pause-threshold: 6`.
+
+`auto-pause-threshold` is the combined vault + trial spawner destruction count that triggers the pause (minimum effective value `1`). The counter resets on every pause, resume, or chamber reset.
+
+- `1` to `2`: catches individual mischief.
+- `6` (default): targets deliberate demolition.
+- `10+`: only near-complete destruction.
+
+Intended for hardcore or anarchy servers where `prevent-block-break` is deliberately off. Redundant when protection is on.
 
 </details>
 
@@ -934,52 +741,45 @@ trial-keys:
   validate-key-type: true
 ```
 
-{% hint style="info" %}
-**Trial-key dupe protection isn't handled by BTC** — for that, use a dedicated plugin such as [AntiDupePro](https://modrinth.com/plugin/AntiDupePro).
-{% endhint %}
-
 <details>
 
 <summary><code>validate-key-type</code></summary>
 
-**Default:** `true`
-
-Enforce that normal keys only open normal vaults, ominous keys only open ominous vaults. Recommended to prevent exploits.
+Enforce that normal keys only open normal vaults and ominous keys only open ominous vaults. **Default:** `true`.
 
 </details>
+
+{% hint style="info" %}
+BTC does not provide trial-key dupe protection. Use a dedicated plugin such as [AntiDupePro](https://modrinth.com/plugin/AntiDupePro).
+{% endhint %}
 
 ***
 
 ## Reset Settings
+
+What a reset cleans up, and trial spawner rest times.
 
 ```yaml
 reset:
   clear-ground-items: true
   remove-spawner-mobs: true
   remove-non-chamber-mobs: false
+  clear-added-blocks: true
   reset-trial-spawners: true
   reset-ominous-spawners: true
   clear-trial-omen-effect: true
   reset-vault-cooldowns: true
+  spawner-cooldown-minutes: -1
+  spawner-cooldown-overrides-presets: false
+  wild-spawner-cooldown-minutes: -1
+  spawner-key-drop-owner-grace-seconds: 30
 ```
 
 <details>
 
 <summary><code>clear-ground-items</code></summary>
 
-**Default:** `true`
-
-Delete dropped items on reset? Prevents loot/trash buildup. Usually `true` for cleanliness.
-
-</details>
-
-<details>
-
-<summary><code>clear-added-blocks</code></summary>
-
-**Default:** `true`
-
-Snapshots skip air to save space, so on their own they can't undo blocks a player **added** into empty cells (lava, cobble, etc.). When `true`, reset also clears any block inside the chamber that isn't part of the snapshot back to air, so player additions never persist. Set `false` only if you intentionally let players build inside chambers.
+Delete dropped items inside the chamber on reset. **Default:** `true`.
 
 </details>
 
@@ -987,9 +787,7 @@ Snapshots skip air to save space, so on their own they can't undo blocks a playe
 
 <summary><code>remove-spawner-mobs</code></summary>
 
-**Default:** `true`
-
-Kill mobs spawned by trial spawners during reset. Keeps chambers clean.
+Kill mobs spawned by trial spawners during the reset. **Default:** `true`.
 
 </details>
 
@@ -997,9 +795,15 @@ Kill mobs spawned by trial spawners during reset. Keeps chambers clean.
 
 <summary><code>remove-non-chamber-mobs</code></summary>
 
-**Default:** `false`
+Kill all mobs in the chamber, including ones not from spawners (such as player pets). **Default:** `false`.
 
-Kill ALL mobs in the chamber, even those not from spawners (like player pets). Usually `false` to avoid accidents.
+</details>
+
+<details>
+
+<summary><code>clear-added-blocks</code></summary>
+
+Snapshots skip air, so on their own they cannot undo blocks a player added into empty cells (lava, cobble, etc.). **Default:** `true`. When `true`, reset also clears any block inside the chamber that is not part of the snapshot back to air. Set `false` only if you deliberately let players build inside chambers.
 
 </details>
 
@@ -1007,21 +811,7 @@ Kill ALL mobs in the chamber, even those not from spawners (like player pets). U
 
 <summary><code>reset-trial-spawners</code></summary>
 
-**Default:** `true`
-
-**CRITICAL for trial key drops!** Reset trial spawner state when the chamber resets. This clears the spawner's internal tracking of which players have completed it.
-
-{% hint style="warning" %}
-**Why this matters:** Trial spawners store which players have "completed" them. Without clearing this data, spawners won't spawn mobs or drop keys for returning players. This setting ensures spawners work like vanilla after each reset.
-{% endhint %}
-
-**Vanilla behavior when enabled:**
-
-* Spawners forget which players completed them
-* Players can reactivate spawners after chamber reset
-* Spawners drop trial keys (50% chance per player) when all mobs are defeated
-
-Set to `false` if you want spawners to permanently remember who completed them (not recommended).
+Reset each trial spawner's internal record of which players completed it. **Default:** `true`. Required for trial keys to drop again after a reset. With it `false`, spawners permanently remember who completed them and stop giving keys (not recommended).
 
 </details>
 
@@ -1029,19 +819,15 @@ Set to `false` if you want spawners to permanently remember who completed them (
 
 <summary><code>reset-ominous-spawners</code></summary>
 
-**Default:** `true`
-
-Convert ominous trial spawners back to normal during reset. Set to `false` if you want ominous spawners to stay ominous.
+Convert ominous trial spawners back to normal during the reset. **Default:** `true`. Set `false` to keep ominous spawners ominous.
 
 </details>
 
 <details>
 
-<summary><code>clear-trial-omen-effect</code></summary>
+<summary><code>clear-trial-omen-effect</code> (1.5.19+)</summary>
 
-**Default:** `true` _(implemented in 1.5.19)_
-
-On reset, remove Trial Omen and Bad Omen from players who were inside the chamber, so leftover omen doesn't carry into the next cycle. Set to `false` to leave omen untouched.
+On reset, remove Trial Omen and Bad Omen from players who were inside the chamber, so leftover omen does not carry into the next cycle. **Default:** `true`.
 
 </details>
 
@@ -1049,11 +835,52 @@ On reset, remove Trial Omen and Bad Omen from players who were inside the chambe
 
 <summary><code>reset-vault-cooldowns</code></summary>
 
-**Default:** `true`
+Forget who has opened each vault when the chamber resets, so everyone can use them again. **Default:** `true`. With it off, a vault someone opened stays shut for them forever; with `vaults.loot-mode: SHARED` and this off, a claimed vault never reopens for anybody.
 
-Reset all player vault cooldowns when the chamber resets. This is the vanilla behavior—vaults reset when the chamber resets.
+</details>
 
-Set to `false` if you want personal cooldowns independent of chamber state (players must wait their individual cooldown time even after chamber resets).
+<details>
+
+<summary><code>spawner-cooldown-minutes</code></summary>
+
+How long a trial spawner rests after its wave is beaten, before it can be used again. **Default:** `-1`. Range: `0` or more minutes, or the sentinel `-1`.
+
+- `-1`: leave it as Minecraft has it (30 minutes).
+- `0`: no rest, usable again straight away.
+- any other number: that many minutes.
+
+Per-chamber override available via the GUI (Chamber Settings, then Spawner Cooldown) or database.
+
+Does not apply to spawners placed from a preset (`spawner_presets.yml`) that sets its own `target-cooldown-length`, unless `spawner-cooldown-overrides-presets` is `true`. Note the example preset's `36000` ticks is 30 minutes, the same as vanilla, so a preset can look identical to vanilla while ignoring this setting.
+
+</details>
+
+<details>
+
+<summary><code>spawner-cooldown-overrides-presets</code></summary>
+
+Decides who wins when a preset spawner states its own rest time and you also have a server-wide rest time set. **Default:** `false`.
+
+- `false`: the preset's own `target-cooldown-length` wins for spawners placed from it. Presets without a time follow the server-wide setting.
+- `true`: the server-wide value (or a chamber's override) applies to every spawner, presets included.
+
+</details>
+
+<details>
+
+<summary><code>wild-spawner-cooldown-minutes</code></summary>
+
+The same rest time, for trial spawners out in the world rather than in a registered chamber. **Default:** `-1` (same value meanings as `spawner-cooldown-minutes`). The preset rule applies here too.
+
+When this is not `-1`, wave tracking and boss bars also work in wild Trial Chambers.
+
+</details>
+
+<details>
+
+<summary><code>spawner-key-drop-owner-grace-seconds</code> (1.3.0+)</summary>
+
+When a wave is driven by a non-vanilla mob provider (e.g. MythicMobs), vanilla cannot issue trial keys, so BTC drops them itself: one per participating player, above the spawner. **Default:** `30`. This is how long the drops stay owner-locked before anyone can pick them up. `0` = owner-locked until they despawn. `tcp.bypass.droplock` can always pick up.
 
 </details>
 
@@ -1072,9 +899,7 @@ performance:
 
 <summary><code>cache-chamber-lookups</code></summary>
 
-**Default:** `true`
-
-Cache which chamber a block belongs to. Huge performance boost. Only disable for debugging.
+Remember which chamber a block belongs to instead of recalculating each time. **Default:** `true`. Large performance gain; only disable for debugging.
 
 </details>
 
@@ -1082,9 +907,7 @@ Cache which chamber a block belongs to. Huge performance boost. Only disable for
 
 <summary><code>cache-duration-seconds</code></summary>
 
-**Default:** `300` (5 minutes)
-
-How long to cache lookups. Higher = better performance, but changes take longer to propagate.
+How long a remembered lookup is kept, in seconds. **Default:** `300` (5 minutes). Higher performs better but changes take longer to take effect.
 
 </details>
 
@@ -1092,15 +915,13 @@ How long to cache lookups. Higher = better performance, but changes take longer 
 
 <summary><code>time-tracking-interval</code></summary>
 
-**Default:** `300` (5 minutes)
-
-How often to save "time spent in chamber" stats to the database. More frequent = more accurate stats but more database writes.
-
-{% hint style="info" %}
-**Removed in 1.5.12:** `async-database-operations` and `use-folialib` were no-op toggles — database operations are always asynchronous, and Folia is auto-detected at startup. They've been removed from the default config; leftover entries in an existing `config.yml` are simply ignored.
-{% endhint %}
+How often, in seconds, "time spent in chamber" stats are written to the database. **Default:** `300` (5 minutes). More frequent means more accurate stats but more database writes.
 
 </details>
+
+{% hint style="info" %}
+**Removed in 1.5.12:** `async-database-operations` and `use-folialib` were no-op toggles (database work is always asynchronous, Folia is auto-detected). Leftover entries in an existing config are ignored.
+{% endhint %}
 
 ***
 
@@ -1114,45 +935,12 @@ statistics:
   top-players-count: 10
 ```
 
-<details>
-
-<summary><code>enabled</code></summary>
-
-**Default:** `true`
-
-Track player statistics (vaults opened, chambers completed, time spent)? Required for leaderboards.
-
-</details>
-
-<details>
-
-<summary><code>track-time-spent</code></summary>
-
-**Default:** `true`
-
-Track how long players spend inside chambers. Disable if you don't care about time-based stats.
-
-</details>
-
-<details>
-
-<summary><code>track-chamber-completion</code></summary>
-
-**Default:** `true` _(added in 1.5.12)_
-
-Credit a "chamber completed" to every participant when a chamber is fully cleared (all its trial spawners finish their waves in one run). Drives the chambers leaderboard and the `%btc_chambers_completed%` / `%btc_leaderboard_chambers%` / `%btc_top_chambers_*%` placeholders. Disable to leave chamber-completion stats untracked.
-
-</details>
-
-<details>
-
-<summary><code>top-players-count</code></summary>
-
-**Default:** `10`
-
-How many players to show on leaderboards. Increase to 25 or 50 if you want bigger boards.
-
-</details>
+| Setting | Effect | Default |
+| ------- | ------ | ------- |
+| `enabled` | Track player stats (vaults opened, chambers completed, time spent). Required for leaderboards. | `true` |
+| `track-time-spent` | Track how long players spend inside chambers. | `true` |
+| `track-chamber-completion` | Credit a "chamber completed" to every participant when a chamber is fully cleared. Drives the chambers leaderboard and the `%btc_chambers_completed%` / `%btc_top_chambers_*%` placeholders. | `true` |
+| `top-players-count` | How many players a leaderboard shows. | `10` |
 
 ***
 
@@ -1166,58 +954,33 @@ loot:
 
 <details>
 
-<summary><code>max-pools-per-table</code></summary>
+<summary><code>apply-luck-effect</code></summary>
 
-**Default:** `5`
+Let the LUCK effect add loot rolls. **Default:** `false`. When on, each point of LUCK adds +1 roll to each loot pool (weighted items only; guaranteed items are unaffected). Counts both potion LUCK (potions, beacons, suspicious stew) and item-attribute LUCK from armour or items.
 
-Maximum number of pools allowed per loot table when using the [multi-pool format](loot.yml.md#-multi-pool-loot-system-new). Pools beyond this limit are silently ignored at load time. Increase it if you need more pools per table; lower it to cap table complexity.
+**Example** with `min-rolls: 3`, `max-rolls: 5`:
+
+- No LUCK: 3-5 items.
+- LUCK I: 4-6 items.
+- LUCK II: 5-7 items.
+
+Test with your loot tables so it does not break your economy.
 
 </details>
 
 <details>
 
-<summary><code>apply-luck-effect</code></summary>
+<summary><code>max-pools-per-table</code></summary>
 
-**Default:** `false`
-
-Enable LUCK to influence loot generation. When enabled, players receive bonus loot rolls based on their LUCK sources.
-
-**How it works:**
-
-* Checks **both** potion effects AND item attributes:
-  * **Potion Effect**: Temporary LUCK from potions, beacons, suspicious stew
-  * **Attribute**: Permanent LUCK from armor/items with luck modifiers
-* Each point of LUCK adds +1 bonus roll to each loot pool
-* Applies to weighted items only (guaranteed items are always given)
-* Works with both normal and ominous vaults
-
-**Example:** If a loot table has `min-rolls: 3` and `max-rolls: 5`:
-
-* No LUCK: Player gets 3-5 items
-* LUCK I potion: Player gets 4-6 items (+1 roll)
-* LUCK II potion: Player gets 5-7 items (+2 rolls)
-* LUCK I potion + 2 luck from items: Player gets 6-8 items (+3 rolls)
-
-**Sources of LUCK:**
-
-* Potion of Luck (temporary)
-* Beacons with Luck effect
-* Suspicious Stew made with dandelions
-* Custom items/armor with `Attribute.GENERIC_LUCK` modifiers
-
-{% hint style="info" %}
-**Tip:** This is great for rewarding players who bring LUCK potions to chambers, or for special events where you want to boost loot!
-{% endhint %}
-
-{% hint style="warning" %}
-**Balance Warning:** LUCK can significantly increase loot output. Test with your loot tables to ensure it doesn't break your economy.
-{% endhint %}
+Maximum pools per loot table in the [multi-pool format](loot.yml.md#multi-pool-format). **Default:** `5`. Pools beyond this are ignored at load time. The GUI limits pool editing to this number.
 
 </details>
 
 ***
 
 ## Spawner Wave System
+
+Tracks trial spawner waves with a boss bar and completion messages.
 
 ```yaml
 spawner-waves:
@@ -1227,6 +990,7 @@ spawner-waves:
   remove-distance: 32
   award-stats: true
   completion-message: true
+  prevent-infighting: true
   glow-active-spawners: false
   glow-color-normal: "#FFFF55"
   glow-color-ominous: "#A020F0"
@@ -1237,9 +1001,7 @@ spawner-waves:
 
 <summary><code>enabled</code></summary>
 
-**Default:** `true`
-
-Enable wave progress tracking for trial spawners. Shows boss bar and sends completion messages.
+Enable wave progress tracking for trial spawners. **Default:** `true`.
 
 </details>
 
@@ -1247,9 +1009,7 @@ Enable wave progress tracking for trial spawners. Shows boss bar and sends compl
 
 <summary><code>show-boss-bar</code></summary>
 
-**Default:** `true`
-
-Display a boss bar showing wave progress (mobs killed / total mobs) to nearby players. Ominous spawners show purple, normal spawners show yellow.
+Show a boss bar with wave progress (mobs killed / total) to nearby players. **Default:** `true`. Normal spawners show yellow, ominous purple.
 
 </details>
 
@@ -1257,19 +1017,15 @@ Display a boss bar showing wave progress (mobs killed / total mobs) to nearby pl
 
 <summary><code>detection-radius</code></summary>
 
-**Default:** `20` blocks
-
-How far from a trial spawner players can be and still see the boss bar / be considered participants.
+How far, in blocks, a player can be from a trial spawner and still see the boss bar and count as a participant. **Default:** `20`.
 
 </details>
 
 <details>
 
-<summary><code>remove-distance</code></summary>
+<summary><code>remove-distance</code> (1.2.26+)</summary>
 
-**Default:** `32` blocks _(added in 1.2.26)_
-
-Distance at which a player is **removed** from a spawner's boss bar. Acts as hysteresis above `detection-radius`: players are added to the bar at 20 blocks, removed at 32. Prevents the bar flickering on/off when players walk near the edge, and fixes the old behaviour where boss bars lingered after leaving a chamber.
+Distance, in blocks, at which a player is removed from a spawner's boss bar. **Default:** `32`. Should be larger than `detection-radius` so the bar does not flicker at the edge.
 
 </details>
 
@@ -1277,9 +1033,7 @@ Distance at which a player is **removed** from a spawner's boss bar. Acts as hys
 
 <summary><code>award-stats</code></summary>
 
-**Default:** `true`
-
-Track mob kills from waves in player statistics. Used for leaderboards.
+Count wave mob kills in player statistics. **Default:** `true`.
 
 </details>
 
@@ -1287,9 +1041,7 @@ Track mob kills from waves in player statistics. Used for leaderboards.
 
 <summary><code>completion-message</code></summary>
 
-**Default:** `true`
-
-Send a chat message when a wave is complete showing kill count and duration.
+Send a chat message with kill count and duration when a wave is complete. **Default:** `true`.
 
 </details>
 
@@ -1297,54 +1049,38 @@ Send a chat message when a wave is complete showing kill count and duration.
 
 <summary><code>prevent-infighting</code></summary>
 
-**Default:** `true`
-
-Stops wave mobs from fighting **each other**. In vanilla, a skeleton's stray arrow makes nearby mobs retaliate, so a wave can dissolve into mob-vs-mob brawls the player never has to touch — and those self-kills still count toward completing the wave. When `true`, friendly fire and target-locking strictly *between two trial-spawner wave mobs* is suppressed. Player-vs-mob combat is never affected.
+Stop wave mobs fighting each other. **Default:** `true`. In vanilla a stray skeleton arrow can start mob-vs-mob brawls that complete the wave without the player. When `true`, friendly fire and target-locking strictly between two wave mobs is suppressed. Player-vs-mob combat is never affected.
 
 </details>
 
 <details>
 
-<summary><code>glow-active-spawners</code></summary>
+<summary><code>glow-active-spawners</code> / <code>glow-color-normal</code> / <code>glow-color-ominous</code></summary>
 
-**Default:** `false` _(works correctly since 1.5.6 — see note below)_
+Draw a glowing outline around active trial spawners, visible through walls, to help players find them in a big chamber. **Defaults:** `glow-active-spawners: false`, colours `#FFFF55` (yellow, normal) and `#A020F0` (purple, ominous), as hex RGB. Minecraft only draws an outline in one of its own sixteen colours, so the colour you set is matched to the closest of those. The outline is an invisible, invulnerable marker entity that cannot be hit or farmed, removed when the wave completes or the chamber resets.
 
-Draw a glowing outline around the active trial spawner while a wave is running, visible through walls. Helps players find the spawner that's still firing in a big chamber. The outline is an invisible, invulnerable, non-colliding marker entity — it can't be hit, killed, or farmed, and it's removed the moment the wave completes or the chamber resets.
-
-</details>
-
-<details>
-
-<summary><code>glow-color-normal</code> / <code>glow-color-ominous</code></summary>
-
-**Defaults:** `"#FFFF55"` (yellow) / `"#A020F0"` (purple)
-
-Outline colors as hex RGB, per wave type.
+Update to a recent build before enabling; older builds did not render the outline correctly.
 
 </details>
 
 <details>
 
-<summary><code>glow-mode</code></summary>
+<summary><code>glow-mode</code> (1.5.4+)</summary>
 
-**Default:** `"wave-active"` _(added in 1.5.4)_
+Which spawners glow when `glow-active-spawners` is on. **Default:** `wave-active`.
 
-* `wave-active` — only the spawner whose wave is currently running glows.
-* `chamber-remaining` — when any wave starts in a chamber, **every uncleared spawner** in that chamber glows until its own wave completes. Solves "which spawner did I miss?" navigation on large chambers. Pairs well with Mythic Trials' HUD.
-
-{% hint style="warning" %}
-**Update to 1.5.6+ before enabling the glow.** On older builds the outline either didn't render at all (pre-1.5.4), floated one block above the spawner (1.5.4), or could be punched out and farmed for shulker shells (1.5.4–1.5.5).
-{% endhint %}
-
-{% hint style="info" %}
-**How it works:** When mobs spawn from a trial spawner, the plugin tracks them. As players kill mobs, the boss bar updates. When all mobs are dead, players get a completion message.
-{% endhint %}
+| Value | Behaviour |
+| ----- | --------- |
+| `wave-active` | Only the spawner whose wave is currently running glows. |
+| `chamber-remaining` | When any wave starts, every uncleared spawner in that chamber glows until its own wave completes. Solves "which spawner did I miss?" in large chambers. |
 
 </details>
 
 ***
 
 ## Spectator Mode
+
+Lets players spectate a chamber after dying in it.
 
 ```yaml
 spectator-mode:
@@ -1355,109 +1091,53 @@ spectator-mode:
   allow-solo-spectate: false
 ```
 
-<details>
-
-<summary><code>enabled</code></summary>
-
-**Default:** `true`
-
-Enable spectator mode. When players die in a chamber, they're offered the chance to spectate teammates.
-
-</details>
-
-<details>
-
-<summary><code>offer-timeout</code></summary>
-
-**Default:** `30` seconds
-
-How long the spectate offer lasts before expiring. Players type "spectate" or "no" in chat to respond.
-
-</details>
-
-<details>
-
-<summary><code>restrict-to-chamber</code></summary>
-
-**Default:** `true`
-
-Keep spectators within chamber bounds. They can fly around but not leave the area.
-
-</details>
-
-<details>
-
-<summary><code>boundary-buffer</code></summary>
-
-**Default:** `10` blocks
-
-Extra space outside the chamber boundary where spectators can still fly. Allows viewing from slightly outside.
-
-</details>
-
-<details>
-
-<summary><code>allow-solo-spectate</code></summary>
-
-**Default:** `false`
-
-Allow spectating empty chambers (when no other players are inside). Usually `false`—spectating is for watching teammates.
-
-{% hint style="info" %}
-**Spectator Mode Flow:**
-
-1. Player dies in chamber
-2. After respawn, offered to spectate (if other players are inside)
-3. Type "spectate" to accept → GameMode.SPECTATOR, teleport to center
-4. Type "exit" to leave → restored to previous game mode, teleported to exit
-{% endhint %}
-
-</details>
+| Setting | Effect | Default |
+| ------- | ------ | ------- |
+| `enabled` | Offer spectating to a player who dies in a chamber while others are inside. | `true` |
+| `offer-timeout` | Seconds the offer lasts. The player types "spectate" or "no" in chat. | `30` |
+| `restrict-to-chamber` | Keep spectators within chamber bounds. | `true` |
+| `boundary-buffer` | Extra blocks outside the boundary spectators may still fly. | `10` |
+| `allow-solo-spectate` | Allow spectating a chamber with nobody else inside. | `false` |
 
 ***
 
 ## Auto-Discovery of Natural Trial Chambers
 
-_Added in 1.2.25 — opt-in._
+_Added in 1.2.25, opt-in._ Automatically registers naturally-generated Trial Chambers the first time their chunks load. No `/trial generate` needed. Chambers are named like `auto_world_123_456`. On plugin enable, a startup sweep also scans already-loaded Overworld chunks.
 
-Automatically registers naturally-generated Trial Chambers the first time anyone loads their chunks. No `/trial generate` needed — the plugin detects vaults and spawners as chunks enter memory, flood-fills the chamber's structural blocks (tuff/copper variants) to compute a bounding box, and registers it under a deterministic auto-name like `auto_world_123_456`.
-
-On plugin enable, a startup sweep also scans every already-loaded Overworld chunk, so chambers in pre-loaded spawn regions get picked up on restart.
-
-To keep discovery (and BTC as a whole) out of a specific world, list it under `global.excluded-worlds` (v1.8.1 — see [Global Chamber Settings](config.yml.md#global-chamber-settings)).
+To keep discovery (and BTC) out of a world, list it under `global.excluded-worlds`.
 
 ```yaml
 discovery:
-  enabled: false                   # Master switch — opt-in
-  use-structure-bounds: true       # v1.7.0: use the game's exact structure bounds when available
-  structure-max-volume: 15000000   # Volume cap for structure-bounds discoveries (-1 = uncapped)
-  max-radius-xz: 60                # BFS expansion cap on horizontal axes
-  max-radius-y: 45                 # BFS expansion cap on vertical axis
-  min-vaults-plus-spawners: 2      # Reject regions with fewer total vaults + spawners
-  max-center-y: 10                 # Reject if AABB center Y > this (chambers gen deep underground)
-  auto-snapshot: false             # Snapshot on registration (expensive; enable if you want resets to work)
-  notify-ops: true                 # Broadcast registration to btc.discovery.notify holders
-  cooldown-seconds: 300            # Per-region debounce after a successful or failed discovery
-  pending-retry-seconds: 30        # How long to keep a partial-load seed pending while adjacent chunks load
-  merge-distance-blocks: 250       # Merge a new region into an existing chamber within this distance
-  max-merged-volume: 1500000       # Hard cap on the post-merge bounding-box volume (blocks)
-  structure-merge-distance-blocks: 16  # v2.0.9: merge distance for exact structure-bounds discoveries
-  expand-on-discover: true         # Auto-run one expand pass after discovery to catch clipped sections
-  expand-delay-seconds: 10         # Delay before that pass (lets vault rows commit + nearby chunks load)
-  expand-force-load: false         # Opt-in: force-load unloaded chunks during expand (Paper-only; I/O spike)
+  enabled: false
+  use-structure-bounds: true
+  structure-max-volume: 15000000
+  max-scan-blocks: 50000
+  max-radius-xz: 60
+  max-radius-y: 45
+  min-vaults-plus-spawners: 2
+  max-center-y: 10
+  auto-snapshot: false
+  notify-ops: true
+  cooldown-seconds: 300
+  pending-retry-seconds: 30
+  merge-distance-blocks: 250
+  max-merged-volume: 1500000
+  structure-merge-distance-blocks: 16
+  expand-on-discover: true
+  expand-delay-seconds: 10
+  expand-force-load: false
   snapshot-reminder:
     enabled: true
-    on-join: true                  # Ping an admin individually when they log in
-    interval-minutes: 30           # Periodic console summary + admin chat ping (0 disables periodic only)
+    on-join: true
+    interval-minutes: 30
 ```
 
 <details>
 
 <summary><code>enabled</code></summary>
 
-**Default:** `false`
-
-Master switch. Off by default because it's a behaviour change — old worlds with player-built tuff/copper structures can look like chambers to the detector. Turn on if your world is freshly generated, or if you've verified the false-positive guards below are tight enough for your server.
+Master switch. **Default:** `false`. Off by default because old worlds with player-built tuff or copper structures can look like chambers to the detector. Turn on for a freshly generated world, or once you have checked the guards below are tight enough.
 
 </details>
 
@@ -1465,17 +1145,11 @@ Master switch. Off by default because it's a behaviour change — old worlds wit
 
 <summary><code>use-structure-bounds</code> / <code>structure-max-volume</code> (v1.7.0)</summary>
 
-**Defaults:** `true` / `15000000`
+When a seed block sits inside a naturally-generated `minecraft:trial_chambers` structure, ask the game for its exact bounds instead of scanning blocks. **Defaults:** `true`, `structure-max-volume: 15000000` (`-1` = uncapped). This registers the chamber at its full correct size in one pass and handles datapack-enlarged chambers. Structure-bounds discoveries skip the size and depth checks and the auto-expand pass.
 
-When a seed block sits inside a naturally-generated `minecraft:trial_chambers` structure, discovery asks the game for the structure's **exact bounds** instead of flood-scanning blocks. This registers the chamber at its full, correct size in one pass — and, crucially, works for chambers enlarged by datapacks (e.g. "crazy chambers"-style packs) whose custom rooms use blocks the flood-fill doesn't recognise. Structure-bounds discoveries skip the size/depth validation gates and the auto-expand pass (the bounds are already exact), and are marked bounds-confirmed immediately.
+Player-built chambers are not generated structures, so they still use the block scan.
 
-Player-built chambers aren't generated structures, so they still discover via the block scan below.
-
-`structure-max-volume` caps how large a structure-bounds discovery may be, since datapack chambers can be far bigger than vanilla ones (`-1` = uncapped). This replaces `generation.max-volume` for these discoveries only.
-
-**Performance with very large chambers:** scanning, snapshotting and spawner resets are batched across ticks (nothing freezes), but a multi-million-block chamber still takes real time — block restoration runs at `global.blocks-per-tick` (500/tick ≈ 10,000 blocks/second, so a 3-million-block restore takes minutes). For big datapack chambers, raise `global.blocks-per-tick` and/or enable `global.use-fawe` (FastAsyncWorldEdit, Paper-only) for near-instant resets.
-
-Since **2.0.9**, snapshots are written to disk piece by piece and read back the same way, so the memory a snapshot or reset needs stays flat no matter how large the chamber is — chambers of several million blocks are safe even on servers with little RAM. Datapacks that build one chamber out of several chamber structures are handled by `structure-merge-distance-blocks` below.
+For very large datapack chambers, raise `global.blocks-per-tick` and consider `global.use-fawe` for faster resets. Snapshots and resets stream to and from disk (since 2.0.9), so memory stays flat regardless of chamber size.
 
 </details>
 
@@ -1483,9 +1157,15 @@ Since **2.0.9**, snapshots are written to disk piece by piece and read back the 
 
 <summary><code>max-radius-xz</code> / <code>max-radius-y</code></summary>
 
-**Defaults:** `60` / `45` blocks
+Caps on the block scan, in blocks. **Defaults:** `60`, `45`. Prevents a runaway scan if the match rule catches something larger than a vanilla chamber. Lower if you see over-registration.
 
-Hard caps on the flood-fill. Prevents a runaway scan if the predicate accidentally matches a structure larger than any vanilla chamber. Tune down if you're seeing over-registration; leave alone otherwise.
+</details>
+
+<details>
+
+<summary><code>max-scan-blocks</code></summary>
+
+How many blocks one search of a chamber may look at before it stops. **Default:** `50000`, which a vanilla chamber fits inside comfortably. Only the block-scan path uses it, so ordinary generated chambers (measured from the game's own structure bounds) are unaffected. If a chamber stops short, the console says so and points you at `/trial scan add <chamber>`; raise this if a datapack builds much larger chambers.
 
 </details>
 
@@ -1493,9 +1173,7 @@ Hard caps on the flood-fill. Prevents a runaway scan if the predicate accidental
 
 <summary><code>min-vaults-plus-spawners</code></summary>
 
-**Default:** `2`
-
-A candidate region must contain at least this many vaults + trial spawners combined, or it's rejected. Stops single-vault structures from getting registered as full chambers.
+A candidate region must contain at least this many vaults + trial spawners combined, or it is rejected. **Default:** `2`. Stops single-vault structures registering as chambers.
 
 </details>
 
@@ -1503,9 +1181,7 @@ A candidate region must contain at least this many vaults + trial spawners combi
 
 <summary><code>max-center-y</code></summary>
 
-**Default:** `10`
-
-Reject if the AABB's center Y is above this. Trial chambers generate deep underground, so anything near the surface is almost certainly a player build. Raise this only if you have a modded world that generates chambers higher up.
+Reject a candidate whose centre Y is above this. **Default:** `10`. Trial chambers generate deep underground; anything near the surface is almost certainly a player build. Range enforced -256 to 320.
 
 </details>
 
@@ -1513,11 +1189,7 @@ Reject if the AABB's center Y is above this. Trial chambers generate deep underg
 
 <summary><code>auto-snapshot</code></summary>
 
-**Default:** `false`
-
-Snapshot blocks on registration. Disabled by default because snapshotting a large chamber costs a few seconds of I/O per registration, which adds up if you're running a world pregenerator. **Enable this if you want auto-discovered chambers to be restorable on reset** — without a snapshot, the chamber gets per-player loot and protection, but resets can't rebuild broken blocks.
-
-Requires **1.5.6+** to function: older builds wrote the snapshot file but never linked it to the chamber row, so resets still reported "No snapshot found" with this enabled.
+Take a snapshot when a chamber is auto-registered. **Default:** `false`, because snapshotting a large chamber costs a few seconds each time, which adds up during world pregeneration. **Enable this if you want auto-discovered chambers to be resettable.** Without a snapshot they still get per-player loot and protection, but resets cannot rebuild broken blocks.
 
 </details>
 
@@ -1525,9 +1197,7 @@ Requires **1.5.6+** to function: older builds wrote the snapshot file but never 
 
 <summary><code>notify-ops</code></summary>
 
-**Default:** `true`
-
-Broadcast a message to anyone with the `btc.discovery.notify` permission when a chamber is registered.
+Broadcast a message to holders of `btc.discovery.notify` when a chamber is registered. **Default:** `true`.
 
 </details>
 
@@ -1535,21 +1205,17 @@ Broadcast a message to anyone with the `btc.discovery.notify` permission when a 
 
 <summary><code>cooldown-seconds</code> / <code>pending-retry-seconds</code></summary>
 
-**Defaults:** `300` / `30`
-
-Internal debounce and retry timers. `cooldown-seconds` prevents re-scanning the same 128-block region right after a successful or failed discovery. `pending-retry-seconds` is how long the plugin waits for neighbouring chunks to load before finalizing a partial-load chamber. Defaults are fine for almost everyone.
+Internal debounce and retry timers, in seconds. **Defaults:** `300`, `30`. `cooldown-seconds` stops re-scanning the same area right after a discovery attempt; `pending-retry-seconds` is how long the plugin waits for neighbouring chunks to load before finalising a partly-loaded chamber. Defaults are fine for almost everyone.
 
 </details>
 
 <details>
 
-<summary><code>merge-distance-blocks</code> / <code>max-merged-volume</code></summary>
+<summary><code>merge-distance-blocks</code> / <code>max-merged-volume</code> (1.4.1+)</summary>
 
-**Defaults:** `250` / `1500000` _(added in 1.4.1)_
+When a newly discovered region sits within `merge-distance-blocks` of an already-registered chamber, the two are merged instead of registering a duplicate (vanilla chambers often load in pieces as chunks stream in). **Defaults:** `250`, `max-merged-volume: 1500000` blocks. A region that would push the merged box past `max-merged-volume` stays separate. Set `merge-distance-blocks` to `-1` to disable merging.
 
-When a newly discovered region's bounding box sits within `merge-distance-blocks` (Chebyshev distance) of an already-registered chamber, the two are merged into one chamber instead of registering a duplicate — vanilla chambers often load in pieces as their chunks stream in. `max-merged-volume` hard-caps the post-merge bounding box so pathological geometry can't swallow half the world into one logical chamber; regions that would exceed it stay separate.
-
-Since **1.5.6**, a merge automatically re-captures the chamber's snapshot whenever one exists (a pre-merge snapshot covers the old, smaller bounds and is unsafe to restore). If you see a console warning that a post-merge snapshot failed, run `/trial snapshot create <chamber>` before the next reset.
+A merge re-captures the snapshot automatically (since 1.5.6). If a console warning says a post-merge snapshot failed, run `/trial snapshot create <chamber>` before the next reset.
 
 </details>
 
@@ -1557,40 +1223,32 @@ Since **1.5.6**, a merge automatically re-captures the chamber's snapshot whenev
 
 <summary><code>structure-merge-distance-blocks</code> (v2.0.9)</summary>
 
-**Default:** `16`
+The merge distance used when a discovery came from the game's exact structure bounds. **Default:** `16`. Some datapacks build one chamber out of several trial-chamber structures placed next to each other; without merging, each piece registers separately and their resets fight over shared walls. A newly-found structure within this many blocks (edge-to-edge) of an existing chamber grows that chamber instead. Normal worlds place separate chambers hundreds of blocks apart, so `16` is safe. Set `0` to merge only truly overlapping boxes, `-1` to never merge structure discoveries. Merged size is capped by `structure-max-volume`.
 
-The merge distance used when a discovery came from the game's **exact structure bounds** (see `use-structure-bounds` above). Some datapacks build one big chamber out of **several** trial-chamber structures placed right next to each other; without merging, each piece registers as its own chamber with its own reset timer, and those resets fight over the shared walls. A newly-found structure within this many blocks (edge-to-edge) of an already-registered chamber grows that chamber's bounds instead of creating a new one — the merged chamber then gets a fresh snapshot automatically, same as any merge.
-
-The default of 16 folds chained datapack pieces together while keeping genuinely separate chambers (which generate hundreds of blocks apart) as their own registrations. Raise it if your datapack leaves bigger gaps between pieces and you still see duplicates; set `0` to merge only truly overlapping boxes, or `-1` to never merge structure discoveries. Merged size is capped by `structure-max-volume`, not `max-merged-volume`, since datapack chambers are legitimately huge.
-
-Already have duplicates from an earlier version? Delete them with `/trial delete <name>`, then walk through the chamber once — it re-registers as a single chamber.
+Already have duplicates from an earlier version? Delete them with `/trial delete <name>`, walk through the chamber once, and it re-registers as one.
 
 </details>
 
 <details>
 
-<summary><code>expand-on-discover</code> / <code>expand-delay-seconds</code></summary>
+<summary><code>expand-on-discover</code> / <code>expand-delay-seconds</code> / <code>expand-force-load</code> (1.6.3+)</summary>
 
-**Defaults:** `true` / `10` _(added in 1.6.3)_
+The block scan can be clipped if neighbouring chunks were still loading, leaving part of a chamber outside the registered region. **Defaults:** `expand-on-discover: true`, `expand-delay-seconds: 10`, `expand-force-load: false`.
 
-The flood-fill that detects a chamber can be clipped: it floods outward from one vault/spawner, and if neighbouring chunks were still loading at detection time (or the chamber is big enough to hit the flood's internal node cap), the bounding box stops short — leaving part of the chamber, and its chests/vaults/spawners, outside the registered region. With `expand-on-discover` on, the plugin automatically runs **one expand pass** `expand-delay-seconds` after registering a chamber: a multi-seed re-flood from all of its vaults (now that the rows are committed and nearby chunks have loaded) that grows the bounds to cover what the first pass missed, then re-scans and re-snapshots.
+With `expand-on-discover` on, one expand pass runs `expand-delay-seconds` after registering a chamber: a re-scan from all of its vaults that grows the bounds to cover what the first pass missed, then re-snapshots. It is best-effort; a wing nobody has visited may still be missed. Repair on demand by standing in the chamber and running `/trial scan add <chamber>`, or using the GUI's Travel & Expand button.
 
-It's **best-effort** — it can only read chunks that are loaded when it runs, so a wing nobody has visited yet may still be missed. Repair on demand by standing in the chamber and running [`/trial scan add <chamber>`](../reference/commands.md#tcp-scan-chamber), or use the chamber GUI's one-time **Travel & Expand** button (`/trial menu <chamber>`), which teleports you there first then scans.
-
-Set **`expand-force-load: true`** _(opt-in, Paper-only)_ to let both the auto pass and `/trial scan add` **force-load** unloaded chunks on demand, so they can reach a wing nobody has visited without anyone travelling there. Off by default — it trades a chunk-load I/O spike for completeness.
+`expand-force-load: true` (opt-in, Paper only) lets both the auto pass and `/trial scan add` load unvisited chunks on demand, at the cost of a disk-read spike.
 
 </details>
 
 <details>
 
-<summary><code>snapshot-reminder</code></summary>
+<summary><code>snapshot-reminder</code> (1.5.1+)</summary>
 
-**Defaults:** `enabled: true`, `on-join: true`, `interval-minutes: 30` _(added in 1.5.1)_
-
-Auto-discovered chambers without a snapshot silently can't be reset. This pings admins holding `btc.admin.snapshot` — once on login and as a periodic coalesced console/chat summary — whenever any chamber is missing its snapshot. Set `interval-minutes: 0` to disable only the periodic ping.
+Auto-discovered chambers without a snapshot cannot be reset, so this pings holders of `btc.admin.snapshot`. **Defaults:** `enabled: true`, `on-join: true` (ping an admin when they log in), `interval-minutes: 30` (periodic console and chat summary; `0` disables only the periodic ping).
 
 {% hint style="info" %}
-**Plug-and-play setup:** if you want the plugin to "just work" on every chamber in your world without running any commands, set:
+**Plug-and-play:** to have the plugin work on every chamber with no commands, set:
 
 ```yaml
 discovery:
@@ -1598,7 +1256,7 @@ discovery:
   auto-snapshot: true
 ```
 
-That's it. Walk/fly around the world and chambers will register themselves as you load their chunks.
+Then move around the world and chambers register themselves as their chunks load.
 {% endhint %}
 
 </details>
@@ -1612,27 +1270,27 @@ chests:
   per-player-loot: false
 ```
 
-_(Added in 1.5.7 — opt-in. Reworked in 1.6.3.)_ Lootr-style container loot: when enabled, every player who opens a **chest, trapped chest, barrel, dispenser, or dropper** that has a loot table inside a registered chamber gets their **own loot**. The second player into a chamber no longer finds gutted containers — together with per-player vaults, the entire chamber becomes per-player.
+_(Added in 1.5.7, opt-in. Reworked in 1.6.3.)_ Lootr-style container loot. **Default:** `false`. When enabled, every player who opens a chest, trapped chest, barrel, dispenser, or dropper that has a loot table inside a registered chamber gets their own freshly-rolled copy.
 
 How it behaves:
 
-* Each player who opens an untouched container gets their **own, independently-rolled** loot from its vanilla loot table — two players can get different items, exactly like vanilla generates per structure.
-* The container's loot table is **never consumed** (the real block is never opened, and the loot table is re-applied if anything tries to roll it). So every chamber **reset** clears per-player copies and the next open rolls **fresh** loot again — "vanilla, but repeatable."
-* Double chests share one copy (keyed by the left half). Dispensers/droppers use their 9 slots.
-* **Hopper automation is blocked** in/out of chamber containers while enabled — it would drain or pollute the source.
-* Containers **placed by players** inside a chamber keep vanilla behaviour (tagged at place time).
-* Decorated pots are excluded by design: their loot is break-based and already renews via chamber resets.
+- Each player rolls their own loot independently from the container's vanilla loot table; two players can get different items.
+- The real container is never opened, so every chamber reset clears the per-player copies and the next open rolls fresh again ("vanilla, but repeatable").
+- Double chests share one copy (keyed by the left half). Dispensers and droppers use their 9 slots.
+- Hopper automation into or out of chamber containers is blocked while this is on.
+- Containers placed by players inside a chamber keep vanilla behaviour.
+- Decorated pots are excluded (their loot is break-based and already renews on reset).
 
-**Customising a container's loot (overrides).** Editing is done entirely from the GUI — there is no in-world editing. Open the chamber GUI (`/trial menu <chamber>` → **Container Loot**), then:
+**Customising a container's loot:** GUI only, no in-world editing. Open `/trial menu <chamber>`, then Container Loot:
 
-* **Scan Containers** lists every container in the chamber so you can pick one. Listing only — it does **not** freeze loot.
-* **Click a container to edit** its contents. Saving turns it into an **override**: every player then receives a copy of *that* loot (still per-player, and re-cloned fresh each reset), instead of a random roll. Overrides **persist across resets**.
-* **Revert to vanilla** with shift-left-click (or [`/trial container resetone <chamber> <#>`](../reference/commands.md#tcp-container-action-chamber)) — the container goes back to random per-player rolls.
+- **Scan Containers** lists every container so you can pick one (listing only, does not freeze loot).
+- **Click a container to edit** its contents. Saving makes it an override: every player then gets a copy of that loot (still per-player, re-cloned each reset). Overrides persist across resets.
+- **Revert to vanilla** with shift-left-click, or `/trial container resetone <chamber> <#>`.
 
-Each container is labelled **Vanilla** (rolls fresh per player) or **Custom override** in the GUI. Toggle the whole feature on/off from the same screen, or via [`/trial container`](../reference/commands.md#tcp-container-action-chamber) on the command line.
+Toggle the whole feature from the same screen or `/trial container` on the command line.
 
 {% hint style="warning" %}
-Turn this on only after your chambers are registered — containers inside chamber bounds that players were already using as storage will start serving per-player loot. Player-placed containers _from before 1.5.7_ can't be distinguished from chamber loot containers.
+Turn this on only after your chambers are registered. Containers inside chamber bounds that players used as storage will start serving per-player loot. Player-placed containers from before 1.5.7 cannot be told apart from chamber loot containers.
 {% endhint %}
 
 ***
@@ -1645,13 +1303,13 @@ setup:
     enabled: true
 ```
 
-_(Added in 1.6.0.)_ Controls the opt-in [`/trial setup`](../reference/commands.md) tour's gentle reminder. When `enabled`, an operator who hasn't run the tour yet gets a one-line nudge on join — **at most once a week, three times total** — which stops permanently the moment they run `/trial setup` (with a single follow-up if they start but don't finish). Set to `false` to never show it. The tour itself is always available on demand regardless of this setting; BTC runs perfectly on its defaults without ever opening it.
+_(Added in 1.6.0.)_ Controls the reminder for the opt-in `/trial setup` tour. **Default:** `enabled: true`. When on, an operator with `tcp.admin.setup` who has not run the tour gets a one-line nudge on join, at most once a week and three times total, which stops for good once they run `/trial setup`. Set `false` to never show it. The tour is always available on demand; BTC runs fine on defaults without it.
 
 ***
 
 ## Updates
 
-_(Added in 1.8.0.)_ BetterTrialChambers can check for new releases and, if you let it, download and install them for you.
+_(Added in 1.8.0.)_ BetterTrialChambers can check for new releases and, if you let it, download and install them. Checked on Modrinth first, then GitHub Releases. Check state is cached under `plugins/BetterTrialChambers/pluginpulse/`.
 
 ```yaml
 update:
@@ -1661,26 +1319,18 @@ update:
   allow-hot-reload: false
 ```
 
-Updates are checked on **Modrinth** first, falling back to **GitHub Releases**. Checks run shortly after startup and then on the interval below; check state is cached under `plugins/BetterTrialChambers/pluginpulse/` so a fleet of servers doesn't hammer the APIs. Servers running the `-mc26` build automatically follow `-mc26` releases.
-
 <details>
 
 <summary><code>mode</code></summary>
 
-**Default:** `notify`
+How far the updater goes on its own. **Default:** `notify`. Each mode includes the ones above it.
 
-How far the updater is allowed to go on its own. Each mode includes everything the one above it does:
-
-* `check-only` — check silently; results are only visible via `/trial update status`.
-* `notify` — additionally announce available updates in the console and to admins on join (holders of `btc.admin`).
-* `download` — additionally allow `/trial update download` to fetch a new release, verify it, and stage it for install on the next restart.
-* `auto-stage` — automatically download, verify and stage new releases as they appear.
-
-<div data-gb-custom-block data-tag="hint" data-style="info">
-
-In `notify` (the default) nothing is ever written to disk — the plugin only tells you an update exists. You stay in full control of when anything is downloaded.
-
-</div>
+| Value | Behaviour |
+| ----- | --------- |
+| `check-only` | Check silently; results only via `/trial update status`. |
+| `notify` | Also announce updates in the console and to admins (`btc.admin`) on join. Nothing is written to disk. |
+| `download` | Also allow `/trial update download` to fetch, verify, and stage a release for the next restart. |
+| `auto-stage` | Automatically download, verify, and stage new releases as they appear. |
 
 </details>
 
@@ -1688,9 +1338,7 @@ In `notify` (the default) nothing is ever written to disk — the plugin only te
 
 <summary><code>check-interval-hours</code></summary>
 
-**Default:** `6` — minimum `1`
-
-Hours between automatic update checks.
+Hours between automatic update checks. **Default:** `6`, minimum `1`.
 
 </details>
 
@@ -1698,9 +1346,7 @@ Hours between automatic update checks.
 
 <summary><code>require-hash</code></summary>
 
-**Default:** `true`
-
-Refuse to install a downloaded jar unless its checksum matches the one the source published. Leave this on unless a release is genuinely missing hashes and you accept the risk of an unverified download.
+Refuse to install a downloaded jar unless its checksum matches the one the source published. **Default:** `true`. Leave on unless a release is genuinely missing hashes and you accept the risk.
 
 </details>
 
@@ -1708,19 +1354,11 @@ Refuse to install a downloaded jar unless its checksum matches the one the sourc
 
 <summary><code>allow-hot-reload</code></summary>
 
-**Default:** `false`
-
-When enabled, `/trial update apply` can swap a staged update into place **without a server restart** — the old version is unloaded, the jar replaced, and the new version enabled live. If the new version fails to load, BTC rolls back to the automatic backup it made before staging.
-
-<div data-gb-custom-block data-tag="hint" data-style="warning">
-
-Hot reload is refused on Folia, and while other plugins depend on BetterTrialChambers. It is an advanced convenience for small updates — **restarting the server is always the safer way to apply an update.** Leave this off unless you specifically want in-place reloads.
-
-</div>
+Let `/trial update apply` swap a staged update into place without a server restart. **Default:** `false`. If the new version fails to load, BTC rolls back to the backup it made before staging. Refused on Folia and while other plugins depend on BTC. Restarting is always safer.
 
 </details>
 
-See [Commands](../reference/commands.md) for the `/trial update` subcommands (`check`, `download`, `apply`, `restore`, `ignore`, `status`).
+See [Commands](../reference/commands.md) for the `/trial update` subcommands.
 
 ***
 
@@ -1729,34 +1367,26 @@ See [Commands](../reference/commands.md) for the `/trial update` subcommands (`c
 ```yaml
 metrics:
   enabled: true
-  error-reporting: false
+  error-reporting: true
 ```
 
-_(Added in 1.5.7. Provider switched from bStats to [FastStats](https://faststats.dev) in 2.0.5.)_ Anonymous aggregate usage metrics — database backend, whether discovery is enabled, glow mode, chamber-count bucket, and which premium modules are installed alongside BTC. **No player data is ever collected.**
+_(Added in 1.5.7. Provider switched from bStats to [FastStats](https://faststats.dev) in 2.0.5.)_ Anonymous aggregate usage metrics. No player data is ever collected. What is sent: server software and Minecraft version, database backend, which features are on (auto-discovery, per-player container loot, spawner glow mode, custom mob provider, reset interval band), rough chamber counts and sizes, how many chambers lack a snapshot, which other plugins BTC can hook, which premium modules are installed, and how many resets, vault opens, and chamber clears happened since the last report.
 
-Ways to turn it off:
-
-* **This plugin only** — set `metrics.enabled: false` here. BTC then never starts the SDK at all, so nothing is sent and no FastStats files are written.
-* **Error reports** are a separate, opt-in setting — see `error-reporting` below. They are **off** unless you turn them on.
-* **Every FastStats plugin on the server** — set `enabled=false` in `plugins/faststats/config.properties`. This is the direct replacement for the old `plugins/bStats/config.yml`. That file also has narrower switches (`submitMetrics`, `submitErrors`, `submitAdditionalMetrics`) if you'd rather disable only part of it.
-
-**Nothing is sent on the first run.** FastStats writes the opt-out file on its first start and waits until the next server restart before submitting anything, so owners get a chance to opt out first. A brand-new install showing no data for one boot is expected behaviour, not a fault.
+- `enabled` (**default `true`**): set `false` to stop this plugin sending anything. To disable metrics for every FastStats plugin on the server, set `enabled=false` in `plugins/faststats/config.properties` (the replacement for the old `plugins/bStats/config.yml`).
+- Nothing is sent on the first run: FastStats writes the opt-out file and waits for the next restart, so you get a chance to opt out first.
 
 <details>
 
 <summary><code>error-reporting</code></summary>
 
-**Default:** `false` — opt-in _(2.0.7+)_
+Automatically report BetterTrialChambers' own errors so bugs get fixed without you filing a ticket. **Default:** `true`. Set to `false` to turn it off.
 
-Set to `true` to automatically report BetterTrialChambers' own errors, so bugs get found and fixed without anyone having to notice and file a report. It's off unless you choose it — sending error reports is a bigger step than anonymous counters, so it isn't switched on for you.
+- Only this plugin's errors are captured, never another plugin's.
+- Before anything is sent, IP addresses, file paths containing your username, database credentials, and player UUIDs are replaced with placeholders. Player names, chat, inventories, coordinates, and world data are never included.
+- Each report also carries the plugin version, your Minecraft version, your database type (sqlite or mysql), whether the server runs Folia, a rough chamber-count band, and which BTC operation was running, so a fix can target the right setup.
+- Routine shutdown and reload cancellations are filtered out.
 
-**What is and isn't sent when enabled:**
-
-* **Only this plugin's errors.** The tracker is bound to BTC's own class loader, so exceptions thrown by other plugins are never captured — even if they happen at the same moment.
-* **Scrubbed before sending.** IP addresses (v4 and v6), file paths containing your operating-system username, database credentials, and player UUIDs are all replaced with placeholders. Player names, chat, inventories, coordinates and world data are never part of an error report.
-* **Routine cancellations are filtered out**, so normal shutdown and reload activity doesn't get reported as errors.
-
-Leaving it `false` keeps the anonymous usage numbers while sending no error reports. If you enable it but want it off across every FastStats plugin at once, set `submitErrors=false` in `plugins/faststats/config.properties`.
+To turn error reports off across every FastStats plugin, set `submitErrors=false` in `plugins/faststats/config.properties`.
 
 </details>
 
@@ -1774,42 +1404,7 @@ debug:
 
 <summary><code>verbose-logging</code></summary>
 
-**Default:** `false`
-
-Enable detailed logging for debugging. Logs include:
-
-* Vault type detection (normal vs ominous)
-* Key validation checks
-* LUCK effect calculations
-* Block state information
-* Vault saving and updates
-* Loot roll calculations
-* Spawner wave tracking (mob spawns, deaths, wave completion)
-* **Spawner cooldown configuration** (v1.2.15+): Shows config values, old→new cooldown for each spawner, and verification that changes were applied
-
-**Version 1.1.9+:** When enabled, displays a prominent startup banner on server start:
-
-```
-═══════════════════════════════════════
-   DEBUG MODE ENABLED
-   Verbose logging is active
-   Expect detailed console output
-═══════════════════════════════════════
-```
-
-This helps verify that debug mode is actually loaded from your config file.
-
-{% hint style="info" %}
-**Troubleshooting:** If you don't see the startup banner after enabling debug mode:
-
-1. Make sure you're editing the config in `plugins/BetterTrialChambers/config.yml` (not the default in the plugin jar)
-2. Fully restart your server (not just `/trial reload`)
-3. Check for YAML syntax errors in your config file
-{% endhint %}
-
-{% hint style="warning" %}
-Debug mode generates TONS of console output. Don't leave it on in production!
-{% endhint %}
+Log detailed decisions to the console, including why a protection action was or was not taken. **Default:** `false`. If a toggle seems not to work, turn this on and watch the log; the usual cause is the player being exempt through a `tcp.bypass.*` permission (operators have all of them, so test with a non-op account). Very noisy; leave off in production. When on, a startup banner confirms it loaded.
 
 </details>
 
@@ -1817,9 +1412,7 @@ Debug mode generates TONS of console output. Don't leave it on in production!
 
 <summary><code>skip-messages-schema-check</code></summary>
 
-**Default:** `false`
-
-On startup BTC compares your `messages.yml` against the JAR-bundled defaults and warns about any missing keys — because when keys are missing, GUI tooltips and chat messages render as literal `<missing: key.name>` text. Set this to `true` only if that warning is noisy and you have a deliberate reason to ignore it.
+Skip the startup check that compares your `messages.yml` against the bundled defaults. **Default:** `false`. Leave `false` unless the warning is noisy and you have a reason to ignore it; missing keys make GUI tooltips and chat render as literal `<missing: key.name>` text.
 
 </details>
 
@@ -1829,27 +1422,27 @@ On startup BTC compares your `messages.yml` against the JAR-bundled defaults and
 
 <details>
 
-<summary>Casual Survival Server</summary>
+<summary>Casual survival server</summary>
 
 ```yaml
 global:
-  default-reset-interval: 86400  # Daily resets
+  default-reset-interval: 86400   # daily resets
 vaults:
-  normal-cooldown-hours: 6  # Generous cooldowns
+  normal-cooldown-hours: 6
   ominous-cooldown-hours: 12
 protection:
-  allow-pvp: false  # No PvP
+  allow-pvp: false
 ```
 
 </details>
 
 <details>
 
-<summary>Competitive/PvP Server</summary>
+<summary>Competitive / PvP server</summary>
 
 ```yaml
 global:
-  default-reset-interval: 43200  # Twice daily
+  default-reset-interval: 43200   # twice daily
 vaults:
   normal-cooldown-hours: 12
   ominous-cooldown-hours: 24
@@ -1862,31 +1455,31 @@ protection:
 
 <details>
 
-<summary>High-Activity Server</summary>
+<summary>High-activity server</summary>
 
 ```yaml
 global:
-  default-reset-interval: 21600  # Every 6 hours
-  blocks-per-tick: 1000  # Fast resets
+  default-reset-interval: 21600   # every 6 hours
+  blocks-per-tick: 1000
 vaults:
   normal-cooldown-hours: 3
   ominous-cooldown-hours: 6
 performance:
-  cache-duration-seconds: 600  # Longer cache
+  cache-duration-seconds: 600
 ```
 
 </details>
 
 <details>
 
-<summary>Roleplay/Lore Server</summary>
+<summary>Roleplay / lore server</summary>
 
 ```yaml
 global:
-  default-reset-interval: 604800  # Weekly resets
+  default-reset-interval: 604800   # weekly resets
 vaults:
-  normal-cooldown-hours: 168  # Once per week
-  show-cooldown-particles: false  # Less immersion-breaking
+  normal-cooldown-hours: 168
+  show-cooldown-particles: false
   play-sound-on-open: false
 ```
 
@@ -1896,49 +1489,21 @@ vaults:
 
 ## Applying Changes
 
-After editing `config.yml`:
-
-```
-/trial reload
-```
-
-Most settings apply immediately. Chamber-specific settings (like `default-reset-interval`) only affect new resets, not chambers mid-cycle.
-
-{% hint style="info" %}
-**Database changes** require a full restart, not just a reload.
-{% endhint %}
-
-***
-
-## Pro Tips
-
-{% hint style="success" %}
-**Start conservative:** Use longer cooldowns and reset intervals initially. It's easier to shorten them later than deal with player complaints about too-frequent changes.
-{% endhint %}
-
-{% hint style="info" %}
-**Test in dev:** Create a test chamber to experiment with settings. Use `/trial reset TestChamber` to see how changes affect gameplay.
-{% endhint %}
-
-{% hint style="warning" %}
-**Backup before tuning:** Changing database settings wrong can corrupt data. Always backup `plugins/BetterTrialChambers/` before major config changes.
-{% endhint %}
+After editing `config.yml`, run `/trial reload`. Most settings apply immediately. Chamber reset intervals only affect the next reset, not a chamber mid-cycle. Database changes need a full server restart.
 
 ***
 
 ## Common Questions
 
-**"Can different chambers have different reset intervals?"** Yes! The `default-reset-interval` is just the default. You can override per-chamber using database edits or (in future versions) per-chamber configs.
+**Can different chambers have different reset intervals?** Yes. `default-reset-interval` is only the default; override per-chamber from the GUI or database.
 
-**"What happens if I change cooldowns while players have active cooldowns?"** Existing cooldowns aren't retroactively changed. New cooldowns apply to future vault interactions.
+**What happens if I change cooldowns while players have active cooldowns?** Existing cooldowns are not changed retroactively. New values apply to future vault interactions.
 
-**"Can I disable statistics for performance?"** Yes, set `statistics.enabled: false`. You'll lose leaderboards, but save a tiny bit of database overhead.
+**Can I disable statistics for performance?** Yes, set `statistics.enabled: false`. You lose leaderboards.
 
-**"Should I use MySQL or SQLite?"** SQLite unless you're running multiple servers that need shared data. SQLite is faster for single-server setups.
+**MySQL or SQLite?** SQLite unless you run multiple servers that need shared data.
 
 ***
-
-Need help with something specific? Check out the other configuration pages!
 
 {% content-ref url="loot.yml.md" %}
 [loot.yml.md](loot.yml.md)

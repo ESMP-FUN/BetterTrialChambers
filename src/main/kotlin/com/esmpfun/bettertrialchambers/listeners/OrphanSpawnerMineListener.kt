@@ -16,7 +16,7 @@ import org.bukkit.persistence.PersistentDataType
  * Allows players to recover TCP-preset trial spawners that were placed outside
  * any registered chamber ("orphaned" spawners).
  *
- * Vanilla trial spawners can never be mined for a drop — they always drop
+ * Vanilla trial spawners can never be mined for a drop, they always drop
  * nothing regardless of tool or enchantment. TCP's protection listener only
  * guards spawners *inside* chambers; outside a chamber it returns early,
  * leaving vanilla's silent-drop behaviour in place. This creates a usability
@@ -24,15 +24,15 @@ import org.bukkit.persistence.PersistentDataType
  * permanently stuck there.
  *
  * Fix:
- *   - Silk Touch tool → cancel vanilla nothing-drop, drop the full preset item
+ *   - Silk Touch tool -> cancel vanilla nothing-drop, drop the full preset item
  *     (PDC tag intact for re-placement), play the vanilla break effect.
- *   - No Silk Touch → cancel the break entirely, send a hint. Prevents
+ *   - No Silk Touch -> cancel the break entirely, send a hint. Prevents
  *     accidental permanent loss.
  *
  * TCP-WildSpawners (when installed) handles wild-preset spawner recovery
  * without Silk Touch via its own configurable hardness system. There is no
  * conflict: WildSpawners drives mining via [BlockDamageEvent] and sets the
- * block to AIR directly — [BlockBreakEvent] never fires for spawners it
+ * block to AIR directly, [BlockBreakEvent] never fires for spawners it
  * manages, so this listener only ever runs when WildSpawners is absent.
  *
  * "Orphaned" means: block has `tcp:preset_id` on its TileState AND
@@ -56,7 +56,7 @@ class OrphanSpawnerMineListener(private val plugin: BetterTrialChambers) : Liste
         val presetId = tileState.persistentDataContainer
             .get(presetIdKey, PersistentDataType.STRING) ?: return
 
-        // If inside a registered chamber, leave it alone — ProtectionListener handles that.
+        // If inside a registered chamber, leave it alone, ProtectionListener handles that.
         if (plugin.chamberManager.getCachedChamberAt(block.location) != null) return
 
         event.isCancelled = true
@@ -68,13 +68,30 @@ class OrphanSpawnerMineListener(private val plugin: BetterTrialChambers) : Liste
         }
 
         // Drop the full preset item so it can be re-placed and re-identified.
+        //
+        // Two ways that can fail, and both end up as a plain trial spawner
+        // rather than nothing. The whole point of this listener is that a preset
+        // spawner placed outside a chamber must never become impossible to pick
+        // up again, and handing back a plain one keeps that promise even when
+        // the preset itself is the problem.
         val preset = plugin.spawnerPresetManager.get(presetId)
-        val drop = if (preset != null) {
-            plugin.spawnerPresetManager.getItem(preset, 1)
-        } else {
+        val drop = when {
             // Preset was removed from spawner_presets.yml after this spawner was placed.
-            // Fall back to a plain trial_spawner so the block is never permanently unrecoverable.
-            org.bukkit.inventory.ItemStack(Material.TRIAL_SPAWNER)
+            preset == null -> org.bukkit.inventory.ItemStack(Material.TRIAL_SPAWNER)
+            else -> try {
+                plugin.spawnerPresetManager.getItem(preset, 1)
+            } catch (e: IllegalArgumentException) {
+                // The preset is still listed but its settings will not build into
+                // an item any more. Unguarded, this threw straight out of the
+                // event, so the block stayed put, nothing dropped, and the
+                // console filled with "could not pass event" while the player
+                // was left with a spawner they could not remove.
+                plugin.logger.warning(
+                    "Spawner preset '$presetId' could not be rebuilt into an item " +
+                        "(${e.message}); handing back a plain trial spawner instead."
+                )
+                org.bukkit.inventory.ItemStack(Material.TRIAL_SPAWNER)
+            }
         }
 
         block.world.dropItemNaturally(block.location, drop)

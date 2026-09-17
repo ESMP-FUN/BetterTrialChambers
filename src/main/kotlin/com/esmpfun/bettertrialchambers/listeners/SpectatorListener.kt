@@ -7,6 +7,7 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerMoveEvent
+import org.bukkit.event.player.PlayerPortalEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.event.player.PlayerTeleportEvent
 
@@ -115,6 +116,36 @@ class SpectatorListener(private val plugin: BetterTrialChambers) : Listener {
     }
 
     /**
+     * Keeps spectators inside the chamber when they walk into a portal.
+     *
+     * 26.3 fixed MC-46421, so spectators can use nether and end portals again.
+     * That reopened a hole here: [PlayerPortalEvent] extends [PlayerTeleportEvent]
+     * but declares its own `HandlerList`, so [onPlayerTeleport] above never sees
+     * it. A portal standing inside or beside a chamber was therefore a way out of
+     * spectator bounds that no other movement path allowed.
+     *
+     * Portal destinations are in another world, so [SpectatorManager.isWithinSpectatorBounds]
+     * rejects them on the world-name check alone. The `PLUGIN` exemption from
+     * [onPlayerTeleport] is kept for the same reason: BTC's own exit teleport must
+     * still get through if it ever arrives as a portal event.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    fun onPlayerPortal(event: PlayerPortalEvent) {
+        if (!plugin.isReady) return
+        if (!plugin.config.getBoolean("spectator-mode.enabled", true)) return
+        if (!plugin.config.getBoolean("spectator-mode.restrict-to-chamber", true)) return
+
+        val player = event.player
+        if (!plugin.spectatorManager.isSpectating(player)) return
+        if (event.cause == PlayerTeleportEvent.TeleportCause.PLUGIN) return
+
+        if (!plugin.spectatorManager.isWithinSpectatorBounds(player, event.to)) {
+            event.isCancelled = true
+            player.sendMessage(plugin.getMessageComponent("spectate-boundary-warning"))
+        }
+    }
+
+    /**
      * Cleans up spectator data on player quit.
      */
     @EventHandler(priority = EventPriority.MONITOR)
@@ -126,7 +157,7 @@ class SpectatorListener(private val plugin: BetterTrialChambers) : Listener {
 
     /**
      * v1.7.2 crash recovery: if the server stopped while this player was
-     * spectating, PDC recovery keys survived in their player data — restore
+     * spectating, PDC recovery keys survived in their player data, restore
      * their previous gamemode/location instead of leaving them in SPECTATOR.
      * Runs on the player's entity thread (Folia-safe).
      */

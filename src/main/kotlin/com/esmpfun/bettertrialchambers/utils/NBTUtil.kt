@@ -34,7 +34,7 @@ object NBTUtil {
             is TrialSpawner -> captureTrialSpawner(state)
             is Vault -> captureVault(state)
             is DecoratedPot -> captureDecoratedPot(state)
-            // v1.7.2: decoration/utility tile entities — before this, only the four
+            // v1.7.2: decoration/utility tile entities, before this, only the four
             // types above survived a reset; signs/heads/banners/etc. restored blank.
             // Note: Lectern/Jukebox/ChiseledBookshelf are TileStateInventoryHolder but
             // NOT org.bukkit.block.Container, so these branches don't shadow Container.
@@ -64,7 +64,7 @@ object NBTUtil {
      * mob counts, spawn interval/range, reward tables) and the preset tag.
      * A restore into a RECREATED block entity (spawner block destroyed before
      * the reset, or a dungeon room template stamped into air) starts from
-     * vanilla defaults with EMPTY spawn potentials — without this capture the
+     * vanilla defaults with EMPTY spawn potentials, without this capture the
      * spawner came back permanently inactive.
      */
     private fun captureTrialSpawner(spawner: TrialSpawner): Map<String, Any> {
@@ -175,7 +175,7 @@ object NBTUtil {
      * UNROLLED loot table (empty inventory + a `LootTable`/seed) until a player
      * first opens it. We capture the loot-table key + seed when present so the
      * container can be re-armed on restore (a plain BlockData restore wipes the
-     * block entity, losing the loot table — which is why container loot did not
+     * block entity, losing the loot table, which is why container loot did not
      * survive resets before v1.5.9). When no loot table is set (already rolled,
      * or admin-filled), we capture the literal contents instead.
      */
@@ -198,7 +198,7 @@ object NBTUtil {
 
     // ==================== v1.7.2 decoration tile entities ====================
     // Snapshot maps must hold only plain JDK-serializable values (String/Boolean/
-    // Int/List/Map) — snapshot files are Java-serialized. Components are stored as
+    // Int/List/Map), snapshot files are Java-serialized. Components are stored as
     // Gson-serialized JSON strings (lossless round-trip).
 
     private val gson = net.kyori.adventure.text.serializer.gson.GsonComponentSerializer.gson()
@@ -334,7 +334,8 @@ object NBTUtil {
     private fun restoreLectern(lectern: org.bukkit.block.Lectern, data: Map<String, Any>): Boolean {
         return try {
             (data["book"] as? String)?.let { encoded ->
-                lectern.inventory.setItem(0, ItemStack.deserializeBytes(Base64.getDecoder().decode(encoded)))
+                // The state's own copy, not the live one: see restoreContainer.
+                lectern.snapshotInventory.setItem(0, ItemStack.deserializeBytes(Base64.getDecoder().decode(encoded)))
             }
             (data["page"] as? Int)?.let { runCatching { lectern.page = it } }
             lectern.update(true, false)
@@ -382,7 +383,8 @@ object NBTUtil {
         return try {
             (data["items"] as? String)?.let { encoded ->
                 val decoded = decodeItems(encoded)
-                val inv = shelf.inventory
+                // Same reason as restoreContainer: the state's own copy, not the live one.
+                val inv = shelf.snapshotInventory
                 for (i in 0 until minOf(inv.size, decoded.size)) inv.setItem(i, decoded[i])
             }
             (data["lastInteractedSlot"] as? Int)?.let { runCatching { shelf.lastInteractedSlot = it } }
@@ -394,7 +396,7 @@ object NBTUtil {
     }
 
     /**
-     * Brushable block (suspicious sand/gravel): mirrors the container pattern —
+     * Brushable block (suspicious sand/gravel): mirrors the container pattern,
      * re-arm the unrolled loot table when present, else the literal buried item.
      */
     private fun captureBrushableBlock(brushable: org.bukkit.block.BrushableBlock): Map<String, Any> = try {
@@ -473,14 +475,20 @@ object NBTUtil {
                     // Re-arm with seed 0 (vanilla's "no fixed seed") rather than the
                     // captured worldgen seed. A fixed nonzero seed makes every reset
                     // re-roll IDENTICAL loot; seed 0 tells vanilla to use a fresh
-                    // random source on next open — "vanilla, but repeatable". v1.6.3.
+                    // random source on next open, "vanilla, but repeatable". v1.6.3.
                     lootable.setLootTable(table, 0L)
                 }
             } else {
                 val items = data["items"] as? String
                 if (items != null) {
                     val decoded = decodeItems(items)
-                    val inv = container.inventory
+                    // Written into the block state's own copy, not the live one.
+                    // A block state hands out the live inventory, and update()
+                    // then writes the state's copy over the top. That copy was
+                    // taken before any of this ran, so writing to the live one
+                    // and calling update() puts the contents in and immediately
+                    // takes them back out again.
+                    val inv = container.snapshotInventory
                     inv.clear()
                     for (i in 0 until minOf(inv.size, decoded.size)) inv.setItem(i, decoded[i])
                 }
@@ -492,49 +500,17 @@ object NBTUtil {
         }
     }
 
-    private fun encodeItems(items: Array<ItemStack?>): String {
-        val baos = ByteArrayOutputStream()
-        DataOutputStream(baos).use { out ->
-            out.writeInt(items.size)
-            for (item in items) {
-                if (item == null || item.type.isAir) {
-                    out.writeInt(-1)
-                } else {
-                    val bytes = item.serializeAsBytes()
-                    out.writeInt(bytes.size)
-                    out.write(bytes)
-                }
-            }
-        }
-        return Base64.getEncoder().encodeToString(baos.toByteArray())
-    }
-
-    private fun decodeItems(encoded: String): Array<ItemStack?> {
-        val bytes = Base64.getDecoder().decode(encoded)
-        DataInputStream(ByteArrayInputStream(bytes)).use { input ->
-            val size = input.readInt()
-            require(size in 0..128) { "implausible container size $size" }
-            return Array(size) {
-                val len = input.readInt()
-                if (len < 0) null
-                else {
-                    val buf = ByteArray(len)
-                    input.readFully(buf)
-                    ItemStack.deserializeBytes(buf)
-                }
-            }
-        }
-    }
-
     /**
-     * Restores Trial Spawner data and resets its state.
-     * CRITICAL: This clears tracked players so the spawner can be reactivated
-     * and will drop trial keys again when completed.
-     *
-     * NOTE: Cooldown length is NOT restored from snapshot - it's controlled by
-     * the config setting (reset.spawner-cooldown-minutes) and applied in
-     * ResetManager.resetTrialSpawners() which runs AFTER block restoration.
+     * Container contents, to and from text. Both live in [ItemArrayCodec], which
+     * the per-player container copies share, so the two cannot drift apart.
      */
+    private fun encodeItems(items: Array<ItemStack?>): String = ItemArrayCodec.encode(items)
+
+    private fun decodeItems(encoded: String): Array<ItemStack?> =
+        ItemArrayCodec.decode(encoded) { problem ->
+            Bukkit.getLogger().warning("[BTC] Restoring a container: $problem")
+        } ?: emptyArray()
+
     private fun restoreTrialSpawner(spawner: TrialSpawner, data: Map<String, Any>): Boolean {
         return try {
             // Clear all tracked players - this is the KEY fix for trial key drops!
@@ -567,7 +543,7 @@ object NBTUtil {
             // v2.0.1: if the block entity was RECREATED (spawner block destroyed
             // before the reset, or a dungeon room template stamped into air), the
             // live configuration is the vanilla default with EMPTY spawn
-            // potentials — the spawner would restore permanently inactive.
+            // potentials, the spawner would restore permanently inactive.
             // Rebuild both configurations from the captured data in that case.
             // A surviving block entity keeps its own (richer) config untouched:
             // SpawnerEntry can't round-trip the `equipment` sub-compound, so we
@@ -692,7 +668,8 @@ object NBTUtil {
                 }
             } else {
                 (data["item"] as? String)?.let { encoded ->
-                    pot.inventory.item = ItemStack.deserializeBytes(Base64.getDecoder().decode(encoded))
+                    // The state's own copy, not the live one: see restoreContainer.
+                    pot.snapshotInventory.item = ItemStack.deserializeBytes(Base64.getDecoder().decode(encoded))
                 }
             }
 

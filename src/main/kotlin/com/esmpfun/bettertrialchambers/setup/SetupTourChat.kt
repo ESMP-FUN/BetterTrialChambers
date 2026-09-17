@@ -5,8 +5,8 @@ import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 
 /**
- * Clickable-chat renderer for the setup tour — the fallback when Paper's Dialog API isn't
- * available (older or non-Paper servers). Uses `sendRichMessage` + `<click:run_command:…>`
+ * Clickable-chat renderer for the setup tour, the fallback when Paper's Dialog API isn't
+ * available (older or non-Paper servers). Uses `sendRichMessage` + `<click:run_command:...>`
  * links, the same style as [com.esmpfun.bettertrialchambers.managers.SnapshotReminderService].
  *
  * Stateless: each button is a `/trial setup <action> <index>` command, so a step renders from
@@ -39,7 +39,7 @@ class SetupTourChat(
 
     fun intro(player: Player) {
         plugin.getMessageList("setup.intro")
-            .ifEmpty { listOf("<gold>Welcome — let's tour the main settings. Nothing is forced; pick what suits your server.") }
+            .ifEmpty { listOf("<gold>Welcome, let's tour the main settings. Nothing is forced; pick what suits your server.") }
             .forEach { player.sendRichMessage(it) }
     }
 
@@ -83,8 +83,8 @@ class SetupTourChat(
             }
         }
         b.append("\n")
-        if (index > 0) b.append(link("/trial setup prev $index", "<gray>[← Prev]", "Back one question")).append("  ")
-        b.append(link("/trial setup skip $index", "<gray>[Skip Question →]", "Leave as-is, next"))
+        if (index > 0) b.append(link("/trial setup prev $index", "<gray>[Prev]", "Back one question")).append("  ")
+        b.append(link("/trial setup skip $index", "<gray>[Skip Question]", "Leave as-is, next"))
         b.append("\n")
         b.append(link("/trial setup pause $index", "<yellow>[⏸ Pause Setup]", "Resume later with /trial setup continue"))
         b.append("  ").append(link("/trial setup stop", "<red>[⏹ Stop Setup]", "End the tour"))

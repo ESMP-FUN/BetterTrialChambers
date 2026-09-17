@@ -6,19 +6,19 @@ import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 
 /**
- * `/trial container …` — admin management of per-player container loot
+ * `/trial container ...`, admin management of per-player container loot
  * (`chests.per-player-loot`) templates (v1.5.9). CLI parity with the chamber
  * GUI's Container Loot view.
  *
- *   list <chamber>            — how many templates / player copies exist
- *   materialize <chamber>     — roll + store a template for every container
- *   reset <chamber>           — delete all templates (re-materialize on access)
- *   resetone <chamber> <#>    — reset one template to vanilla (re-roll on access)
- *   clearcopies <chamber>     — drop every player's private copies
- *   tp <chamber> <#>          — teleport to a template (index from `list`)
- *   edit <chamber> <#>        — open a template to edit it
+ *   list <chamber>           , how many templates / player copies exist
+ *   materialize <chamber>    , roll + store a template for every container
+ *   reset <chamber>          , delete all templates (re-materialize on access)
+ *   resetone <chamber> <#>   , reset one template to vanilla (re-roll on access)
+ *   clearcopies <chamber>    , drop every player's private copies
+ *   tp <chamber> <#>         , teleport to a template (index from `list`)
+ *   edit <chamber> <#>       , open a template to edit it
  *
- * Gated on `tcp.admin.containers`. Output is localized via the
+ * Gated on `btc.admin.containers`. Output is localized via the
  * `container-*` keys in messages.yml (v1.7.1).
  */
 class ContainerCommand(private val plugin: BetterTrialChambers) : SubcommandHandler {

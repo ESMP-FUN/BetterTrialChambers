@@ -8,7 +8,7 @@ import org.bukkit.entity.Player
 
 /**
  * Residence integration. Guards `ResidenceCreationEvent` / `ResidenceAreaAddEvent` /
- * `ResidenceSubzoneCreationEvent` — each exposes `getPlayer()` and a `getPhysicalArea()`
+ * `ResidenceSubzoneCreationEvent`, each exposes `getPlayer()` and a `getPhysicalArea()`
  * `CuboidArea` (`getLowLocation()` / `getHighLocation()`).
  */
 class ResidenceClaimProvider : ClaimProvider {
@@ -38,11 +38,8 @@ class ResidenceClaimProvider : ClaimProvider {
 
     override fun findConflicts(plugin: BetterTrialChambers, chambers: List<Chamber>): Map<Chamber, List<String>> {
         val manager = Refl.call(residenceInstance(), "getResidenceManager") ?: return emptyMap()
-        val byLoc = try {
-            manager.javaClass.getMethod("getByLoc", Location::class.java)
-        } catch (_: Throwable) {
-            return emptyMap()
-        }
+        val byLoc = com.esmpfun.bettertrialchambers.utils.Reflect
+            .method(manager.javaClass, "getByLoc", Location::class.java) ?: return emptyMap()
         val result = linkedMapOf<Chamber, List<String>>()
         for (chamber in chambers) {
             val world = chamber.getWorld() ?: continue

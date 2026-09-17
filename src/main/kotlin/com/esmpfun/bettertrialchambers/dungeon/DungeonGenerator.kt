@@ -22,6 +22,15 @@ class DungeonGenerator(
 
     private val stitcher = DungeonStitcher()
 
+    private companion object {
+        /**
+         * How a trial spawner appears at the start of a saved block description,
+         * with or without a trailing `[state=...]` part. Matched as text because
+         * the check runs before the blocks exist in the world.
+         */
+        const val TRIAL_SPAWNER_ID = "minecraft:trial_spawner"
+    }
+
     /** Generate + register a dungeon chamber named [name]. Returns true on success. */
     suspend fun generate(
         world: World,
@@ -38,7 +47,7 @@ class DungeonGenerator(
         }
         val all = templates.loadAll()
         if (all.isEmpty()) {
-            plugin.logger.warning("No room templates found — capture some first.")
+            plugin.logger.warning("No room templates found, capture some first.")
             return false
         }
         val byId = all.associateBy { it.id }
@@ -69,9 +78,27 @@ class DungeonGenerator(
             maxZ = maxOf(maxZ, p.offsetZ + p.rotation.sizeZ(tpl.sizeX, tpl.sizeZ) - 1)
         }
 
-        // Place all room blocks (region-batched, Folia-safe), then carve joins open.
+        // Open the joined doorways in the blocks themselves before any of them are
+        // placed. Carving afterwards wrote the openings with their own scheduled
+        // tasks that nothing waited for, so the snapshot taken below could be of a
+        // dungeon whose doorways were still walled up, and the first reset would
+        // seal them. One pass now places the rooms with their doorways already open.
+        carveInto(combined, world, result.doorways, doorWidth, doorHeight)
+
+        // Place all room blocks (region-batched, Folia-safe). Suspends until done.
         BlockRestorer(plugin).restoreBlocks(combined)
-        carve(world, result.doorways, doorWidth, doorHeight)
+
+        // Tell the spawner index about the trial spawners we just placed.
+        // The index normally learns about spawners by watching players place
+        // them, and nothing here does: the blocks are written straight into the
+        // world. Without this a freshly built dungeon had no wave tracking and
+        // no boss bars at all until something happened to reload its chunks.
+        // The blocks are already in hand, so no scan of the world is needed.
+        combined.forEach { (loc, snapshot) ->
+            if (snapshot.blockData.startsWith(TRIAL_SPAWNER_ID)) {
+                plugin.trialSpawnerIndex.add(world, loc.blockX, loc.blockY, loc.blockZ)
+            }
+        }
 
         // Register as a chamber + snapshot it as the reset baseline.
         val chamber = plugin.chamberManager.createChamber(
@@ -92,12 +119,20 @@ class DungeonGenerator(
     }
 
     /**
-     * Carve a [width]×[height] opening at each joined doorway. The connector cell
-     * is the bottom-centre of the doorway, so we go up by [height] and ±half the
-     * width along the wall plane (perpendicular to the facing).
+     * Turns each joined doorway into a [width]x[height] opening in [blocks], the
+     * set of blocks about to be placed. The connector cell is the bottom-centre
+     * of the doorway, so this goes up by [height] and half the width either way
+     * along the wall (perpendicular to the facing).
      */
-    private fun carve(world: World, doorways: List<Doorway>, width: Int, height: Int) {
+    private fun carveInto(
+        blocks: MutableMap<Location, BlockSnapshot>,
+        world: World,
+        doorways: List<Doorway>,
+        width: Int,
+        height: Int,
+    ) {
         val half = (width - 1) / 2
+        val air = BlockSnapshot(Material.AIR.key.toString())
         for (d in doorways) {
             for (h in 0 until height) {
                 for (w in -half..(width - 1 - half)) {
@@ -109,7 +144,7 @@ class DungeonGenerator(
                         dx = w; dz = 0
                     }
                     val loc = Location(world, (d.x + dx).toDouble(), (d.y + h).toDouble(), (d.z + dz).toDouble())
-                    plugin.scheduler.runAtLocation(loc, Runnable { loc.block.setType(Material.AIR, false) })
+                    blocks[loc] = air
                 }
             }
         }

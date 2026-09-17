@@ -11,6 +11,7 @@ import org.bukkit.Material
 import org.bukkit.World
 import java.util.ArrayDeque
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.coroutines.resume
 
 /**
  * Auto-discovery of naturally-generated Trial Chambers.
@@ -136,7 +137,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
         try {
             // v1.7.0: prefer the game's own structure bounds when the seed sits inside a
             // generated minecraft:trial_chambers structure. Exact, immune to the BFS's
-            // structural-block predicate — which datapack-enlarged chambers (custom .nbt
+            // structural-block predicate, which datapack-enlarged chambers (custom .nbt
             // rooms overriding the vanilla start_pool) routinely break. Player-built
             // chambers aren't generated structures, so they fall through to the BFS.
             if (plugin.config.getBoolean("discovery.use-structure-bounds", true)) {
@@ -175,6 +176,17 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
                 return
             }
 
+            if (result.hitScanLimit) {
+                // The bounds are whatever the scan had reached when it stopped, so a
+                // chamber bigger than the limit registers short and resets only that
+                // much of it. Say so where an owner will see it.
+                plugin.logger.warning(
+                    "[Discovery] The chamber at ${seed.blockX},${seed.blockY},${seed.blockZ} is bigger than one " +
+                        "scan is allowed to look at, so only part of it was measured. Stand inside it and use " +
+                        "/trial scan add <chamber> to take in the rest, or raise 'discovery.max-scan-blocks'."
+                )
+            }
+
             if (!validateResult(result)) {
                 finalizeFailed(key, "AABB failed validation (vaults=${result.vaultCount}, spawners=${result.spawnerCount}, size=${result.sizeX}x${result.sizeY}x${result.sizeZ}, centerY=${result.centerY})")
                 return
@@ -184,6 +196,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
         } catch (e: Exception) {
             plugin.logger.severe("[Discovery] Unexpected error during discovery: ${e.message}")
             e.printStackTrace()
+            com.esmpfun.bettertrialchambers.integrations.MetricsService.reportHandled(e, "chamber-discovery")
             finalizeFailed(key, "exception")
         }
     }
@@ -198,7 +211,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
         world.getStructures(x shr 4, z shr 4, org.bukkit.generator.structure.Structure.TRIAL_CHAMBERS)
             // Paper passes vanilla's BLOCK-INCLUSIVE min/max through unchanged
             // (CraftGeneratedStructure), but Bukkit's BoundingBox.contains() treats max as
-            // exclusive — a seed block exactly on the max face would miss. Compare inclusively.
+            // exclusive, a seed block exactly on the max face would miss. Compare inclusively.
             .firstOrNull { gs ->
                 val b = gs.boundingBox
                 x >= b.minX && x <= b.maxX && y >= b.minY && y <= b.maxY && z >= b.minZ && z <= b.maxZ
@@ -208,7 +221,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
                 BfsResult(
                     minX = bb.minX.toInt(), minY = bb.minY.toInt(), minZ = bb.minZ.toInt(),
                     maxX = bb.maxX.toInt(), maxY = bb.maxY.toInt(), maxZ = bb.maxZ.toInt(),
-                    // Placeholder counts — the authoritative scanChamber pass in registerNew
+                    // Placeholder counts, the authoritative scanChamber pass in registerNew
                     // reports real vault/spawner numbers. The seed block itself guarantees
                     // the box isn't empty.
                     vaultCount = 0, spawnerCount = 0, structuralCount = 1,
@@ -216,7 +229,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
                 )
             }
     } catch (e: Exception) {
-        plugin.logger.warning("[Discovery] structure-bounds lookup failed at $x,$y,$z: ${e.message} — falling back to block scan")
+        plugin.logger.warning("[Discovery] structure-bounds lookup failed at $x,$y,$z: ${e.message}, falling back to block scan")
         null
     }
 
@@ -228,7 +241,9 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
         boundsConfirmed: Boolean = false
     ) {
         val worldName = world.name
-        val name = "auto_${worldName}_${result.centerX}_${result.centerZ}"
+        val name = com.esmpfun.bettertrialchambers.utils.ChamberNames.sanitize(
+            "auto_${worldName}_${result.centerX}_${result.centerZ}"
+        )
 
         plugin.launchAsync {
             registrationMutex.withLock {
@@ -256,6 +271,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
                 } catch (e: Exception) {
                     plugin.logger.severe("[Discovery] Unexpected error during registration: ${e.message}")
                     e.printStackTrace()
+                    com.esmpfun.bettertrialchambers.integrations.MetricsService.reportHandled(e, "chamber-registration")
                     finalizeFailed(key, "registration exception")
                 }
             }
@@ -327,7 +343,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
 
         if (newMinX == existing.minX && newMinY == existing.minY && newMinZ == existing.minZ &&
             newMaxX == existing.maxX && newMaxY == existing.maxY && newMaxZ == existing.maxZ) {
-            // Result fully contained in existing chamber — no work needed. Checked BEFORE the
+            // Result fully contained in existing chamber, no work needed. Checked BEFORE the
             // volume cap: a re-seed of an already-registered chamber larger than
             // max-merged-volume (possible with v1.7.0 structure-bounds registrations) is a
             // pure duplicate, not a merge, and must not log a cap failure every cooldown.
@@ -337,8 +353,8 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
 
         // Cap the merged volume so a runaway BFS or pathological geometry can't
         // swallow half the world into one logical chamber. When the incoming result is
-        // EXACT structure bounds (v1.7.0) — e.g. absorbing an old clipped block-scan
-        // fragment of the same structure — the relevant ceiling is structure-max-volume,
+        // EXACT structure bounds (v1.7.0), e.g. absorbing an old clipped block-scan
+        // fragment of the same structure, the relevant ceiling is structure-max-volume,
         // not the (much smaller) BFS merge cap.
         val newVolume = (newMaxX - newMinX + 1).toLong() *
                 (newMaxY - newMinY + 1).toLong() *
@@ -346,7 +362,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
         val maxMerged = if (exactBounds) plugin.config.getLong("discovery.structure-max-volume", 15_000_000L)
                         else plugin.config.getLong("discovery.max-merged-volume", 1_500_000L)
         if (maxMerged >= 0 && newVolume > maxMerged) {
-            finalizeFailed(key, "merge with '${existing.name}' would exceed the merge volume cap ($newVolume > $maxMerged) — leaving as separate region")
+            finalizeFailed(key, "merge with '${existing.name}' would exceed the merge volume cap ($newVolume > $maxMerged), leaving as separate region")
             return
         }
 
@@ -362,7 +378,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
             plugin.chamberManager.scanChamber(refreshed)
 
             // Re-snapshot when auto-snapshot is on OR the chamber already has a
-            // snapshot. A pre-merge snapshot covers the old, smaller bounds —
+            // snapshot. A pre-merge snapshot covers the old, smaller bounds,
             // restoring it against the grown AABB makes the reset's
             // clear-added-blocks pass wipe everything in the newly annexed
             // volume. A stale snapshot here is actively dangerous, not just
@@ -374,13 +390,13 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
                     if (!plugin.chamberManager.setSnapshotFile(refreshed.name, file.absolutePath)) {
                         plugin.logger.warning(
                             "[Discovery] Post-merge snapshot for '${existing.name}' captured but DB link " +
-                                "failed — run /trial snapshot create ${existing.name} to retry."
+                                "failed; run /trial snapshot create ${existing.name} to retry."
                         )
                     }
                 } catch (e: Exception) {
                     plugin.logger.warning(
                         "[Discovery] Auto-snapshot after merge failed for '${existing.name}': ${e.message}" +
-                            if (hadSnapshot) " — the existing snapshot is STALE (pre-merge bounds); " +
+                            if (hadSnapshot) ", the existing snapshot is STALE (pre-merge bounds); " +
                                 "run /trial snapshot create ${existing.name} before the next reset." else ""
                     )
                 }
@@ -423,12 +439,12 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
      * Operator-triggered re-discovery (`/trial scan add`): re-runs the flood-fill
      * from the chamber's known structural blocks (its registered vaults) with all
      * chunks now loaded, and grows the chamber's AABB to cover any sections that
-     * the original auto-discovery clipped — typically a wing whose chunks were
+     * the original auto-discovery clipped, typically a wing whose chunks were
      * unloaded at detection time, so the flood stopped at the chunk boundary.
      *
      * Flooding from MULTIPLE spread-out vault seeds (and unioning the results)
      * also works around the single-flood node cap, since each seed gets its own
-     * budget. Re-uses the same updateBounds → rescan → re-snapshot path as the
+     * budget. Re-uses the same updateBounds -> rescan -> re-snapshot path as the
      * auto-discovery region merge.
      */
     suspend fun expandExisting(
@@ -444,11 +460,11 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
 
         val seeds = plugin.vaultManager.getVaultsForChamber(chamber.id)
         if (seeds.isEmpty()) {
-            return ExpandResult(false, "no registered vaults to flood from — run /trial scan first", oldVolume, oldVolume, 0, 0)
+            return ExpandResult(false, "no registered vaults to flood from; run /trial scan first", oldVolume, oldVolume, 0, 0)
         }
 
         // forceLoad pulls in unloaded chunks on demand so a never-visited wing can
-        // be reached — but it's Paper-only (off-region getChunkAt throws on Folia).
+        // be reached, but it's Paper-only (off-region getChunkAt throws on Folia).
         val effectiveForceLoad = forceLoad && !plugin.scheduler.isFolia
 
         var minX = chamber.minX; var minY = chamber.minY; var minZ = chamber.minZ
@@ -456,7 +472,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
 
         for (v in seeds) {
             val r = floodOnRegion(world, v.x, v.y, v.z, effectiveForceLoad) ?: continue
-            // structuralCount <= 1 means the seed block itself was air/unreadable — skip.
+            // structuralCount <= 1 means the seed block itself was air/unreadable, skip.
             if (r.structuralCount <= 1) continue
             minX = minOf(minX, r.minX); minY = minOf(minY, r.minY); minZ = minOf(minZ, r.minZ)
             maxX = maxOf(maxX, r.maxX); maxY = maxOf(maxY, r.maxY); maxZ = maxOf(maxZ, r.maxZ)
@@ -490,17 +506,17 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
 
         // A snapshot taken against the old, smaller bounds is now stale (and
         // dangerous at reset time). Recapture when one existed or auto-snapshot
-        // is on — same policy as the auto-discovery merge.
+        // is on, same policy as the auto-discovery merge.
         val hadSnapshot = refreshed.snapshotFile != null
         if (hadSnapshot || plugin.config.getBoolean("discovery.auto-snapshot", false)) {
             try {
                 val file = plugin.snapshotManager.createSnapshot(refreshed)
                 if (!plugin.chamberManager.setSnapshotFile(refreshed.name, file.absolutePath)) {
-                    plugin.logger.warning("[Discovery] scan-add snapshot for '${refreshed.name}' captured but DB link failed — run /trial snapshot create ${refreshed.name}.")
+                    plugin.logger.warning("[Discovery] scan-add snapshot for '${refreshed.name}' captured but DB link failed; run /trial snapshot create ${refreshed.name}.")
                 }
             } catch (e: Exception) {
                 plugin.logger.warning("[Discovery] scan-add re-snapshot for '${refreshed.name}' failed: ${e.message}" +
-                    if (hadSnapshot) " — the existing snapshot is STALE; run /trial snapshot create ${refreshed.name} before the next reset." else "")
+                    if (hadSnapshot) ", the existing snapshot is STALE; run /trial snapshot create ${refreshed.name} before the next reset." else "")
             }
         }
 
@@ -516,8 +532,8 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
      * chamber; without this nudge those chunks can stay resident long after
      * discovery is done, which on small-RAM hosts reads as a permanent memory
      * spike (the "RAM never comes back down after discovery" report). The
-     * server ignores the request for any chunk still in use — players nearby,
-     * force-loaded, spawn chunks — so this is purely a hint, never destructive.
+     * server ignores the request for any chunk still in use, players nearby,
+     * force-loaded, spawn chunks, so this is purely a hint, never destructive.
      */
     private fun releaseChamberChunks(world: World, minX: Int, minZ: Int, maxX: Int, maxZ: Int) {
         com.esmpfun.bettertrialchambers.utils.RegionUtil.releaseChunks(plugin, world, minX, minZ, maxX, maxZ)
@@ -533,7 +549,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
                     plugin.logger.warning("[Discovery] scan-add flood failed at $sx,$sy,$sz: ${e.message}")
                     null
                 }
-                cont.resume(r) {}
+                cont.resume(r)
             })
         }
 
@@ -594,11 +610,11 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
         if (plugin.config.getBoolean("discovery.auto-snapshot", false)) {
             try {
                 val file = plugin.snapshotManager.createSnapshot(chamber)
-                // Link the file in the DB row — without this the chamber reports
+                // Link the file in the DB row, without this the chamber reports
                 // "no snapshot" at reset time even though the .dat is on disk.
                 if (!plugin.chamberManager.setSnapshotFile(name, file.absolutePath)) {
                     plugin.logger.warning(
-                        "[Discovery] Auto-snapshot for '$name' captured but DB link failed — " +
+                        "[Discovery] Auto-snapshot for '$name' captured but DB link failed, " +
                             "run /trial snapshot create $name to retry."
                     )
                 }
@@ -610,7 +626,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
         markProcessed(key)
         releaseChamberChunks(world, chamber.minX, chamber.minZ, chamber.maxX, chamber.maxZ)
 
-        // Structure-bounds discoveries (v1.7.0) are exact — mark confirmed and skip the
+        // Structure-bounds discoveries (v1.7.0) are exact, mark confirmed and skip the
         // auto-expand pass, which exists only to fix clipped block-scan results.
         if (boundsConfirmed) {
             plugin.chamberManager.setBoundsConfirmed(chamber.id, true)
@@ -621,7 +637,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
         // automatically run one expand pass shortly after registering. The initial
         // single-seed flood can clip a chamber (its node cap, or chunks that were
         // unloaded at detection time); a delayed multi-seed re-flood from the now-
-        // committed vault rows — by which point nearby chunks have usually loaded —
+        // committed vault rows, by which point nearby chunks have usually loaded,
         // grows the bounds to cover what the first pass missed. Best-effort and
         // gated by config; logs only (no second player notification).
         if (plugin.config.getBoolean("discovery.expand-on-discover", true)) {
@@ -665,7 +681,9 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
         val vaultCount: Int,
         val spawnerCount: Int,
         val structuralCount: Int,
-        val hitUnloadedChunks: Boolean
+        val hitUnloadedChunks: Boolean,
+        /** True when the scan stopped at its own limit, so these bounds may be short. */
+        val hitScanLimit: Boolean = false,
     ) {
         val sizeX get() = maxX - minX + 1
         val sizeY get() = maxY - minY + 1
@@ -701,7 +719,10 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
             intArrayOf(0, 0, 1), intArrayOf(0, 0, -1)
         )
 
-        val hardCap = 50_000 // safety bound on BFS node count
+        // Safety bound on how many positions one scan may look at. Raise it for a
+        // datapack chamber far bigger than a vanilla one; the scan stops at this
+        // number either way and says so.
+        val hardCap = plugin.config.getInt("discovery.max-scan-blocks", 50_000).coerceAtLeast(1_000)
 
         while (queue.isNotEmpty() && visited.size < hardCap) {
             val cur = queue.poll()
@@ -752,7 +773,8 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
 
         return BfsResult(
             minX, minY, minZ, maxX, maxY, maxZ,
-            vaults, spawners, structural, hitUnloaded
+            vaults, spawners, structural, hitUnloaded,
+            hitScanLimit = visited.size >= hardCap
         )
     }
 

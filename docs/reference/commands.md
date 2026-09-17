@@ -1,116 +1,197 @@
 # Commands
 
-All commands start with `/trial` (short for BetterTrialChambers). Most require specific permissions—check the [Permissions](permissions.md) page for details.
+Every command starts with `/trial`. It also answers to `/btc`, `/tcp`, `/bettertrialchambers`, and `/chamber`.
 
-{% hint style="info" %}
-**Aliases:** `/btc`, `/tcp`, `/bettertrialchambers`, `/chamber`
+Press `Tab` while typing for suggestions (chamber names, player names, sub-actions). You only see commands you have permission for.
 
-**Tab completion:** Available for all commands! Press `Tab` while typing for suggestions.
-{% endhint %}
+**Argument style:** `<name>` is required, `[name]` is optional. `a|b` means pick one of the listed words.
 
-***
+**Chamber names:** letters, numbers, `-` and `_`, up to 32 characters. The name is also the name of the chamber's save file, which is why it has to stay simple. For a prettier name in announcements, use `/trial rename` to set a display name, which can be anything you like.
 
-## Quick Reference
-
-| Command                                                                          | Description                                                                                                                                      | Permission                      |
-| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- |
-| `/trial help`                                                                      | Show command list                                                                                                                                | None                            |
-| `/trial setup`                                                                     | Guided, opt-in tour of the main settings (Dialog UI, or clickable chat on older servers)                                                         | `btc.admin.setup`               |
-| `/trial menu [chamber]`                                                            | Open admin GUI (with a chamber name: jump straight to that chamber's detail view)                                                                | `btc.admin.menu`                |
-| `/trial generate <value\|coords\|wand\|blocks>`                                    | Register chamber from saved var, coords, WE wand, or by block amount                                                                             | `btc.admin.generate`            |
-| `/trial scan <chamber>`                                                            | Scan for vaults/spawners                                                                                                                         | `btc.admin.scan`                |
-| `/trial scan add <chamber>`                                                        | Grow a chamber's bounds into sections discovery clipped, then re-scan                                                                            | `btc.admin.scan`                |
-| `/trial setexit <chamber>`                                                         | Set exit location                                                                                                                                | `btc.admin.create`              |
-| `/trial snapshot <create\|update\|restore> [chamber]`                              | Manage snapshots (omit the name to target the chamber you're standing in)                                                                        | `btc.admin.snapshot`            |
-| `/trial snapshot create all [force]`                                               | Backfill snapshots for all chambers missing one (staggered); `force` re-does all                                                                 | `btc.admin.snapshot`            |
-| `/trial snapshot missing [page]`                                                   | List chambers with no snapshot, with clickable `[Create]`                                                                                        | `btc.admin.snapshot`            |
-| `/trial reset <chamber>`                                                           | Force chamber reset                                                                                                                              | `btc.admin.reset`               |
-| `/trial reset pending`                                                             | List chambers awaiting reset confirmation                                                                                                        | `btc.admin.reset`               |
-| `/trial reset confirm <chamber\|all>`                                              | Confirm queued reset(s) (when confirmation mode is on)                                                                                           | `btc.admin.reset`               |
-| `/trial list [page\|current]`                                                      | List chambers (paginated, interactive: click a name to copy it, click `[menu]` to open its GUI); `current` finds the chamber you're in / nearest | `btc.admin`                     |
-| `/trial dungeon <pos1\|pos2\|capture\|generate\|list\|delete>`                     | Procedural dungeon generation from room templates                                                                                                | `btc.admin.generate`            |
-| `/trial info [chamber]`                                                            | Show plugin info, or chamber details if specified                                                                                                | `btc.admin`                     |
-| `/trial delete <chamber>`                                                          | Delete a chamber                                                                                                                                 | `btc.admin.create`              |
-| `/trial loot set <chamber> <normal\|ominous> <table>`                              | Override a chamber's loot table                                                                                                                  | `btc.admin.loot`                |
-| `/trial loot clear <chamber> [normal\|ominous\|all]`                               | Remove per-chamber loot override                                                                                                                 | `btc.admin.loot`                |
-| `/trial loot audit`                                                                | List pre-1.5.0 loot entries that lost their NBT                                                                                                  | `btc.admin.loot`                |
-| `/trial container <list\|materialize\|reset\|resetone\|clearcopies\|tp\|edit> <chamber> [#]` | Manage per-player container loot (list, edit overrides, revert to vanilla)                                                                | `btc.admin.containers`          |
-| `/trial mobs providers`                                                            | List registered mob providers and their availability                                                                                             | `btc.admin.mobs`                |
-| `/trial mobs <chamber> provider <id\|vanilla\|none>`                               | Set a chamber's custom mob provider                                                                                                              | `btc.admin.mobs`                |
-| `/trial mobs <chamber> add normal\|ominous <mobId>`                                | Add a mob id to a chamber's pool                                                                                                                 | `btc.admin.mobs`                |
-| `/trial mobs <chamber> remove normal\|ominous <mobId>`                             | Remove a mob id from a chamber's pool                                                                                                            | `btc.admin.mobs`                |
-| `/trial mobs <chamber> list`                                                       | Show a chamber's mob provider config                                                                                                             | `btc.admin.mobs`                |
-| `/trial give <preset> [player] [amount]`                                           | Give a preconfigured trial-spawner item — see [spawner\_presets.yml](../configuration/spawner-presets.yml.md)                                    | `btc.give`                      |
-| `/trial pause <chamber>`                                                           | Pause a chamber (suspends resets, protection, vault interactions)                                                                                | `btc.admin.pause`               |
-| `/trial resume <chamber>`                                                          | Resume a paused chamber                                                                                                                          | `btc.admin.pause`               |
-| `/trial vault reset <chamber> <player>`                                            | Reset vault cooldowns                                                                                                                            | `btc.admin.vault`               |
-| `/trial vault unlockall <chamber\|all>`                                            | Open every vault up again, for everyone                                                                                                          | `btc.admin.vault`               |
-| `/trial key give <player> <amount>`                                                | Give trial keys                                                                                                                                  | `btc.admin.key`                 |
-| `/trial key check <player>`                                                        | Check player's keys                                                                                                                              | `btc.admin.key`                 |
-| `/trial stats [player]`                                                            | View statistics                                                                                                                                  | `btc.stats` / `btc.admin.stats` |
-| `/trial leaderboard <type>`                                                        | View leaderboards                                                                                                                                | `btc.leaderboard`               |
-| `/trial claims scan`                                                               | Log chambers that overlap existing land-claim plugin claims                                                                                      | `btc.admin.reload`              |
-| `/trial debug schema`                                                              | Print each database table's actual columns (diagnostics)                                                                                         | `btc.admin.reload`              |
-| `/trial reload`                                                                    | Reload configuration                                                                                                                             | `btc.admin.reload`              |
-| `/trial update [check\|download\|apply\|restore\|status]`                          | Check for and install plugin updates                                                                                                             | `btc.admin`                     |
+For the full permission list, see the [Permissions](permissions.md) page.
 
 ***
 
-## Command Details
+## Command list
 
-<details>
+### Setup and information
 
-<summary><code>/trial help</code></summary>
+| Command | What it does | Permission |
+| --- | --- | --- |
+| `/trial help` | Show the command list | None |
+| `/trial setup [start\|continue]` | Guided, optional walk-through of the main settings. `continue` resumes a paused tour | `btc.admin.setup` |
+| `/trial menu [chamber]` | Open the admin GUI. With a chamber name, open that chamber's page directly | `btc.admin.menu` |
+| `/trial list [page]` | List registered chambers, 10 per page | `btc.admin` |
+| `/trial list current` | Report the chamber you are standing in, or the nearest one. Aliases: `here`, `near`, `nearest` | `btc.admin` |
+| `/trial info` | Show plugin version, database, platform, and integration status | `btc.admin` |
+| `/trial info <chamber>` | Show one chamber's world, bounds, size, exit, reset interval, last reset, and snapshot status | `btc.admin` |
+| `/trial debug schema` | Print each database table's real columns | `btc.admin.reload` |
+| `/trial debug structure` | Test that this server can save a block with its contents and put it back unchanged | `btc.admin.reload` |
+| `/trial claims scan` | List chambers that overlap an existing land claim (Residence, Lands, GriefPrevention) | `btc.admin.reload` |
+| `/trial reload` | Reload `config.yml`, `loot.yml`, `messages.yml`, and `spawner_presets.yml` | `btc.admin.reload` |
+| `/trial update [check\|status\|download\|apply\|restore\|ignore <version>\|unignore <version>]` | Check for and install plugin updates | `btc.admin` |
 
-Shows a list of all available commands.
+### Chambers
 
-**Usage:**
+| Command | What it does | Permission |
+| --- | --- | --- |
+| `/trial generate wand <chamber>` | Register a chamber from your WorldEdit selection | `btc.admin.generate` |
+| `/trial generate coords <corner1> <corner2> [world] <chamber>` | Register a chamber from two corner coordinates. `[world]` is required from console | `btc.admin.generate` |
+| `/trial generate blocks <amount> [chamber] [roundingAllowance]` | Register a chamber in front of you sized to roughly `<amount>` blocks | `btc.admin.generate` |
+| `/trial generate value save <name>` | Save your WorldEdit selection under a name for later | `btc.admin.generate` |
+| `/trial generate value list` | List saved selections | `btc.admin.generate` |
+| `/trial generate value delete <name>` | Delete a saved selection | `btc.admin.generate` |
+| `/trial generate value <name> [chamber]` | Register a chamber from a saved selection | `btc.admin.generate` |
+| `/trial paste <schematic> [x y z]` | Paste a schematic (preview first, then confirm). Defaults to your position | `btc.admin.generate` |
+| `/trial scan <chamber>` | Find vaults, trial spawners, and decorated pots inside the chamber's current bounds | `btc.admin.scan` |
+| `/trial scan add <chamber>` | Grow the chamber's bounds to take in sections that auto-discovery missed, then re-scan. Stand inside the chamber | `btc.admin.scan` |
+| `/trial setexit <chamber>` | Save your position and facing as the chamber's exit point. Player only | `btc.admin.create` |
+| `/trial rename <chamber> <display name>` | Set a friendly display name. Use `none`, `reset`, or `-` to clear it | `btc.admin.create` |
+| `/trial pause <chamber>` | Pause a chamber: stop resets, protection, and vault use, keep all data | `btc.admin.pause` |
+| `/trial resume <chamber>` | Resume a paused chamber | `btc.admin.pause` |
+| `/trial delete <chamber>` | Permanently delete a chamber and its data (the snapshot file stays on disk) | `btc.admin.create` |
 
-```
-/trial help
-```
+### Snapshots
 
-**Permission:** None (everyone can use this)
+| Command | What it does | Permission |
+| --- | --- | --- |
+| `/trial snapshot create [chamber]` | Save the chamber's current blocks as its reset state. Omit the name while standing inside it | `btc.admin.snapshot` |
+| `/trial snapshot update [chamber]` | Same as `create`; overwrites the existing snapshot | `btc.admin.snapshot` |
+| `/trial snapshot restore [chamber]` | Reset the chamber from its snapshot now (same as `/trial reset`) | `btc.admin.snapshot` |
+| `/trial snapshot create all [force]` | Snapshot every chamber that has none, one at a time. `force` re-snapshots all of them | `btc.admin.snapshot` |
+| `/trial snapshot missing [page]` | List chambers with no snapshot, each with a clickable `[Create]` | `btc.admin.snapshot` |
 
-**Example:**
+### Resets
 
-```
-/trial help
-```
+| Command | What it does | Permission |
+| --- | --- | --- |
+| `/trial reset <chamber>` | Force an immediate reset | `btc.admin.reset` |
+| `/trial reset pending` | List chambers waiting for reset confirmation (when confirmation mode is on) | `btc.admin.reset` |
+| `/trial reset confirm <chamber\|all>` | Release a queued reset | `btc.admin.reset` |
 
-{% hint style="info" %}
-Only shows commands you have permission to use!
-{% endhint %}
+### Vaults and keys
 
-</details>
+| Command | What it does | Permission |
+| --- | --- | --- |
+| `/trial vault reset <chamber> <player> [normal\|ominous]` | Clear one player's vault cooldowns in a chamber. Works for offline players | `btc.admin.vault` |
+| `/trial vault unlockall <chamber\|all>` | Re-open every vault in a chamber for everyone | `btc.admin.vault` |
+| `/trial key give <player> <amount> [normal\|ominous]` | Give trial keys. Player must be online. Defaults to normal keys | `btc.admin.key` |
+| `/trial key check <player>` | Count the trial keys in a player's inventory. Player must be online | `btc.admin.key` |
+
+### Loot
+
+| Command | What it does | Permission |
+| --- | --- | --- |
+| `/trial loot set <chamber> <normal\|ominous> <table>` | Give a chamber its own loot table for that vault type | `btc.admin.loot` |
+| `/trial loot clear <chamber> [normal\|ominous\|all]` | Remove a chamber's loot override. Defaults to `all` | `btc.admin.loot` |
+| `/trial loot info <chamber>` | Show which loot tables a chamber uses | `btc.admin.loot` |
+| `/trial loot list` | List every loot table from `loot.yml` | `btc.admin.loot` |
+| `/trial loot audit` | List old loot entries that lost their custom data before v1.5.0 | `btc.admin.loot` |
+
+### Containers
+
+Per-player container loot ([`chests.per-player-loot`](../configuration/config.yml.md#per-player-chamber-container-loot)). The `#` is a container number from `list`.
+
+| Command | What it does | Permission |
+| --- | --- | --- |
+| `/trial container list <chamber>` | Show whether the feature is on, plus template and player-copy counts, with each container's number and position | `btc.admin.containers` |
+| `/trial container materialize <chamber>` | Scan the chamber and list every container so you can edit it | `btc.admin.containers` |
+| `/trial container edit <chamber> <#>` | Open a container to edit. Saving creates an override every player then receives | `btc.admin.containers` |
+| `/trial container resetone <chamber> <#>` | Send one container back to fresh per-player loot | `btc.admin.containers` |
+| `/trial container reset <chamber>` | Drop every container from the list, overrides included. Alias: `cleartemplates` | `btc.admin.containers` |
+| `/trial container clearcopies <chamber>` | Drop every player's private copies, keep overrides | `btc.admin.containers` |
+| `/trial container tp <chamber> <#>` | Teleport to a container | `btc.admin.containers` |
+
+`/trial containers` also works as the command name.
+
+### Mobs
+
+| Command | What it does | Permission |
+| --- | --- | --- |
+| `/trial mobs providers` | List mob providers and whether each is available | `btc.admin.mobs` |
+| `/trial mobs <chamber> list` | Show a chamber's mob provider and mob lists | `btc.admin.mobs` |
+| `/trial mobs <chamber> provider <id\|vanilla\|none>` | Set the chamber's mob provider | `btc.admin.mobs` |
+| `/trial mobs <chamber> add <normal\|ominous> <mobId>` | Add a mob id to a wave pool | `btc.admin.mobs` |
+| `/trial mobs <chamber> remove <normal\|ominous> <mobId>` | Remove a mob id from a wave pool | `btc.admin.mobs` |
+
+### Dungeon
+
+| Command | What it does | Permission |
+| --- | --- | --- |
+| `/trial dungeon pos1` | Mark one corner of a room selection at your feet | `btc.admin.generate` |
+| `/trial dungeon pos2` | Mark the opposite corner | `btc.admin.generate` |
+| `/trial dungeon capture <id> [roles...]` | Save the selection as a room template. Roles become tags (for example `entrance`, `vault`, `boss`) | `btc.admin.generate` |
+| `/trial dungeon generate <name> [seed]` | Stitch a dungeon at your feet and register it as a chamber | `btc.admin.generate` |
+| `/trial dungeon list` | List saved room templates | `btc.admin.generate` |
+| `/trial dungeon delete <id>` | Delete a room template | `btc.admin.generate` |
+| `/trial dungeon import <file\|folder\|zip> [tags...]` | Import `.nbt` structure templates from `plugins/BetterTrialChambers/dungeon/import/` | `btc.admin.generate` |
+
+### Spawner items
+
+| Command | What it does | Permission |
+| --- | --- | --- |
+| `/trial give <preset> [player] [amount]` | Give a preconfigured trial-spawner item from [spawner_presets.yml](../configuration/spawner-presets.yml.md). Player defaults to you, amount to 1 | `btc.give` |
+
+### Statistics
+
+| Command | What it does | Permission |
+| --- | --- | --- |
+| `/trial stats` | Show your own statistics | `btc.stats` |
+| `/trial stats <player>` | Show another player's statistics | `btc.admin.stats` |
+| `/trial leaderboard <type>` | Show the top players for a statistic. Aliases: `lb`, `top` | `btc.leaderboard` |
+
+Leaderboard types: `chambers` (or `completions`), `normal` (or `normalvaults`), `ominous` (or `ominousvaults`), `mobs` (or `kills`), `time` (or `playtime`).
+
+***
+
+## Procedures
+
+### Register an existing chamber
+
+1. Select the chamber with the WorldEdit wand: `/wand`, then left-click one corner and right-click the opposite corner.
+2. Register it: `/trial generate wand MyChamber`.
+3. Scanning and snapshotting run automatically. Re-run `/trial scan MyChamber` if you change the build.
+4. Stand just outside the entrance and run `/trial setexit MyChamber`.
+5. Check the result: `/trial info MyChamber`.
+6. Test a reset: `/trial reset MyChamber`.
+
+Minimum size is 31 wide, 15 tall, 31 deep. Maximum size is set by `generation.max-volume` in `config.yml`.
+
+### Set up a dungeon
+
+1. Build each room in WorldEdit with complete, solid walls.
+2. At every spot a doorway could open, place a `minecraft:jigsaw` block flush in the wall with its front facing outward (`north_up`, `east_up`, `south_up`, or `west_up`). Do not cut the opening yourself. Keep the door size the same across all rooms.
+3. Stand at one corner of a room and run `/trial dungeon pos1`, then the opposite corner and `/trial dungeon pos2`.
+4. Save it: `/trial dungeon capture <id> <roles...>`, for example `/trial dungeon capture hall entrance`.
+5. Repeat for every room. Confirm with `/trial dungeon list`.
+6. Stand where the dungeon should start and run `/trial dungeon generate <name>`. Add a number on the end for a repeatable layout.
+
+The generator matches rooms on opposite-facing connectors across all four rotations, places them without overlap, carves a doorway only where two rooms join, walls off unused connectors, then snapshots and registers the result as a normal chamber. `required-tags` in [dungeon.yml](../configuration/dungeon.yml.md) guarantee things like one entrance and at least one vault.
+
+To import rooms instead of building them, drop `.nbt` structure templates (or a datapack `.zip`) into `plugins/BetterTrialChambers/dungeon/import/` and run `/trial dungeon import <file>`. Jigsaw blocks become connectors automatically. See [dungeon.yml](../configuration/dungeon.yml.md#import-datapack-rooms).
+
+***
+
+## Command details
 
 <details>
 
 <summary><code>/trial setup</code></summary>
 
-A friendly, **opt-in** tour of the major settings — built for operators who install the plugin and never open a YAML file. It walks the main options **one at a time**, each with a plain-English explanation, its current state, and **Enable / Skip / Disable** buttons (plus **← Prev**, **Pause Setup** and **Stop Setup**). Nothing is forced and no default is changed; you only apply what you choose.
+An optional tour of the major settings, one at a time, each with a plain-English explanation, its current state, and Enable / Skip / Disable buttons. Nothing is changed unless you choose it.
 
-On Paper **1.21.7+** the tour renders in the native **Dialog** UI. On older or non-Paper servers it falls back automatically to a **clickable-chat** version with exactly the same content — no configuration needed.
+On Paper 1.21.7 and newer the tour uses the native Dialog window. On older servers it falls back to clickable chat with the same content.
 
 **Usage:**
 
 ```
-/trial setup           # start (or restart) the tour
-/trial setup continue  # resume a tour you paused
+/trial setup
+/trial setup continue
 ```
 
-**Permission:** `btc.admin.setup` (OP by default)
+**Permission:** `btc.admin.setup`
 
-**Good to know:**
-
-* Settings that ship **off** but are worth a look (auto-discovery, auto-snapshot, …) lead the tour.
-* A few steps show a **CPU impact** badge (`tiny` / `little` / `medium` / `high`) so you know the cost at a glance.
-* Choice steps (like how often chambers reset) show the **current value** as a real duration, and let you pick a preset or point you to `config.yml` for a custom value.
-* A gentle reminder appears for ops who haven't run setup yet — at most once a week, three times — and stops for good once you've taken the tour.
-
-{% hint style="info" %}
-The reminder can be turned off with `setup.reminder.enabled: false` in `config.yml`. Running the tour is always optional — BTC works fine on its defaults.
-{% endhint %}
+A reminder appears for operators who have not run the tour, at most once a week and three times total. Turn it off with `setup.reminder.enabled: false` in `config.yml`.
 
 </details>
 
@@ -118,155 +199,81 @@ The reminder can be turned off with `setup.reminder.enabled: false` in `config.y
 
 <summary><code>/trial menu [chamber]</code></summary>
 
-Opens the admin GUI for managing all aspects of BetterTrialChambers without command line. With a chamber name _(1.5.7+)_, jumps straight into that chamber's detail view — this is what the `[menu]` button on `/trial list` lines uses.
+Opens the admin GUI. With a chamber name, opens that chamber's detail page directly.
 
 **Usage:**
 
 ```
 /trial menu
-/trial menu <chamber_name>
+/trial menu MainChamber
 ```
 
 **Permission:** `btc.admin.menu`
 
-**Example:**
-
-```
-/trial menu
-```
-
-**GUI Screens (v1.2.8+):**
-
-The admin GUI provides 14 different views organized into categories:
-
-**Main Menu** - Central hub with 6 category buttons:
-
-* **Chambers** - List and manage all registered chambers
-* **Loot Tables** - Browse available loot tables
-* **Statistics** - View leaderboards and player stats
-* **Settings** - Configure plugin settings in real-time
-* **Protection** - Toggle protection features
-* **Help** - Command reference and permissions
-
-**Chamber Management:**
-
-* **Chamber List** - Paginated list (36 per page) with quick actions
-* **Chamber Detail** - Full management hub (loot, vaults, settings, actions)
-* **Chamber Settings** - Per-chamber reset interval, exit location, loot overrides
-* **Vault Management** - View/reset player vault cooldowns
-
-**Settings:**
-
-* **Global Settings** - Toggle 13 config options without editing YAML
-* **Protection Menu** - Enable/disable protection features instantly
-
-**Statistics:**
-
-* **Stats Menu** - Overview with leaderboard shortcuts
-* **Leaderboards** - Top 10 players by category
-* **Player Stats** - Individual player statistics with K/D ratio
-
-**Key Features:**
-
-* **Runtime Config Editing** - Changes save immediately to config.yml
-* **Pagination** - Handle unlimited chambers
-* **Navigation** - Consistent back/close buttons throughout
-* **Session Restoration** - Return to previous screens automatically
-
-{% hint style="success" %}
-**No YAML editing required!** Most configuration can now be done entirely through the GUI.
-{% endhint %}
+The GUI covers chamber management, loot tables, statistics, protection toggles, and most `config.yml` settings, so no YAML editing is required for day-to-day work.
 
 </details>
 
 <details>
 
-<summary><code>/trial generate &lt;value|coords|wand|blocks&gt;</code></summary>
+<summary><code>/trial generate</code></summary>
 
-Registers a chamber using either a saved WorldEdit variable (named region), your current WorldEdit selection, explicit coordinates, or by a desired block amount at your current facing.
+Registers a chamber from a WorldEdit selection, saved selection, coordinates, or a target block count.
 
 **Usage:**
 
 ```
-/trial generate value save <varName>
+/trial generate wand <chamber>
+/trial generate coords <x1,y1,z1> <x2,y2,z2> [world] <chamber>
+/trial generate blocks <amount> [chamber] [roundingAllowance]
+/trial generate value save <name>
 /trial generate value list
-/trial generate value delete <varName>
-/trial generate value <varName> [chamberName]
-/trial generate coords <x1,y1,z1> <x2,y2,z2> [world] <chamberName>
-/trial generate wand <chamberName>
-/trial generate blocks <amount> [chamberName] [roundingAllowance]
+/trial generate value delete <name>
+/trial generate value <name> [chamber]
 ```
 
 **Permission:** `btc.admin.generate`
 
-**Behavior:**
-
-* **value save**: Saves your current WorldEdit selection to a named variable for later use.
-* **value list**: Shows all saved region variables.
-* **value delete**: Removes a saved region by name.
-* **value \[chamberName]**: Generates a chamber from the saved region. If chamberName is omitted, is used as the chamber name. If no saved var exists and the sender is a player with a WorldEdit selection, falls back to using the selection.
-* **coords**: Generates a chamber from two corners specified as either `<x1,y1,z1> <x2,y2,z2>` or legacy `<x1,y1,z1-x2,y2,z2>`. From console, you must also provide `[world]`.
-* **wand**: Generates a chamber from your current WorldEdit selection. Handy shortcut for admins.
-* **blocks**: Generates a chamber at your current location and facing, sized to approximately `<amount>` blocks. The plugin enforces a minimum of 31x15x31 and will round up by at most `generation.blocks.rounding-allowance` (default 1000) to form a clean region.
-
 **Notes:**
 
-* Minimum size enforced: 31x15x31 (width x height x depth)
-* Maximum volume limited by `generation.max-volume` in config.yml
-* WorldEdit must be installed for the `value` and `wand` operations
-* Auto-scans for vaults/spawners and creates snapshots based on config settings
+* `coords` also accepts the legacy `<x1,y1,z1-x2,y2,z2>` form. From console you must give `[world]`.
+* `blocks` builds in front of you at your facing, rounding up by at most `generation.blocks.rounding-allowance` (default 1000) to make a clean box.
+* `value <name>` uses the chamber name if you omit it. If no saved selection exists and you have a live WorldEdit selection, that is used instead.
+* WorldEdit is required for `wand` and `value`.
+* Minimum size 31 x 15 x 31. Maximum size from `generation.max-volume`.
+* Scanning and snapshotting run automatically based on `config.yml`.
 
 </details>
 
-<details>
+<details id="tcp-scan-chamber">
 
 <summary><code>/trial scan &lt;chamber&gt;</code></summary>
 
-Scans a chamber to detect vaults, trial spawners, and decorated pots within its **current bounds**.
+Finds vaults (normal and ominous), trial spawners (normal and ominous), and decorated pots inside the chamber's current bounds.
 
 **Usage:**
 
 ```
-/trial scan <chamber_name>
-/trial scan add <chamber_name>
+/trial scan <chamber>
+/trial scan add <chamber>
 ```
 
 **Permission:** `btc.admin.scan`
 
-**Arguments:**
-
-* `<chamber_name>` - Name of the chamber to scan
-* `add` - Grow the chamber's bounds before scanning (see below)
-
-**Examples:**
-
-```
-/trial scan MainChamber
-/trial scan add auto_world_5503_1336
-```
-
-**What it finds:**
-
-* **Vaults** (normal and ominous)
-* **Trial Spawners** (normal and ominous)
-* **Decorated Pots**
-
-**Output example:**
+**Example output:**
 
 ```
 [BTC] Scanning chamber MainChamber...
 [BTC] Scanning complete! Found 8 vaults, 12 spawners, 24 decorated pots.
 ```
 
-**`/trial scan add` — repair a clipped chamber** _(added in 1.6.3)_
+**`/trial scan add`**
 
-Auto-discovery floods outward from a vault/spawner. If neighbouring chunks were still loading when the chamber was first detected (or the chamber was big enough to hit the flood's node cap), the bounding box can be **clipped at a chunk boundary** — leaving part of the chamber, and its chests/vaults/spawners, outside the registered region. A plain `/trial scan` only looks **inside the existing bounds**, so it can't recover the missing part.
+Auto-discovery floods outward from a vault or spawner. If nearby chunks were still loading when the chamber was first found, the bounding box can stop at a chunk edge, leaving part of the chamber outside the registered region. A plain `/trial scan` only looks inside the current bounds, so it cannot recover the missing part.
 
-`/trial scan add <chamber>` re-floods from the chamber's known vaults (now that chunks are loaded), **grows the bounds** to absorb the missed sections, then re-scans and re-snapshots — the same merge auto-discovery uses, just operator-triggered. **Stand inside the chamber** when you run it so the relevant chunks are loaded. New chambers also get one automatic expand pass on discovery (`discovery.expand-on-discover`), and the chamber GUI offers a one-time **Travel & Expand** button that teleports you there first. To reach a wing nobody has visited without travelling, enable `discovery.expand-force-load` (opt-in, Paper-only).
+`/trial scan add <chamber>` re-floods from the chamber's known vaults, grows the bounds to take in the missed sections, then re-scans and re-snapshots. Stand inside the chamber so the chunks are loaded.
 
-{% hint style="warning" %}
-**Re-scanning overwrites previous data!** If you modified your chamber and re-scan, old vault/spawner data is replaced.
-{% endhint %}
+Re-scanning replaces the old vault and spawner data.
 
 </details>
 
@@ -274,132 +281,71 @@ Auto-discovery floods outward from a vault/spawner. If neighbouring chunks were 
 
 <summary><code>/trial setexit &lt;chamber&gt;</code></summary>
 
-Sets the exit location for a chamber. Players inside when the chamber resets will teleport here.
+Saves your exact position and look direction as the chamber's exit point. Players still inside when the chamber resets teleport here.
 
 **Usage:**
 
 ```
-/trial setexit <chamber_name>
+/trial setexit <chamber>
+```
+
+**Permission:** `btc.admin.create` (player only)
+
+Stand just outside the entrance, facing the way you want players to look, then run the command.
+
+</details>
+
+<details>
+
+<summary><code>/trial rename &lt;chamber&gt; &lt;display name&gt;</code></summary>
+
+Sets a friendly display name for a chamber. The internal name (used in commands) does not change.
+
+**Usage:**
+
+```
+/trial rename MainChamber The Copper Vaults
+/trial rename MainChamber none
 ```
 
 **Permission:** `btc.admin.create`
 
-**Requirements:**
+`none`, `reset`, or `-` clears the display name.
 
-* Must be a player (not console)
-
-**Arguments:**
-
-* `<chamber_name>` - Name of the chamber
-
-**Examples:**
-
-```
-/trial setexit MainChamber
-```
-
-Stand where you want players to teleport (usually just outside the entrance), then run the command. Your exact position and look direction are saved.
-
-**Tips:**
-
-* Set the exit OUTSIDE the chamber boundaries
-* Face the direction you want players to look when teleported
-* Test it with `/trial reset <chamber>` to see where players go
+Colours and formatting work here (`&6The Copper Vaults` or `<gold>The Copper Vaults</gold>`). Anything that would make the name clickable or hoverable is removed, because the name goes into announcements everyone sees.
 
 </details>
 
 <details>
 
-<summary><code>/trial snapshot &lt;action&gt; [chamber]</code></summary>
+<summary><code>/trial snapshot</code></summary>
 
-Manage chamber snapshots (saved states for resets).
+Manages the saved block state a chamber resets to.
 
 **Usage:**
 
 ```
-/trial snapshot create [chamber_name]
-/trial snapshot update [chamber_name]
-/trial snapshot restore [chamber_name]
+/trial snapshot create [chamber]
+/trial snapshot update [chamber]
+/trial snapshot restore [chamber]
 /trial snapshot create all [force]
 /trial snapshot missing [page]
 ```
 
-The chamber name is **optional on `create` / `update` / `restore`** _(1.5.5+; previously only `update`)_: omit it while standing inside a registered chamber and the command targets that chamber. Handy on servers with many chambers.
-
 **Permission:** `btc.admin.snapshot`
 
-**`create all` / `missing` — Backfill missing snapshots _(1.5.22+)_**
-
-If you registered chambers with `global.auto-snapshot-on-register` turned off, they have no snapshot and **can't be reset** until one is captured. These two commands fix a backlog without doing it one-by-one:
-
-* **`/trial snapshot create all`** captures a snapshot for every registered chamber that's _missing_ one. It runs them **sequentially, waiting 20 ticks after each finishes** before the next — a single capture is one heavy main-thread pass over the whole chamber, so this stagger keeps TPS healthy on a big backlog. Progress is reported every 10 chambers. Add **`force`** (`/trial snapshot create all force`) to re-capture **all** chambers, including ones that already have a snapshot.
-* **`/trial snapshot missing`** lists the chambers with no snapshot, 10 per page, each with a clickable **`[Create]`** button (and a **`[Create all]`** header button). This is also where the periodic "chambers have no snapshot" reminder's `[list]` link now points.
-
-```
-/trial snapshot create all          # snapshot the 62 chambers missing one, staggered
-/trial snapshot create all force     # re-snapshot every chamber
-/trial snapshot missing 2            # page 2 of the missing list
-```
-
-**Actions:**
-
-**`create` - Create Snapshot**
-
-Scans the chamber and saves every block to a compressed snapshot file.
-
-**Example:**
+* Omit the chamber name on `create`, `update`, and `restore` while standing inside a chamber to target that one.
+* `create` and `update` do the same thing: scan every block in the bounds, save types, orientations, and container contents, compress it to `snapshots/<chamber>.dat`, and overwrite any existing snapshot. Takes a few seconds to about a minute depending on size.
+* `restore` resets the chamber from its snapshot immediately.
+* `create all` snapshots every chamber that has none, one at a time with a short pause between each, reporting progress every 10 chambers. Add `force` to re-snapshot every chamber.
+* `missing` lists chambers with no snapshot, 10 per page, each with a clickable `[Create]` and a `[Create all]` header button. A chamber with no snapshot cannot be reset until one is captured.
 
 ```
 /trial snapshot create MainChamber
+/trial snapshot create all
+/trial snapshot create all force
+/trial snapshot missing 2
 ```
-
-**What happens:**
-
-1. Scans all blocks in chamber boundaries
-2. Saves block types, orientations, tile entity data
-3. Compresses and stores in `snapshots/<chamber>.dat`
-
-**Time:** 5-30 seconds depending on chamber size
-
-{% hint style="success" %}
-**Update snapshots anytime!** Made changes to your chamber? Run `/trial snapshot create` again to update.
-{% endhint %}
-
-**`restore` - Restore Snapshot**
-
-Immediately resets the chamber from its snapshot (same as `/trial reset`).
-
-**Example:**
-
-```
-/trial snapshot restore MainChamber
-```
-
-Useful for testing or forcing manual resets.
-
-</details>
-
-<details>
-
-<summary><code>/trial dungeon &lt;pos1|pos2|capture|generate|list|delete|import&gt;</code></summary>
-
-Assembles chambers on demand from modular room pieces you build yourself. Configure in [dungeon.yml](../configuration/dungeon.yml.md).
-
-**Authoring a room:** build it in WorldEdit with **complete, solid walls**. At each spot a doorway could be, place a `minecraft:jigsaw` block flush in the wall with its **front facing outward** (orientations `north_up` / `east_up` / `south_up` / `west_up`). Don't pre-cut the opening — the generator carves a standard doorway only where two rooms actually join, and leaves unused connectors as walls. Standardise your door size across rooms.
-
-```
-/trial dungeon pos1                     # stand at one corner
-/trial dungeon pos2                     # stand at the opposite corner
-/trial dungeon capture <id> [roles…]    # save the selection (roles → tags, e.g. entrance / vault / boss)
-/trial dungeon generate <name> [seed]   # stitch a dungeon at your feet, registered as a chamber
-/trial dungeon list                     # list saved room templates
-/trial dungeon delete <id>              # delete a room template
-/trial dungeon import <file|folder|zip> [tags…]  # v1.7.0: import vanilla .nbt structure templates
-```
-
-**Importing (v1.7.0):** drop `.nbt` structure templates — or a whole datapack `.zip` (e.g. a "crazy chambers"-style pack) — into `plugins/BetterTrialChambers/dungeon/import/` and import them as rooms; jigsaw blocks become connectors automatically. See [dungeon.yml](../configuration/dungeon.yml.md#importing-datapack-rooms-v170) for details and limits.
-
-Rooms are matched on opposite-facing connectors across all four rotations, placed without overlap, and the result is snapshotted + registered like any other chamber (so resets, loot and protection all apply). `required-tags` in `dungeon.yml` guarantee e.g. one entrance and at least one vault.
 
 </details>
 
@@ -407,44 +353,21 @@ Rooms are matched on opposite-facing connectors across all four rotations, place
 
 <summary><code>/trial reset &lt;chamber&gt;</code></summary>
 
-Forces an immediate chamber reset.
+Forces an immediate reset: teleports players inside to the exit, restores blocks from the snapshot, clears vault cooldowns, and removes spawned mobs and ground items (both configurable).
 
 **Usage:**
 
 ```
-/trial reset <chamber_name>
+/trial reset <chamber>
+/trial reset pending
+/trial reset confirm <chamber|all>
 ```
 
 **Permission:** `btc.admin.reset`
 
-**Arguments:**
+`pending` and `confirm` are only used when `global.reset-require-confirmation` is on. Due chambers wait until an operator releases them with `confirm`.
 
-* `<chamber_name>` - Name of the chamber to reset
-
-**Examples:**
-
-```
-/trial reset MainChamber
-/trial reset NetherChamber1
-```
-
-**What it does:**
-
-1. Teleports all players inside to the exit location
-2. Restores all blocks from snapshot
-3. Resets vault states (clears native `rewarded_players`)
-4. Removes spawned mobs (configurable)
-5. Clears ground items (configurable)
-
-**Use cases:**
-
-* Testing chamber functionality
-* Manual reset for events
-* Fixing a broken chamber
-
-{% hint style="info" %}
-**Vault cooldowns:** When `reset-vault-cooldowns: true` in config.yml (default), vault cooldowns are cleared both in the database AND via Paper's native Vault API. This ensures players can truly loot vaults again after a reset.
-{% endhint %}
+When `reset-vault-cooldowns: true` (default), cooldowns are cleared in the database and in Minecraft's own vault block state, so players can loot vaults again straight away.
 
 </details>
 
@@ -452,26 +375,19 @@ Forces an immediate chamber reset.
 
 <summary><code>/trial list</code></summary>
 
-Lists all registered chambers.
+Lists registered chambers, 10 per page, with Prev and Next buttons. Each line shows the chamber name, world, and block count; click a name to copy it or `[menu]` to open its GUI page.
 
 **Usage:**
 
 ```
 /trial list
+/trial list 2
+/trial list current
 ```
 
 **Permission:** `btc.admin`
 
-**Example output:**
-
-```
-[BTC] === Registered Chambers ===
-[BTC] MainChamber - world (12,847 blocks)
-[BTC] NetherChamber1 - world_nether (8,521 blocks)
-[BTC] OceanChamber - world (15,392 blocks)
-```
-
-Shows chamber name, world, and total block count.
+`current` (also `here`, `near`, `nearest`) reports the chamber you are standing in, or the nearest one in your world with its distance and center.
 
 </details>
 
@@ -479,88 +395,36 @@ Shows chamber name, world, and total block count.
 
 <summary><code>/trial info [chamber]</code></summary>
 
-Shows plugin information (when used without arguments) or detailed chamber information (when a chamber name is provided).
+With no argument, shows plugin version, authors, database type, chamber count, server platform, integration status (WorldEdit, WorldGuard, PlaceholderAPI, Vault), and feature status.
+
+With a chamber name, shows that chamber's world, bounds, block volume, exit location, reset interval, last reset time, snapshot status, and whether it is paused.
 
 **Usage:**
-
-```
-/trial info
-/trial info <chamber_name>
-```
-
-**Permission:** `btc.admin`
-
-**Arguments:**
-
-* `[chamber_name]` - Optional: Name of the chamber to show details for
-
-**Examples:**
 
 ```
 /trial info
 /trial info MainChamber
 ```
 
-**Plugin Info (no arguments)**
+**Permission:** `btc.admin`
 
-When used without arguments, shows plugin-wide information:
+</details>
 
-**Example output:**
+<details id="tcp-delete-chamber">
 
-```
-[BTC] === BetterTrialChambers Plugin Info ===
-[BTC] Version: 1.2.22
-[BTC] Authors: DarkStarWorks
-[BTC] Database: SQLITE
-[BTC] Registered Chambers: 5
-[BTC] Platform: Paper/Spigot
-[BTC] --- Integrations ---
-[BTC]   WorldEdit/FAWE: ✓
-[BTC]   WorldGuard: ✗
-[BTC]   PlaceholderAPI: ✓
-[BTC]   Vault: ✗
-[BTC] --- Features ---
-[BTC]   Per-Player Loot: ✓
-[BTC]   Spawner Waves: ✓
-[BTC]   Spectator Mode: ✓
-[BTC]   Statistics: ✓
-```
+<summary><code>/trial delete &lt;chamber&gt;</code></summary>
 
-**Info shown:**
+Permanently deletes a chamber, its vault and spawner data, and its player cooldowns. The snapshot file on disk is not deleted.
 
-* Plugin version and authors
-* Database type (SQLite/MySQL)
-* Number of registered chambers
-* Server platform (Paper/Spigot or Folia)
-* Integration status (WorldEdit, WorldGuard, PlaceholderAPI, Vault)
-* Feature status (Per-Player Loot, Spawner Waves, Spectator Mode, Statistics)
-
-**Chamber Info (with argument)**
-
-When used with a chamber name, shows detailed chamber information:
-
-**Example output:**
+**Usage:**
 
 ```
-[BTC] === Chamber Info: MainChamber ===
-[BTC] World: world
-[BTC] Bounds: -150,-20,400 to -50,40,500
-[BTC] Volume: 12,847 blocks
-[BTC] Exit: -145, 65, 395
-[BTC] Reset Interval: 48 hours
-[BTC] Last Reset: 2 hours ago
-[BTC] Snapshot: Created
+/trial delete OldChamber
 ```
 
-**Info shown:**
+**Permission:** `btc.admin.create`
 
-* Chamber name and world
-* Boundary coordinates
-* Total block volume
-* Exit location (or "Not set")
-* Reset interval
-* Last reset time
-* Snapshot status
+This cannot be undone.
 
 </details>
 
@@ -568,36 +432,26 @@ When used with a chamber name, shows detailed chamber information:
 
 <summary><code>/trial pause &lt;chamber&gt;</code> / <code>/trial resume &lt;chamber&gt;</code></summary>
 
-Pause or resume a registered chamber.
-
 **Usage:**
 
 ```
-/trial pause <chamber_name>
-/trial resume <chamber_name>
+/trial pause <chamber>
+/trial resume <chamber>
 ```
 
 **Permission:** `btc.admin.pause`
 
-**What pausing does:**
+While paused:
 
-* DB record, stats, vault history, and snapshot are fully preserved — nothing is deleted.
-* Automatic resets stop scheduling for the chamber.
-* Protection events (block break/place, container access, mob griefing) are skipped.
-* Vault interactions are blocked with a player-visible message.
-* Player entry/exit tracking and spawner wave tracking are silenced.
+* All data (record, stats, vault history, snapshot) is kept.
+* Automatic resets stop.
+* Protection events (block break and place, container access, mob griefing) are skipped.
+* Vault use is blocked with a message.
+* Player entry/exit and spawner wave tracking are silent.
 
-**What pausing does NOT do:**
+Pausing does not delete data, remove mobs or items already inside, or stop players entering the region.
 
-* Does not delete any data.
-* Does not remove mobs or items currently inside the chamber.
-* Does not prevent players from physically entering the region.
-
-**Use case:** Hardcore/anarchy servers where griefing protection is intentionally disabled. If enough critical blocks are demolished you can pause the chamber to freeze its record while the world state reflects the damage, then resume or delete once you decide what to do.
-
-{% hint style="info" %}
-**Auto-pause:** Enable `protection.auto-pause-on-destruction: true` in config.yml to let the plugin pause chambers automatically once a configurable number of vaults or trial spawners are destroyed. See [config.yml](../configuration/config.yml.md) → Protection Settings.
-{% endhint %}
+Set `protection.auto-pause-on-destruction: true` in `config.yml` to pause chambers automatically once a set number of vaults or trial spawners are destroyed.
 
 </details>
 
@@ -605,21 +459,21 @@ Pause or resume a registered chamber.
 
 <summary><code>/trial container &lt;action&gt; &lt;chamber&gt; [#]</code></summary>
 
-Manage per-player container loot ([`chests.per-player-loot`](../configuration/config.yml.md#per-player-chamber-container-loot)) for a chamber. CLI parity with the chamber GUI's **Container Loot** screen (`/trial menu <chamber>` → Container Loot). _(Added in 1.5.9; reworked in 1.6.3.)_
+Manages per-player container loot ([`chests.per-player-loot`](../configuration/config.yml.md#per-player-chamber-container-loot)). Same features as the chamber GUI's Container Loot screen.
 
-Untouched containers roll **fresh loot per player** on every open (and again after each reset). Editing a container creates an **override** that all players then receive a copy of; reverting drops the override. There is no in-world editing — use this command or the GUI.
+Untouched containers roll fresh loot per player on every open. Editing a container creates an override that all players then receive a copy of; reverting drops the override.
 
 **Permission:** `btc.admin.containers`
 
-| Action                    | Effect                                                                                                                            |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `list <chamber>`          | Show whether per-player loot is on, plus listed-container and player-copy counts, with each container's index + position.          |
-| `materialize <chamber>`   | Scan the chamber and **list** every container so you can edit it. Listing only — it does not freeze loot.                          |
-| `edit <chamber> <#>`      | Open a container to edit it; saving creates an **override** (every player gets a copy of it, re-cloned each reset).                |
-| `resetone <chamber> <#>`  | Revert one container to vanilla — it goes back to fresh per-player rolls.                                                          |
-| `reset <chamber>`         | Remove every container from the list, including overrides (containers re-list as they're opened or re-scanned).                    |
-| `clearcopies <chamber>`   | Drop every player's private copies (they roll fresh loot next open). Overrides are kept.                                          |
-| `tp <chamber> <#>`        | Teleport to a container (index from `list`).                                                                                       |
+| Action | Effect |
+| --- | --- |
+| `list <chamber>` | Show whether the feature is on, plus template and player-copy counts and each container's number and position |
+| `materialize <chamber>` | Scan the chamber and list every container. Listing only; does not freeze loot |
+| `edit <chamber> <#>` | Open a container to edit. Saving creates an override, re-cloned to every player each reset |
+| `resetone <chamber> <#>` | Send one container back to fresh per-player rolls |
+| `reset <chamber>` | Remove every container from the list, overrides included. Alias: `cleartemplates` |
+| `clearcopies <chamber>` | Drop every player's private copies. Overrides kept |
+| `tp <chamber> <#>` | Teleport to a container |
 
 ```
 /trial container list MainChamber
@@ -630,93 +484,20 @@ Untouched containers roll **fresh loot per player** on every open (and again aft
 
 </details>
 
-<details id="tcp-delete-chamber">
-
-<summary><code>/trial delete &lt;chamber&gt;</code></summary>
-
-Permanently deletes a chamber and all associated data.
-
-**Usage:**
-
-```
-/trial delete <chamber_name>
-```
-
-**Permission:** `btc.admin.create`
-
-**Arguments:**
-
-* `<chamber_name>` - Name of the chamber to delete
-
-**Examples:**
-
-```
-/trial delete OldChamber
-/trial delete TestChamber
-```
-
-{% hint style="danger" %}
-** PERMANENT ACTION!** This deletes:
-
-* Chamber boundaries and settings
-* All vault data
-* All spawner data
-* Player vault cooldowns for this chamber
-* The snapshot file is NOT deleted (manual cleanup required)
-
-**Cannot be undone!**
-{% endhint %}
-
-</details>
-
 <details>
 
-<summary><code>/trial vault reset &lt;chamber&gt; &lt;player&gt; [type]</code></summary>
+<summary><code>/trial vault reset &lt;chamber&gt; &lt;player&gt; [normal|ominous]</code></summary>
 
-Resets a player's vault cooldowns for a specific chamber.
+Clears one player's cooldowns for every vault in a chamber, in the database and in Minecraft's own vault block state. Works for offline players. With `normal` or `ominous`, only that vault type is cleared.
 
 **Usage:**
-
-```
-/trial vault reset <chamber_name> <player_name> [normal|ominous]
-```
-
-**Permission:** `btc.admin.vault`
-
-**Arguments:**
-
-* `<chamber_name>` - Chamber name
-* `<player_name>` - Player name (can be offline)
-* `[type]` - Optional: `normal` or `ominous` (resets all if not specified)
-
-**Examples:**
 
 ```
 /trial vault reset MainChamber Steve
 /trial vault reset MainChamber Alex normal
-/trial vault reset OceanChamber Bob ominous
 ```
 
-**What it does:**
-
-* Resets cooldowns for ALL vaults in the chamber
-* Clears both database tracking AND native Vault block state (v1.2.21+)
-* Player can immediately loot vaults again
-* Filters by vault type if specified
-
-**Use cases:**
-
-* Compensate for server issues/bugs
-* Event rewards ("free vault access!")
-* Testing vault mechanics
-
-{% hint style="info" %}
-**Per-vault cooldowns:** This resets cooldowns for every vault in the chamber individually, not just one vault.
-{% endhint %}
-
-{% hint style="success" %}
-**v1.2.21+:** This command now properly clears Paper's native Vault `rewarded_players` list in addition to database tracking. This ensures players can truly loot vaults again immediately.
-{% endhint %}
+**Permission:** `btc.admin.vault`
 
 </details>
 
@@ -724,77 +505,35 @@ Resets a player's vault cooldowns for a specific chamber.
 
 <summary><code>/trial vault unlockall &lt;chamber|all&gt;</code></summary>
 
-Opens **every vault** in a chamber up again, for **everyone** — not just one player.
+Re-opens every vault in a chamber for everyone: clears the plugin's record and Minecraft's "already rewarded" list on each vault block. Use `all` for every registered chamber.
 
 **Usage:**
 
 ```
-/trial vault unlockall <chamber_name>
+/trial vault unlockall MainChamber
 /trial vault unlockall all
 ```
 
 **Permission:** `btc.admin.vault`
 
-**Arguments:**
-
-* `<chamber_name>` — the chamber to clear, or `all` for every registered chamber
-
-**What it does:**
-
-* Clears BTC's own record of who opened each vault
-* Clears Minecraft's built-in "already rewarded" list on each vault block
-* Every player can use every vault in that chamber again straight away
-
-**Use cases:**
-
-* **After switching `vaults.loot-mode` to `VANILLA`.** This is the main one. Minecraft keeps its own record of who opened each vault, and BTC writes into it while managing vaults — so after the switch, players who had already opened a vault find it shut, with no loot and no key taken. It looks exactly like the plugin broke vaults. This command clears that.
-* Events where you want to re-open a whole chamber without waiting for a reset
-* Undoing a batch of admin test opens
-
-{% hint style="info" %}
-A normal chamber reset already does this automatically for that chamber. You only need this command when you want it to happen **without** waiting for a reset.
-{% endhint %}
+Mainly needed after switching `vaults.loot-mode` to `VANILLA`: Minecraft keeps its own record of who opened each vault, so without this command players who already opened a vault find it shut. A normal reset already does this for one chamber.
 
 </details>
 
 <details>
 
-<summary><code>/trial key give &lt;player&gt; &lt;amount&gt; [type]</code></summary>
+<summary><code>/trial key give &lt;player&gt; &lt;amount&gt; [normal|ominous]</code></summary>
 
-Gives trial keys to a player.
+Gives trial keys to an online player. Defaults to normal keys.
 
 **Usage:**
 
 ```
-/trial key give <player_name> <amount> [normal|ominous]
-```
-
-**Permission:** `btc.admin.key`
-
-**Arguments:**
-
-* `<player_name>` - Player to give keys to (must be online)
-* `<amount>` - Number of keys (positive integer)
-* `[type]` - Optional: `normal` or `ominous` (default: `normal`)
-
-**Examples:**
-
-```
 /trial key give Steve 5
-/trial key give Alex 10 normal
 /trial key give Bob 3 ominous
 ```
 
-**Use cases:**
-
-* Rewards for events/competitions
-* Compensation for bugs
-* Sell keys in-game shop (via command blocks or other plugins)
-* Testing vault mechanics
-
-{% hint style="warning" %}
-**Player must be online!** Offline players can't receive items. The command will fail if the player isn't online.
-{% endhint %}
+**Permission:** `btc.admin.key`
 
 </details>
 
@@ -802,25 +541,15 @@ Gives trial keys to a player.
 
 <summary><code>/trial key check &lt;player&gt;</code></summary>
 
-Checks how many trial keys a player has.
+Counts every trial key in an online player's inventory.
 
 **Usage:**
 
 ```
-/trial key check <player_name>
+/trial key check Steve
 ```
 
 **Permission:** `btc.admin.key`
-
-**Arguments:**
-
-* `<player_name>` - Player to check (must be online)
-
-**Examples:**
-
-```
-/trial key check Steve
-```
 
 **Example output:**
 
@@ -828,7 +557,92 @@ Checks how many trial keys a player has.
 [BTC] Steve has 5 Normal Key(s) and 2 Ominous Key(s).
 ```
 
-Counts ALL keys in the player's inventory (all slots combined).
+</details>
+
+<details>
+
+<summary><code>/trial loot</code></summary>
+
+**Usage:**
+
+```
+/trial loot set <chamber> <normal|ominous> <table>
+/trial loot clear <chamber> [normal|ominous|all]
+/trial loot info <chamber>
+/trial loot list
+/trial loot audit
+```
+
+**Permission:** `btc.admin.loot`
+
+* `set` points one vault type in a chamber at a named table from `loot.yml`.
+* `clear` removes the override. With no type, clears both.
+* `info` shows which tables a chamber currently uses.
+* `list` shows every table name in `loot.yml`.
+* `audit` lists loot entries added before v1.5.0 that lost their enchantments, potion types, or custom names. Re-add those through the loot editor.
+
+</details>
+
+<details>
+
+<summary><code>/trial mobs</code></summary>
+
+**Usage:**
+
+```
+/trial mobs providers
+/trial mobs <chamber> list
+/trial mobs <chamber> provider <id|vanilla|none>
+/trial mobs <chamber> add <normal|ominous> <mobId>
+/trial mobs <chamber> remove <normal|ominous> <mobId>
+```
+
+**Permission:** `btc.admin.mobs`
+
+`providers` lists every mob provider (vanilla, MythicMobs, EliteMobs, and so on) and whether it is available. `provider vanilla` and `provider none` both return the chamber to vanilla mobs. Adding mob ids without setting a non-vanilla provider has no effect and warns you.
+
+</details>
+
+<details>
+
+<summary><code>/trial dungeon</code></summary>
+
+**Usage:**
+
+```
+/trial dungeon pos1
+/trial dungeon pos2
+/trial dungeon capture <id> [roles...]
+/trial dungeon generate <name> [seed]
+/trial dungeon list
+/trial dungeon delete <id>
+/trial dungeon import <file|folder|zip> [tags...]
+```
+
+**Permission:** `btc.admin.generate`
+
+See [Set up a dungeon](#set-up-a-dungeon) above and [dungeon.yml](../configuration/dungeon.yml.md).
+
+`import` reads from `plugins/BetterTrialChambers/dungeon/import/`. A loose `.nbt` imports one room, a folder imports every `.nbt` inside, and a datapack `.zip` imports every structure it contains.
+
+</details>
+
+<details>
+
+<summary><code>/trial give &lt;preset&gt; [player] [amount]</code></summary>
+
+Gives a preconfigured `trial_spawner` item built from a named entry in [spawner_presets.yml](../configuration/spawner-presets.yml.md). Player defaults to you (required from console), amount defaults to 1.
+
+**Usage:**
+
+```
+/trial give ominous_zombies
+/trial give ominous_zombies Steve 2
+```
+
+**Permission:** `btc.give`
+
+Run `/trial reload` after editing the preset file. If a player's inventory is full the overflow drops at their feet.
 
 </details>
 
@@ -836,55 +650,18 @@ Counts ALL keys in the player's inventory (all slots combined).
 
 <summary><code>/trial stats [player]</code></summary>
 
-View player statistics for Trial Chamber activity.
+Shows chambers completed, normal and ominous vaults opened, mobs killed, deaths, and time spent in chambers.
 
 **Usage:**
-
-```
-/trial stats
-/trial stats <player_name>
-```
-
-**Permission:**
-
-* `btc.stats` - View own stats
-* `btc.admin.stats` - View other players' stats
-
-**Arguments:**
-
-* `[player_name]` - Optional: Player to view stats for (requires admin permission)
-
-**Examples:**
 
 ```
 /trial stats
 /trial stats Steve
 ```
 
-**Example output:**
+**Permission:** `btc.stats` for your own, `btc.admin.stats` for another player.
 
-```
-[BTC] === Statistics for Steve ===
-[BTC] Chambers Completed: 12
-[BTC] Normal Vaults Opened: 45
-[BTC] Ominous Vaults Opened: 18
-[BTC] Mobs Killed: 324
-[BTC] Deaths: 7
-[BTC] Time Spent: 5h 32m
-```
-
-{% hint style="info" %}
-**Requires statistics to be enabled** in config.yml (`statistics.enabled: true`)
-{% endhint %}
-
-**Tracked stats:**
-
-* **Chambers Completed** - How many times player completed a chamber
-* **Normal Vaults Opened** - Total normal vaults looted
-* **Ominous Vaults Opened** - Total ominous vaults looted
-* **Mobs Killed** - Mobs killed inside managed chambers
-* **Deaths** - Deaths inside managed chambers
-* **Time Spent** - Total time spent inside chambers
+Requires `statistics.enabled: true` in `config.yml`.
 
 </details>
 
@@ -892,31 +669,9 @@ View player statistics for Trial Chamber activity.
 
 <summary><code>/trial leaderboard &lt;type&gt;</code></summary>
 
-View top players for a specific statistic.
+Shows the top players for one statistic. Also `/trial lb` and `/trial top`.
 
 **Usage:**
-
-```
-/trial leaderboard <type>
-/trial lb <type>
-/trial top <type>
-```
-
-**Permission:** `btc.stats`
-
-**Arguments:**
-
-* `<type>` - Stat type to display
-
-**Stat types:**
-
-* `chambers` or `completions` - Chambers completed
-* `normal` or `normalvaults` - Normal vaults opened
-* `ominous` or `ominousvaults` - Ominous vaults opened
-* `mobs` or `kills` - Mobs killed
-* `time` or `playtime` - Time spent in chambers
-
-**Examples:**
 
 ```
 /trial leaderboard chambers
@@ -924,25 +679,11 @@ View top players for a specific statistic.
 /trial top time
 ```
 
-**Example output:**
+**Permission:** `btc.leaderboard`
 
-```
-[BTC] === Top Players - Chambers Completed ===
-[BTC] #1 Steve: 47
-[BTC] #2 Alex: 42
-[BTC] #3 Bob: 38
-[BTC] #4 Charlie: 35
-[BTC] #5 Diana: 31
-```
+Types: `chambers` (`completions`), `normal` (`normalvaults`), `ominous` (`ominousvaults`), `mobs` (`kills`), `time` (`playtime`).
 
-**Configuration:**
-
-* Number of players shown: `statistics.top-players-count` in config.yml (default: 10)
-* Update frequency: `statistics.leaderboard-update-interval` in config.yml (default: 1 hour)
-
-{% hint style="info" %}
-**Leaderboards are cached** to prevent database lag. They update on the interval specified in config, not in real-time.
-{% endhint %}
+Player count comes from `statistics.top-players-count` (default 10). Results are cached and refresh on `statistics.leaderboard-update-interval` (default 1 hour).
 
 </details>
 
@@ -950,7 +691,7 @@ View top players for a specific statistic.
 
 <summary><code>/trial claims scan</code></summary>
 
-Checks every registered chamber against existing claims from any installed land-claim plugin (**Residence**, **Lands**, **GriefPrevention**) and logs a warning to the console for each overlap. Use it to find chambers that were registered on top of — or had a claim made inside them before — the [claim integrations](../configuration/config.yml.md#residence-integration-lands-integration-griefprevention-integration) existed. _(Added in 1.5.15.)_
+Checks every chamber against claims from any installed land-claim plugin (Residence, Lands, GriefPrevention) and logs one console line per overlap, then replies with the total.
 
 **Usage:**
 
@@ -960,25 +701,9 @@ Checks every registered chamber against existing claims from any installed land-
 
 **Permission:** `btc.admin.reload`
 
-**What it does:**
+Also runs on startup unless `protection.claim-conflict-scan-on-startup: false`.
 
-* For each enabled integration, walks that plugin's claims once and reports any that overlap a chamber's bounds.
-*   Logs one line per conflict to the **server console**, e.g.:
-
-    ```
-    [BTC] Claim conflict: chamber 'arena3' (world 120,-44,310) overlaps GriefPrevention claim(s): Steve
-    ```
-* Replies in chat with the total number of conflicting chambers (or "No claim conflicts found.").
-
-This also runs automatically on startup unless you set [`protection.claim-conflict-scan-on-startup: false`](../configuration/config.yml.md#claim-conflict-scan-on-startup).
-
-**How to resolve a reported conflict:**
-
-1. Note the chamber name, the location, and the claim owner from the log line.
-2. Decide which should win that space:
-   * **Keep the chamber:** remove or resize the claim in the claim plugin (e.g. Residence `/res remove`, Lands `/unclaim`, GriefPrevention claim resize/abandon), then re-run `/trial claims scan` to confirm it's clear.
-   * **Keep the claim:** [delete the chamber](#tcp-delete-chamber) (`/trial delete <chamber>`) or move/re-register it elsewhere.
-3. New claims can no longer be made into chambers, so once existing conflicts are cleared they won't reappear (except for players with the relevant `btc.bypass.*` permission).
+To fix a reported overlap, decide which should keep the space: remove or resize the claim in the claim plugin, or [delete the chamber](#tcp-delete-chamber). New claims can no longer be made inside chambers, so cleared conflicts stay cleared.
 
 </details>
 
@@ -986,7 +711,7 @@ This also runs automatically on startup unless you set [`protection.claim-confli
 
 <summary><code>/trial reload</code></summary>
 
-Reloads the plugin configuration without restarting the server.
+Reloads `config.yml`, `loot.yml`, `messages.yml`, and `spawner_presets.yml`, and clears the chamber lookup cache.
 
 **Usage:**
 
@@ -996,28 +721,7 @@ Reloads the plugin configuration without restarting the server.
 
 **Permission:** `btc.admin.reload`
 
-**Example:**
-
-```
-/trial reload
-```
-
-**What gets reloaded:**
-
-* `config.yml` settings
-* `loot.yml` loot tables
-* `messages.yml` messages
-* Chamber lookup cache is cleared
-
-**What DOESN'T reload:**
-
-* Database connections (requires full restart)
-* Existing chamber data in memory
-* Active reset timers (they continue with old intervals until next reset)
-
-{% hint style="warning" %}
-**Database changes require restart!** If you changed database settings in config.yml, you MUST restart the server, not just reload.
-{% endhint %}
+Database settings and running reset timers do not reload. Change database settings, then restart the server.
 
 </details>
 
@@ -1025,71 +729,61 @@ Reloads the plugin configuration without restarting the server.
 
 <summary><code>/trial update</code></summary>
 
-_(Added in 1.8.0.)_ Check for, download, and install BetterTrialChambers updates. Updates are looked up on Modrinth (with GitHub Releases as a fallback).
+Checks for and installs BetterTrialChambers updates, looked up on Modrinth with GitHub Releases as a fallback.
 
 **Usage:**
 
 ```
-/trial update [check|download|apply|ignore <version>|unignore <version>|restore|status]
+/trial update [check|status|download|apply|restore|ignore <version>|unignore <version>]
 ```
 
 **Permission:** `btc.admin`
 
-**Subcommands:**
+* `check` (the default) checks now and reports.
+* `status` shows the last result without a network call.
+* `download` downloads the latest release, verifies its checksum, backs up the current jar, and stages the new one for the next restart. Needs `update.mode: download` or `auto-stage`.
+* `apply` swaps a staged update in without a restart. Needs `update.allow-hot-reload: true`; refused on Folia or when other plugins depend on BTC.
+* `restore` stages the most recent backup for the next restart.
+* `ignore <version>` / `unignore <version>` mute or unmute notifications for one version.
 
-* `check` (default when no argument is given) — check now and report the result.
-* `status` — show the last known result without making a network call.
-* `download` — download the latest release, verify its checksum, back up the current jar, and stage the new one for install on the **next restart**. Requires `update.mode: download` or `auto-stage`.
-* `apply` — hot-swap a staged update into place **without a restart**. Requires `update.allow-hot-reload: true` (and is refused on Folia or when other plugins depend on BTC). See below.
-* `restore` — stage the most recent backup for install on the next restart, rolling back a bad update.
-* `ignore <version>` — stop notifications for a specific version until a newer one is released.
-* `unignore <version>` — undo `ignore` for a version.
+In the default `notify` mode the plugin only reports that an update exists. Behaviour is set under [`update`](../configuration/config.yml.md#updates) in `config.yml`.
 
-**Behaviour is set in config.yml** under [`update`](../configuration/config.yml.md#updates). In the default `notify` mode the plugin only tells you an update exists — `download` and `apply` are rejected until you raise the mode.
+</details>
 
-**Typical restart-based flow:**
+<details>
+
+<summary><code>/trial debug</code></summary>
+
+**Usage:**
 
 ```
-/trial update check       # see what's available
-/trial update download    # verify + stage it
-# restart the server — the new jar installs on boot
+/trial debug schema
+/trial debug structure
 ```
 
-{% hint style="info" %}
-**Hot reload (`apply`)** is an opt-in convenience for small updates. It unloads the running plugin, swaps the jar, and re-enables the new version live, rolling back to the automatic backup if the new version fails to load. Restarting the server is always the safer choice — leave `allow-hot-reload` off unless you specifically want in-place reloads.
-{% endhint %}
+**Permission:** `btc.admin.reload`
+
+* `schema` prints each database table's real columns.
+* `structure` tests, in empty air high above the world, whether this server can save a block with everything it holds and put it back unchanged, then reports one line per check.
 
 </details>
 
 ***
 
-## Common Command Sequences
+## Common command sequences
 
 <details>
 
-<summary><strong>Registering an Existing Chamber (Full Process)</strong></summary>
+<summary><strong>Register an existing chamber</strong></summary>
 
 ```bash
-# 1. Select chamber with WorldEdit
 /wand
-# (left-click + right-click corners)
-
-# 2. Register chamber
+# left-click one corner, right-click the opposite corner
 /trial generate wand MyChamber
-
-# 3. Scan is automatic, but you can re-scan if needed
 /trial scan MyChamber
-
-# 4. Set exit location (stand outside chamber)
 /trial setexit MyChamber
-
-# 5. Snapshot is automatic, but you can update it
 /trial snapshot create MyChamber
-
-# 6. Check chamber info
 /trial info MyChamber
-
-# 7. Test the reset
 /trial reset MyChamber
 ```
 
@@ -1097,19 +791,12 @@ _(Added in 1.8.0.)_ Check for, download, and install BetterTrialChambers updates
 
 <details>
 
-<summary><strong>Managing Player Issues</strong></summary>
+<summary><strong>Handle player issues</strong></summary>
 
 ```bash
-# Player accidentally used all keys
 /trial key give Steve 5 normal
-
-# Player's vaults stuck on cooldown (bug)
 /trial vault reset MainChamber Steve
-
-# Check player's statistics
 /trial stats Steve
-
-# Check player's key inventory
 /trial key check Steve
 ```
 
@@ -1117,19 +804,13 @@ _(Added in 1.8.0.)_ Check for, download, and install BetterTrialChambers updates
 
 <details>
 
-<summary><strong>Event Setup</strong></summary>
+<summary><strong>Run an event</strong></summary>
 
 ```bash
-# Give all online players keys for event
 /trial key give Player1 10
 /trial key give Player2 10
-/trial key give Player3 10
-
-# After event, check leaderboards
 /trial leaderboard chambers
 /trial leaderboard time
-
-# Reset chamber immediately for next group
 /trial reset EventChamber
 ```
 
@@ -1137,21 +818,12 @@ _(Added in 1.8.0.)_ Check for, download, and install BetterTrialChambers updates
 
 <details>
 
-<summary><strong>Maintenance Tasks</strong></summary>
+<summary><strong>Routine maintenance</strong></summary>
 
 ```bash
-# List all chambers
 /trial list
-
-# Check each chamber's status
 /trial info MainChamber
-/trial info NetherChamber
-
-# Update snapshots after building changes
 /trial snapshot create MainChamber
-/trial snapshot create NetherChamber
-
-# Reload config after edits
 /trial reload
 ```
 
@@ -1159,109 +831,32 @@ _(Added in 1.8.0.)_ Check for, download, and install BetterTrialChambers updates
 
 ***
 
-## Pro Tips
-
-{% hint style="success" %}
-**Use tab completion!** Press `Tab` while typing commands to autocomplete chamber names, player names, and arguments.
-{% endhint %}
-
-{% hint style="info" %}
-**Aliases:** All leaderboard commands work with `/trial lb` and `/trial top` for quick access.
-{% endhint %}
-
-{% hint style="warning" %}
-**Chamber names are case-sensitive** in some commands. Use tab completion to ensure correct capitalization.
-{% endhint %}
-
-{% hint style="info" %}
-**Offline player support:** Most commands work with offline players (like `/trial vault reset`), but `/trial key give` requires the player to be online.
-{% endhint %}
-
-***
-
-## Command Permissions
-
-For a complete list of all permissions (including per-command permissions), see the [Permissions](permissions.md) page.
-
-**Quick permission groups:**
-
-**Full Admin:**
-
-```yaml
-btc.admin
-btc.admin.*
-```
-
-**Statistics Access:**
-
-```yaml
-btc.stats
-btc.admin.stats
-```
-
-**Read-only Access:**
-
-```yaml
-btc.admin       # Can view chambers
-btc.stats       # Can view own stats
-```
-
-***
-
 ## Troubleshooting
 
-**"Unknown subcommand"**
+**"Unknown subcommand"** - check spelling with tab completion, and check you have permission. Run `/trial help`.
 
-* Check spelling (use tab completion!)
-* Verify you have permission for that command
-* Run `/trial help` to see available commands
+**"You don't have permission"** - see the [Permissions](permissions.md) page.
 
-**"You don't have permission to use this command"**
+**"Chamber not found"** - run `/trial list`. Names are case-sensitive; use tab completion.
 
-* Check with your server admin for permissions
-* See [Permissions](permissions.md) for the full list
+**"No WorldEdit selection found"** - install WorldEdit, run `/wand`, and select two corners that enclose a volume.
 
-**"Chamber not found"**
+**"Player not found or not online"** - `/trial key give` and `/trial key check` need the player online. `/trial vault reset` works offline.
 
-* Use `/trial list` to see all chambers
-* Chamber names are case-sensitive
-* Use tab completion to avoid typos
-
-**"No WorldEdit selection found"**
-
-* Make sure WorldEdit is installed
-* Use `/wand` and select two corners
-* Your selection must have volume (not flat)
-
-**"Player not found or not online"**
-
-* Player must be online for `/trial key give` and `/trial key check`
-* For offline players, use `/trial vault reset` (works offline)
-
-**"Snapshot operation failed"**
-
-* Check console for detailed error
-* Ensure disk space is available
-* Verify file permissions on `plugins/BetterTrialChambers/snapshots/` folder
+**"Snapshot operation failed"** - check the console, confirm disk space, and check file permissions on `plugins/BetterTrialChambers/snapshots/`.
 
 ***
 
-## Related Pages
+## Related pages
 
 {% content-ref url="permissions.md" %}
 [permissions.md](permissions.md)
 {% endcontent-ref %}
 
-Complete permission nodes for all commands and features.
-
 {% content-ref url="../configuration/config.yml.md" %}
 [config.yml.md](../configuration/config.yml.md)
 {% endcontent-ref %}
 
-Settings that affect command behavior (auto-scan, auto-snapshot, etc.)
-
 {% content-ref url="../getting-started/your-first-chamber.md" %}
 [your-first-chamber.md](../getting-started/your-first-chamber.md)
 {% endcontent-ref %}
-
-Step-by-step guide using these commands to set up your first chamber.

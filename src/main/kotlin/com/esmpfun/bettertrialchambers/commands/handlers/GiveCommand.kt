@@ -5,7 +5,7 @@ import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 
 /**
- * `/trial give <preset> [player] [amount]` — hand the sender (or a target
+ * `/trial give <preset> [player] [amount]`, hand the sender (or a target
  * player) a `minecraft:trial_spawner` item preconfigured from a named entry
  * in `spawner_presets.yml`. Introduced in v1.3.1.
  *
@@ -74,7 +74,7 @@ class GiveCommand(private val plugin: BetterTrialChambers) : SubcommandHandler {
         val item = try {
             plugin.spawnerPresetManager.getItem(preset, amount)
         } catch (e: IllegalArgumentException) {
-            // Bad NBT in the preset — surface to the admin running the command.
+            // Bad NBT in the preset, surface to the admin running the command.
             sender.sendMessage(plugin.getMessageComponent("give-build-failed", "preset" to preset.id, "error" to (e.message ?: "unknown")))
             plugin.logger.warning("Failed to build trial_spawner item for preset '${preset.id}': ${e.message}")
             return
@@ -84,7 +84,7 @@ class GiveCommand(private val plugin: BetterTrialChambers) : SubcommandHandler {
         plugin.scheduler.runAtEntity(target, Runnable {
             val leftover = target.inventory.addItem(item)
             if (leftover.isNotEmpty()) {
-                // Inventory full — drop the overflow at the player's feet so we don't silently lose items.
+                // Inventory full, drop the overflow at the player's feet so we don't silently lose items.
                 leftover.values.forEach { stack ->
                     target.world.dropItemNaturally(target.location, stack)
                 }

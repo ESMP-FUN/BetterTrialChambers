@@ -28,11 +28,11 @@ class LootDepositHolder(
  * the loot editor reopens with the new entries. Items are always returned
  * even if the draft is gone, so nothing is ever lost.
  *
- * v1.5.0 — migrated off the raw `Bukkit.createInventory` + standalone
+ * v1.5.0, migrated off the raw `Bukkit.createInventory` + standalone
  * `LootDepositListener` shape. Now uses the central VcGui framework with
  * [freelyEditable] = true so [com.esmpfun.bettertrialchambers.gui.framework.VcGuiListener]
  * passes all clicks and drags through to vanilla Bukkit (the player IS the
- * source of truth — no slot wiring). The crash class from the previous
+ * source of truth, no slot wiring). The crash class from the previous
  * shape (`serializeAsBytes()` throwing mid-loop and stranding items in the
  * closing chest) is addressed here too: every item is wrapped in
  * try/catch, falling back to a material-only loot entry on failure, and
@@ -47,7 +47,7 @@ class LootDepositView(
     globalTableName: String?,
 ) : VcGui(
     rows = 6,
-    title = Component.text("Drag items to add — close to confirm", NamedTextColor.DARK_AQUA),
+    title = Component.text("Drag items to add, close to confirm", NamedTextColor.DARK_AQUA),
     holder = LootDepositHolder(chamber, kind, poolName, globalTableName),
 ) {
     override val freelyEditable: Boolean = true
@@ -77,10 +77,10 @@ class LootDepositView(
                     plugin.lootManager.serializeItem(item)
                 } catch (e: Exception) {
                     // Some items (mod NBT, oversized component data) can't be
-                    // round-tripped through serializeAsBytes. Don't lose them —
+                    // round-tripped through serializeAsBytes. Don't lose them,
                     // store a material-only fallback and log so we can investigate.
                     plugin.logger.warning(
-                        "Bulk-add: serializeItem failed for ${item.type} — falling back to material-only entry: ${e.message}"
+                        "Bulk-add: serializeItem failed for ${item.type}, falling back to material-only entry: ${e.message}"
                     )
                     null
                 }
@@ -100,29 +100,42 @@ class LootDepositView(
             h.inventory.setItem(i, null)
         }
 
-        if (added > 0 && draft != null) {
-            draft.dirty = true
-            if (h.chamber != null) menu.saveDraft(player, h.chamber, h.kind, h.poolName, draft)
-            else menu.saveGlobalDraft(player, h.globalTableName!!, h.poolName, draft)
-            player.sendMessage(plugin.getMessageComponent("gui-loot-deposit-added", "count" to added))
-        }
-
-        // Hand items back on the player's region thread (Folia-correct; on Paper this
-        // is just the main thread). Safe inside the close event — we're only mutating
-        // the player's own inventory and dropping items into the world, not opening
-        // anything new.
-        plugin.scheduler.runAtEntity(player, Runnable {
-            for (item in itemsToReturn) {
-                val leftover = player.inventory.addItem(item)
-                leftover.values.forEach { player.world.dropItemNaturally(player.location, it) }
+        // The loop above has already emptied the chest, so from here on the only
+        // copy of the player's items is the list held here. Giving them back is
+        // therefore done in a `finally`: saving the draft or sending the message
+        // can fail, and if either did, every item the player had put in was
+        // destroyed. They were cleared from the chest and the list went out of
+        // scope with the exception. Whatever else happens, the items go back.
+        try {
+            if (added > 0 && draft != null) {
+                draft.dirty = true
+                if (h.chamber != null) menu.saveDraft(player, h.chamber, h.kind, h.poolName, draft)
+                else menu.saveGlobalDraft(player, h.globalTableName!!, h.poolName, draft)
+                player.sendMessage(plugin.getMessageComponent("gui-loot-deposit-added", "count" to added))
             }
-        })
+        } catch (e: Exception) {
+            plugin.logger.warning(
+                "Bulk-add: could not save the loot changes (${e.message}). " +
+                    "The items have been handed back to ${player.name} rather than kept."
+            )
+        } finally {
+            // Hand items back on the player's region thread (Folia-correct; on Paper this
+            // is just the main thread). Safe inside the close event, we're only mutating
+            // the player's own inventory and dropping items into the world, not opening
+            // anything new.
+            plugin.scheduler.runAtEntity(player, Runnable {
+                for (item in itemsToReturn) {
+                    val leftover = player.inventory.addItem(item)
+                    leftover.values.forEach { player.world.dropItemNaturally(player.location, it) }
+                }
+            })
+        }
 
         // CRITICAL: opening a new inventory while still inside `InventoryCloseEvent`
         // re-fires the close event for the currently-detaching inventory on Paper 1.21+.
-        // On the Paper scheduler that's not even one tick later — `runAtEntity` runs
-        // synchronously when already on the primary thread, so the chain `close →
-        // open → close → open …` recurses until the JVM stack overflows. (Observed in
+        // On the Paper scheduler that's not even one tick later, `runAtEntity` runs
+        // synchronously when already on the primary thread, so the chain `close ->
+        // open -> close -> open ...` recurses until the JVM stack overflows. (Observed in
         // a v1.5.0 pre-release local-test crash: 571k log lines, one root cause.)
         //
         // Schedule the editor reopen exactly one tick out via `runAtEntityLater` so the

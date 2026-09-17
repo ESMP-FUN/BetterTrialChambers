@@ -14,13 +14,13 @@ import org.bukkit.inventory.ItemStack
 class PoolSelectorHolder : BaseHolder()
 
 /**
- * Pool selector view — pick which pool of a multi-pool loot table to edit.
+ * Pool selector view, pick which pool of a multi-pool loot table to edit.
  * v1.3.0; migrated to VcGui in v1.5.0.
  *
  * Edge case preserved: if the table is missing or legacy-format, the IF
  * version short-circuited to open the loot editor directly. We can't do
  * that pre-open from inside super(...), so the caller (MenuService) must
- * handle that branch — or this view opens, shows nothing, and the user
+ * handle that branch, or this view opens, shows nothing, and the user
  * clicks back. To preserve behavior we just route Back to chamber detail
  * in those cases via empty layout.
  */
@@ -49,7 +49,7 @@ class PoolSelectorView(
 
         if (table == null || table.isLegacyFormat()) {
             // Short-circuit handled by the caller in MenuService.openPoolSelect /
-            // openGlobalPoolSelect — they redirect to openLootEditor before this
+            // openGlobalPoolSelect, they redirect to openLootEditor before this
             // view ever opens. As a safety net here, populate a back button only.
             set(45, GuiComponents.backVcItem(plugin, "gui.common.dest-loot") { ctx ->
                 if (chamber != null) {
@@ -105,13 +105,19 @@ class PoolSelectorView(
             else -> Material.CHEST
         }
         val itemCount = pool.weightedItems.size + pool.guaranteedItems.size
+        // A pool that does not always run is the single biggest thing about it,
+        // so it goes on the label rather than being left for the owner to find
+        // out from the drop rates.
+        val loreKey = if (pool.chance < 1.0) "gui.pool-selector.pool-lore-sometimes"
+            else "gui.pool-selector.pool-lore"
         return GuiComponents.infoItem(plugin, material,
-            "gui.pool-selector.pool-name", "gui.pool-selector.pool-lore",
+            "gui.pool-selector.pool-name", loreKey,
             "name" to pool.name,
             "minRolls" to pool.minRolls, "maxRolls" to pool.maxRolls,
             "items" to itemCount,
             "weighted" to pool.weightedItems.size,
-            "guaranteed" to pool.guaranteedItems.size)
+            "guaranteed" to pool.guaranteedItems.size,
+            "percent" to (pool.chance * 100.0).toInt())
     }
 
     private fun createNewPoolItem(currentPools: Int, maxPools: Int): ItemStack =

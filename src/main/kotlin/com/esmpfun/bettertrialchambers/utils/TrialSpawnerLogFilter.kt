@@ -11,7 +11,7 @@ import org.apache.logging.log4j.core.filter.AbstractFilter
  * Mutes the vanilla console spam `Trial Spawner at BlockPos{...} has no detected
  * players`, which a trial spawner logs every tick while it's stuck in a bad
  * state. TCP's reset fixes stop NEW occurrences, but spawners already broken on
- * a running server keep spamming until their chamber next resets — this filter
+ * a running server keep spamming until their chamber next resets, this filter
  * silences that one line in the meantime.
  *
  * Opt out via `global.suppress-trial-spawner-spam: false`.

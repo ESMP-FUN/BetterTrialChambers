@@ -9,6 +9,7 @@ import org.bukkit.block.BlockFace
 import java.io.File
 import java.io.InputStream
 import java.util.zip.ZipFile
+import kotlin.coroutines.resume
 
 /**
  * Imports vanilla `.nbt` structure templates (the format datapacks use for
@@ -38,7 +39,7 @@ class StructureImporter(private val plugin: BetterTrialChambers) {
         val structure = suspendCancellableCoroutine<org.bukkit.structure.Structure> { cont ->
             plugin.scheduler.runTask(Runnable {
                 try {
-                    cont.resume(plugin.server.structureManager.loadStructure(input)) {}
+                    cont.resume(plugin.server.structureManager.loadStructure(input))
                 } catch (e: Exception) {
                     cont.resumeWith(Result.failure(e))
                 }
@@ -48,7 +49,7 @@ class StructureImporter(private val plugin: BetterTrialChambers) {
         val palette = structure.palettes.firstOrNull()
             ?: throw IllegalArgumentException("structure '$id' has no palette")
         if (structure.palettes.size > 1) {
-            plugin.logger.info("Import '$id': ${structure.palettes.size} palettes found — using palette 0 only.")
+            plugin.logger.info("Import '$id': ${structure.palettes.size} palettes found, using palette 0 only.")
         }
 
         val sizeX = structure.size.blockX
@@ -72,8 +73,14 @@ class StructureImporter(private val plugin: BetterTrialChambers) {
                 }
                 else -> {
                     materials[pos] = state.type
-                    // captureTileEntity on an UNPLACED palette BlockState may not behave like a
-                    // placed one — degrade to null (block keeps its blockdata, loses tile NBT).
+                    // The one place still reading contents the old hand-written
+                    // way, and it has to be. Everywhere else saves a block
+                    // through the game itself, which needs a real block standing
+                    // in the world; these come out of a structure file and have
+                    // never been placed, so there is nothing to point that at.
+                    // Best-effort by nature: an unplaced state does not always
+                    // answer the way a placed one would, and a block that will
+                    // not read keeps its shape and loses what it held.
                     val nbt = try {
                         NBTUtil.captureTileEntity(state)
                     } catch (_: Exception) {
@@ -85,10 +92,10 @@ class StructureImporter(private val plugin: BetterTrialChambers) {
             }
         }
         if (nbtFailures > 0) {
-            plugin.logger.warning("Import '$id': tile-entity NBT could not be read for $nbtFailures block(s) — imported without it.")
+            plugin.logger.warning("Import '$id': tile-entity NBT could not be read for $nbtFailures block(s), imported without it.")
         }
 
-        // Pass 2: jigsaw cells → connectors, cell rewritten to a sampled wall block.
+        // Pass 2: jigsaw cells -> connectors, cell rewritten to a sampled wall block.
         val connectors = mutableListOf<Connector>()
         for ((pos, face) in jigsaws) {
             val wall = sampleWallInMemory(pos, face, blocks, materials) ?: wallFallback
@@ -96,7 +103,7 @@ class StructureImporter(private val plugin: BetterTrialChambers) {
             if (face != null) {
                 connectors += Connector(pos.first, pos.second, pos.third, face)
             } else {
-                plugin.logger.warning("Import '$id': jigsaw at ${pos.first},${pos.second},${pos.third} has a vertical/unsupported orientation — treated as wall, no connector.")
+                plugin.logger.warning("Import '$id': jigsaw at ${pos.first},${pos.second},${pos.third} has a vertical/unsupported orientation, treated as wall, no connector.")
             }
         }
 
@@ -167,8 +174,8 @@ class StructureImporter(private val plugin: BetterTrialChambers) {
 
         /**
          * Parses a zip entry path into a room id + auto-tag, or null when the entry isn't a
-         * datapack structure template. Pure — unit-tested.
-         * `data/crazy_chambers/structure/spawner/small_1.nbt` →
+         * datapack structure template. Pure, unit-tested.
+         * `data/crazy_chambers/structure/spawner/small_1.nbt` ->
          * id `crazy_chambers_spawner_small_1`, autoTag `spawner`.
          */
         fun zipEntryInfo(path: String): ZipRoomEntry? {

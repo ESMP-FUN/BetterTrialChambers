@@ -3,7 +3,7 @@ package com.esmpfun.bettertrialchambers.setup
 /**
  * The curated list of settings the `/trial setup` tour walks through, in order.
  *
- * Chosen for impact, not completeness — leading with the high-value settings that ship
+ * Chosen for impact, not completeness, leading with the high-value settings that ship
  * **off** (so operators never find them), then the runtime toggles already surfaced in the
  * admin GUI, then a couple of "choice" settings. To add/remove a step, edit this list and
  * its `messages.yml` `setup.steps.<id>.*` entries. Order matters: dependent settings follow
@@ -16,13 +16,13 @@ object SetupCatalog {
         SetupStep.Toggle("discovery", "discovery.enabled", default = false, cpuImpact = CpuImpact.LITTLE),
         SetupStep.Toggle("auto-snapshot", "discovery.auto-snapshot", default = false, cpuImpact = CpuImpact.LITTLE),
         SetupStep.Toggle("drop-loot", "vaults.drop-loot-at-vault", default = false),
-        SetupStep.Toggle("reset-confirm", "reset.reset-require-confirmation", default = false),
-        SetupStep.Toggle("fawe", "reset.use-fawe", default = false, requiresPlugin = "FastAsyncWorldEdit"),
+        SetupStep.Toggle("reset-confirm", "global.reset-require-confirmation", default = false),
+        SetupStep.Toggle("fawe", "global.use-fawe", default = false, requiresPlugin = "FastAsyncWorldEdit"),
 
         // ── Choice: how often chambers auto-reset ──────────────────────────────
         // 6 options (even count) so the 2-column button grid lays out cleanly with the
         // nav buttons grouped below. Path is global.default-reset-interval (what
-        // ChamberManager actually reads) — NOT reset.* (a phantom key).
+        // ChamberManager actually reads), NOT reset.* (a phantom key).
         SetupStep.Choice(
             "reset-interval", "global.default-reset-interval",
             options = listOf(
@@ -66,7 +66,7 @@ object SetupCatalog {
     /** The interval that ships in config.yml; tagged "(default)" in the Currently line. */
     private const val DEFAULT_INTERVAL = 172_800L
 
-    /** Renders vaults.loot-mode for the "Currently: …" line in plain words. */
+    /** Renders vaults.loot-mode for the "Currently: ..." line in plain words. */
     private fun formatLootMode(value: Any?): String = when (value?.toString()?.uppercase()) {
         "SHARED" -> "First come, first served"
         "VANILLA" -> "Leave it to Minecraft"
@@ -74,8 +74,8 @@ object SetupCatalog {
     }
 
     /**
-     * Reset-interval seconds → a human duration for the "Currently: …" line, e.g.
-     * 172800 → "2 days (default)", 21600 → "6 hours", 104400 → "1 day, 5 hours".
+     * Reset-interval seconds -> a human duration for the "Currently: ..." line, e.g.
+     * 172800 -> "2 days (default)", 21600 -> "6 hours", 104400 -> "1 day, 5 hours".
      */
     private fun formatInterval(value: Any?): String {
         val s = (value as? Number)?.toLong() ?: return "not set"

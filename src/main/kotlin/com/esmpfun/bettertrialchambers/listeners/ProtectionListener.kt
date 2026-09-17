@@ -3,14 +3,32 @@ package com.esmpfun.bettertrialchambers.listeners
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
 import org.bukkit.GameMode
 import org.bukkit.Material
-import org.bukkit.block.Container
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.entity.Projectile
 import org.bukkit.event.block.BlockBreakEvent
+import org.bukkit.event.block.BlockBurnEvent
+import org.bukkit.event.block.BlockDispenseEvent
+import org.bukkit.event.block.BlockFadeEvent
+import org.bukkit.event.block.BlockFertilizeEvent
+import org.bukkit.event.block.BlockFormEvent
+import org.bukkit.event.block.BlockFromToEvent
+import org.bukkit.event.block.BlockGrowEvent
+import org.bukkit.event.block.BlockIgniteEvent
+import org.bukkit.event.block.BlockPistonExtendEvent
+import org.bukkit.event.block.BlockPistonRetractEvent
 import org.bukkit.event.block.BlockPlaceEvent
+import org.bukkit.event.block.BlockSpreadEvent
+import org.bukkit.event.block.LeavesDecayEvent
+import org.bukkit.event.block.SpongeAbsorbEvent
+import org.bukkit.event.entity.EntityDamageEvent
+import org.bukkit.event.hanging.HangingBreakByEntityEvent
+import org.bukkit.event.hanging.HangingBreakEvent
+import org.bukkit.event.player.PlayerArmorStandManipulateEvent
+import org.bukkit.event.player.PlayerBucketEmptyEvent
+import org.bukkit.event.world.StructureGrowEvent
 import org.bukkit.event.entity.EntityChangeBlockEvent
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityExplodeEvent
@@ -24,7 +42,7 @@ import org.bukkit.event.player.PlayerTeleportEvent
  */
 class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
 
-    /** Last time (ms) each player was shown a protection-denied message — for spam suppression. */
+    /** Last time (ms) each player was shown a protection-denied message, for spam suppression. */
     private val lastDenyMessage = java.util.concurrent.ConcurrentHashMap<java.util.UUID, Long>()
 
     /**
@@ -107,7 +125,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
             for (name in config.getStringList("protection.tunnel-breaking.blocks")) {
                 val mat = Material.matchMaterial(name.trim())
                 if (mat != null && mat.isBlock) blocks += mat
-                else plugin.logger.warning("[Protection] tunnel-breaking.blocks: unknown material '$name' — skipped")
+                else plugin.logger.warning("[Protection] tunnel-breaking.blocks: unknown material '$name'; skipped")
             }
         }
         val shellDepth = config.getInt("protection.tunnel-breaking.shell-depth", 3).coerceIn(0, 64)
@@ -130,7 +148,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
      *
      * Only active when `protection.auto-pause-on-destruction: true`.
      * `protection.auto-pause-threshold` (default 6) sets how many critical blocks must
-     * be broken before the pause fires — so 1–2 stray breaks don't trigger it, but
+     * be broken before the pause fires, so 1–2 stray breaks don't trigger it, but
      * systematic demolition (≥ threshold) does.
      *
      * The counter resets to zero whenever the chamber's pause state changes (via
@@ -173,13 +191,13 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     /**
      * Prevents player-vs-player damage inside registered chambers when
      * `protection.allow-pvp: false`. Covers melee and player-shot projectiles. Self-damage and
-     * mob damage are untouched; paused chambers and players with `tcp.bypass.protection` are
+     * mob damage are untouched; paused chambers and players with `btc.bypass.protection` are
      * exempt. When `allow-pvp` is true (default) this no-ops and PvP follows world/server rules.
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onPvp(event: EntityDamageByEntityEvent) {
         if (!plugin.config.getBoolean("protection.enabled", true)) return
-        if (plugin.config.getBoolean("protection.allow-pvp", true)) return // PvP allowed → nothing to do
+        if (plugin.config.getBoolean("protection.allow-pvp", true)) return // PvP allowed -> nothing to do
 
         val victim = event.entity as? Player ?: return
         val attacker = when (val damager = event.damager) {
@@ -192,7 +210,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         val chamber = plugin.chamberManager.getCachedChamberAt(victim.location) ?: return
         if (chamber.isPaused) return
         if (attacker.hasPermission("btc.bypass.protection")) {
-            dbg("PvP in '${chamber.name}' allowed: ${attacker.name} has tcp.bypass.protection (note: OPs have this by default)")
+            dbg("PvP in '${chamber.name}' allowed: ${attacker.name} has btc.bypass.protection (note: OPs have this by default)")
             return
         }
 
@@ -204,40 +222,62 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     /**
      * Blocks **teleporting into** a registered chamber from outside it when
      * `protection.prevent-teleport-into-chamber: true`. Catches `/tpa`, `/tpahere`, `/home`,
-     * `/warp`, `/tp`, ender pearls, chorus fruit — any teleport, since it hooks the teleport
-     * itself rather than specific commands. Players with `tcp.bypass.entry`, spectators, and
+     * `/warp`, `/tp`, ender pearls, chorus fruit, any teleport, since it hooks the teleport
+     * itself rather than specific commands. Players with `btc.bypass.entry`, spectators, and
      * creative-mode players are exempt (this also covers TCP's own spectator-entry teleport,
      * which sets SPECTATOR before teleporting). Walking in through the entrance is unaffected.
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onTeleportIntoChamber(event: PlayerTeleportEvent) {
-        if (!plugin.config.getBoolean("protection.enabled", true)) return
-        if (!plugin.config.getBoolean("protection.prevent-teleport-into-chamber", false)) return
+        if (blockedTeleportInto(event.player, event.from, event.to, event.cause)) event.isCancelled = true
+    }
 
-        val to = event.to ?: return
-        val toChamber = plugin.chamberManager.getCachedChamberAt(to) ?: return // not teleporting into a chamber
-        if (toChamber.isPaused) return
+    /**
+     * A portal counts as a teleport too.
+     *
+     * [org.bukkit.event.player.PlayerPortalEvent] extends [PlayerTeleportEvent]
+     * but keeps its own handler list, so the handler above never sees it: a
+     * portal whose far end sits inside a chamber walked straight past the
+     * setting that is supposed to stop people arriving that way.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onPortalIntoChamber(event: org.bukkit.event.player.PlayerPortalEvent) {
+        if (blockedTeleportInto(event.player, event.from, event.to, event.cause)) event.isCancelled = true
+    }
+
+    /** True when `prevent-teleport-into-chamber` should stop this arrival. */
+    private fun blockedTeleportInto(
+        player: Player,
+        from: org.bukkit.Location,
+        to: org.bukkit.Location?,
+        cause: PlayerTeleportEvent.TeleportCause,
+    ): Boolean {
+        if (!plugin.config.getBoolean("protection.enabled", true)) return false
+        if (!plugin.config.getBoolean("protection.prevent-teleport-into-chamber", false)) return false
+
+        val destination = to ?: return false
+        val toChamber = plugin.chamberManager.getCachedChamberAt(destination) ?: return false // not arriving in a chamber
+        if (toChamber.isPaused) return false
         // Allow teleporting *within* the same chamber (e.g. /back while inside it).
-        if (plugin.chamberManager.getCachedChamberAt(event.from)?.id == toChamber.id) return
+        if (plugin.chamberManager.getCachedChamberAt(from)?.id == toChamber.id) return false
 
-        val player = event.player
         if (player.gameMode == GameMode.SPECTATOR || player.gameMode == GameMode.CREATIVE) {
             dbg("teleport into '${toChamber.name}' allowed for ${player.name}: ${player.gameMode} mode is exempt")
-            return
+            return false
         }
         if (player.hasPermission("btc.bypass.entry")) {
-            dbg("teleport into '${toChamber.name}' allowed for ${player.name}: has tcp.bypass.entry (note: OPs have this by default)")
-            return
+            dbg("teleport into '${toChamber.name}' allowed for ${player.name}: has btc.bypass.entry (note: OPs have this by default)")
+            return false
         }
 
-        event.isCancelled = true
-        dbg("BLOCKED teleport into '${toChamber.name}' for ${player.name} (cause ${event.cause})")
+        dbg("BLOCKED teleport into '${toChamber.name}' for ${player.name} (cause $cause)")
         notifyBlocked(player, "cannot-teleport-into-chamber")
+        return true
     }
 
     /**
      * Gates **walking into** a registered chamber: when `protection.prevent-entry-without-permission:
-     * true`, a player without `tcp.bypass.entry` is stopped at the boundary (the move is cancelled,
+     * true`, a player without `btc.bypass.entry` is stopped at the boundary (the move is cancelled,
      * setting them back). Spectators and creative-mode players are exempt; moving within a chamber
      * you're already inside is allowed. Only runs on a block change, and only when the toggle is on.
      */
@@ -260,7 +300,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
             return
         }
         if (player.hasPermission("btc.bypass.entry")) {
-            dbg("entry into '${toChamber.name}' allowed for ${player.name}: has tcp.bypass.entry (note: OPs have this by default)")
+            dbg("entry into '${toChamber.name}' allowed for ${player.name}: has btc.bypass.entry (note: OPs have this by default)")
             return
         }
 
@@ -291,7 +331,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     /**
      * v1.5.7: blocks placing functioning VAULT blocks outside registered
      * chambers. A wild vault is a permanent vanilla loot dispenser TCP can't
-     * manage (no per-player tracking, no resets, no loot tables) — and
+     * manage (no per-player tracking, no resets, no loot tables), and
      * out-of-chamber vault mechanics are TCP-VaultCrates' domain. Admins
      * holding the bypass permission (default op) can still place them, so
      * crate setup and creative building are unaffected.
@@ -317,7 +357,11 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         if (event.hand != org.bukkit.inventory.EquipmentSlot.HAND) return
 
         val block = event.clickedBlock ?: return
-        if (block.state !is Container) return
+        // Every block that holds items, not only the ones with a chest-style
+        // screen. A shelf, a lectern, a jukebox, a chiseled bookshelf and a
+        // decorated pot all hand items over on a click and none of them is a
+        // Container, so checking for that alone left them open.
+        if (block.state !is io.papermc.paper.block.TileStateInventoryHolder) return
 
         val player = event.player
         val location = block.location
@@ -342,7 +386,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         if (!plugin.config.getBoolean("protection.prevent-mob-griefing", true)) return
 
         // v1.7.2: filter per BLOCK, not by the explosion center's chamber. The old
-        // check resolved the chamber at the CENTER — a creeper/TNT detonating just
+        // check resolved the chamber at the CENTER, a creeper/TNT detonating just
         // outside the wall wasn't "in" any chamber, so its blast destroyed chamber
         // blocks unprotected (same outside-in hole the AdvancedEnchantments check
         // had before 1.5.21). Cache-only, sync-safe.
@@ -354,7 +398,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     /**
      * v1.7.2: block-sourced explosions (bed/respawn-anchor in the wrong dimension,
      * exploding TNT minecart rails, etc.) fire BlockExplodeEvent, not
-     * EntityExplodeEvent — they previously bypassed chamber protection entirely.
+     * EntityExplodeEvent, they previously bypassed chamber protection entirely.
      * Same per-block filter as [onEntityExplode].
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -384,13 +428,284 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     }
 
     /**
-     * Returns true when TCP should yield to WorldGuard at [location] — i.e.
+     * Returns true when TCP should yield to WorldGuard at [location], i.e.
      * `protection.worldguard-integration` is on, WG is installed, and a WG region
      * there grants [player] build rights (membership, an explicit `build` allow,
      * or WG bypass). Callers `return` early (skip TCP protection) when this is
      * true, so region owners/staff can work inside chambers overlapping their
      * regions. No-op (false) when the setting is off or WG is absent.
      */
+
+    // ======================================================================
+    // Keeping a chamber the way it was built
+    // ======================================================================
+    //
+    // Breaking and placing blocks were the only two ways in that were watched
+    // for. There are a lot of others, and none of them raise a block break or a
+    // block place, so none of them were ever seen:
+    //
+    //   - a bucket of water or lava does not count as placing a block
+    //   - a piston can push blocks in, or pull them out, from outside the walls
+    //   - fire spreads on its own once something is alight
+    //   - item frames, paintings and armour stands are not blocks at all, so
+    //     nothing stopped anyone taking them
+    //
+    // This matters most for the chambers that were never Trial Chambers. Plenty
+    // of servers register a hand-built arena or a minigame area as a chamber
+    // purely for the protection and the reset, and every one of these was open.
+
+    /** The chamber at [location], or null when there is nothing to protect there. */
+    private fun protectedChamberAt(location: org.bukkit.Location) =
+        plugin.chamberManager.getCachedChamberAt(location)?.takeIf { !it.isPaused }
+
+    /** True when protection as a whole, or this one setting, is switched off. */
+    private fun protectionOff(setting: String, default: Boolean): Boolean =
+        !plugin.config.getBoolean("protection.enabled", true) ||
+            !plugin.config.getBoolean("protection." + setting, default)
+
+    /** Emptying a bucket does not raise a block-place event, so it needs its own. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onBucketEmpty(event: PlayerBucketEmptyEvent) {
+        if (protectionOff("prevent-liquid-flow", true)) return
+        val player = event.player
+        if (player.hasPermission("btc.bypass.protection")) return
+        val location = event.block.location
+        protectedChamberAt(location) ?: return
+        if (deferToWorldGuard(location, player)) return
+        event.isCancelled = true
+        notifyBlocked(player, "cannot-place-blocks")
+    }
+
+    /** Water or lava poured just outside the walls, running in. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onLiquidFlow(event: BlockFromToEvent) {
+        if (protectionOff("prevent-liquid-flow", true)) return
+        // Only stop it crossing INTO a chamber. Liquid already inside one, in a
+        // build that was made with it, goes on working.
+        if (protectedChamberAt(event.toBlock.location) == null) return
+        if (protectedChamberAt(event.block.location) != null) return
+        event.isCancelled = true
+    }
+
+    /** A dispenser outside the walls, firing a bucket through them. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onDispense(event: BlockDispenseEvent) {
+        if (protectionOff("prevent-liquid-flow", true)) return
+        if (event.item.type != Material.WATER_BUCKET && event.item.type != Material.LAVA_BUCKET) return
+        protectedChamberAt(event.block.location) ?: return
+        event.isCancelled = true
+    }
+
+    /** Lighting a fire inside a chamber. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onIgnite(event: BlockIgniteEvent) {
+        if (protectionOff("prevent-fire", true)) return
+        val location = event.block.location
+        protectedChamberAt(location) ?: return
+        val player = event.player
+        if (player != null) {
+            if (player.hasPermission("btc.bypass.protection")) return
+            if (deferToWorldGuard(location, player)) return
+            event.isCancelled = true
+            notifyBlocked(player, "cannot-place-blocks")
+            return
+        }
+        // Lightning, lava, or fire spreading in from somewhere else.
+        event.isCancelled = true
+    }
+
+    /** Fire eating the chamber once something is already alight. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onBurn(event: BlockBurnEvent) {
+        if (protectionOff("prevent-fire", true)) return
+        protectedChamberAt(event.block.location) ?: return
+        event.isCancelled = true
+    }
+
+    /**
+     * Pistons, in both directions.
+     *
+     * A piston reaches twelve blocks, so someone outside the walls can push
+     * blocks in or drag them out without ever touching the chamber themselves,
+     * and no block break or place is raised for any of it. A piston that is
+     * itself inside the same chamber is left alone, because that is somebody's
+     * redstone working exactly as they built it.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onPistonExtend(event: BlockPistonExtendEvent) {
+        if (protectionOff("prevent-piston-movement", true)) return
+        if (pistonReachesIntoChamber(event.block.location, event.blocks.map { it.location })) {
+            event.isCancelled = true
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onPistonRetract(event: BlockPistonRetractEvent) {
+        if (protectionOff("prevent-piston-movement", true)) return
+        if (pistonReachesIntoChamber(event.block.location, event.blocks.map { it.location })) {
+            event.isCancelled = true
+        }
+    }
+
+    /** True when a piston would move a protected block it does not share a chamber with. */
+    private fun pistonReachesIntoChamber(
+        piston: org.bukkit.Location,
+        moved: List<org.bukkit.Location>,
+    ): Boolean {
+        val pistonChamber = protectedChamberAt(piston)
+        return moved.any { movedBlock ->
+            val chamber = protectedChamberAt(movedBlock) ?: return@any false
+            chamber.id != pistonChamber?.id
+        }
+    }
+
+    // ---------- Decorations ----------
+    //
+    // Item frames, paintings and armour stands are entities rather than blocks,
+    // so none of the block protection above has ever applied to them and anyone
+    // could walk off with the lot. Destroying and looting are stopped; turning a
+    // frame or swapping what is in it is left alone, since that survives a reset
+    // and some minigames are built on it.
+
+    /**
+     * True for the entities that are part of a build rather than part of the
+     * world.
+     *
+     * Asks the same question the snapshot asks, so what a reset puts back and
+     * what protection defends can never drift apart.
+     */
+    private fun isDecoration(entity: org.bukkit.entity.Entity): Boolean =
+        com.esmpfun.bettertrialchambers.utils.DecorationEntities.isDecoration(entity)
+
+    /**
+     * Stops a decoration being taken, and says so to the player who tried.
+     *
+     * [remover] is whoever did it, or null when nothing did: fire, an
+     * explosion, the block it hung on being gone. Returns true when the
+     * decoration is defended, false when this person is allowed to take it.
+     */
+    private fun denyDecorationRemoval(
+        entity: org.bukkit.entity.Entity,
+        remover: org.bukkit.entity.Entity?,
+    ): Boolean {
+        val location = entity.location
+        protectedChamberAt(location) ?: return false
+        if (remover is Player) {
+            if (remover.hasPermission("btc.bypass.protection")) return false
+            if (deferToWorldGuard(location, remover)) return false
+            notifyBlocked(remover, "cannot-break-blocks")
+        }
+        return true
+    }
+
+    /**
+     * Anything hung on a wall: item frames, glow item frames, paintings.
+     *
+     * [HangingBreakByEntityEvent] arrives here too, because the two events
+     * share one handler list. It is checked for rather than listened to
+     * separately: as two handlers, whichever the server happened to call first
+     * decided the outcome, and when that was the one with no idea who did it,
+     * staff with `btc.bypass.protection` could not take a painting down and a
+     * WorldGuard region granting build rights was ignored.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onHangingBreak(event: HangingBreakEvent) {
+        if (protectionOff("protect-decorations", true)) return
+        val remover = (event as? HangingBreakByEntityEvent)?.remover
+        if (denyDecorationRemoval(event.entity, remover)) event.isCancelled = true
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onArmorStandManipulate(event: PlayerArmorStandManipulateEvent) {
+        if (protectionOff("protect-decorations", true)) return
+        val player = event.player
+        if (player.hasPermission("btc.bypass.protection")) return
+        val location = event.rightClicked.location
+        protectedChamberAt(location) ?: return
+        if (deferToWorldGuard(location, player)) return
+        event.isCancelled = true
+        notifyBlocked(player, "cannot-break-blocks")
+    }
+
+    /**
+     * Anything else that would destroy a decoration: fire, explosions, mobs,
+     * and a player hitting one. [EntityDamageByEntityEvent] shares this handler
+     * list as well, so who struck the blow is read from the event for the same
+     * reason as above.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onDecorationDamaged(event: EntityDamageEvent) {
+        if (protectionOff("protect-decorations", true)) return
+        if (!isDecoration(event.entity)) return
+        val damager = (event as? EntityDamageByEntityEvent)?.damager
+        if (denyDecorationRemoval(event.entity, damager)) event.isCancelled = true
+    }
+
+    // ---------- Natural change ----------
+    //
+    // Off by default. Leaves dropping, grass creeping and ice melting is the
+    // world behaving normally, and a reset puts it all back anyway. Turn it on
+    // for a build that has to stay exactly as placed between resets.
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onLeavesDecay(event: LeavesDecayEvent) {
+        if (protectionOff("prevent-natural-decay", false)) return
+        protectedChamberAt(event.block.location) ?: return
+        event.isCancelled = true
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onBlockFade(event: BlockFadeEvent) {
+        if (protectionOff("prevent-natural-decay", false)) return
+        protectedChamberAt(event.block.location) ?: return
+        event.isCancelled = true
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onBlockForm(event: BlockFormEvent) {
+        if (protectionOff("prevent-natural-decay", false)) return
+        protectedChamberAt(event.block.location) ?: return
+        event.isCancelled = true
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onBlockSpread(event: BlockSpreadEvent) {
+        // Fire spreading is griefing rather than nature, so it answers to the
+        // fire setting; everything else here answers to the decay setting.
+        val fire = event.newState.type == Material.FIRE
+        if (protectionOff(if (fire) "prevent-fire" else "prevent-natural-decay", fire)) return
+        protectedChamberAt(event.block.location) ?: return
+        event.isCancelled = true
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onBlockGrow(event: BlockGrowEvent) {
+        if (protectionOff("prevent-natural-decay", false)) return
+        protectedChamberAt(event.block.location) ?: return
+        event.isCancelled = true
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onStructureGrow(event: StructureGrowEvent) {
+        if (protectionOff("prevent-natural-decay", false)) return
+        if (event.blocks.none { protectedChamberAt(it.location) != null }) return
+        event.isCancelled = true
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onFertilize(event: BlockFertilizeEvent) {
+        if (protectionOff("prevent-natural-decay", false)) return
+        if (event.blocks.none { protectedChamberAt(it.location) != null }) return
+        event.isCancelled = true
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onSpongeAbsorb(event: SpongeAbsorbEvent) {
+        if (protectionOff("prevent-natural-decay", false)) return
+        if (event.blocks.none { protectedChamberAt(it.block.location) != null }) return
+        event.isCancelled = true
+    }
+
     private fun deferToWorldGuard(location: org.bukkit.Location, player: Player): Boolean {
         if (!plugin.config.getBoolean("protection.worldguard-integration", true)) return false
         if (!com.esmpfun.bettertrialchambers.utils.WorldGuardHook.isAvailable(plugin)) return false

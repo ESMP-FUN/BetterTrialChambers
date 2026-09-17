@@ -1,60 +1,55 @@
 # Common Issues
 
-Most problems fall into one of the buckets below. Scan headings first — if you recognise the symptom, click it to expand the fix.
+Scan the headings, click the one that matches your symptom for the fix steps.
 
 If nothing here matches, jump to [Reporting Bugs](troubleshooting.md#reporting-bugs) or ask in [Discord](https://dc.esmp.fun).
 
 {% hint style="info" %}
-**Looking for specific text?** Browser **Ctrl/⌘ + F won't find text inside collapsed sections** on this page. Use the documentation **search bar at the top of the page** ↗ (or press **Ctrl/⌘ + K**) instead — it searches the full text of every section, expanded or not.
+**Looking for specific text?** Browser **Ctrl/⌘ + F won't find text inside collapsed sections** on this page. Use the documentation **search bar at the top of the page** (or press **Ctrl/⌘ + K**) instead.
 {% endhint %}
 
 ***
 
 <details>
 
-<summary><strong>Vault cooldowns don't work — players open the same vault instantly</strong></summary>
+<summary><strong>Vault cooldowns don't work, players open the same vault instantly</strong></summary>
 
-**The likely cause:** you're testing as an OP.
+1. Test with a non-OP account. Cooldowns then apply normally.
+2. Or negate the permission on your own account:
 
-Operators have **every** permission by default, including `btc.bypass.cooldown`. That permission intentionally skips cooldown checks so staff can test chambers. It's working as designed — but it's confusing the first time you hit it.
+   ```
+   /lp user <yourname> permission set btc.bypass.cooldown false
+   ```
+3. Or deop yourself while testing: `/deop <yourname>`, test, then `/op <yourname>`.
 
-**Fix one of three ways:**
+To confirm this is the cause: set `debug.verbose-logging: true`, `/trial reload`, open a vault, and look for `[Vault API] Player X has btc.bypass.cooldown permission - SKIPPING cooldown check`.
 
-1. Test with a non-OP account. Cooldowns will apply normally.
-2.  Explicitly negate the permission on your OP user:
-
-    ```
-    /lp user <yourname> permission set btc.bypass.cooldown false
-    ```
-3. Temporarily deop yourself: `/deop <yourname>`, test, re-op with `/op <yourname>`.
-
-**To confirm this is your issue:** set `debug.verbose-logging: true` in `config.yml`, `/trial reload`, then open a vault. If the log shows `[Vault API] Player X has btc.bypass.cooldown permission - SKIPPING cooldown check!` — that's it.
+Cause: OPs have every permission by default, including `btc.bypass.cooldown`, which intentionally skips the cooldown check.
 
 </details>
 
 <details>
 
-<summary><strong>Vaults stopped working completely — they don't open, don't give loot, and don't even take the key</strong></summary>
+<summary><strong>Vaults stopped working completely: they don't open, don't give loot, and don't even take the key</strong></summary>
 
-**The likely cause:** you switched `vaults.loot-mode` to `VANILLA` (or, on older setups, set `vaults.per-player-loot` to `false`).
+1. Run:
 
-Minecraft keeps its **own** record of who has opened each vault. While BetterTrialChambers is managing your vaults it writes into that same record. The moment you hand vaults back to Minecraft, it reads that record and refuses to open for anyone who was on it — silently, without consuming the key. Nothing is actually broken; the vaults just think everyone has already been.
+   ```
+   /trial vault unlockall all
+   ```
 
-**The fix:**
-
-```
-/trial vault unlockall all
-```
-
-That clears the record on every vault in every chamber and opens them all up again. A normal chamber reset does the same thing for that one chamber, so waiting for a reset also works.
+   This clears the "already opened" record on every vault in every chamber.
+2. Or wait for a chamber reset, which clears the record for that one chamber.
 
 {% hint style="warning" %}
-**If what you actually wanted was one reward per vault for the whole server**, `VANILLA` is not the setting for it — plain Minecraft is still one open **per player**, never shared. Use `loot-mode: SHARED` instead. See [loot-mode](configuration/config.yml.md).
+**If you wanted one reward per vault for the whole server**, use `loot-mode: SHARED`, not `VANILLA`. Plain Minecraft is still one open per player, never shared. See [loot-mode](configuration/config.yml.md).
 {% endhint %}
 
 {% hint style="info" %}
-**Admins used to trip this by accident.** Before v1.7.3, opening vaults with `btc.bypass.cooldown` (which every OP has) still wrote you into that record, so a few minutes of testing could quietly lock you out of those vaults under plain Minecraft. Bypassing players now leave no trace at all.
+Before v1.7.3, opening vaults with `btc.bypass.cooldown` still wrote you into Minecraft's record, so admin testing could lock you out under `VANILLA` mode. Bypassing players now leave no trace.
 {% endhint %}
+
+Cause: you switched `vaults.loot-mode` to `VANILLA` (or, on pre-2.0.8 configs, set `vaults.per-player-loot` to `false`). Minecraft then reads the record BTC wrote and refuses to open for anyone on it.
 
 </details>
 
@@ -62,21 +57,16 @@ That clears the record on every vault in every chamber and opens them all up aga
 
 <summary><strong>My spawner rest time (cooldown) setting seems to be ignored</strong></summary>
 
-**The likely cause:** the spawners came from a preset that sets its own rest time.
-
-If a preset in `spawner_presets.yml` has a `target-cooldown-length` line, spawners placed from it use **that** time and ignore `reset.spawner-cooldown-minutes` in `config.yml`. The reasoning is that if you wrote a number into a preset, you meant it.
-
-**Three ways to sort it:**
-
-1. **Delete the `target-cooldown-length` line** from the preset. Spawners from it will then follow your server-wide setting like any other spawner. This is usually the tidiest answer.
-2. **Set `reset.spawner-cooldown-overrides-presets: true`** in `config.yml` to force every spawner, presets included, onto the server-wide setting.
-3. **Edit the number in the preset** if you want that preset to keep its own time.
-
-Then `/trial reload`. Note that already-placed spawners keep what they were given — break and re-place them, or wait for the chamber to reset.
+1. Delete the `target-cooldown-length` line from the preset in `spawner_presets.yml`. Spawners from it then follow `reset.spawner-cooldown-minutes` like any other.
+2. Or set `reset.spawner-cooldown-overrides-presets: true` in `config.yml` to force every spawner, presets included, onto the server-wide setting.
+3. Or edit the number in the preset if you want it to keep its own time.
+4. `/trial reload`. Already-placed spawners keep what they were given; break and re-place them, or wait for a chamber reset.
 
 {% hint style="info" %}
-**Easy to miss:** `36000` ticks is 30 minutes, which is also Minecraft's own default. So a preset spawner and an ordinary one can behave identically and hide the fact that your setting isn't reaching them.
+`36000` ticks is 30 minutes, which is also Minecraft's default, so a preset spawner and an ordinary one can behave identically and hide the problem.
 {% endhint %}
+
+Cause: a preset with a `target-cooldown-length` line uses that time and ignores the config value.
 
 </details>
 
@@ -84,19 +74,15 @@ Then `/trial reload`. Note that already-placed spawners keep what they were give
 
 <summary><strong>"Loot table not found" / vault opens but no loot drops</strong></summary>
 
-**The likely cause:** TAB characters in your `loot.yml`.
-
-YAML is strict about indentation. Mixing tabs and spaces — or using tabs at all — breaks the parser silently. The entire file fails to load, which is why `/trial loot set` reports "Available tables:" as empty and vaults generate nothing.
-
-**Fix:**
-
 1. Open `plugins/BetterTrialChambers/loot.yml` in a real text editor (VS Code, Notepad++, Sublime).
-2. Enable "Show whitespace" / "View invisible characters" so you can see tabs.
-3. Replace every tab with 2 spaces (or use your editor's "Convert Indentation to Spaces" command).
+2. Enable "Show whitespace" so you can see tab characters.
+3. Replace every tab with 2 spaces (or use "Convert Indentation to Spaces").
 4. `/trial reload`.
-5. `/trial menu` → Loot Tables — your tables should be listed.
+5. Open `/trial menu`, then Loot Tables, and confirm your tables are listed.
 
-Same rule applies to `config.yml` and `messages.yml`. If any of the three go quiet after an edit, tabs are the first suspect.
+The same rule applies to `config.yml` and `messages.yml`.
+
+Cause: a tab character anywhere in the YAML makes the whole file fail to parse silently.
 
 </details>
 
@@ -104,23 +90,16 @@ Same rule applies to `config.yml` and `messages.yml`. If any of the three go qui
 
 <summary><strong>Vaults give plain vanilla loot and ignore my custom loot table</strong></summary>
 
-**The symptom:** loot tables load fine (no console errors, vaults register correctly), but opening a vault gives vanilla Minecraft items — crossbows, poison arrows, wind charges — instead of your custom loot.
-
-**The likely cause:** `vaults.loot-mode` is set to `VANILLA` in `config.yml`.
-
-That setting decides who gets the loot from a vault. On `VANILLA`, BetterTrialChambers doesn't touch vaults at all — they open with pure vanilla loot, and every custom loot table is ignored.
-
-**Fix:**
-
 1. Open `plugins/BetterTrialChambers/config.yml`.
-2. Under `vaults:`, set `loot-mode: PER_PLAYER` (or `SHARED` if you want one reward per vault for the whole server).
+2. Under `vaults:`, set `loot-mode: PER_PLAYER` (or `SHARED` for one reward per vault, server-wide).
 3. `/trial reload`.
-
-You can check the current value in-game with `/trial info` — look at the **Vault Loot** line. Full explanation: [config.yml → loot-mode](configuration/config.yml.md#vault-settings).
+4. Check the value in-game with `/trial info`, on the **Vault Loot** line.
 
 {% hint style="info" %}
-**On an older config?** If your `config.yml` has no `loot-mode` line, the plugin falls back to the old `vaults.per-player-loot` switch, where `false` does the same thing. Setting it to `true` works, but adding a `loot-mode` line is clearer and gives you the shared option too.
+If `config.yml` has no `loot-mode` line, the plugin falls back to the old `vaults.per-player-loot` switch, where `false` does the same thing. Adding a `loot-mode` line is clearer and gives you the shared option.
 {% endhint %}
+
+Cause: `vaults.loot-mode` is `VANILLA`, so BTC does not touch vaults and every custom loot table is ignored. Full detail: [config.yml loot-mode](configuration/config.yml.md#vault-settings).
 
 </details>
 
@@ -128,20 +107,15 @@ You can check the current value in-game with `/trial info` — look at the **Vau
 
 <summary><strong>I picked a different loot table for a chamber, but my edits don't show up</strong></summary>
 
-**The symptom:** you set a chamber's loot table to another table, but the chamber's **Normal Loot** button keeps showing `chamber-<name>`, and anything you edit through it has no effect in-game. It looks like the plugin has glued a loot table to the chamber based on its name and won't let you switch.
+1. Update to 2.0.3 or newer. Nothing to reconfigure.
+2. If you cannot update yet: your edits went into `chamber-<name>`, which still exists in `loot.yml`, so nothing was lost. Either clear the override with `/trial loot clear <chamber> all` to start using that table, or copy your edits into the table you pointed the chamber at.
 
-**The cause:** a bug in 2.0.2 and earlier — **fixed in 2.0.3**. The Normal/Ominous Loot buttons ignored the override and always opened the chamber's own `chamber-<name>` table, so your edits were saved into a table the vaults weren't reading.
-
-**Fix:** update to 2.0.3 or newer. Nothing to reconfigure — the buttons now follow the override, and the table shown on the button is the one the vaults actually hand out.
-
-**While you're here — the two buttons do different things:**
+**The two buttons do different things:**
 
 * **Loot Table Overrides** picks _which_ table the chamber's vaults use.
-* **Normal Loot** / **Ominous Loot** edit _the contents_ of whichever table it's currently using.
+* **Normal Loot** / **Ominous Loot** edit _the contents_ of whichever table is currently in use. Point a chamber at a shared table and editing it there changes it for every chamber using it. Leave the override on `(default)` for a private `chamber-<name>` table.
 
-So if you point a chamber at a shared table, editing it from that chamber changes it for **every** chamber using it — the button now warns you when that's the case. Want a chamber to have loot nobody else shares? Leave its override on `(default)`; it then gets its own private `chamber-<name>` table.
-
-If you're on 2.0.2 or older and can't update yet, edits made through the button went into `chamber-<name>` — that table still exists in `loot.yml`, so nothing was lost. Either clear the override (`/trial loot clear <chamber> all`) to start using it, or copy what you wrote into the table you actually pointed the chamber at.
+Cause: a bug in 2.0.2 and earlier where the Normal/Ominous Loot buttons ignored the override and always opened `chamber-<name>`. Fixed in 2.0.3.
 
 </details>
 
@@ -149,21 +123,19 @@ If you're on 2.0.2 or older and can't update yet, edits made through the button 
 
 <summary><strong>Do I need WorldEdit? Does this work without manually registering every chamber?</strong></summary>
 
-**No, you don't need WorldEdit — and yes, it works automatically.**
+1. Set in `config.yml`:
 
-Enable auto-discovery and the plugin finds every natural chamber by itself:
+   ```yaml
+   discovery:
+     enabled: true
+     auto-snapshot: true    # so resets can restore blocks
+   ```
+2. Restart once.
+3. Walk or fly around your world. Chambers register themselves as their chunks load; pre-loaded chunks are picked up by a one-time startup sweep.
 
-```yaml
-discovery:
-  enabled: true
-  auto-snapshot: true    # so resets can restore blocks
-```
+For manual control (custom names, only specific chambers), the WorldEdit workflow still works: `/trial generate wand MyChamber`. See [Manual Chamber Setup](getting-started/your-first-chamber.md).
 
-Restart once. Walk or fly around your world — chambers register themselves as their chunks load. Pre-loaded chunks (spawn region on server start, worlds that were already loaded) are picked up by a one-time startup sweep.
-
-Full details: [Auto-Discovery config →](configuration/config.yml.md#auto-discovery-of-natural-trial-chambers)
-
-If you prefer manual control (e.g. you want custom names or only specific chambers to use the plugin), the classic WorldEdit workflow still works: `/trial generate wand MyChamber`. See [Manual Chamber Setup](getting-started/your-first-chamber.md).
+Full details: [Auto-Discovery config](configuration/config.yml.md#auto-discovery-of-natural-trial-chambers).
 
 </details>
 
@@ -171,23 +143,20 @@ If you prefer manual control (e.g. you want custom names or only specific chambe
 
 <summary><strong>Chamber resets don't restore broken blocks</strong></summary>
 
-**The likely cause:** the chamber has no snapshot.
+**Manually-registered chambers:**
 
-Resets clear entities, restart spawners, and clear vault cooldowns — but to rebuild blocks they need a **snapshot** taken while the chamber was intact.
+1. Run `/trial snapshot create <chamber>` while the chamber is intact.
 
-**Fix for manually-registered chambers:**
+**Auto-discovered chambers:**
 
-```
-/trial snapshot create <chamber>
-```
+1. Set `discovery.auto-snapshot: true` in `config.yml`, then `/trial reload`. New discoveries snapshot on registration.
+2. For chambers already discovered without a snapshot, run `/trial snapshot create <chamber>` (use `/trial list` for the name, or stand inside and run it with no name).
 
-Take this **before** players start breaking things. You can also take a fresh snapshot any time the chamber is in a known-good state and use it as the new baseline.
+{% hint style="info" %}
+`discovery.auto-snapshot` needs **1.5.6+** to work. Older builds saved the file but never linked it, so resets still reported "No snapshot found".
+{% endhint %}
 
-**Fix for auto-discovered chambers:**
-
-Set `discovery.auto-snapshot: true` in `config.yml` and `/trial reload`. New chambers discovered from that point forward will snapshot on registration. For chambers already auto-discovered without a snapshot, create one manually with `/trial snapshot create <chamber>` (use `/trial list` to find the auto-generated name, or just stand inside it and run `/trial snapshot create` with no name).
-
-**Note:** `discovery.auto-snapshot` requires **1.5.6+** to actually work — older builds saved the snapshot file but never linked it to the chamber, so resets still reported "No snapshot found" even with the option enabled.
+Cause: resets need a snapshot taken while the chamber was intact to rebuild blocks.
 
 </details>
 
@@ -195,13 +164,14 @@ Set `discovery.auto-snapshot: true` in `config.yml` and `/trial reload`. New cha
 
 <summary><strong>After a reset, my signs / banners / player heads / lecterns came back blank</strong></summary>
 
-**Fixed in 1.7.2 — update, then re-snapshot.** Older snapshots only captured spawners, vaults, decorated pots, and chests; every other block with stored data — sign text, player-head skins, banner patterns, lectern books, jukebox discs, chiseled-bookshelf contents, and suspicious-block items — was restored as a blank block on reset. Since 1.7.2 all of these are captured and restored faithfully (in chamber snapshots and in captured/imported dungeon rooms).
+1. Update to 1.7.2 or newer.
+2. Re-capture the snapshot while the chamber is in a known-good state:
 
-**A snapshot taken on an older build still has no decoration data** — re-capture it once on 1.7.2+ while the chamber is in a known-good state:
+   ```
+   /trial snapshot create <chamber>
+   ```
 
-```
-/trial snapshot create <chamber>
-```
+Cause: before 1.7.2 snapshots only captured spawners, vaults, decorated pots, and chests. Every other block with stored data was restored blank. A snapshot taken on an older build still has no decoration data.
 
 </details>
 
@@ -209,17 +179,13 @@ Set `discovery.auto-snapshot: true` in `config.yml` and `/trial reload`. New cha
 
 <summary><strong>A reset deleted blocks around the chamber / the chamber came back broken</strong></summary>
 
-**Fixed in 1.5.6 — update first.** On older versions, an auto-discovered chamber whose bounding box _grew_ after its snapshot was taken (discovery merges adjacent regions as their chunks load) could have its reset wipe everything inside the grown bounds while only restoring the old, smaller region. Since 1.5.6 the reset can never clear ground its snapshot doesn't cover, and merges automatically re-capture the snapshot.
+1. Update to 1.5.6 or newer.
+2. Run `/trial delete <chamber>`. This removes the broken registration and its stale snapshot.
+3. With discovery enabled, the chamber re-registers cleanly next time its chunks load. Otherwise re-register with `/trial generate`.
 
-**If one of your chambers was already affected:**
+Terrain an affected reset already deleted cannot be restored by the plugin (it was never in the snapshot). Restore that area from a world backup.
 
-```
-/trial delete <chamber>
-```
-
-That single command is the complete plugin-side fix — it removes the broken registration **and** deletes its stale snapshot. If discovery is enabled, the chamber re-registers cleanly the next time its chunks load (with a fresh snapshot if `discovery.auto-snapshot: true`); otherwise re-register it manually with `/trial generate`.
-
-Terrain that an affected reset already deleted **cannot be restored by the plugin** — the snapshot never contained those blocks. Restore that area from a world backup, or let it regenerate if it was untouched wilderness.
+Cause: before 1.5.6, an auto-discovered chamber whose bounding box grew after its snapshot could have a reset wipe the grown bounds while only restoring the old, smaller region.
 
 </details>
 
@@ -227,17 +193,12 @@ Terrain that an affected reset already deleted **cannot be restored by the plugi
 
 <summary><strong>The same chamber is registered twice (two names, two reset timers)</strong></summary>
 
-**Fixed in 2.0.9 — update first.** Some datapacks build one big trial chamber out of **several** of the game's chamber structures placed right next to each other. On older versions each piece registered as its own chamber, so one physical chamber ended up with two or more names in `/trial list`, each resetting on its own timer — and because the pieces share walls, those resets overwrote each other's blocks.
+1. Update to 2.0.9 or newer.
+2. Run `/trial delete <name>` for every registration of that chamber.
+3. Walk through it once with discovery enabled. It re-registers as one chamber with one timer.
+4. If duplicates still appear, raise `discovery.structure-merge-distance-blocks` (16 by default) and try again.
 
-Since 2.0.9 a newly-found structure that sits within `discovery.structure-merge-distance-blocks` (16 by default) of an already-registered chamber grows that chamber instead of registering a new one.
-
-**To clean up duplicates you already have:**
-
-```
-/trial delete <name>
-```
-
-Delete every registration for that chamber, then walk through it once with discovery enabled — it re-registers as a single chamber with one reset timer. If duplicates still appear afterwards, your datapack leaves bigger gaps between pieces than the default allows: raise `discovery.structure-merge-distance-blocks` and try again.
+Cause: some datapacks build one chamber from several adjacent structures. Before 2.0.9 each piece registered separately, and their resets overwrote each other.
 
 </details>
 
@@ -245,11 +206,10 @@ Delete every registration for that chamber, then walk through it once with disco
 
 <summary><strong>Memory keeps climbing as chambers are discovered</strong></summary>
 
-**Fixed in 2.0.9 — update first.** Registering a chamber has to read every block inside it, which pulls that whole part of the map into memory. On older versions the server kept it there when no player was nearby, so each discovered chamber pushed memory up a step that never came back down — on a small server that eventually crashed it, often with `pthread_create failed` or an out-of-memory error in the console.
+1. Update to 2.0.9 or newer. The plugin now releases each chamber's map region shortly after registration completes.
+2. If memory is still tight on a small server, leave headroom for the server software itself. On a 2 GB machine, `-Xmx1200M` is safer than `-Xmx1500M`.
 
-Since 2.0.9 the plugin tells the server it's finished with that part of the map as soon as registration completes, so the memory is released shortly after. Areas players are actually standing in are never affected.
-
-**If memory is still tight on a small server,** it's worth checking that the memory limit you give the server leaves room for the server software itself. On a 2 GB machine, `-Xmx1500M` leaves very little headroom — around `-Xmx1200M` is safer, and the crash above can happen with the memory graph looking only half full.
+Cause: before 2.0.9 the server kept each discovered chamber's region in memory when no player was nearby, so memory stepped up and never came back down (often crashing with `pthread_create failed` or out-of-memory).
 
 </details>
 
@@ -257,9 +217,8 @@ Since 2.0.9 the plugin tells the server it's finished with that part of the map 
 
 <summary><strong>Boss bars don't go away when I leave a chamber</strong></summary>
 
-**Fixed in 1.2.26.** Update to the latest version.
-
-If you're already on 1.2.26+ and still seeing this, check `spawner-waves.remove-distance` in `config.yml` — default is 32. Players outside this range get removed from the bar. If you've lowered it below `detection-radius`, the hysteresis breaks.
+1. Update to 1.2.26 or newer.
+2. If still seeing it, check `spawner-waves.remove-distance` in `config.yml` (default 32). Do not set it below `detection-radius`, or the hysteresis breaks.
 
 </details>
 
@@ -267,24 +226,23 @@ If you're already on 1.2.26+ and still seeing this, check `spawner-waves.remove-
 
 <summary><strong>Server lags when chambers reset or snapshot</strong></summary>
 
-Snapshot and restore operations scale with chamber size. A 100×50×100 chamber is 500,000 blocks — even streaming to disk, that's work.
+1. Tune `config.yml`:
 
-Since **2.0.9** snapshots are written to disk piece by piece as the chamber is read, and read back the same way, so the **memory** a snapshot or reset needs no longer depends on how big the chamber is — a multi-million-block datapack chamber is safe on a small server. The **time** it takes still scales with size, so the tuning below still applies.
+   ```yaml
+   global:
+     blocks-per-tick: 500            # Lower to 100-200 on low-spec servers.
 
-**Tune these in `config.yml`:**
+   performance:
+     cache-duration-seconds: 300
+   ```
+2. Do not reset multiple large chambers at the same clock minute. Stagger the reset intervals (one at `172800`, another at `172900`).
+3. Folia support is auto-detected; no flag needed.
 
-```yaml
-global:
-  blocks-per-tick: 500            # Lower this to 100-200 on low-spec servers.
+{% hint style="info" %}
+Since **2.0.9** snapshots stream to and from disk, so the memory a snapshot or reset needs no longer scales with chamber size. The time still does, so the tuning above still applies.
+{% endhint %}
 
-performance:
-  async-database-operations: true
-  cache-duration-seconds: 300
-```
-
-Also: don't reset multiple large chambers at the same clock minute. Stagger their reset intervals (one at `172800`, another at `172900`, etc.) so they don't overlap.
-
-**If you're on Folia,** confirm `performance.use-folialib: true`. The plugin detects Folia automatically, but this flag is required.
+Cause: snapshot and restore work scales with block count. A 100x50x100 chamber is 500,000 blocks.
 
 </details>
 
@@ -292,15 +250,13 @@ Also: don't reset multiple large chambers at the same clock minute. Stagger thei
 
 <summary><strong>Cooldowns work for some players but not others</strong></summary>
 
-Usually a permission inheritance problem. Check:
+1. Check whether the affected player or group has `btc.bypass.cooldown` (often inherited from a permission pack or copied group):
 
-1.  **Does the affected player / group have `btc.bypass.cooldown`?** Often picked up via a default permission pack or a copy-pasted permission group.
-
-    ```
-    /lp user <player> permission check btc.bypass.cooldown
-    ```
-2. **Is the player in creative or spectator?** Creative players bypass cooldowns regardless of permissions (vanilla vault behaviour).
-3. **Did you recently clear vault data in the database?** If you wiped `player_vault_data` but not the native `rewarded_players` on the vault block (v1.2.21+ stores both), the native block state still remembers them. Use `/trial vault reset <chamber> <player>` — it clears both.
+   ```
+   /lp user <player> permission check btc.bypass.cooldown
+   ```
+2. Check whether the player is in creative or spectator. Creative players bypass cooldowns regardless of permissions (vanilla vault behaviour).
+3. If you recently cleared `player_vault_data` in the database but not the native `rewarded_players` on the vault block, run `/trial vault reset <chamber> <player>`, which clears both.
 
 </details>
 
@@ -308,20 +264,18 @@ Usually a permission inheritance problem. Check:
 
 <summary><strong>A protection toggle isn't blocking anyone (entry / teleport / PvP / AdvancedEnchantments)</strong></summary>
 
-You enabled `prevent-teleport-into-chamber`, `prevent-entry-without-permission`, `allow-pvp: false`, or `block-advanced-enchantments`, but players (or you) still get through. Work down this list:
+1. **Test with a non-OP account.** OPs have every `btc.bypass.*` permission by default, including `btc.bypass.entry` and `btc.bypass.protection`. Or negate it:
 
-1.  **Are you testing as an OP?** This is the #1 cause. OPs have **every** `btc.bypass.*` permission by default — including `btc.bypass.entry` and `btc.bypass.protection` — so you exempt yourself without realising. **Test with a non-OP account**, or negate the permission:
-
-    ```
-    /lp user <yourname> permission set btc.bypass.entry false
-    ```
-2. **Turn on `debug.verbose-logging: true`** and `/trial reload`, then reproduce. The console tells you exactly what happened, e.g.:
-   * `[Protection] teleport into 'X' allowed for Steve: has btc.bypass.entry (note: OPs have this by default)` → permission exemption (see #1).
-   * `[Protection] teleport into 'X' allowed for Steve: SPECTATOR mode is exempt` → spectators/creative are always exempt.
-   * `[Protection] BLOCKED teleport into 'X' for Steve (cause COMMAND)` → it **is** working.
-   * **No `[Protection]` line at all** when teleporting in → the destination isn't inside a _registered_ chamber (wrong world, chamber not registered, or bounds don't reach where you landed). Check `/trial list` / `/trial info <chamber>`.
-3. **Did the config actually apply?** Confirm the key is nested under `protection:` (not pasted as a flat `protection.prevent-teleport-into-chamber:` line) and that you ran `/trial reload` after editing.
-4. **AdvancedEnchantments specifically:** the `[AE]` debug lines tell you if the enchant was allowlisted, bypassed, or blocked. If you see **no `[AE]` lines at all** when an enchant procs, check the startup log for `AdvancedEnchantments integration: ready` — if it's missing, AE isn't being detected. Also remember `block-advanced-enchantments` is for effect-based enchants; ordinary vein miners are handled by normal block protection instead. For mining a wall from _outside_, make sure `advanced-enchantments-block-radius` covers your blast size.
+   ```
+   /lp user <yourname> permission set btc.bypass.entry false
+   ```
+2. Set `debug.verbose-logging: true`, `/trial reload`, and reproduce. Read the `[Protection]` lines:
+   * `... allowed for Steve: has btc.bypass.entry` means a permission exemption.
+   * `... allowed for Steve: SPECTATOR mode is exempt` means spectator/creative are always exempt.
+   * `BLOCKED teleport into 'X' ...` means it is working.
+   * **No `[Protection]` line at all** means the destination is not inside a registered chamber (wrong world, not registered, or bounds too small). Check `/trial list` / `/trial info <chamber>`.
+3. Confirm the config key is nested under `protection:` (not a flat `protection.prevent-teleport-into-chamber:` line) and that you ran `/trial reload`.
+4. For AdvancedEnchantments: check the startup log for `AdvancedEnchantments integration: ready`. `block-advanced-enchantments` covers effect-based enchants only; ordinary vein miners go through normal block protection. For mining a wall from outside, make sure `advanced-enchantments-block-radius` covers the blast size.
 
 </details>
 
@@ -329,7 +283,7 @@ You enabled `prevent-teleport-into-chamber`, `prevent-entry-without-permission`,
 
 <summary><strong>MySQL connection errors on startup</strong></summary>
 
-Usually a credentials or host issue. Full error text tells you which:
+Match the error text:
 
 | Error contains           | Meaning                    | Fix                                                     |
 | ------------------------ | -------------------------- | ------------------------------------------------------- |
@@ -338,7 +292,7 @@ Usually a credentials or host issue. Full error text tells you which:
 | `Connection refused`     | Host unreachable           | Check `database.host` and `port`; is MySQL running?     |
 | `timeout after 30000ms`  | Connection pool exhausted  | Increase `database.pool-size` from 10 to 20             |
 
-If you're not actually using MySQL and the plugin is still trying to connect to it, check `database.type: SQLITE` (case-sensitive).
+If you are not using MySQL but the plugin still tries to connect, set `database.type: SQLITE` (case-sensitive).
 
 </details>
 
@@ -346,39 +300,34 @@ If you're not actually using MySQL and the plugin is still trying to connect to 
 
 <summary><strong>Auto-discovery registered something that isn't a chamber</strong></summary>
 
-On worlds that existed before 1.21, players sometimes build structures out of tuff bricks or copper blocks. The auto-detector's structural predicate can match these.
+1. Delete the false registration:
 
-**Short-term fix:** delete the false registration.
+   ```
+   /trial list                  # find the auto_world_X_Z name
+   /trial delete <name>
+   ```
+2. Tighten the thresholds in `config.yml`:
 
-```
-/trial list                  # find the auto_world_X_Z name
-/trial delete <name>
-```
+   ```yaml
+   discovery:
+     min-vaults-plus-spawners: 3    # Up from 2
+     max-center-y: 5                # Down from 10
+   ```
+3. Raise `discovery.cooldown-seconds` if the same false region keeps re-triggering.
+4. On an old world with a high false-positive rate, consider `discovery.enabled: false` and manual registration.
 
-**Long-term fix:** tighten the detection thresholds in `config.yml`:
-
-```yaml
-discovery:
-  min-vaults-plus-spawners: 3    # Up from 2 — chambers almost always have ≥3
-  max-center-y: 5                # Down from 10 — natural chambers gen quite deep
-```
-
-Then bump `discovery.cooldown-seconds` higher if the same false region keeps re-triggering.
-
-If you're on an old world and the false-positive rate is high, it may be easier to leave `discovery.enabled: false` and register chambers manually — the trade-off is up to you.
+Cause: player-built structures using tuff bricks or copper blocks can match the structural detector, mostly on pre-1.21 worlds.
 
 </details>
 
 <details>
 
-<summary><strong>Nexo / ItemsAdder / Oraxen items don't drop</strong></summary>
+<summary><strong>Custom items from another plugin don't drop</strong></summary>
 
-The `CUSTOM_ITEM` loot type uses reflection, so it's safe if the custom-item plugin isn't installed — but that also means the item silently skips if anything's off. Check:
-
-1. **The plugin is installed and loaded.** `/plugins` should show it green.
-2. **The item ID is correct and lowercase where required.** Each plugin has its own case rules — match exactly how their docs write it.
-3. **The `plugin:` field is spelled correctly:** `nexo`, `itemsadder`, or `oraxen`. Case-insensitive, but typos are silent failures.
-4. **`debug.verbose-logging: true`** will log the attempted resolution — watch the console when a vault opens.
+1. Confirm the custom-item plugin is installed and loaded (`/plugins` shows it green).
+2. Confirm the item ID matches that plugin's docs exactly, including case.
+3. Confirm the `plugin:` field is one of `nexo`, `itemsadder`, `oraxen`, `craftengine` or `mythiccrucible` (case does not matter; anything else is named in the console).
+4. Watch the console when a vault opens: a missing item id is reported by name.
 
 Example that works:
 
@@ -389,18 +338,20 @@ Example that works:
   weight: 5
 ```
 
+Cause: the item is fetched from the other plugin when the vault is opened, so a wrong id means that entry is skipped and the rest of the loot still rolls. The console says which id could not be found.
+
 </details>
 
 <details>
 
 <summary><strong>I changed messages.yml but nothing changed in-game</strong></summary>
 
-1. Did you run `/trial reload`? Config and message edits require a reload (or a restart).
-2. Is the key you edited the one actually being displayed? Some messages look similar. Search `messages.yml` for the exact text you see in-game.
-3. TAB characters? (See the **"Loot table not found"** section above — same rule.)
-4. Are you sure it's not a boss bar? Boss bar messages are in `messages.yml` under keys containing `boss-bar` — they use MiniMessage tags, different from regular color codes.
+1. Run `/trial reload` (or restart).
+2. Confirm the key you edited is the one actually displayed. Search `messages.yml` for the exact text you see in-game.
+3. Check for tab characters (see the "Loot table not found" section).
+4. If it is a boss bar message, note those keys contain `boss-bar` and use MiniMessage tags, not `&` color codes.
 
-Full messages reference: [messages.yml →](configuration/messages.yml.md)
+Full reference: [messages.yml](configuration/messages.yml.md).
 
 </details>
 
@@ -408,27 +359,23 @@ Full messages reference: [messages.yml →](configuration/messages.yml.md)
 
 ## Performance Tips
 
-General-purpose tuning guidance.
-
-* **`blocks-per-tick`** is the single most important knob. Lower on low-spec hardware, raise on beefy servers with headroom. Default 500 is conservative.
-* **Cache durations** — `cache-duration-seconds: 300` (5 min) is fine for most servers. Bump to 600+ if you have hundreds of registered chambers and rare modifications.
-* **MySQL** outperforms SQLite past \~50 concurrent players. Below that, SQLite is simpler and plenty fast.
-* **Snapshot files** live in `plugins/BetterTrialChambers/snapshots/`. They're gzip-compressed but a 500k-block chamber can still be 20+ MB. Monitor disk if you have many large chambers.
-* **Skip discovery on world pregen.** If you're running Chunky to pre-generate your world, temporarily set `discovery.enabled: false`, run the pregen, then re-enable. Discovery + chunk-load storm adds up.
+* **`blocks-per-tick`** is the single most important knob. Default 500 is conservative; lower on low-spec hardware, raise on servers with headroom.
+* **`cache-duration-seconds: 300`** (5 min) suits most servers. Bump to 600+ with hundreds of chambers and rare edits.
+* **MySQL** outperforms SQLite past roughly 50 concurrent players. Below that, SQLite is simpler and fast enough.
+* **Snapshot files** live in `plugins/BetterTrialChambers/snapshots/`. Gzip-compressed, but a 500k-block chamber can still be 20+ MB. Monitor disk with many large chambers.
+* **Skip discovery during world pregen.** Set `discovery.enabled: false`, run Chunky, then re-enable.
 
 ***
 
 ## Reporting Bugs
 
-If you've hit something not covered here, a good bug report includes:
+A good bug report includes:
 
-1. **Plugin version** (`/trial info` shows it).
+1. **Plugin version** (`/trial info`).
 2. **Server type and version** (Paper 1.21.4, Folia 26.1.2, etc.).
-3. **Steps to reproduce** — exact commands, exact actions.
-4. **What you expected** vs **what actually happened**.
-5. **Relevant log excerpt** — run with `debug.verbose-logging: true` to get detailed output, then paste the lines around the error.
-6. **Your config.yml and loot.yml** (redact MySQL credentials first!) if they're relevant.
+3. **Steps to reproduce:** exact commands, exact actions.
+4. **What you expected** vs **what happened**.
+5. **Log excerpt:** run with `debug.verbose-logging: true`, then paste the lines around the error.
+6. **Your config.yml and loot.yml** if relevant (redact MySQL credentials first).
 
-File at [GitHub Issues](https://github.com/ESMP-FUN/BetterTrialChambers/issues) or post in the `#support` channel on [Discord](https://dc.esmp.fun).
-
-"Can't reproduce" is a real answer — sometimes a bug depends on state that's hard to observe. If we ask for more detail, it's because we're trying to track it down, not brushing it off.
+File at [GitHub Issues](https://github.com/ESMP-FUN/BetterTrialChambers/issues) or the `#support` channel on [Discord](https://dc.esmp.fun).

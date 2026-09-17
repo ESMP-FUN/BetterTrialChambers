@@ -1,30 +1,27 @@
 # spawner\_presets.yml
 
-**Added in v1.3.1.**
-
-Named templates for `minecraft:trial_spawner` items. Each preset can be handed out via `/trial give <preset>` to produce a real, placeable trial-spawner block with a custom mob configuration baked in.
+Define named `minecraft:trial_spawner` templates and hand them out with `/trial give <preset>`, producing a real, placeable trial-spawner block with a custom mob configuration baked in.
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
-**What this is for:** server owners who define their own trial-spawner mob pools through a datapack and want a one-command way to deploy preconfigured spawners. No more pasting a 200-character `/give minecraft:trial_spawner[block_entity_data={...}]` string every time.
+Use this when you define your own trial-spawner mob pools in a datapack and want a one-command way to deploy preconfigured spawners, instead of pasting a long `/give minecraft:trial_spawner[block_entity_data={...}]` string each time.
+
+</div>
+
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
+Every preset always produces a `TRIAL_SPAWNER`. There is no `material:` field. Custom keys and vault crate items belong to the [Vault Crates](https://esmp.fun/) premium module, not this file.
 
 </div>
 
 ---
 
-## How it works
+## How to use it
 
-1. You (or a datapack author) define mob configurations in a Minecraft datapack — see the [Trial Spawner wiki](https://minecraft.wiki/w/Trial_Spawner#Spawner_configuration) for the JSON format.
-2. You list named presets in `spawner_presets.yml`, each pointing at one of those datapack configs.
-3. `/trial give <preset>` hands the player a `trial_spawner` item with `block_entity_data` baked in. Placing it produces a working spawner with the configured normal/ominous pools, cooldown, and player range.
-
-The plugin does **not** generate the datapack for you — that's the part Mojang made data-driven, and it's the admin's job. BTC just packages the deployment side.
-
-<div data-gb-custom-block data-tag="hint" data-style="warning">
-
-**Trial spawners only.** The YAML schema has no `material:` field — every preset always produces a `TRIAL_SPAWNER`. This is deliberate. Custom crate keys and vault crate items are managed by the [Vault Crates](https://esmp.fun/) premium module, not this file.
-
-</div>
+1. Define the mob configurations in a Minecraft datapack. See the [Trial Spawner wiki](https://minecraft.wiki/w/Trial_Spawner#Spawner_configuration) for the JSON format. The plugin does not generate the datapack for you.
+2. List named presets in `spawner_presets.yml`, each pointing at one of those datapack configs.
+3. Run `/trial reload`.
+4. Run `/trial give <preset>` to hand out the spawner item. Placing it produces a working spawner with the configured pools, cooldown, and player range.
 
 ---
 
@@ -52,54 +49,46 @@ presets:
     display-name: "&c&lBoss Arena Spawner"
 ```
 
+Set at least one of `normal-config` or `ominous-config`, or the preset is skipped at load with a warning.
+
 ---
 
 ## Field reference
 
-| Field | Type | Default | Description |
+| Field | Type | Default | Meaning |
 |---|---|---|---|
-| `normal-config` | string | _(none)_ | Resource location of the datapack-defined spawner config used outside ominous mode. |
-| `ominous-config` | string | _(none)_ | Resource location of the datapack-defined spawner config used during ominous mode. |
-| `required-player-range` | int | `14` | How close a player must be (blocks) for the spawner to activate. |
-| `target-cooldown-length` | int | _(server-wide setting)_ | **Optional.** How long the spawner rests after a wave is beaten, in **ticks** (20 ticks = 1 second, so `36000` = 30 minutes). Leave it out to follow the server-wide setting instead — see below. |
-| `total-mobs` | int | _(datapack)_ | Total mobs spawned across the wave. Overrides the datapack value. |
-| `simultaneous-mobs` | int | _(datapack)_ | Maximum live mobs at once. Overrides the datapack value. |
-| `total-mobs-added-per-player` | float | _(datapack)_ | Extra total mobs per additional participating player. |
-| `simultaneous-mobs-added-per-player` | float | _(datapack)_ | Extra concurrent cap per additional player. |
-| `ticks-between-spawn` | int | _(datapack)_ | Tick delay between individual spawns. |
-| `spawn-range` | int | _(datapack)_ | Radius (blocks) around the spawner where mobs can appear. |
+| `normal-config` | string | none | Datapack resource location for the spawner config used outside ominous mode. |
+| `ominous-config` | string | none | Datapack resource location for the spawner config used during ominous mode. |
+| `required-player-range` | int | `14` | How close a player must be, in blocks, for the spawner to activate. |
+| `target-cooldown-length` | int | server-wide setting | Optional. How long the spawner rests after a wave is beaten, in ticks. 20 ticks is 1 second, so `36000` is 30 minutes. Leave it out to follow the server-wide setting instead. |
+| `total-mobs` | int | datapack value | Total mobs spawned across the wave. Overrides the datapack. |
+| `simultaneous-mobs` | int | datapack value | Most live mobs at once. Overrides the datapack. |
+| `total-mobs-added-per-player` | number | datapack value | Extra total mobs per additional participating player. |
+| `simultaneous-mobs-added-per-player` | number | datapack value | Extra concurrent cap per additional player. |
+| `ticks-between-spawn` | int | datapack value | Tick delay between individual spawns. |
+| `spawn-range` | int | datapack value | Radius in blocks around the spawner where mobs can appear. |
+| `display-name` | string | none | Item name in the inventory. Supports `&` colour codes. |
+| `lore` | list of strings | empty | Item lore lines. Supports `&` colour codes. |
+
+`normal-config` and `ominous-config` must point at a config defined in a datapack on the server. Inline NBT is not supported. If the datapack is missing when a player places the spawner, the error shows in the console at activation time, not at `/trial give`.
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
-The six datapack-override fields (`total-mobs` through `spawn-range`) are applied to the spawner **when the block is placed**, layered on top of the datapack config. If you edit them in `spawner_presets.yml`, run `/trial reload` and then **break and re-place** the spawner (a `/trial give` item placed after the reload picks up the new values — already-placed blocks keep the old ones).
+The six datapack-override fields (`total-mobs` through `spawn-range`) are applied to the spawner block when it is placed. After editing them, run `/trial reload`, then break and re-place the spawner. Already-placed blocks keep their old values; a `/trial give` item obtained after the reload carries the new ones.
 
-**How rest times work between here and `config.yml`:**
+**Rest times, this file vs `config.yml`:**
 
-* If a preset **states** a `target-cooldown-length`, spawners placed from it use that time, and the server-wide `reset.spawner-cooldown-minutes` / `reset.wild-spawner-cooldown-minutes` settings are ignored for them. The idea is that if you took the trouble to write a number into a preset, you meant it.
-* If a preset **leaves the line out**, its spawners follow the server-wide setting like any other spawner. This is usually the easier choice — set the rest time once in `config.yml` and every spawner obeys it.
-* To force **every** spawner onto the server-wide setting, presets included, set `reset.spawner-cooldown-overrides-presets: true` in `config.yml`.
+* If a preset sets `target-cooldown-length`, its spawners use that value and ignore the server-wide `reset.spawner-cooldown-minutes` / `reset.wild-spawner-cooldown-minutes`.
+* If a preset leaves the line out, its spawners follow the server-wide setting. This is usually easier: set the rest time once in `config.yml`.
+* To force every spawner, presets included, onto the server-wide setting, set `reset.spawner-cooldown-overrides-presets: true` in `config.yml`.
 
-If it looks like your server-wide setting is being ignored, check your presets for a `target-cooldown-length` line. Watch out for `36000` in particular: that's 30 minutes, which is also Minecraft's own default, so a preset and plain vanilla can look identical.
-
-</div>
-| `display-name` | string | _(none)_ | Item name shown in inventory. Supports `&` colour codes. |
-| `lore` | list of strings | _(empty)_ | Item lore lines. Supports `&` colour codes. |
-
-<div data-gb-custom-block data-tag="hint" data-style="info">
-
-At least one of `normal-config` or `ominous-config` must be set, or the preset is skipped at load with a warning. A preset with neither would spawn nothing.
-
-</div>
-
-<div data-gb-custom-block data-tag="hint" data-style="warning">
-
-**`normal-config` and `ominous-config` are resource locations, not inline configs.** They must point at a config defined in a datapack on the server. Inline compound NBT is not supported here. If your datapack isn't installed when a player places the spawner, the spawner will error in the console at activation time — not at `/trial give`.
+If the server-wide setting looks ignored, check your presets for a `target-cooldown-length` line. `36000` is easy to miss: it is 30 minutes, the same as vanilla, so a preset and plain vanilla can look identical.
 
 </div>
 
 ---
 
-## Using the command
+## The command
 
 ```
 /trial give <preset> [player] [amount]
@@ -107,61 +96,41 @@ At least one of `normal-config` or `ominous-config` must be set, or the preset i
 
 | Argument | Required? | Default |
 |---|---|---|
-| `<preset>` | yes | — |
-| `[player]` | no — must be present if sender is the console | sender |
+| `<preset>` | yes | none |
+| `[player]` | required only if the console runs the command | the sender |
 | `[amount]` | no | `1` |
 
-**Permission:** `btc.give` (default: op). Included in the `btc.admin.*` aggregate.
-
-**Examples:**
+Permission: `btc.give` (default: op), included in `btc.admin.*`.
 
 ```
-/trial give super_zombie                    # gives self 1 spawner
+/trial give super_zombie                    # gives yourself 1 spawner
 /trial give super_zombie Notch              # gives Notch 1 spawner
 /trial give boss_arena Notch 5              # gives Notch 5 spawners
 ```
 
-If the player's inventory is full, overflow drops at their feet rather than vanishing.
+If the target's inventory is full, the overflow drops at their feet.
 
 ---
 
 ## Reloading
 
-After editing `spawner_presets.yml`, run:
+After editing `spawner_presets.yml`, run `/trial reload`. The preset list is swapped in atomically; `/trial give` calls already running are not affected.
 
-```
-/trial reload
-```
-
-The preset map is hot-swapped atomically; in-flight `/trial give` calls are not affected.
+Preset ids are case-insensitive in lookups. Tab completion after `/trial give` lists every loaded preset id.
 
 ---
 
-## Tips
+## Limits
 
-- **Tab completion** lists every loaded preset id when you press `Tab` after `/trial give`.
-- **Preset ids are case-insensitive** in lookups — `Super_Zombie`, `super_zombie`, and `SUPER_ZOMBIE` all resolve to the same preset.
-- **Datapack authoring** is documented at the [Minecraft Wiki — Trial Spawner page](https://minecraft.wiki/w/Trial_Spawner#Spawner_configuration). The relevant data folder is `data/<namespace>/trial_spawner/<config_name>.json`.
-- **Validate quickly**: copy your `/give` test command into the preset (just the config strings + numbers) and verify the produced item matches the same NBT in F3+H tooltips.
+### Custom Mob Providers do not apply to preset spawners in the open world
 
----
+[Custom Mob Providers](custom-mobs.md) only intercept trial-spawner spawns inside a registered chamber. A spawner placed from `/trial give` in the open world is a standalone block, so a datapack config always spawns vanilla entity types (heavily customizable through NBT, but always vanilla ids).
 
-## Limitations
-
-### Custom Mob Providers do NOT apply to preset-spawned spawners
-
-BetterTrialChambers's [Custom Mob Providers](custom-mobs.md) (MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens) only intercept trial-spawner spawns **inside a registered chamber**. Spawners placed from `/trial give` exist as standalone blocks in the world — they are not tied to a chamber — so the provider intercept does not run on them.
-
-This means:
-
-- A spawner placed from a preset will spawn whatever entity its datapack config specifies (vanilla mob types only — `minecraft:zombie`, `minecraft:skeleton`, etc., heavily customizable via NBT but always vanilla entity ids).
-- You **cannot** spawn MythicMobs / EliteMobs / etc. creatures from a preset-built spawner placed in the wild, because the datapack JSON has no field for non-vanilla entity ids and BTC's provider intercept is chamber-scoped.
-
-**If you need custom-plugin mobs to spawn from a preset spawner**, place the spawner inside a registered chamber and configure that chamber's custom mob provider (`/trial mobs <chamber> provider <id>`). The chamber's provider will then intercept the preset spawner's wave the same way it intercepts vanilla-generated spawners in that chamber.
+To get custom-plugin mobs from a preset spawner, place it inside a registered chamber and set that chamber's provider with `/trial mobs <chamber> provider <id>`. The chamber's provider then intercepts the preset spawner's waves.
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
-This is by design for the free tier. If your use case is deploying placeable trial spawners that work with custom-plugin mobs anywhere on a survival map — not confined to a registered chamber — that's exactly what the [Wild Spawners](https://esmp.fun/) premium add-on provides.
+To deploy placeable trial spawners that work with custom-plugin mobs anywhere on a survival map, use the [Wild Spawners](https://esmp.fun/) premium add-on.
 
 </div>
 
@@ -169,17 +138,12 @@ This is by design for the free tier. If your use case is deploying placeable tri
 
 ## Troubleshooting
 
-**Placed a preset spawner outside a chamber and can't mine it back**
-As of v1.4.5, BTC-preset spawners placed outside any registered chamber can be retrieved using a **Silk Touch** tool. Without Silk Touch the break is blocked and a hint message appears. Mining without Silk Touch (no tool requirement) is available for wild-preset spawners managed by [Wild Spawners](https://esmp.fun/).
+**Placed a preset spawner outside a chamber and can't mine it back.** Use a Silk Touch tool. Without Silk Touch the break is blocked and a hint appears. Mining without any tool requirement is a [Wild Spawners](https://esmp.fun/) feature.
 
-**"Unknown preset" when running `/trial give`**
-The preset id wasn't loaded. Check the server log on startup or after `/trial reload` — parse failures and missing-config skips both log a warning.
+**"Unknown preset" from `/trial give`.** The preset id did not load. Check the server log on startup or after `/trial reload`; parse failures and missing-config skips both log a warning.
 
-**Spawner places fine but spawns nothing**
-The datapack referenced by `normal-config` / `ominous-config` isn't installed (or the resource location is mistyped). Check the server console when a player approaches the spawner.
+**Spawner places fine but spawns nothing.** The datapack named by `normal-config` / `ominous-config` is not installed, or the resource location is mistyped. Check the console when a player approaches the spawner.
 
-**`Failed to build item for preset`**
-The SNBT produced from the preset failed Paper's `ItemFactory` parse. Most likely cause: a stray quote or backslash in `normal-config` / `ominous-config`. Use plain `namespace:config_id` strings.
+**"Failed to build item for preset".** The text built from the preset failed Paper's item parser, usually a stray quote or backslash in `normal-config` / `ominous-config`. Use plain `namespace:config_id` strings.
 
-**File not appearing in plugin folder**
-`spawner_presets.yml` is created on first plugin load. If it's missing, ensure you ran the server with v1.3.1+ at least once and check write permissions on `plugins/BetterTrialChambers/`.
+**File not appearing in the plugin folder.** `spawner_presets.yml` is created on first load. Make sure you ran the server at least once on a version that includes this feature, and check write permissions on `plugins/BetterTrialChambers/`.

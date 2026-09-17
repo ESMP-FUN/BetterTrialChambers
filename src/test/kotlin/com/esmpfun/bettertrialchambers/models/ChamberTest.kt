@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 /**
- * Tests for the [Chamber] model — bounds math, lookup helpers, and custom-mob
+ * Tests for the [Chamber] model, bounds math, lookup helpers, and custom-mob
  * provider behavior. Bukkit `Location` and `World` references are mocked via
  * MockK so the tests run without a server. Added in v1.3.0 Phase 5.
  */
@@ -83,7 +83,7 @@ class ChamberTest {
 
     @Test
     fun `getVolume includes both endpoints`() {
-        // 31 x 15 x 31 = 14415 — vanilla minimum chamber size
+        // 31 x 15 x 31 = 14415, vanilla minimum chamber size
         val c = chamber(0, 64, 0, 30, 78, 30)
         assertEquals(31 * 15 * 31, c.getVolume())
     }

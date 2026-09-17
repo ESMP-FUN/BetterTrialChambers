@@ -113,6 +113,12 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.8")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     // Paper API on the test classpath so unit tests can mock Bukkit types directly.
+    // Deliberately older than the version above: on the 26.x API, MockK cannot stand
+    // in for JavaPlugin (the real getConfig runs and dies on a null file), which takes
+    // out every test that mocks the plugin. The cost is that the tests checking the
+    // shipped loot tables read an older list of block and item names, so a name that
+    // only 26.x knows, or one it has dropped, is not caught here. Loading loot.yml on
+    // the server warns about an unknown name, which is the backstop.
     testImplementation("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
 }
 
@@ -239,6 +245,12 @@ tasks {
 
     test {
         useJUnitPlatform()
+        // MockK mocks final Kotlin classes by loading an agent into the running
+        // test JVM. From JDK 24 onwards that is refused unless it is asked for,
+        // and this branch compiles and tests on JDK 25, so without these every
+        // test that mocks anything dies with "Could not self-attach to current
+        // VM". The master branch is on 21 and never hit it.
+        jvmArgs("-XX:+EnableDynamicAgentLoading", "-Djdk.attach.allowAttachSelf=true")
     }
 }
 

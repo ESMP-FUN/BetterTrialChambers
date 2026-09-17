@@ -15,17 +15,17 @@ import java.util.concurrent.ConcurrentHashMap
  * Optional AdvancedEnchantments integration (v1.5.18).
  *
  * AE custom enchants such as "Blast Mining" break blocks through their own effect path, which
- * ignores TCP's `BlockBreakEvent` cancel — so they could bypass chamber protection (and the per
+ * ignores TCP's `BlockBreakEvent` cancel, so they could bypass chamber protection (and the per
  * block deny message flooded chat). When `protection.block-advanced-enchantments` is on and AE is
  * installed, TCP cancels AE's cancellable `EnchantActivateEvent` for a player standing in a
- * registered chamber (unless they hold `tcp.bypass.protection`), stopping the effect outright.
+ * registered chamber (unless they hold `btc.bypass.protection`), stopping the effect outright.
  * Enchant names listed in `protection.advanced-enchantments-allowlist` are still permitted
  * (e.g. combat enchants you want to keep working inside chambers).
  *
  * Verified against `net.advancedplugins.ae.api.EnchantActivateEvent` (AdvancedEnchantments 9.23.6):
  * `Cancellable`, `getFirstEntity(): Entity`, `getEnchant()` / `getEnchantment(): String`.
  *
- * Reflection-based — TCP carries no compile-time dependency on the paid AE jar, and the hook is
+ * Reflection-based, TCP carries no compile-time dependency on the paid AE jar, and the hook is
  * inert when AE is absent. Cancelling never reflects (the event implements Bukkit's [Cancellable]).
  */
 object AdvancedEnchantmentsHook {
@@ -35,7 +35,7 @@ object AdvancedEnchantmentsHook {
     /** How far to ray-trace for the block the player is mining (survival reach ≈ 5–6 blocks). */
     private const val MINING_REACH = 6
 
-    /** Default cube half-extent around the targeted block (set `…-block-radius` to your blast radius). */
+    /** Default cube half-extent around the targeted block (set `...-block-radius` to your blast radius). */
     private const val DEFAULT_BLAST_MARGIN = 2
 
     private val lastMessage = ConcurrentHashMap<UUID, Long>()
@@ -49,7 +49,7 @@ object AdvancedEnchantmentsHook {
         val cls = Refl.classOrNull(EVENT_CLASS)?.let {
             if (Event::class.java.isAssignableFrom(it)) it.asSubclass(Event::class.java) else null
         } ?: run {
-            plugin.logger.warning("AdvancedEnchantments is installed but '$EVENT_CLASS' was not found — integration inactive.")
+            plugin.logger.warning("AdvancedEnchantments is installed but '$EVENT_CLASS' was not found, integration inactive.")
             return
         }
         val executor = EventExecutor { _, event -> handle(plugin, event) }
@@ -81,7 +81,7 @@ object AdvancedEnchantmentsHook {
             if (!affectsChamber(plugin, player)) return
 
             if (player.hasPermission("btc.bypass.protection")) {
-                dbg(plugin, "enchant '${enchant ?: "?"}' allowed for ${player.name}: has tcp.bypass.protection (note: OPs have this by default)")
+                dbg(plugin, "enchant '${enchant ?: "?"}' allowed for ${player.name}: has btc.bypass.protection (note: OPs have this by default)")
                 return
             }
 
@@ -101,11 +101,11 @@ object AdvancedEnchantmentsHook {
     /**
      * True if this enchant activation should be blocked because it touches a (non-paused) chamber.
      *
-     * AE's `EnchantActivateEvent` exposes no block or location — only the player — so we can't read
+     * AE's `EnchantActivateEvent` exposes no block or location, only the player, so we can't read
      * where a mining enchant like Blast Mining actually lands. We therefore check **two** things:
      *  1. the player standing inside a chamber, and
      *  2. the block the player is targeting, expanded by `protection.advanced-enchantments-block-radius`
-     *     (default [DEFAULT_BLAST_MARGIN]) on every axis, intersecting a chamber — this catches mining
+     *     (default [DEFAULT_BLAST_MARGIN]) on every axis, intersecting a chamber, this catches mining
      *     the chamber *wall from outside* (the wall block is inside the chamber bounds) and AoE breaks
      *     that reach into a chamber from just outside it. Set the radius to your largest blast enchant's
      *     radius: `0` blocks only when the mined block is itself inside a chamber; larger values cover
@@ -115,7 +115,7 @@ object AdvancedEnchantmentsHook {
         plugin.chamberManager.getCachedChamberAt(player.location)?.let { return !it.isPaused }
 
         val target = runCatching { player.getTargetBlockExact(MINING_REACH) }.getOrNull() ?: return false
-        val world = target.world?.name ?: return false
+        val world = target.world.name
         val margin = plugin.config.getInt("protection.advanced-enchantments-block-radius", DEFAULT_BLAST_MARGIN)
             .coerceIn(0, 16)
         val b = target.location
