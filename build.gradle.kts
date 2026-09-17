@@ -70,10 +70,9 @@ dependencies {
     // JSON parsing for update checker
     implementation("com.google.code.gson:gson:2.10.1")
 
-    // PluginPulse — multi-source update checking + verified install staging,
-    // plus the opt-in hot-reload engine (gated behind update.allow-hot-reload).
+    // PluginPulse — multi-source update checking + verified install staging.
+    // Its no-restart reload module is left out: it cannot reload the bundled SQLite driver.
     implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.8.0")
-    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-hotreload:v0.8.0")
 
     // Anonymous usage metrics (relocated below). Replaced bStats in v2.0.5.
     // Pulls dev.faststats.metrics:core (+ :config at runtime) transitively.

@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
+### Removed
+- **The `update.allow-hot-reload` setting and `/trial update apply`.** Installing an update without a restart could never work for this plugin: it ships the SQLite database driver, which cannot be loaded a second time while the server is running, so the update was always refused. Updates install on the next restart as before. If the line is still in your `config.yml` it simply does nothing, and you can delete it.
+
 ### Fixed
 - **A mistyped number in `config.yml` falls back to the right value.** When a setting wasn't a number, the startup check put in a replacement that didn't match the plugin's normal default for eight settings: vault cooldowns became 24 and 48 hours instead of 0 (locked until the chamber resets), trial spawner rest times became 30 minutes instead of Minecraft's own, and four chamber discovery settings got outdated numbers. A spawner rest time below the allowed range, such as -5, also turned into 0 (no rest at all); it now goes back to leaving it to Minecraft. The console messages say plainly what was wrong and what is used instead.
 - **Editing a chamber's loot no longer wipes the server's default loot.** A chamber without a loot table of its own opened the loot editor on the server-wide default table. That table comes split into groups the editor page didn't show, so the page looked empty, and pressing Save replaced the entire default table with whatever was on it. Every chamber using the default lost its loot. A chamber now gets its own copy of the default the first time you edit its loot, and the default is left alone.
