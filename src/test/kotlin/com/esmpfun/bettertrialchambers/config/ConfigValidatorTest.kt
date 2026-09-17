@@ -99,8 +99,8 @@ class ConfigValidatorTest {
     }
 
     @Test
-    fun `validate clamps -2 on a sentinel-allowing key (sentinel is exact match only)`() {
-        // -1 is allowed via sentinel; -2 should still clamp to 0.
+    fun `validate sends a too-low value on a sentinel-allowing key back to its default`() {
+        // -1 is allowed via sentinel; -2 falls back to the default (-1), not to 0.
         val config = mockk<FileConfiguration>(relaxed = true)
         every { config.contains("reset.spawner-cooldown-minutes") } returns true
         every { config.contains(not("reset.spawner-cooldown-minutes")) } returns false
@@ -113,7 +113,7 @@ class ConfigValidatorTest {
         val clamped = ConfigValidator.validate(plugin)
 
         assertEquals(1, clamped)
-        assertEquals(0L, captured.captured)
+        assertEquals(-1L, captured.captured)
     }
 
     @Test
@@ -130,7 +130,7 @@ class ConfigValidatorTest {
         val clamped = ConfigValidator.validate(plugin)
 
         assertEquals(1, clamped)
-        assertEquals(24L, captured.captured, "unparseable input falls back to the rule's default")
+        assertEquals(0L, captured.captured, "unparseable input falls back to the rule's default")
     }
 
     @Test
