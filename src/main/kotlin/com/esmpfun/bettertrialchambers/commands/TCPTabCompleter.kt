@@ -79,7 +79,7 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
     private val containerActions = listOf("list", "materialize", "reset", "resetone", "clearcopies", "tp", "edit")
 
     private val snapshotActions = listOf("create", "update", "restore", "missing")
-    private val updateActions = listOf("check", "download", "apply", "ignore", "unignore", "restore", "status")
+    private val updateActions = listOf("check", "download", "ignore", "unignore", "restore", "status")
     private val statTypes = listOf("chambers", "normal", "ominous", "mobs", "time")
     private val lootActions = listOf("set", "clear", "info", "list", "audit")
     private val vaultTypes = listOf("normal", "ominous")
