@@ -36,23 +36,23 @@ object ConfigValidator {
     )
 
     private val rules = listOf(
-        LongRule("vaults.normal-cooldown-hours", 0, null, 24),
-        LongRule("vaults.ominous-cooldown-hours", 0, null, 48),
+        LongRule("vaults.normal-cooldown-hours", 0, null, 0),
+        LongRule("vaults.ominous-cooldown-hours", 0, null, 0),
         LongRule("vaults.drop-loot-owner-grace-seconds", 0, null, 30),
         LongRule("vaults.feedback.hologram.duration-ticks", 1, 1200, 30),
         LongRule("generation.max-volume", 1, 5_000_000, 750_000),
         // These two live under `global:` in config.yml (not `reset:`/`performance:`).
         LongRule("global.default-reset-interval", 0, null, 172_800),
         LongRule("global.blocks-per-tick", 1, 50_000, 500),
-        LongRule("reset.spawner-cooldown-minutes", 0, null, 30, allowSentinel = -1),
-        LongRule("reset.wild-spawner-cooldown-minutes", 0, null, 30, allowSentinel = -1),
+        LongRule("reset.spawner-cooldown-minutes", 0, null, -1, allowSentinel = -1),
+        LongRule("reset.wild-spawner-cooldown-minutes", 0, null, -1, allowSentinel = -1),
         LongRule("reset.spawner-key-drop-owner-grace-seconds", 0, null, 30),
         LongRule("performance.cache-duration-seconds", 1, null, 300),
         LongRule("performance.time-tracking-interval", 1, null, 300),
-        LongRule("discovery.max-radius-xz", 0, null, 80),
-        LongRule("discovery.max-radius-y", 0, null, 40),
-        LongRule("discovery.max-center-y", -256, 320, 60),
-        LongRule("discovery.cooldown-seconds", 0, null, 60),
+        LongRule("discovery.max-radius-xz", 0, null, 60),
+        LongRule("discovery.max-radius-y", 0, null, 45),
+        LongRule("discovery.max-center-y", -256, 320, 10),
+        LongRule("discovery.cooldown-seconds", 0, null, 300),
         LongRule("discovery.pending-retry-seconds", 0, null, 30),
         LongRule("discovery.structure-max-volume", 1, null, 15_000_000, allowSentinel = -1),
         LongRule("protection.tunnel-breaking.shell-depth", 0, 64, 3)
@@ -105,8 +105,7 @@ object ConfigValidator {
             val raw = config.getLong(rule.key, Long.MIN_VALUE)
             if (raw == Long.MIN_VALUE) {
                 plugin.logger.warning(
-                    "[Config] '${rule.key}' could not be parsed as a number; " +
-                        "using default ${rule.default}."
+                    "[Config] '${rule.key}' in config.yml is not a whole number, so ${rule.default} is used instead."
                 )
                 config.set(rule.key, rule.default)
                 clamped++
@@ -119,16 +118,21 @@ object ConfigValidator {
             val min = rule.min
             val max = rule.max
             val clampedTo = when {
+                // Below the range on a setting with a special "leave it to Minecraft"
+                // value: a typo like -5 should not quietly become 0 (no rest at all).
+                min != null && raw < min && rule.allowSentinel != null -> rule.default
                 min != null && raw < min -> min
                 max != null && raw > max -> max
                 else -> null
             }
             if (clampedTo != null) {
+                val allowed = when {
+                    min != null && max != null -> "between $min and $max"
+                    min != null -> "$min or more"
+                    else -> "$max or less"
+                } + (rule.allowSentinel?.let { ", or $it" } ?: "")
                 plugin.logger.warning(
-                    "[Config] '${rule.key}' = $raw is out of range " +
-                        "[${rule.min ?: "-∞"}, ${rule.max ?: "+∞"}]" +
-                        (rule.allowSentinel?.let { " (or sentinel $it)" } ?: "") +
-                        "; clamped to $clampedTo."
+                    "[Config] '${rule.key}' in config.yml is $raw, but it has to be $allowed. Using $clampedTo instead."
                 )
                 config.set(rule.key, clampedTo)
                 clamped++
@@ -137,8 +141,8 @@ object ConfigValidator {
 
         if (clamped > 0) {
             plugin.logger.warning(
-                "[Config] $clamped value(s) were clamped at startup. " +
-                    "Review config.yml to silence these warnings."
+                "[Config] $clamped setting(s) in config.yml were changed for this run. " +
+                    "Fix them in config.yml to stop these warnings."
             )
         }
         return clamped
