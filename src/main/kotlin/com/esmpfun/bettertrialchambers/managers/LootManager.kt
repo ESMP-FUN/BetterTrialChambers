@@ -614,9 +614,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
     private fun resolveEnchantment(name: String, sourceEntry: String): Enchantment? {
         val key = org.bukkit.NamespacedKey.fromString(name.lowercase())
             ?: org.bukkit.NamespacedKey.minecraft(name.lowercase())
-        val enchantment = io.papermc.paper.registry.RegistryAccess.registryAccess()
-            .getRegistry(io.papermc.paper.registry.RegistryKey.ENCHANTMENT)
-            .get(key)
+        val enchantment = com.esmpfun.bettertrialchambers.utils.Registries.enchantment(key)
         if (enchantment == null) {
             plugin.logger.warning("loot.yml: unknown enchantment '$name' in '$sourceEntry'; skipped. Use the in-game id (e.g. SHARPNESS or minecraft:sharpness).")
         }
@@ -1091,10 +1089,8 @@ class LootManager(private val plugin: BetterTrialChambers) {
                     }
 
                     val effectType = try {
-                        // Use registry access instead of deprecated getByName
-                        org.bukkit.Registry.POTION_EFFECT_TYPE.get(
-                            org.bukkit.NamespacedKey.minecraft(lootItem.customEffectType.lowercase())
-                        )
+                        com.esmpfun.bettertrialchambers.utils.Registries
+                            .potionEffect(lootItem.customEffectType.lowercase())
                     } catch (_: Exception) {
                         null
                     }
@@ -1227,10 +1223,9 @@ class LootManager(private val plugin: BetterTrialChambers) {
                         "${lootItem.instrument.uppercase()}_GOAT_HORN"
                     }
 
-                    // Resolve via the registry (v1.7.1 — replaces Field reflection)
-                    val instrument = io.papermc.paper.registry.RegistryAccess.registryAccess()
-                        .getRegistry(io.papermc.paper.registry.RegistryKey.INSTRUMENT)
-                        .get(org.bukkit.NamespacedKey.minecraft(instrumentName.lowercase()))
+                    // Resolve via the registry (v1.7.1, replaces Field reflection)
+                    val instrument = com.esmpfun.bettertrialchambers.utils.Registries
+                        .instrument(org.bukkit.NamespacedKey.minecraft(instrumentName.lowercase()))
                     if (instrument != null) {
                         setInstrument(instrument)
                         if (plugin.config.getBoolean("debug.verbose-logging", false)) {

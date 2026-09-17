@@ -1036,9 +1036,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
                 // Pre-resolve the invisibility effect type via Registry so we use
                 // the modern path (the static PotionEffectType.INVISIBILITY field
                 // is deprecated on 1.21+).
-                val invisType = org.bukkit.Registry.POTION_EFFECT_TYPE.get(
-                    org.bukkit.NamespacedKey.minecraft("invisibility")
-                )
+                val invisType = com.esmpfun.bettertrialchambers.utils.Registries.potionEffect("invisibility")
 
                 val entity = world.spawn(center, org.bukkit.entity.Shulker::class.java) { s ->
                     s.setAI(false)
@@ -1139,9 +1137,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
                     plugin.config.getString("spawner-waves.glow-color-normal", "#FFFF55") ?: "#FFFF55"
                 }
                 val color = parseGlowColor(colorHex)
-                val invisType = org.bukkit.Registry.POTION_EFFECT_TYPE.get(
-                    org.bukkit.NamespacedKey.minecraft("invisibility")
-                )
+                val invisType = com.esmpfun.bettertrialchambers.utils.Registries.potionEffect("invisibility")
 
                 val entity = world.spawn(center, org.bukkit.entity.Shulker::class.java) { s ->
                     s.setAI(false)
