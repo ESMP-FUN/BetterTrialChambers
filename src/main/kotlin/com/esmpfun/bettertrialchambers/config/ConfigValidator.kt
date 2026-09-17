@@ -118,10 +118,12 @@ object ConfigValidator {
 
             val min = rule.min
             val max = rule.max
-            val belowMin = min != null && raw < min
-            val aboveMax = max != null && raw > max
-            if (belowMin || aboveMax) {
-                val clampedTo = if (belowMin) min!! else max!!
+            val clampedTo = when {
+                min != null && raw < min -> min
+                max != null && raw > max -> max
+                else -> null
+            }
+            if (clampedTo != null) {
                 plugin.logger.warning(
                     "[Config] '${rule.key}' = $raw is out of range " +
                         "[${rule.min ?: "-∞"}, ${rule.max ?: "+∞"}]" +

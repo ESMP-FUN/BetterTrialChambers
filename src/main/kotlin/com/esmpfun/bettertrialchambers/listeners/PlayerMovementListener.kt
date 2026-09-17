@@ -98,14 +98,14 @@ class PlayerMovementListener(private val plugin: BetterTrialChambers) : Listener
 
             // Player entered a chamber (or crossed straight from one chamber to another).
             if (!wasInChamber && isInChamber) {
-                onChamberEntered(player, uuid, currentChamber!!, statsEnabled, sendEntryMessage = true)
+                onChamberEntered(player, uuid, currentChamber, statsEnabled, sendEntryMessage = true)
             }
             // Player left a chamber (or crossed straight from one chamber to another).
             else if (wasInChamber && !isInChamber) {
-                onChamberExited(player, uuid, previousChamber!!, statsEnabled, sendExitMessage = true)
+                onChamberExited(player, uuid, previousChamber, statsEnabled, sendExitMessage = true)
             }
             // Direct chamber-to-chamber transition (different chamber ids). Fire both.
-            else if (wasInChamber && isInChamber && previousChamber!!.id != currentChamber!!.id) {
+            else if (wasInChamber && isInChamber && previousChamber.id != currentChamber.id) {
                 onChamberExited(player, uuid, previousChamber, statsEnabled, sendExitMessage = false)
                 onChamberEntered(player, uuid, currentChamber, statsEnabled, sendEntryMessage = false)
             }
