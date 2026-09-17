@@ -863,8 +863,26 @@ class LootManager(private val plugin: BetterTrialChambers) {
      */
     private fun expandLootItem(lootItem: LootItem, player: Player): List<ItemStack> {
         val tableId = lootItem.vanillaTable
-            ?: return listOf(createItemStack(lootItem, player)).filterNot { it.isEmpty }
+            ?: return splitIntoStacks(createItemStack(lootItem, player))
         return rollVanillaTable(tableId, player).filterNot { it.isEmpty }
+    }
+
+    /**
+     * Splits an amount larger than the item's stack size into normal stacks, so
+     * "3 totems" hands out three totems rather than one, or one stack of three.
+     */
+    private fun splitIntoStacks(stack: ItemStack): List<ItemStack> {
+        if (stack.isEmpty) return emptyList()
+        val max = stack.maxStackSize.coerceAtLeast(1)
+        if (stack.amount <= max) return listOf(stack)
+        val stacks = ArrayList<ItemStack>()
+        var left = stack.amount
+        while (left > 0) {
+            val take = minOf(left, max)
+            stacks += stack.clone().also { it.amount = take }
+            left -= take
+        }
+        return stacks
     }
 
     /**
@@ -996,7 +1014,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
                     plugin.logger.warning("Skipping a loot item with unreadable serialized data.")
                     return ItemStack(Material.AIR, 0)
                 }
-            return base.clone().also { it.amount = amount.coerceIn(1, it.maxStackSize.coerceAtLeast(1)) }
+            return base.clone().also { it.amount = amount }
         }
 
         // Resolve custom plugin item (Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible)
