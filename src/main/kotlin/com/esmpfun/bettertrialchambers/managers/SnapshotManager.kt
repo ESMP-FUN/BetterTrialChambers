@@ -449,7 +449,7 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
                         scan = scanV2(DataInputStream(input), file.name)
                     } else {
                         input.reset()
-                        legacyData = ObjectInputStream(input).use { it.readObject() as SnapshotData }
+                        legacyData = com.esmpfun.bettertrialchambers.utils.RenamedClassInputStream(input).use { it.readObject() as SnapshotData }
                     }
                 }
             }
@@ -852,7 +852,7 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
 
     /** Reads a legacy Java-serialized [SnapshotData] snapshot (pre-v2 files). */
     private fun readLegacySnapshot(input: InputStream, label: String): Map<Location, BlockSnapshot>? {
-        val snapshotData = ObjectInputStream(input).use { it.readObject() as SnapshotData }
+        val snapshotData = com.esmpfun.bettertrialchambers.utils.RenamedClassInputStream(input).use { it.readObject() as SnapshotData }
 
         if (!validateSnapshot(snapshotData)) {
             plugin.logger.severe("Snapshot validation failed: $label")

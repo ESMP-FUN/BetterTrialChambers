@@ -2,7 +2,6 @@ package com.esmpfun.bettertrialchambers.utils
 
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
@@ -76,7 +75,7 @@ object CompressionUtil {
     fun <T> decompressObject(compressedData: ByteArray): T {
         val decompressed = decompress(compressedData)
         val byteArrayInputStream = ByteArrayInputStream(decompressed)
-        ObjectInputStream(byteArrayInputStream).use { objectInputStream ->
+        RenamedClassInputStream(byteArrayInputStream).use { objectInputStream ->
             return objectInputStream.readObject() as T
         }
     }
