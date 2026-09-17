@@ -19,6 +19,7 @@ class LootTableListHolder : BaseHolder()
 class LootTableListView(
     private val plugin: BetterTrialChambers,
     private val menu: MenuService,
+    private val page: Int = 0,
 ) : VcGui(
     rows = 6,
     title = plugin.getGuiText("gui.loot-table-list.title"),
@@ -29,6 +30,8 @@ class LootTableListView(
     private fun layout() {
         clear()
         val tables = plugin.lootManager.getLootTableNames().sorted()
+        val totalPages = maxOf(1, (tables.size + PER_PAGE - 1) / PER_PAGE)
+        val current = page.coerceIn(0, totalPages - 1)
 
         // Header at (4, 0) = slot 4
         set(4, VcGuiItem.wrap(
@@ -38,9 +41,8 @@ class LootTableListView(
         ))
 
         // Tables in rows 1-4, slots 9..44, left-to-right top-to-bottom
-        tables.forEachIndexed { index, tableName ->
+        tables.drop(current * PER_PAGE).take(PER_PAGE).forEachIndexed { index, tableName ->
             val slot = 9 + index
-            if (slot > 44) return@forEachIndexed
             val table = plugin.lootManager.getTable(tableName)
             set(slot, VcGuiItem.wrap(createTableItem(tableName, table)) { ctx ->
                 if (table != null && !table.isLegacyFormat()) menu.openGlobalPoolSelect(ctx.player, tableName)
@@ -59,6 +61,14 @@ class LootTableListView(
         set(45, GuiComponents.backVcItem(plugin, "gui.common.dest-main-menu") { ctx ->
             menu.openMainMenu(ctx.player)
         })
+        if (totalPages > 1) {
+            set(48, GuiComponents.prevPageVcItem(plugin, current, totalPages) { ctx ->
+                menu.openLootTableList(ctx.player, current - 1)
+            })
+            set(50, GuiComponents.nextPageVcItem(plugin, current, totalPages) { ctx ->
+                menu.openLootTableList(ctx.player, current + 1)
+            })
+        }
         set(49, VcGuiItem.wrap(
             GuiComponents.infoItem(plugin, Material.LIME_CONCRETE,
                 "gui.loot-table-list.create-name", "gui.loot-table-list.create-lore")
@@ -84,4 +94,6 @@ class LootTableListView(
         return GuiComponents.infoItem(plugin, material, nameKey, loreKey,
             "name" to name, "pools" to poolCount, "items" to itemCount)
     }
+
+    private companion object { const val PER_PAGE = 36 }
 }
