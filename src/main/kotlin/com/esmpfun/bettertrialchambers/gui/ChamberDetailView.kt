@@ -170,7 +170,8 @@ class ChamberDetailView(
             "volume" to chamber.getVolume(),
             "inside" to playersInside,
             "normal" to normalCount, "ominous" to ominousCount,
-            "reset" to formatDuration(timeUntilMs)
+            "reset" to if (chamber.resetInterval <= 0) plugin.rawMessage("gui.chamber-settings.reset-disabled")
+                else formatDuration(timeUntilMs)
         )
     }
 

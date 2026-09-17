@@ -109,7 +109,8 @@ class ChamberListView(
             "inside" to playersInside,
             "normal" to normalCount, "ominous" to ominousCount,
             "normalLocked" to normalLocked, "ominousLocked" to ominousLocked,
-            "reset" to DurationFmt.humanize(plugin, timeUntilMs),
+            "reset" to if (chamber.resetInterval <= 0) plugin.rawMessage("gui.chamber-settings.reset-disabled")
+                else DurationFmt.humanize(plugin, timeUntilMs),
             "lastReset" to DurationFmt.humanize(plugin, sinceLastMs)
         )
 
