@@ -58,7 +58,7 @@ class GlobalSettingsView(
             "gui.global-settings.statistics-desc", 2 * 9 + 7),          // (7,2) = 25
         ToggleDef("loot.apply-luck-effect",
             "gui.global-settings.luck-effect-label",
-            "gui.global-settings.luck-effect-desc", 3 * 9 + 3),         // (3,3) = 30
+            "gui.global-settings.luck-effect-desc", 3 * 9 + 3, default = false),         // (3,3) = 30
         ToggleDef("reset.spawner-cooldown-overrides-presets",
             "gui.global-settings.cooldown-overrides-presets-label",
             "gui.global-settings.cooldown-overrides-presets-desc", 3 * 9 + 7, default = false), // (7,3) = 34
