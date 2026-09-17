@@ -322,10 +322,10 @@ class MenuService(private val plugin: BetterTrialChambers) {
 
     // ==================== Loot Screens ====================
 
-    fun openLootTableList(player: Player) {
+    fun openLootTableList(player: Player, page: Int = 0) {
         if (denied(player, "btc.admin.loot")) return
         // v1.5.0, VcGui pattern.
-        val view = LootTableListView(plugin, this)
+        val view = LootTableListView(plugin, this, page)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.LOOT_TABLE_LIST
             // Leave globalLootEdit state alone, the list itself isn't a loot editor
