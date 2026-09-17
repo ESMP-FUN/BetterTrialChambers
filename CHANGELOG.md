@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [Unreleased]
+## [2.2.0] - 2026-09-17
 ### Added
 - **Minecraft 26.3 support, as its own download.** This is the `-mc263` jar; keep using `-mc26` on 26.0 to 26.2 and the plain jar on 1.21.x. Each download now follows its own updates, so a 26.3 server is never offered a jar built for an older Minecraft.
 - **Cushions inside a chamber are protected like any other decoration.** 26.3 added cushions, and picking one up is not the same action as taking a painting off a wall, so they needed watching separately. A cushion standing in a protected chamber can no longer be taken, blown up or knocked out by a mob, and `btc.bypass.protection` still lets staff move one.
@@ -49,6 +49,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - **Glowing spawner outlines now use the colour you set.** `spawner-waves.glow-color-normal` and `glow-color-ominous` had no effect: every outline came out white whatever you put there. Minecraft only draws an outline in one of its own sixteen colours, so your colour is matched to the closest of those, which is why the shipped yellow and purple look right without you changing anything.
 - **Container protection covers everything that holds items.** With `protection.prevent-container-access` turned on, chests and barrels were protected but shelves, lecterns, jukeboxes, chiseled bookshelves and decorated pots were not, so anyone could still empty those inside a chamber. Vault loot is unaffected, as always.
 - **Resets no longer warn that a snapshot "covers a smaller region than the chamber bounds".** Snapshots do not store air, so any chamber with open space along an edge (almost every chamber) looked like its snapshot had fallen behind, and the console asked you to take a new one on every single reset. Snapshots now record the area they were taken from, so the warning only appears when the chamber really has grown since. Snapshots taken before this update keep working; take a new one when convenient and the reset will also tidy up blocks players added in open space near the chamber's edge, which it could not reach before.
+### Note
+- **This update adds a new message.** The plugin never overwrites your existing `messages.yml`, so until you add it you may see `<missing: exit-wrong-world>` if someone tries to set a chamber exit from the wrong world. To get it: stop the server, rename `plugins/BetterTrialChambers/messages.yml` to `messages.yml.bak`, start the server so a fresh file is made, then copy any translations back over from the `.bak`. The console also reminds you at startup whenever messages are missing.
 
 ## [2.1.0] - 2026-07-31
 ### Added
