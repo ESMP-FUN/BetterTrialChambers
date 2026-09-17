@@ -122,7 +122,7 @@ class LootEditorView(
 
         val table = source ?: LootTable(baseName, 1, 3, emptyList(), emptyList(), emptyList())
         return LootEditorDraft(
-            tableName = table.name,
+            tableName = baseName,
             guaranteed = table.guaranteedItems.toMutableList(),
             weighted = table.weightedItems.toMutableList(),
             minRolls = table.minRolls,
