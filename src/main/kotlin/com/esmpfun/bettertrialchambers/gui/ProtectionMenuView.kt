@@ -26,6 +26,7 @@ class ProtectionMenuView(
         val labelKey: String,
         val descKey: String,
         val slot: Int,
+        val default: Boolean = true,
     )
 
     private val toggles = listOf(
@@ -40,7 +41,7 @@ class ProtectionMenuView(
             "gui.protection-menu.block-place-desc", 2 * 9 + 3),  // (3,2) = 21
         ToggleDef("protection.prevent-container-access",
             "gui.protection-menu.containers-label",
-            "gui.protection-menu.containers-desc", 2 * 9 + 5),   // (5,2) = 23
+            "gui.protection-menu.containers-desc", 2 * 9 + 5, default = false),   // (5,2) = 23
         ToggleDef("protection.prevent-mob-griefing",
             "gui.protection-menu.mob-griefing-label",
             "gui.protection-menu.mob-griefing-desc", 2 * 9 + 7), // (7,2) = 25
@@ -64,7 +65,7 @@ class ProtectionMenuView(
         set(4, VcGuiItem.wrap(GuiComponents.infoItem(plugin, Material.SHIELD, headerNameKey, headerLoreKey)))
 
         for (def in toggles) {
-            val enabled = plugin.config.getBoolean(def.configPath, true)
+            val enabled = plugin.config.getBoolean(def.configPath, def.default)
             set(def.slot, VcGuiItem.wrap(
                 GuiComponents.toggleItem(plugin, enabled, def.labelKey, def.descKey)
             ) { ctx -> toggleSetting(def, ctx.player) })
@@ -77,7 +78,7 @@ class ProtectionMenuView(
     }
 
     private fun toggleSetting(def: ToggleDef, player: Player) {
-        val newValue = !plugin.config.getBoolean(def.configPath, true)
+        val newValue = !plugin.config.getBoolean(def.configPath, def.default)
         plugin.config.set(def.configPath, newValue)
         plugin.saveConfig()
 
