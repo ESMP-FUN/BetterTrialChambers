@@ -24,7 +24,7 @@ import org.bukkit.persistence.PersistentDataType
  * `simultaneous-mobs`, per-player scaling, `ticks-between-spawn`,
  * `spawn-range`) to the placed block. Vanilla only reads these fields from
  * INSIDE `normal_config`/`ominous_config`, and a preset's config is a
- * datapack *reference* string that can't carry per-field overrides — so the
+ * datapack *reference* string that can't carry per-field overrides, so the
  * item NBT cannot express them. Instead they're written here through Paper's
  * [org.bukkit.spawner.TrialSpawnerConfiguration] on top of the resolved
  * datapack config; `state.update()` bakes the merged config into the block.
@@ -59,7 +59,23 @@ class SpawnerPresetPlaceListener(private val plugin: BetterTrialChambers) : List
         // before this fix carry the tag too, so they heal on placement.
         val preset = plugin.spawnerPresetManager.get(presetId)
         if (preset != null && state is TrialSpawner) {
-            applyConfigOverrides(state, preset)
+            // The settings in a preset are whatever an admin typed into
+            // spawner_presets.yml and are not checked on the way in, so a
+            // nonsensical one can be refused here. Kept away from the tag: if
+            // this threw, the update below never ran, the tag written a moment
+            // ago was never saved, and the spawner ended up on the map with no
+            // idea which preset it came from. That quietly loses the ability to
+            // mine it back and to recognise it later. A spawner with default
+            // settings is a much better outcome than a nameless one.
+            try {
+                applyConfigOverrides(state, preset)
+            } catch (e: Exception) {
+                plugin.logger.warning(
+                    "Spawner preset '$presetId' has a setting the server would not accept " +
+                        "(${e.message}); the spawner has been placed with its normal settings. " +
+                        "Check that preset's numbers in spawner_presets.yml."
+                )
+            }
         }
         state.update()
 

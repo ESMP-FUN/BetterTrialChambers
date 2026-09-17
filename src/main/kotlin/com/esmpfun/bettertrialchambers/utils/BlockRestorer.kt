@@ -27,7 +27,7 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
      * Incremental restore session: feed it batches of blocks as they stream off
      * disk and it places them on the correct region threads, so a restore never
      * needs the whole snapshot in memory at once. Call [submitBatch] repeatedly,
-     * then [finish] — which suspends until every scheduled region-thread batch
+     * then [finish], which suspends until every scheduled region-thread batch
      * has actually run (callers rely on this: ResetManager clears vault
      * rewarded_players and resets spawner state immediately after).
      *
@@ -41,6 +41,16 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
     ) {
         private val processed = java.util.concurrent.atomic.AtomicInteger(0)
         private val pendingBatches = java.util.concurrent.atomic.AtomicInteger(0)
+
+        // Blocks that could not be put back, counted rather than reported one by
+        // one. When something systematic is wrong (most likely a snapshot taken
+        // on a newer Minecraft, whose block descriptions this version cannot
+        // read) every single block fails, and a chamber can hold millions of
+        // them. A line each would bury the actual problem under its own output,
+        // which is the same mistake the reset progress lines made before 2.0.11.
+        // The first few are named so there is something concrete to look at.
+        private val failed = java.util.concurrent.atomic.AtomicInteger(0)
+        private val failureExamples = java.util.Collections.synchronizedList(ArrayList<String>())
         private val completionSignal = CompletableDeferred<Unit>()
 
         @Volatile
@@ -61,7 +71,7 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
                         // newer Java than the server runtime throws UnsupportedClassVersionError
                         // (a LinkageError, not an Exception) the moment a WE class is touched.
                         // WorldEdit is only a soft dependency here (//undo integration), so a
-                        // broken/incompatible install must degrade gracefully — never abort the
+                        // broken/incompatible install must degrade gracefully, never abort the
                         // reset. The undo hint is simply skipped.
                         plugin.logger.warning(
                             "WorldEdit //undo integration unavailable (${e.javaClass.simpleName}: ${e.message}); " +
@@ -102,9 +112,7 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
                                 }
                                 processed.incrementAndGet()
                             } catch (e: Exception) {
-                                plugin.logger.warning(
-                                    "Failed to restore block at ${location.blockX},${location.blockY},${location.blockZ}: ${e.message}"
-                                )
+                                noteFailure(location, e.message)
                             }
                         }
                         onProgress?.invoke(processed.get(), expectedTotal)
@@ -141,7 +149,35 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
                     plugin.logger.warning("Failed to finalize WorldEdit session: ${e.message}")
                 }
             }
+            reportFailures()
             return processed.get()
+        }
+
+        /** Records one block that could not be put back. */
+        fun noteFailure(location: Location, reason: String?) {
+            val n = failed.incrementAndGet()
+            if (n <= FAILURE_EXAMPLES) {
+                failureExamples.add(
+                    "${location.blockX},${location.blockY},${location.blockZ}" +
+                        (reason?.let { " ($it)" } ?: "")
+                )
+            }
+        }
+
+        /** One summary at the end, rather than a line per block. */
+        private fun reportFailures() {
+            val n = failed.get()
+            if (n == 0) return
+            plugin.logger.warning(
+                "$n block(s) could not be put back and were left as they were. " +
+                    "This usually means the snapshot was taken on a newer version of " +
+                    "Minecraft than this server is running. Taking a fresh snapshot of " +
+                    "the chamber on this version fixes it."
+            )
+            val examples = failureExamples.toList()
+            if (examples.isNotEmpty()) {
+                plugin.logger.warning("First ${examples.size} of them: ${examples.joinToString("; ")}")
+            }
         }
 
         private fun chunkKey(location: Location): Long =
@@ -195,7 +231,7 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
      *
      * Snapshots skip air to save space (see [com.esmpfun.bettertrialchambers.managers.SnapshotManager]),
      * so [restoreBlocks] alone never reverts blocks placed into formerly-empty
-     * cells — lava, cobble, anything. This pass walks the chamber volume and
+     * cells, lava, cobble, anything. This pass walks the chamber volume and
      * sets every cell that is (a) not present in the snapshot and (b) currently
      * non-air back to AIR, so player additions don't survive a reset.
      *
@@ -274,6 +310,9 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
     }
 
     companion object {
+        /** How many failing block positions to name before just counting them. */
+        const val FAILURE_EXAMPLES = 5
+
         /** Pack block coords into a single long (vanilla BlockPos layout: 26/12/26 bits x/y/z). */
         fun pack(x: Int, y: Int, z: Int): Long =
             ((x.toLong() and 0x3FFFFFF) shl 38) or ((z.toLong() and 0x3FFFFFF) shl 12) or (y.toLong() and 0xFFF)
@@ -298,25 +337,54 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
     private fun restoreBlock(location: Location, snapshot: BlockSnapshot) {
         val block = location.block
 
-        // Parse and set block data
-        try {
-            // CRITICAL FIX: Reset trial spawner state to waiting_for_players
-            // If the snapshot was taken while spawners were in cooldown state,
-            // they would be restored in cooldown and not drop keys for 30 minutes!
-            val blockDataString = resetTrialSpawnerState(snapshot.blockData)
-            val blockData = Bukkit.createBlockData(blockDataString)
-            block.setBlockData(blockData, false) // Don't apply physics immediately
-        } catch (_: Exception) {
-            plugin.logger.warning("Invalid block data at ${location.blockX},${location.blockY},${location.blockZ}: ${snapshot.blockData}")
-            return
+        // The block's own description, with one correction applied.
+        //
+        // A trial spawner remembers how far through its cycle it was. If the
+        // snapshot happened to be taken while one was cooling down, restoring it
+        // as-is brings it back still cooling down, and it drops no key for the
+        // next half hour. So the saved description is rewritten to put every
+        // trial spawner back at the start.
+        val corrected = try {
+            Bukkit.createBlockData(resetTrialSpawnerState(snapshot.blockData))
+        } catch (e: Exception) {
+            // Thrown on rather than logged here, so the caller can count these
+            // instead of writing a console line for each one. A snapshot from a
+            // newer Minecraft fails on every single block, and a chamber can
+            // hold millions.
+            throw IllegalArgumentException(
+                "cannot read the saved block '${snapshot.blockData}'", e
+            )
         }
 
-        // Restore tile entity data if present
+        val contents = snapshot.structure
+        if (contents != null) {
+            // Puts the block back together with everything it was holding, in
+            // one step, the way the game itself would.
+            if (BlockEntityCapture.restore(plugin.server, contents, location)) {
+                // That also restored the block's own description, including the
+                // trial spawner state we deliberately reset above, so put the
+                // corrected one back over the top. The block type is the same
+                // either way, so its contents are not disturbed.
+                if (block.blockData.asString != corrected.asString) {
+                    block.setBlockData(corrected, false)
+                }
+                return
+            }
+            // Could not be put back whole. Better a bare block in the right
+            // place than a hole, so fall through and at least set the block.
+            plugin.logger.warning(
+                "Could not put back what the block at ${location.blockX},${location.blockY}," +
+                    "${location.blockZ} was holding; the block itself has been restored."
+            )
+        }
+
+        block.setBlockData(corrected, false) // Don't apply physics immediately
+
+        // Snapshots taken before the change above stored contents as a
+        // hand-built map instead. Still read, so an existing snapshot keeps
+        // working until it is next retaken.
         snapshot.tileEntity?.let { tileEntityData ->
-            val state = block.state
-            if (NBTUtil.restoreTileEntity(state, tileEntityData)) {
-                // Successfully restored tile entity
-            } else {
+            if (!NBTUtil.restoreTileEntity(block.state, tileEntityData)) {
                 plugin.logger.warning("Failed to restore tile entity at ${location.blockX},${location.blockY},${location.blockZ}")
             }
         }

@@ -6,7 +6,7 @@ import java.io.Serializable
 import kotlin.random.Random
 
 /**
- * Pure-logic tests for [CompressionUtil] — no Bukkit, no mocks. Exercises gzip
+ * Pure-logic tests for [CompressionUtil], no Bukkit, no mocks. Exercises gzip
  * roundtripping at sizes that exposed bugs in earlier snapshot work (very small
  * payloads where the gzip header dominates, and the 1MB band that's typical of
  * a small chamber's block array).
@@ -31,7 +31,7 @@ class CompressionUtilTest {
 
     @Test
     fun `roundtrip ASCII text preserves content`() {
-        val original = "BetterTrialChambers v1.3.0 — gzip roundtrip canary".toByteArray(Charsets.UTF_8)
+        val original = "BetterTrialChambers v1.3.0, gzip roundtrip canary".toByteArray(Charsets.UTF_8)
         val decompressed = CompressionUtil.decompress(CompressionUtil.compress(original))
         assertArrayEquals(original, decompressed)
     }

@@ -12,7 +12,7 @@ import org.bukkit.inventory.ItemStack
 class MainMenuHolder : BaseHolder()
 
 /**
- * Main menu view — central hub. v1.4.x flattened the old Settings sub-menu;
+ * Main menu view, central hub. v1.4.x flattened the old Settings sub-menu;
  * v1.5.0 migrated to VcGui.
  */
 class MainMenuView(

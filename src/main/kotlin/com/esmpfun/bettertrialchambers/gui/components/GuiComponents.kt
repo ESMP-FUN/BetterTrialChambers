@@ -19,45 +19,45 @@ import java.util.UUID
  * Material conventions (canonicalised here):
  *
  * Navigation:
- *   - Back           → ARROW
- *   - Close          → BARRIER
- *   - Prev page      → SPECTRAL_ARROW
- *   - Next page      → TIPPED_ARROW
+ *   - Back           -> ARROW
+ *   - Close          -> BARRIER
+ *   - Prev page      -> SPECTRAL_ARROW
+ *   - Next page      -> TIPPED_ARROW
  *
  * Action buttons (verbs the player performs):
- *   - Add            → LIME_DYE      (e.g. "Add from hand", "+ New pool")
- *   - Remove         → RED_DYE
- *   - Save           → GREEN_CONCRETE
- *   - Discard/Cancel → RED_CONCRETE
- *   - Adjust/Cycle   → YELLOW_CONCRETE
- *   - Reset (one-shot) → CYAN_CONCRETE
- *   - Empty placeholder → BARRIER (or LIGHT_GRAY_STAINED_GLASS_PANE for inline)
+ *   - Add            -> LIME_DYE      (e.g. "Add from hand", "+ New pool")
+ *   - Remove         -> RED_DYE
+ *   - Save           -> GREEN_CONCRETE
+ *   - Discard/Cancel -> RED_CONCRETE
+ *   - Adjust/Cycle   -> YELLOW_CONCRETE
+ *   - Reset (one-shot) -> CYAN_CONCRETE
+ *   - Empty placeholder -> BARRIER (or LIGHT_GRAY_STAINED_GLASS_PANE for inline)
  *
  * State indicators (the item *is* the state, not an action):
- *   - Toggle ON      → LIME_WOOL     (used by [toggleItem])
- *   - Toggle OFF     → RED_WOOL      (used by [toggleItem])
+ *   - Toggle ON      -> LIME_WOOL     (used by [toggleItem])
+ *   - Toggle OFF     -> RED_WOOL      (used by [toggleItem])
  *
  * Settings categories:
- *   - General/numeric setting → COMPARATOR
- *   - Reload/refresh           → REPEATER
- *   - Advanced/admin           → COMMAND_BLOCK
+ *   - General/numeric setting -> COMPARATOR
+ *   - Reload/refresh           -> REPEATER
+ *   - Advanced/admin           -> COMMAND_BLOCK
  *
  * Domain icons (semantic, override the above when the meaning is obvious):
- *   - Time/duration setting    → CLOCK
- *   - Spawner/cooldown         → SPAWNER
- *   - Mob provider             → ZOMBIE_HEAD (avoid SPAWNER to prevent collision
+ *   - Time/duration setting    -> CLOCK
+ *   - Spawner/cooldown         -> SPAWNER
+ *   - Mob provider             -> ZOMBIE_HEAD (avoid SPAWNER to prevent collision
  *                                with the spawner-cooldown icon on the same screen)
- *   - Chamber overview entry   → LODESTONE
- *   - Vault                    → VAULT
- *   - Teleport                 → ENDER_PEARL
- *   - Exit/door                → OAK_DOOR
- *   - Snapshot/inspect         → SPYGLASS
- *   - Loot pool / chest        → CHEST
- *   - Normal vault loot        → GREEN_WOOL  (color-keyed)
- *   - Ominous vault loot       → PURPLE_WOOL (color-keyed)
- *   - Loot override (set)      → ENCHANTED_BOOK
- *   - Loot override (default)  → BOOK
- *   - Information / hint card  → PAPER (text) or KNOWLEDGE_BOOK (info dump)
+ *   - Chamber overview entry   -> LODESTONE
+ *   - Vault                    -> VAULT
+ *   - Teleport                 -> ENDER_PEARL
+ *   - Exit/door                -> OAK_DOOR
+ *   - Snapshot/inspect         -> SPYGLASS
+ *   - Loot pool / chest        -> CHEST
+ *   - Normal vault loot        -> GREEN_WOOL  (color-keyed)
+ *   - Ominous vault loot       -> PURPLE_WOOL (color-keyed)
+ *   - Loot override (set)      -> ENCHANTED_BOOK
+ *   - Loot override (default)  -> BOOK
+ *   - Information / hint card  -> PAPER (text) or KNOWLEDGE_BOOK (info dump)
  */
 object GuiComponents {
 
@@ -142,16 +142,16 @@ object GuiComponents {
 
     // ==================== VcGui nav helpers ====================
     //
-    // Navigation buttons that bundle a click handler — these return
+    // Navigation buttons that bundle a click handler, these return
     // `VcGuiItem` directly because the click behavior is the helper's value.
-    // The `Vc` prefix is a historical artifact of the v1.5.0 IF→VcGui
+    // The `Vc` prefix is a historical artifact of the v1.5.0 IF->VcGui
     // migration; the old IF-returning `backButton`/`closeButton`/etc. lived
     // here in parallel during the transition. The names can collapse to
-    // unprefixed (`backItem` etc.) in a future renaming pass — held off for
+    // unprefixed (`backItem` etc.) in a future renaming pass, held off for
     // now to keep the v1.5.0 diff focused.
     //
     // ItemStack-returning helpers above (infoItem, toggleItem, playerHead)
-    // are framework-agnostic — views wrap with `VcGuiItem.wrap(stack, onClick = ...)`.
+    // are framework-agnostic, views wrap with `VcGuiItem.wrap(stack, onClick = ...)`.
 
     /** Back-button as a `VcGuiItem`. */
     fun backVcItem(

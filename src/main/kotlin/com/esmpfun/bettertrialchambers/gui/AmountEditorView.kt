@@ -17,7 +17,7 @@ import org.bukkit.inventory.ItemStack
 class AmountEditorHolder : BaseHolder()
 
 /**
- * Amount editor — adjusts min/max stack range for a single LootItem in a draft.
+ * Amount editor, adjusts min/max stack range for a single LootItem in a draft.
  * v1.3.0; migrated to VcGui in v1.5.0.
  */
 class AmountEditorView(
@@ -124,7 +124,7 @@ class AmountEditorView(
             "gui.amount-editor.redeemable-lore-${scope.name.lowercase()}")
     }
 
-    /** Cycles PER_RESET → PER_CHAMBER → ONCE → PER_RESET, assigning a stable id when capped. */
+    /** Cycles PER_RESET -> PER_CHAMBER -> ONCE -> PER_RESET, assigning a stable id when capped. */
     private fun handleRedeemableClick() {
         val next = when (currentItem.redeemScope) {
             RedeemScope.PER_RESET -> RedeemScope.PER_CHAMBER
@@ -151,7 +151,7 @@ class AmountEditorView(
         // Keep the range coherent (1 <= min <= max <= 64). Previously "Minimum +N"
         // was clamped to the current max, so on a freshly-added item (min=1, max=1)
         // it silently did nothing. Now a Minimum bump carries the Maximum up with it,
-        // and a Maximum cut pulls the Minimum down — so every button visibly responds.
+        // and a Maximum cut pulls the Minimum down, so every button visibly responds.
         if (min > max) {
             if (shift) min = max else max = min
         }

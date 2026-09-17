@@ -57,9 +57,21 @@ fun Plugin.entityDispatcher(scheduler: SchedulerAdapter, entity: Entity): Corout
 }
 
 /**
- * Legacy dispatcher for backwards compatibility.
- * Prefer using minecraftDispatcher(scheduler) for new code.
+ * Legacy dispatcher, kept only so nothing outside this plugin breaks.
+ *
+ * **Do not use it.** It hands work to the server's own scheduler, and Folia
+ * refuses that call outright, so anything routed through this simply throws
+ * there. It had one caller left, pasting a schematic, which meant that whole
+ * feature was broken on Folia rather than merely running in the wrong place.
+ *
+ * Use one of the three above instead, picked by what the work touches:
+ * [locationDispatcher] for blocks, [entityDispatcher] for a player or mob, and
+ * [minecraftDispatcher] taking a scheduler for anything global.
  */
+@Deprecated(
+    message = "Throws on Folia. Use locationDispatcher / entityDispatcher / minecraftDispatcher(scheduler).",
+    level = DeprecationLevel.WARNING,
+)
 val Plugin.minecraftDispatcher: CoroutineDispatcher
     get() = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) {

@@ -5,14 +5,14 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Shared, render-agnostic engine behind `/trial setup` — both the Dialog and chat tours call
+ * Shared, render-agnostic engine behind `/trial setup`, both the Dialog and chat tours call
  * this. Owns per-player progress and applies setting changes.
  *
  * Applying a change reuses the exact path the admin GUI already ships
  * ([com.esmpfun.bettertrialchambers.gui.GlobalSettingsView]): `config.set` +
  * `saveConfig`. The curated settings are all read live from config on each use (verified:
  * e.g. `ChamberDiscoveryListener` gates on `discovery.enabled` per event), so changes take
- * effect immediately — no manager re-init required.
+ * effect immediately, no manager re-init required.
  */
 class SetupController(
     private val plugin: BetterTrialChambers,
@@ -72,7 +72,7 @@ class SetupController(
     fun stop(uuid: UUID) {
         progress.remove(uuid)
         state.clearPaused(uuid)
-        // Bailed without finishing, and the initial weekly-reminder window is already spent →
+        // Bailed without finishing, and the initial weekly-reminder window is already spent ->
         // arm one gentle "you started but didn't finish" nudge a week from now.
         if (!state.completed &&
             state.reminderCount >= SetupReminderService.MAX_REMINDERS &&
@@ -97,7 +97,7 @@ class SetupController(
         plugin.saveConfig()
     }
 
-    // ── reading current values (for the "Currently: …" line) ──────────────────
+    // ── reading current values (for the "Currently: ..." line) ──────────────────
 
     fun isEnabled(path: String, default: Boolean): Boolean =
         plugin.config.getBoolean(path, default)

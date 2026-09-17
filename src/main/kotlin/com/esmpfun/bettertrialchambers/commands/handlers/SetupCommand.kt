@@ -8,17 +8,17 @@ import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 
 /**
- * `/trial setup` — the opt-in settings tour.
+ * `/trial setup`, the opt-in settings tour.
  *
  *   /trial setup [start]   start the tour from the top
  *   /trial setup continue  resume a paused tour
  *
  * Internal actions the clickable-chat buttons route back to (also usable by hand):
- *   enable|disable|skip <index> · set <index> <optionId> · pause <index> · stop
+ *   enable|disable|skip <index>, set <index> <optionId>, pause <index>, stop
  *
  * Dialog is the primary UI; on servers without Paper's Dialog API the clickable-chat tour
  * is used instead. The Dialog renderer references Paper-only classes, so it's instantiated
- * **only when available** — on other servers its class is never loaded.
+ * **only when available**, on other servers its class is never loaded.
  */
 class SetupCommand(
     private val plugin: BetterTrialChambers,
@@ -29,7 +29,7 @@ class SetupCommand(
 
     // The check is inline rather than a helper on DialogPromptManager: naming that
     // class would make the JVM link it, and on a server without the Dialog API
-    // linking it fails — which is the very thing the check exists to avoid.
+    // linking it fails, which is the very thing the check exists to avoid.
     private val dialogTour: com.esmpfun.bettertrialchambers.setup.SetupTourDialog? =
         if (runCatching { Class.forName("io.papermc.paper.dialog.Dialog") }.isSuccess)
             com.esmpfun.bettertrialchambers.setup.SetupTourDialog(plugin, controller)
@@ -99,7 +99,7 @@ class SetupCommand(
         return i
     }
 
-    /** Chat-path continuation: show the step after [index] (chat renderer; commands → chat). */
+    /** Chat-path continuation: show the step after [index] (chat renderer; commands -> chat). */
     private fun renderNext(player: Player, index: Int) {
         val next = index + 1
         if (next >= controller.stepCount) chatTour.complete(player) else chatTour.render(player, next)

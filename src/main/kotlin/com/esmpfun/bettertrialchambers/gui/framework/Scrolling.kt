@@ -3,8 +3,8 @@ package com.esmpfun.bettertrialchambers.gui.framework
 /**
  * Direction a [Scrolling] strategy advances.
  *
- * - `VERTICAL` — each step moves the viewport down by one row.
- * - `HORIZONTAL` — each step moves the viewport right by one column.
+ * - `VERTICAL`, each step moves the viewport down by one row.
+ * - `HORIZONTAL`, each step moves the viewport right by one column.
  *   Useful for tabbed horizontal browsing of wide item collections.
  */
 enum class ScrollOrientation { VERTICAL, HORIZONTAL }
@@ -12,11 +12,11 @@ enum class ScrollOrientation { VERTICAL, HORIZONTAL }
 /**
  * Scrolling viewport strategy. Renders a rectangular viewport of items
  * from a 2D-ish source, scrolling one row or column at a time. Useful
- * when the data set is large but the GUI shape is constrained — think
+ * when the data set is large but the GUI shape is constrained, think
  * "all available mob types" or "list of every server-side trigger
  * across 8 worlds."
  *
- * Composable utility — instantiate on a [VcGui] subclass and call
+ * Composable utility, instantiate on a [VcGui] subclass and call
  * [applyTo] in [VcGui.render].
  *
  * ```

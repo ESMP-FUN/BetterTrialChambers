@@ -1,94 +1,80 @@
 # Example Setups
 
-BetterTrialChambers is a big plugin with ten-plus subsystems (resets, snapshots, protection, statistics, leaderboards, spawner waves, spectator mode, custom mob providers, …). You don't have to use all of them — most are designed to be turned off cleanly, and the ones you keep stay on independently.
-
-This page collects ready-to-paste config recipes for common "I only want X" setups.
+Ready-to-paste `config.yml` recipes for common "I only want one thing" setups. BetterTrialChambers has many subsystems (resets, snapshots, protection, statistics, leaderboards, spawner waves, spectator mode, custom mob providers). Each can be turned off on its own without affecting the others.
 
 {% hint style="info" %}
-All recipes only touch the keys that matter for that setup. Everything else stays at default — paste these on top of a fresh `config.yml` and you're done. Run `/trial reload` after editing.
+Each recipe only sets the keys that matter for that setup. Everything else stays at its default. Paste onto a fresh `config.yml`, then run `/trial reload`.
 {% endhint %}
 
 ***
 
-## Recipe: Reusable Vaults Only
+## Recipe: reusable vaults only
 
-> _"I just want players to be able to open the same vault more than once. I don't want chamber resets, snapshots, protection, stats, or any of that. Pretend BTC is a vault-cooldown plugin."_
-
-This is the leanest possible install. Players explore Trial Chambers as vanilla generates them, and BTC only does one thing: tracks a per-player cooldown on each vault so the same player can reopen the same vault after the cooldown expires. Other players are unaffected — each player has their own cooldown.
+Use BTC as a vault-cooldown plugin and nothing else. Players explore vanilla-generated Trial Chambers; BTC only tracks a per-player cooldown on each vault.
 
 ### What you get
 
-* Vault that player A opened is **still openable by player B** immediately (per-player cooldowns).
-* After `normal-cooldown-hours`, player A can reopen the **same vault** for a fresh loot roll.
-* Chambers never reset, never get snapshotted, never get protected, never get scanned for stats.
-* No `/trial generate` needed — chambers are auto-discovered as players explore.
+* A vault opened by player A is still openable by player B right away. Each player has their own cooldown.
+* After `normal-cooldown-hours`, player A can reopen the same vault for fresh loot.
+* Chambers are never reset, snapshotted, protected, or scanned for stats.
+* No `/trial generate` needed. Chambers are registered automatically as players walk into them.
 
 ### config.yml
 
 ```yaml
 discovery:
-  enabled: true              # auto-register Trial Chambers as players find them
-                             # — you never have to /trial generate anything
+  enabled: true              # auto-register chambers as players find them
 
 global:
-  default-reset-interval: 0  # disables all automatic chamber resets
-                             # → no block restoration, no snapshots needed, no TPS cost
+  default-reset-interval: 0  # no automatic resets, so no snapshots needed
 
 vaults:
-  normal-cooldown-hours: 1   # how long until a player can reopen the SAME vault
-  ominous-cooldown-hours: 1  # set to whatever feels right — 1, 6, 24 …
-                             # set to 0 for "immediately reusable"
+  normal-cooldown-hours: 1   # hours until a player can reopen the SAME vault
+  ominous-cooldown-hours: 1  # 0 = reopenable immediately
 
 protection:
-  enabled: false             # off — players can mine / build inside chambers
+  enabled: false             # players can mine and build inside chambers
 
 statistics:
-  enabled: false             # off — no DB writes for kills / vault opens / chamber time
+  enabled: false             # no stat tracking
 
 spawner-waves:
-  enabled: false             # off — vanilla trial spawners behave exactly as Mojang ships them
+  enabled: false             # trial spawners behave exactly as in vanilla
 
 spectator-mode:
-  enabled: false             # off — no spectate-on-death prompt
+  enabled: false             # no spectate-on-death prompt
 ```
 
-### How it works
-
-The vault-cooldown system is the **only** part of BTC that runs in this configuration. When a player right-clicks a Trial Vault, the [`VaultInteractListener`](../reference/commands.md) checks:
-
-1. Is this vault inside a registered chamber? If no — vanilla behavior (no per-player cooldown).
-2. Has this **specific player** opened this **specific vault** in the last `normal-cooldown-hours`? If yes — show "already opened" message. If no — open it, consume the key, give the loot, record the timestamp.
-
-That's it. No background scheduler runs, no protection listeners fire, no statistics queries hit the database.
-
 {% hint style="warning" %}
-**Auto-discovery is required.** Without `discovery.enabled: true`, vaults in chambers that BTC doesn't know about behave like vanilla — there's no per-player cooldown at all. Auto-discovery quietly registers chambers as players walk into them, so this stays zero-touch.
+`discovery.enabled: true` is required. Without it, BTC does not know about any chamber, and vaults behave like vanilla with no per-player cooldown.
 {% endhint %}
 
-### Tuning the cooldown
+### Cooldown values
 
-| `normal-cooldown-hours` | Effect                                                                                           |
-| ----------------------- | ------------------------------------------------------------------------------------------------ |
-| `0`                     | Vault is reusable **immediately** by the same player. Useful for skill-arena / minigame servers. |
-| `1`                     | Reusable after 1 hour. A casual mid-session reset.                                               |
-| `6`                     | Reusable after 6 hours. Once-per-play-session feel for most players.                             |
-| `24`                    | Once per day per player. Vanilla-but-renewable.                                                  |
-| `168`                   | Once per week per player. Vanilla-but-eventually-renewable.                                      |
+`normal-cooldown-hours` sets how long before the same player can reopen the same vault:
 
-`ominous-cooldown-hours` controls the cooldown on ominous vaults (the ones unlocked by Ominous Trial Keys) — typically longer than normal vaults since the loot is better, but it's your call.
+| Value | Effect |
+| --- | --- |
+| `0` | Reopenable immediately. For skill-arena and minigame servers. |
+| `1` | Reopenable after 1 hour. |
+| `6` | Reopenable after 6 hours. Roughly once per play session. |
+| `24` | Once per day per player. |
+| `168` | Once per week per player. |
+
+`ominous-cooldown-hours` is the same setting for ominous vaults (unlocked with Ominous Trial Keys). Set it longer than the normal cooldown since the loot is better, or match them.
 
 ***
 
 ## Other minimal setups
 
-If your "just one thing" is different from the recipe above, the same idea applies — turn off the systems you don't care about by flipping their top-level `enabled` flag:
+To drop a subsystem you do not want, set its top-level `enabled` to `false`:
 
-| Setting                  | What it disables when set to `false`                                                            |
-| ------------------------ | ----------------------------------------------------------------------------------------------- |
-| `protection.enabled`     | All chamber protection (block break/place, container access, mob griefing, PvP rules)           |
-| `statistics.enabled`     | DB writes for player stats; `/trial stats` and `/trial leaderboard` show no data                    |
-| `spawner-waves.enabled`  | Boss-bar wave tracking; trial spawners revert to vanilla behavior                               |
-| `spectator-mode.enabled` | The "press to spectate on death" prompt                                                         |
-| `discovery.enabled`      | Auto-registration of naturally-generated chambers (you'd register manually via `/trial generate`) |
+| Setting | What `false` disables |
+| --- | --- |
+| `protection.enabled` | All chamber protection (block break/place, container access, mob griefing, PvP rules) |
+| `statistics.enabled` | Player stat tracking; `/trial stats` and `/trial leaderboard` show no data |
+| `spawner-waves.enabled` | Boss-bar wave tracking; trial spawners revert to vanilla behaviour |
+| `spectator-mode.enabled` | The spectate-on-death prompt |
+| `discovery.enabled` | Auto-registration of chambers (you would register manually with `/trial generate`) |
 
-Combine them however you like. BTC is built so each subsystem stands alone — flipping one to `false` won't break any of the others.
+Combine these freely. Turning one off does not affect the others.

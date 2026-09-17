@@ -277,6 +277,23 @@ class SpectatorManager(private val plugin: BetterTrialChambers) {
     }
 
     /**
+     * Puts anybody the server stopped on mid-spectate back as they were.
+     *
+     * The same check runs when a player joins, but it needs the plugin to have
+     * finished starting, and on a restart people are often back before that.
+     * Those players kept the spectator view with nothing to take it off them
+     * until they logged out and in again, so everyone already online is checked
+     * once the plugin is ready.
+     */
+    fun restoreCrashedSpectators() {
+        for (player in plugin.server.onlinePlayers) {
+            plugin.scheduler.runAtEntity(player, Runnable {
+                if (player.isOnline) restoreCrashedSpectator(player)
+            })
+        }
+    }
+
+    /**
      * Gets all spectators for a specific chamber.
      */
     fun getSpectatorsForChamber(chamberId: Int): List<Player> {
@@ -304,7 +321,7 @@ class SpectatorManager(private val plugin: BetterTrialChambers) {
     /**
      * Cleans up when a player disconnects.
      *
-     * v1.7.2: restores the previous gamemode/location synchronously — the quit
+     * v1.7.2: restores the previous gamemode/location synchronously, the quit
      * event runs on the player's thread and the player entity is still valid.
      * Previously the data was just dropped, so logging out while spectating
      * left the player in SPECTATOR (at the chamber) on their next join.
@@ -317,7 +334,7 @@ class SpectatorManager(private val plugin: BetterTrialChambers) {
             player.teleport(data.previousLocation)
             clearRecoveryData(player)
         }.onFailure {
-            plugin.logger.warning("[Spectator] Could not restore ${player.name} on quit: ${it.message} — join-time recovery will handle it.")
+            plugin.logger.warning("[Spectator] Could not restore ${player.name} on quit: ${it.message}, join-time recovery will handle it.")
         }
     }
 
@@ -335,11 +352,18 @@ class SpectatorManager(private val plugin: BetterTrialChambers) {
      * Shuts down the spectator manager.
      */
     fun shutdown() {
-        // Exit all spectators
-        spectators.keys.toList().forEach { uuid ->
-            val player = plugin.server.getPlayer(uuid)
-            if (player != null) {
-                exitSpectatorMode(player, teleportToExit = false)
+        // Put every spectator back here and now rather than asking the server to
+        // do it in a moment: the plugin is stopping, and anything scheduled is
+        // dropped. That left a player stood in the spectator view with nothing
+        // left to take them out of it, until they logged out and in again.
+        // Their recovery data is only cleared once the change has gone through,
+        // so if this cannot be done here, rejoining still fixes it.
+        spectators.entries.toList().forEach { (uuid, data) ->
+            val player = plugin.server.getPlayer(uuid) ?: return@forEach
+            runCatching {
+                if (player.gameMode == GameMode.SPECTATOR) player.gameMode = data.previousGameMode
+                clearRecoveryData(player)
+                player.sendMessage(plugin.getMessageComponent("spectate-exited"))
             }
         }
         spectators.clear()

@@ -15,16 +15,16 @@ import org.bukkit.event.world.WorldUnloadEvent
  * Maintains [com.esmpfun.bettertrialchambers.managers.TrialSpawnerIndex]
  * in lock-step with the world.
  *
- * **Chunk load** — re-scan the chunk's tile entities for `TRIAL_SPAWNER` and
+ * **Chunk load**, re-scan the chunk's tile entities for `TRIAL_SPAWNER` and
  * replace the index's entries for that chunk. Cheap (no block iteration; uses
  * the cached tile-entity list). Catches spawners that were broken while the
  * chunk was unloaded.
  *
- * **Block break / place** — keep the index live as players modify the world.
+ * **Block break / place**, keep the index live as players modify the world.
  * MONITOR priority + `ignoreCancelled = true` so cancelled events (by
  * `ProtectionListener` or third-party plugins) don't desync the index.
  *
- * **Chunk unload / world unload** — no-op / drop world index. We keep
+ * **Chunk unload / world unload**, no-op / drop world index. We keep
  * unloaded-chunk entries in memory because (a) the spawner-wave proximity
  * query only inspects chunks near the player, which are loaded by definition,
  * and (b) on reload the chunk's scan-pass replaces stale entries anyway. The
@@ -56,7 +56,7 @@ class TrialSpawnerIndexListener(private val plugin: BetterTrialChambers) : Liste
     /**
      * Optional: a chunk going unloaded doesn't invalidate our cached entries
      * (we'll rescan on reload), but if memory pressure becomes a concern we
-     * could evict here. Currently a no-op — see class doc.
+     * could evict here. Currently a no-op, see class doc.
      */
     @Suppress("unused")
     fun onChunkUnload(event: ChunkUnloadEvent) {

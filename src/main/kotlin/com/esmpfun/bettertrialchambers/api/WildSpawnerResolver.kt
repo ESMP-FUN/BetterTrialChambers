@@ -7,13 +7,13 @@ import org.bukkit.Location
  * mobs, and if so, which provider + mob ids?".
  *
  * **Why this exists:** TCP's free-tier custom mob provider system
- * (v1.3.0+) only intercepts spawns inside a *registered chamber* — see the
+ * (v1.3.0+) only intercepts spawns inside a *registered chamber*; see the
  * `chamber != null && chamber.hasCustomMobProvider(...)` gate at
  * `SpawnerWaveListener.kt`. Wild spawners (placed by players, often from
  * a `/trial give <preset>` item) skip the intercept entirely and spawn
  * whatever vanilla mob their datapack config defines. Lifting this
  * limitation is part of the planned premium "Wild Custom-Mob Spawners"
- * module — but the *seam* lives in the free plugin so the premium module
+ * module. But the *seam* lives in the free plugin so the premium module
  * can register a resolver and TCP will consult it transparently.
  *
  * **How a premium / third-party module integrates:**

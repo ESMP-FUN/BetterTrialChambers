@@ -74,7 +74,7 @@ class MenuService(private val plugin: BetterTrialChambers) {
         LEADERBOARD,
         PLAYER_STATS,
 
-        // Settings (top-level — no intermediate menu since v1.4.x)
+        // Settings (top-level, no intermediate menu since v1.4.x)
         GLOBAL_SETTINGS,
         PROTECTION_MENU,
         CUSTOM_MOB_PROVIDER,
@@ -95,7 +95,7 @@ class MenuService(private val plugin: BetterTrialChambers) {
          * Every chamber-scoped loot GUI must resolve through this. Before v2.0.3 the
          * views hardcoded [conventionalTableName], so setting an override made the
          * detail view keep showing (and the editor keep writing) `chamber-<name>`
-         * while vaults rolled the override — edits appeared to silently do nothing.
+         * while vaults rolled the override, edits appeared to silently do nothing.
          */
         fun effectiveTableName(chamber: Chamber, kind: LootKind): String =
             when (kind) {
@@ -252,7 +252,7 @@ class MenuService(private val plugin: BetterTrialChambers) {
         // Warm vault counts cache
         warmVaultCountsCache()
 
-        // v1.5.0 — VcGui pattern.
+        // v1.5.0, VcGui pattern.
         val view = ChamberListView(plugin, this, player, page)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.CHAMBER_LIST
@@ -262,7 +262,7 @@ class MenuService(private val plugin: BetterTrialChambers) {
     }
 
     fun openChamberDetail(player: Player, chamber: Chamber) {
-        // v1.5.0 — VcGui pattern.
+        // v1.5.0, VcGui pattern.
         val view = ChamberDetailView(plugin, this, chamber)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.CHAMBER_DETAIL
@@ -273,7 +273,23 @@ class MenuService(private val plugin: BetterTrialChambers) {
         view.open(player)
     }
 
+    /**
+     * Stops a screen opening for someone who is not allowed to use what is on
+     * it, and says so.
+     *
+     * Opening the menu needs `btc.admin.menu`, which on its own is meant to be
+     * "let them look". The screens that change something ask for the same
+     * permission their command does, so giving a junior moderator the menu does
+     * not quietly give them everything in it.
+     */
+    private fun denied(player: Player, permission: String): Boolean {
+        if (player.hasPermission(permission)) return false
+        player.sendMessage(plugin.getMessageComponent("no-permission"))
+        return true
+    }
+
     fun openChamberSettings(player: Player, chamber: Chamber) {
+        if (denied(player, "btc.admin.reload")) return
         val view = ChamberSettingsView(plugin, this, chamber)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.CHAMBER_SETTINGS
@@ -283,6 +299,7 @@ class MenuService(private val plugin: BetterTrialChambers) {
     }
 
     fun openVaultManagement(player: Player, chamber: Chamber) {
+        if (denied(player, "btc.admin.vault")) return
         val view = VaultManagementView(plugin, this, chamber)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.VAULT_MANAGEMENT
@@ -292,6 +309,7 @@ class MenuService(private val plugin: BetterTrialChambers) {
     }
 
     fun openContainerLoot(player: Player, chamber: Chamber, page: Int = 0) {
+        if (denied(player, "btc.admin.containers")) return
         val view = ContainerLootView(plugin, this, chamber, page)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.CONTAINER_LOOT
@@ -304,18 +322,20 @@ class MenuService(private val plugin: BetterTrialChambers) {
     // ==================== Loot Screens ====================
 
     fun openLootTableList(player: Player) {
-        // v1.5.0 — VcGui pattern.
+        if (denied(player, "btc.admin.loot")) return
+        // v1.5.0, VcGui pattern.
         val view = LootTableListView(plugin, this)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.LOOT_TABLE_LIST
-            // Leave globalLootEdit state alone — the list itself isn't a loot editor
+            // Leave globalLootEdit state alone, the list itself isn't a loot editor
             // screen, and the flag governs restoration of editor/pool/amount screens.
         }
         view.open(player)
     }
 
     fun openPoolSelect(player: Player, chamber: Chamber, kind: LootKind) {
-        // Short-circuit for legacy/missing tables — open the editor directly
+        if (denied(player, "btc.admin.loot")) return
+        // Short-circuit for legacy/missing tables, open the editor directly
         // (the old IF view returned an empty ChestGui in this case, which the
         // VcGui rewrite can't do cleanly from super(...)).
         val tableName = effectiveTableName(chamber, kind)
@@ -336,9 +356,10 @@ class MenuService(private val plugin: BetterTrialChambers) {
     }
 
     fun openLootEditor(player: Player, chamber: Chamber, kind: LootKind, poolName: String? = null) {
+        if (denied(player, "btc.admin.loot")) return
         val key = draftKey(chamber.id, kind, poolName)
         val draft = sessions[player.uniqueId]?.drafts?.get(key)
-        // v1.5.0 — VcGui pattern: construct + open in one step, no separate build/show.
+        // v1.5.0, VcGui pattern: construct + open in one step, no separate build/show.
         val view = LootEditorView(plugin, this, chamber, kind, poolName, existingDraft = draft)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.LOOT_EDITOR
@@ -374,6 +395,7 @@ class MenuService(private val plugin: BetterTrialChambers) {
     // ==================== Global (non-chamber) Loot Editing ====================
 
     fun openGlobalPoolSelect(player: Player, tableName: String) {
+        if (denied(player, "btc.admin.loot")) return
         // Use OMINOUS kind hint for ominous-prefixed tables so any icon heuristics still work;
         // this value is ignored in global flow.
         val kindHint = if (tableName.startsWith("ominous", ignoreCase = true)) LootKind.OMINOUS else LootKind.NORMAL
@@ -396,10 +418,11 @@ class MenuService(private val plugin: BetterTrialChambers) {
     }
 
     fun openGlobalLootEditor(player: Player, tableName: String, poolName: String? = null) {
+        if (denied(player, "btc.admin.loot")) return
         val kindHint = if (tableName.startsWith("ominous", ignoreCase = true)) LootKind.OMINOUS else LootKind.NORMAL
         val key = globalDraftKey(tableName, poolName)
         val draft = sessions[player.uniqueId]?.drafts?.get(key)
-        // v1.5.0 — VcGui pattern: construct + open in one step.
+        // v1.5.0, VcGui pattern: construct + open in one step.
         val view = LootEditorView(
             plugin, this,
             chamber = null,
@@ -478,7 +501,7 @@ class MenuService(private val plugin: BetterTrialChambers) {
     }
 
     fun openLeaderboard(player: Player, type: String) {
-        // v1.5.0 — VcGui pattern.
+        // v1.5.0, VcGui pattern.
         val view = LeaderboardView(plugin, this, player, type)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.LEADERBOARD
@@ -502,6 +525,7 @@ class MenuService(private val plugin: BetterTrialChambers) {
     // directly from the main menu.
 
     fun openGlobalSettings(player: Player) {
+        if (denied(player, "btc.admin.reload")) return
         val view = GlobalSettingsView(plugin, this)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.GLOBAL_SETTINGS
@@ -510,6 +534,7 @@ class MenuService(private val plugin: BetterTrialChambers) {
     }
 
     fun openProtectionMenu(player: Player) {
+        if (denied(player, "btc.admin.reload")) return
         val view = ProtectionMenuView(plugin, this)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.PROTECTION_MENU
@@ -544,7 +569,7 @@ class MenuService(private val plugin: BetterTrialChambers) {
 
     /** Opens the bulk loot-deposit chest (drag items in to add them faithfully). */
     fun openLootDeposit(player: Player, chamber: Chamber?, kind: LootKind, poolName: String?, globalTableName: String?) {
-        // v1.5.0 — VcGui-backed; close handling lives in LootDepositView.handleClose.
+        // v1.5.0, VcGui-backed; close handling lives in LootDepositView.handleClose.
         LootDepositView(plugin, this, chamber, kind, poolName, globalTableName).open(player)
     }
 

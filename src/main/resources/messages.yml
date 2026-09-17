@@ -1,6 +1,6 @@
 # BetterTrialChambers Messages
 # =====================================================================
-# v1.4.0+ — MiniMessage support is now first-class.
+# v1.4.0+: MiniMessage support is now first-class.
 #
 # You can use either (or mix both in the same line):
 #
@@ -17,7 +17,7 @@
 # Note: chat messages (sent via player.sendMessage) get full MiniMessage
 # fidelity in v1.4.0+. Boss bars, GUI item names, and lore also have
 # full fidelity. Some MM features (gradients, click, hover) require
-# Component-based delivery — BTC routes them correctly automatically.
+# Component-based delivery. BTC routes them correctly automatically.
 #
 # Available placeholders vary by message; see surrounding comments.
 # =====================================================================
@@ -32,8 +32,11 @@ unknown-command: "&cUnknown subcommand. Use /trial help for help."
 
 # Chamber management
 chamber-created: "&aChamber &e{chamber}&a created successfully!"
+# Shown when the name typed for a new chamber cannot be used. The name also names
+# the chamber's save file, which is why it has to stay simple.
+chamber-name-invalid: "&cThe name &e{name}&c cannot be used. Use letters, numbers, - and _ only, up to 32 characters. You can set a prettier name to show in announcements afterwards with &f/trial rename&c."
 discovery-registered: "&aAuto-discovered chamber &e{name}&a with &f{vaults}&a vaults and &f{spawners}&a spawners."
-discovery-merged: "&aExpanded chamber &e{name}&a — absorbed &f{vaults}&a vaults and &f{spawners}&a spawners from an adjacent region."
+discovery-merged: "&aExpanded chamber &e{name}&a, absorbed &f{vaults}&a vaults and &f{spawners}&a spawners from an adjacent region."
 generation-cancelled-name-in-use: "&eGeneration cancelled: &cname {name} is already in use."
 chamber-not-found: "&cChamber &e{chamber}&c not found."
 chamber-deleted: "&aChamber &e{chamber}&a deleted successfully."
@@ -52,7 +55,7 @@ worldedit-not-found: "&cWorldEdit is not installed or enabled."
 scan-started: "&aScanning chamber &e{chamber}&a..."
 scan-complete: "&aScanning complete! Found &e{vaults}&a vaults, &e{spawners}&a spawners, &e{pots}&a decorated pots."
 scan-add-started: "&aRe-flooding &e{chamber}&a from its vaults to find missing sections..."
-scan-add-grown: "&aExpanded &e{chamber}&a by &f{added}&a blocks — now &e{vaults}&a vaults, &e{spawners}&a spawners. Re-scan/snapshot done."
+scan-add-grown: "&aExpanded &e{chamber}&a by &f{added}&a blocks. Now &e{vaults}&a vaults, &e{spawners}&a spawners. Re-scan/snapshot done."
 scan-add-none: "&7No additional sections found for &e{chamber}&7 ({reason})."
 
 # Snapshots
@@ -80,7 +83,7 @@ reset-failed: "&cFailed to reset chamber: {error}"
 vault-opened: "&aYou opened a {type} Vault!"
 vault-cooldown: "&cThis {type} Vault is on cooldown for &e{time}&c."
 vault-locked: "&cYou have already opened this {type} Vault! It will unlock when the chamber resets."
-# Shown instead of the two lines above when vaults.loot-mode is SHARED — there,
+# Shown instead of the two lines above when vaults.loot-mode is SHARED. There,
 # the first player to open a vault takes it and nobody else can, so the message
 # names them to make clear nothing is broken.
 vault-locked-shared: "&c{player} got to this {type} Vault first! It will unlock when the chamber resets."
@@ -90,12 +93,12 @@ vault-reopen-need: "&cYou've already opened this {type} Vault. Hold &e{cost}&c m
 vault-reset: "&aVault cooldown reset for &e{player}&a."
 wild-vault-place-blocked: "&cVault blocks can only be placed inside registered Trial Chambers."
 container-tp: "&aTeleported to container template at &e{x}, {y}, {z}&a."
-container-template-reset: "&aReverted container at &e{x}, {y}, {z}&a to vanilla — it now rolls fresh loot per player on each open."
+container-template-reset: "&aReverted container at &e{x}, {y}, {z}&a to vanilla. It now rolls fresh loot per player on each open."
 container-template-reset-none: "&7No registered container at &e{x}, {y}, {z}&7 to revert."
-container-materialize-start: "&7Scanning &e{chamber}&7 for containers…"
+container-materialize-start: "&7Scanning &e{chamber}&7 for containers..."
 container-materialize-done: "&aMaterialized &e{count}&a new container template(s)."
 container-cleared-copies: "&aCleared &e{count}&a per-player container copy/copies."
-container-cleared-templates: "&aCleared &e{count}&a template(s) — they re-materialize on next access."
+container-cleared-templates: "&aCleared &e{count}&a template(s). They re-materialize on next access."
 wrong-key-type: "&cYou need a {required_type} Trial Key to open this vault!"
 no-key: "&cYou need a Trial Key to open this vault!"
 vault-not-found: "&cNo vault found at this location."
@@ -134,12 +137,12 @@ cannot-break-blocks: "&cYou cannot break blocks in a Trial Chamber!"
 cannot-place-blocks: "&cYou cannot place blocks in a Trial Chamber!"
 tunnel-only-outer-wall: "&cYou can only tunnel through the outer wall of a Trial Chamber!"
 cannot-access-container: "&cYou cannot access containers in a Trial Chamber!"
-cannot-claim-in-chamber: "&cYou can't claim that area — it overlaps the Trial Chamber &e{chamber}&c."
+cannot-claim-in-chamber: "&cYou can't claim that area. It overlaps the Trial Chamber &e{chamber}&c."
 cannot-use-enchant-in-chamber: "&cThat enchantment is disabled inside Trial Chambers."
 pvp-disabled-in-chamber: "&cPvP is disabled inside Trial Chambers."
 cannot-teleport-into-chamber: "&cYou can't teleport into a Trial Chamber."
 cannot-enter-chamber: "&cYou don't have permission to enter this Trial Chamber."
-# Display names for the {type} placeholder — translate these to localize the type labels
+# Display names for the {type} placeholder. Translate these to localize the type labels
 # everywhere they're shown. vault-type-* is also used for trial-key types.
 vault-type-normal: "Normal"
 vault-type-ominous: "Ominous"
@@ -166,7 +169,7 @@ info-last-reset: "&eLast Reset: &f{time}"
 info-snapshot: "&eSnapshot: &f{status}"
 info-paused: "&c[PAUSED] This chamber is inactive. Use /trial resume <name> to re-activate it."
 
-# Time formatting — unit suffixes for durations ("2d 3h 5m"). Each key formats one
+# Time formatting: unit suffixes for durations ("2d 3h 5m"). Each key formats one
 # unit; non-zero units are joined with spaces. time-ago wraps a duration for
 # relative timestamps ("5m ago"); time-now replaces durations under a minute.
 time-days: "{days}d"
@@ -220,7 +223,7 @@ wevar-list-header: "&6=== Saved Regions ==="
 wevar-list-item: "&e{name} &7- &f{world} &7(&f{minX},{minY},{minZ}&7 -> &f{maxX},{maxY},{maxZ}&7)"
 wevar-list-empty: "&7No saved regions yet. Use &e/trial generate value save <name>&7 to save your selection."
 
-# Undo integration (passive hints — BTC never intercepts //undo)
+# Undo integration (passive hints; BTC never intercepts //undo)
 undo-cleanup-hint: "&7Tip: if &f//undo &7rolled back chamber &e{chamber}&7's blocks, also run &f/trial delete {chamber} &7to clear the registration."
 chamber-created-rollback-tip: "&7To roll this back: &f//undo &7for the blocks, then &f/trial delete {chamber} &7to unregister."
 
@@ -273,10 +276,10 @@ give-unknown-preset: "&cUnknown preset: &f{preset}"
 give-bad-amount: "&cInvalid amount: &f{value}"
 give-needs-target-from-console: "&cConsole must specify a target player: &e/trial give <preset> <player> [amount]"
 give-build-failed: "&cFailed to build item for preset &f{preset}&c: {error}"
-give-inventory-full: "&eInventory full — overflow dropped at your feet."
+give-inventory-full: "&eInventory full. Overflow dropped at your feet."
 
 # Pagination (shared by /trial list, /trial snapshot missing). The *-active values keep the
-# clickable <click:run_command:'{command}'> tag — do not remove it when translating.
+# clickable <click:run_command:'{command}'> tag. Do not remove it when translating.
 pagination-list-item: "{prev} <gray>|</gray> {next}"
 pagination-prev-active: "<click:run_command:'{command}'><green>« Prev</green></click>"
 pagination-prev-disabled: "<dark_gray>« Prev</dark_gray>"
@@ -284,8 +287,8 @@ pagination-next-active: "<click:run_command:'{command}'><green>Next »</green></
 pagination-next-disabled: "<dark_gray>Next »</dark_gray>"
 
 # /trial list
-list-page-header: "<gold>Chambers <gray>(page <yellow>{page}</yellow>/<yellow>{maxPage}</yellow>, <yellow>{total}</yellow> total) — <i>/trial list current</i> to locate"
-chamber-list-item-interactive: "<click:copy_to_clipboard:'{chamber}'><hover:show_text:'<gray>Click to copy <yellow>{chamber}'><yellow>{chamber}</yellow></hover></click> <gray>— {world} ({volume} blocks)</gray> <click:run_command:'/trial menu {chamber}'><hover:show_text:'<gray>Open <yellow>{chamber}</yellow> in the GUI'><aqua>[menu]</aqua></hover></click>"
+list-page-header: "<gold>Chambers <gray>(page <yellow>{page}</yellow>/<yellow>{maxPage}</yellow>, <yellow>{total}</yellow> total). <i>/trial list current</i> to locate"
+chamber-list-item-interactive: "<click:copy_to_clipboard:'{chamber}'><hover:show_text:'<gray>Click to copy <yellow>{chamber}'><yellow>{chamber}</yellow></hover></click> <gray>{world} ({volume} blocks)</gray> <click:run_command:'/trial menu {chamber}'><hover:show_text:'<gray>Open <yellow>{chamber}</yellow> in the GUI'><aqua>[menu]</aqua></hover></click>"
 list-current-inside: "<green>You are inside <yellow>{chamber}</yellow> <gray>(volume {volume})"
 list-current-none: "<gray>No chambers found in this world."
 list-current-nearest: "<gold>Nearest chamber: <yellow>{chamber}</yellow> <gray>~{distance}m at <white>{x} {y} {z}</white> <click:suggest_command:'/tp {x} {y} {z}'><aqua>[/tp]</aqua></click>"
@@ -293,32 +296,37 @@ list-current-nearest: "<gold>Nearest chamber: <yellow>{chamber}</yellow> <gray>~
 # /trial snapshot create all / missing
 snapshot-all-none-registered: "<yellow>No chambers are registered yet."
 snapshot-all-covered: "<green>All <yellow>{count}</yellow> registered chambers already have a snapshot. <gray>(use <yellow>/trial snapshot create all force</yellow> to re-capture them)"
-snapshot-all-start: "<gold>Snapshotting <yellow>{count}</yellow> chamber(s) {mode} <gray>— one every 20 ticks; this can take a while…"
-snapshot-all-mode-force: "<gray>(force — re-capturing all)</gray>"
+snapshot-all-start: "<gold>Snapshotting <yellow>{count}</yellow> chamber(s) {mode} <gray>(one every 20 ticks; this can take a while)"
+snapshot-all-mode-force: "<gray>(force: re-capturing all)</gray>"
 snapshot-all-mode-missing: "<gray>(missing only)</gray>"
-snapshot-all-progress-list-item: "<gray>… <yellow>{done}</yellow>/<yellow>{total}</yellow> done"
+snapshot-all-progress-list-item: "<gray><yellow>{done}</yellow>/<yellow>{total}</yellow> done"
 snapshot-all-complete: "<green>Snapshot backfill complete: <yellow>{created}</yellow> created{failed}<green>."
 snapshot-all-failed-part: "<gray>, <red>{failed} failed</red> (see console)"
 snapshot-missing-none: "<green>Every registered chamber has a snapshot. ✔"
 snapshot-missing-page-header: "<gold>Chambers missing a snapshot <gray>(page <yellow>{page}</yellow>/<yellow>{maxPage}</yellow>, <yellow>{total}</yellow> total)</gray> <click:run_command:'/trial snapshot create all'><hover:show_text:'<gray>Snapshot all of them now (staggered)'><green>[Create all]</green></hover></click>"
-snapshot-missing-list-item: "<gray>• <yellow>{chamber}</yellow> <gray>— {world}</gray> <click:run_command:'/trial snapshot create {chamber}'><hover:show_text:'<gray>Create snapshot for <yellow>{chamber}'><green>[Create]</green></hover></click>"
-snapshot-missing-list-item-console: "<gray>• <yellow>{chamber}</yellow> <gray>— {world} <dark_gray>(/trial snapshot create {chamber})"
-snapshot-reminder: "<gold>[BTC] <yellow>{count}</yellow> discovered chamber(s) have no snapshot — <gray>{chambers}</gray> <click:run_command:'/trial snapshot missing'><hover:show_text:'<gray>List chambers missing a snapshot'><aqua>[list]</aqua></hover></click> <click:run_command:'/trial snapshot create all'><hover:show_text:'<gray>Snapshot all of them now (staggered)'><green>[create all]</green></hover></click>"
+snapshot-missing-list-item: "<gray>• <yellow>{chamber}</yellow> <gray>{world}</gray> <click:run_command:'/trial snapshot create {chamber}'><hover:show_text:'<gray>Create snapshot for <yellow>{chamber}'><green>[Create]</green></hover></click>"
+snapshot-missing-list-item-console: "<gray>• <yellow>{chamber}</yellow> <gray>{world} <dark_gray>(/trial snapshot create {chamber})"
+snapshot-reminder: "<gold>[BTC] <yellow>{count}</yellow> discovered chamber(s) have no snapshot: <gray>{chambers}</gray> <click:run_command:'/trial snapshot missing'><hover:show_text:'<gray>List chambers missing a snapshot'><aqua>[list]</aqua></hover></click> <click:run_command:'/trial snapshot create all'><hover:show_text:'<gray>Snapshot all of them now (staggered)'><green>[create all]</green></hover></click>"
 
 # /trial reset confirmation queue (global.reset-require-confirmation)
 reset-pending-empty: "<gray>No chambers are awaiting reset confirmation."
 reset-pending-page-header: "<gold>Awaiting reset confirmation ({count}): <click:run_command:'/trial reset confirm all'><green>[confirm all]</green></click>"
 reset-pending-list-item: "<gray>• <yellow>{chamber}</yellow> <click:run_command:'/trial reset confirm {chamber}'><green>[confirm]</green></click>"
 reset-confirm-usage: "<red>Usage: /trial reset confirm <chamber|all>"
-reset-confirm-all: "<green>Confirmed <yellow>{count}</yellow> reset(s) — they'll run staggered."
+reset-confirm-all: "<green>Confirmed <yellow>{count}</yellow> reset(s). They'll run staggered."
 reset-confirm-all-none: "<gray>No chambers were awaiting confirmation."
 reset-confirmed: "<green>Confirmed reset for <yellow>{chamber}</yellow>."
 reset-confirm-not-pending: "<gray><yellow>{chamber}</yellow> wasn't awaiting confirmation."
-reset-ready-notify: "<gold>[BTC] <yellow>{chamber}</yellow> is ready to reset — <click:run_command:'/trial reset confirm {chamber}'><green>[confirm]</green></click> <click:run_command:'/trial reset pending'><aqua>[list all]</aqua></click>"
+reset-ready-notify: "<gold>[BTC] <yellow>{chamber}</yellow> is ready to reset. <click:run_command:'/trial reset confirm {chamber}'><green>[confirm]</green></click> <click:run_command:'/trial reset pending'><aqua>[list all]</aqua></click>"
 
 # /trial debug
-debug-usage: "<yellow>/trial debug schema <gray>- Print each database table's actual columns"
-debug-schema-reading: "<gray>Reading database schema…"
+debug-usage: "<yellow>/trial debug schema <gray>- Print each database table's actual columns
+<yellow>/trial debug structure <gray>- Check this server can save a block and put it back unchanged"
+debug-structure-no-world: "<red>No world is loaded, so there is nowhere to run the check."
+debug-structure-running: "<gray>Checking in <white>{world}</white> at height <white>{y}</white>, well above anything built..."
+debug-structure-list-item: "{flag}{verdict}<gray> - {what} <dark_gray>({detail})"
+debug-structure-summary: "<gray>{passed} of {total} kept."
+debug-schema-reading: "<gray>Reading database schema..."
 debug-schema-page-header: "<gold>BTC database schema <gray>({type}):"
 debug-schema-missing-list-item: "<red>{table}<gray>: (missing table)"
 debug-schema-table-list-item: "{flag}{table}<gray>: {columns}"
@@ -326,53 +334,53 @@ debug-schema-table-list-item: "{flag}{table}<gray>: {columns}"
 # /trial claims
 claims-usage: "<yellow>/trial claims scan <gray>- Scan registered chambers for land-claim conflicts"
 claims-no-integration: "<yellow>No land-claim integration is active. Install Residence, Lands, or GriefPrevention and enable it under <gray>protection.*-integration<yellow> in config.yml."
-claims-scanning: "<gray>Scanning chambers for claim conflicts…"
-claims-conflicts-found: "<red>Found {count} chamber(s) overlapping existing claims — see the console for details."
+claims-scanning: "<gray>Scanning chambers for claim conflicts..."
+claims-conflicts-found: "<red>Found {count} chamber(s) overlapping existing claims. See the console for details."
 claims-no-conflicts: "<green>No claim conflicts found."
 
 # /trial dungeon
-dungeon-usage: "<gold>/trial dungeon</gold> <gray>— pos1 | pos2 | capture <id> [roles…] | generate <name> [seed] | list | delete <id> | import <file|folder|zip> [tags…]</gray>"
+dungeon-usage: "<gold>/trial dungeon</gold> <gray>pos1 | pos2 | capture <id> [roles...] | generate <name> [seed] | list | delete <id> | import <file|folder|zip> [tags...]</gray>"
 dungeon-pos-set: "<green>Dungeon pos{label} set to <yellow>{x}, {y}, {z}</yellow>."
-dungeon-usage-capture: "<red>Usage: /trial dungeon capture <id> [roles…]"
+dungeon-usage-capture: "<red>Usage: /trial dungeon capture <id> [roles...]"
 dungeon-need-positions: "<red>Set pos1 and pos2 (same world) first."
-dungeon-capturing: "<gray>Capturing room <yellow>{id}</yellow>…"
+dungeon-capturing: "<gray>Capturing room <yellow>{id}</yellow>..."
 dungeon-captured: "<green>Captured <yellow>{id}</yellow>: {blocks} blocks, {connectors} connector(s), tags={tags}."
 dungeon-capture-failed: "<red>Capture failed: {error}"
 dungeon-usage-generate: "<red>Usage: /trial dungeon generate <name> [seed]"
-dungeon-generating: "<gray>Generating dungeon <yellow>{name}</yellow> (seed {seed})…"
+dungeon-generating: "<gray>Generating dungeon <yellow>{name}</yellow> (seed {seed})..."
 dungeon-generated: "<green>Dungeon <yellow>{name}</yellow> generated and registered as a chamber."
-dungeon-generate-failed-console: "<red>Generation failed — see console (no templates / start room / required tags?)."
+dungeon-generate-failed-console: "<red>Generation failed. See console (no templates / start room / required tags?)."
 dungeon-generate-failed: "<red>Generation failed: {error}"
 dungeon-list-empty: "<gray>No room templates captured yet."
 dungeon-list-page-header: "<gold>Room templates:</gold> <yellow>{templates}</yellow>"
 dungeon-usage-delete: "<red>Usage: /trial dungeon delete <id>"
 dungeon-deleted: "<green>Deleted room template <yellow>{id}</yellow>."
 dungeon-delete-not-found: "<red>No such room template: {id}"
-dungeon-usage-import: "<red>Usage: /trial dungeon import <file|folder|zip> [tags…]"
+dungeon-usage-import: "<red>Usage: /trial dungeon import <file|folder|zip> [tags...]"
 dungeon-import-bad-path: "<red>Path must be inside dungeon/import/."
 dungeon-import-not-found: "<red>Not found: dungeon/import/{file} <gray>(drop .nbt files, folders or datapack .zips there)"
-dungeon-importing: "<gray>Importing <yellow>{file}</yellow>…"
-dungeon-import-unsupported: "<red>Unsupported file type '{extension}' — use .nbt, a folder, or a .zip."
+dungeon-importing: "<gray>Importing <yellow>{file}</yellow>..."
+dungeon-import-unsupported: "<red>Unsupported file type '{extension}'. Use .nbt, a folder, or a .zip."
 dungeon-import-empty: "<red>No structure templates found in {file}."
 dungeon-import-complete: "<green>Imported <yellow>{count}</yellow> room(s), {connectors} connector(s) total. <gray>Rooms without connectors can't be stitched."
 dungeon-import-list-item: "<gray> - <yellow>{id}</yellow>: {blocks} blocks, {connectors} connector(s), tags={tags}"
-dungeon-import-more-list-item: "<gray> … and {count} more (see /trial dungeon list)"
-dungeon-import-note: "<gray>Note: imported rooms are literal — worldgen processor randomizers aren't applied; vertical jigsaws are walls."
+dungeon-import-more-list-item: "<gray> ...and {count} more (see /trial dungeon list)"
+dungeon-import-note: "<gray>Note: imported rooms are literal. Worldgen processor randomizers aren't applied; vertical jigsaws are walls."
 dungeon-import-failed: "<red>Import failed: {error}"
 
 # /trial container (admin CLI)
-container-usage: "<gold>/trial container</gold> <gray>— list | materialize | reset | resetone <#> | clearcopies | tp <#> | edit <#> <white><chamber></white></gray>"
+container-usage: "<gold>/trial container</gold> <gray>list | materialize | reset | resetone <#> | clearcopies | tp <#> | edit <#> <white><chamber></white></gray>"
 container-usage-action: "<red>Usage: /trial container {action} <chamber>"
-container-list-page-header: "<gold>Container loot — <yellow>{chamber}</yellow></gold> <gray>(per-player-loot: {state}<gray>)"
+container-list-page-header: "<gold>Container loot: <yellow>{chamber}</yellow></gold> <gray>(per-player-loot: {state}<gray>)"
 container-state-on: "<green>on"
 container-state-off: "<red>off"
-container-list-stats: "<gray>Templates: <yellow>{templates}</yellow>  ·  Player copies: <yellow>{copies}</yellow>"
-container-list-item: "<gray> #{index} <white>{x}, {y}, {z}</white> <dark_gray>— <yellow>{items}<gray> item stack(s)"
-container-list-more: "<dark_gray>…and {count} more."
-container-list-empty-hint: "<gray>No templates yet — run <yellow>/trial container materialize {chamber}</yellow> or open a container in-world."
+container-list-stats: "<gray>Templates: <yellow>{templates}</yellow>  |  Player copies: <yellow>{copies}</yellow>"
+container-list-item: "<gray> #{index} <white>{x}, {y}, {z}</white> <dark_gray>: <yellow>{items}<gray> item stack(s)"
+container-list-more: "<dark_gray>...and {count} more."
+container-list-empty-hint: "<gray>No templates yet. Run <yellow>/trial container materialize {chamber}</yellow> or open a container in-world."
 container-usage-index: "<red>Usage: /trial container {action} {chamber} <#>  (index from /trial container list)"
-container-no-template: "<red>No template #{index} — there are {count}."
-container-resetone-success: "<green>Reverted container #{index} to vanilla — it rolls fresh loot per player on each open."
+container-no-template: "<red>No template #{index}. There are {count}."
+container-resetone-success: "<green>Reverted container #{index} to vanilla. It rolls fresh loot per player on each open."
 container-resetone-failed: "<red>Couldn't revert container #{index}."
 container-world-not-loaded: "<red>Chamber world isn't loaded."
 container-teleported: "<green>Teleported to template #{index} (<yellow>{x}, {y}, {z}</yellow>)."
@@ -381,12 +389,12 @@ container-teleported: "<green>Teleported to template #{index} (<yellow>{x}, {y},
 loot-audit-clean: "<green>No legacy loot entries found."
 loot-audit-found: "<yellow>{count}</yellow> legacy loot entries:"
 loot-audit-group-list-item: "<gray>{group}"
-loot-audit-entry-list-item: "  <dark_gray>•</dark_gray> <white>{kind}[{index}]</white> <gray>{material}</gray> <dark_gray>—</dark_gray> <yellow>{reason}"
-loot-audit-more-list-item: "<gray>… and {count} more."
-loot-audit-hint: "<gray>Re-add each entry via <click:run_command:'/trial menu'><aqua>/trial menu</aqua></click> → Loot to restore full enchantments/NBT."
+loot-audit-entry-list-item: "  <dark_gray>•</dark_gray> <white>{kind}[{index}]</white> <gray>{material}</gray> <dark_gray>:</dark_gray> <yellow>{reason}"
+loot-audit-more-list-item: "<gray>...and {count} more."
+loot-audit-hint: "<gray>Re-add each entry via <click:run_command:'/trial menu'><aqua>/trial menu</aqua></click>, then Loot, to restore full enchantments/NBT."
 
 # Loot deposit chest (bulk add)
-gui-loot-deposit-added: "<green>Added <yellow>{count}</yellow> item(s) to the loot draft — remember to <yellow>Save</yellow>."
+gui-loot-deposit-added: "<green>Added <yellow>{count}</yellow> item(s) to the loot draft. Remember to <yellow>Save</yellow>."
 give-received: "&aReceived &fx{amount} &aof preset &f{preset}&a."
 give-sent: "&aGave &fx{amount} &aof preset &f{preset} &ato &f{player}&a."
 
@@ -472,11 +480,11 @@ vault-reset-all-start: "&eResetting all vault cooldowns for {chamber}..."
 vault-reset-all-complete: "&aReset cooldowns on {count} vaults!"
 vault-reset-single-start: "&eResetting cooldowns for vault #{id}..."
 vault-reset-single-complete: "&aVault cooldowns reset!"
-vault-unlockall-complete: "&aOpened up &e{count}&a vault(s) in &e{chamber}&a again — everyone can use them."
+vault-unlockall-complete: "&aOpened up &e{count}&a vault(s) in &e{chamber}&a again. Everyone can use them."
 vault-unlockall-every-chamber: "every chamber"
 # Shown after switching vaults.loot-mode to VANILLA. Vaults players already used
 # stay shut under plain Minecraft, which looks like the plugin broke them.
-vault-mode-vanilla-hint: "&eVaults are now handled by Minecraft itself. Anyone who already opened a vault will still find it shut — run &f/trial vault unlockall all&e to open them all up again."
+vault-mode-vanilla-hint: "&eVaults are now handled by Minecraft itself. Anyone who already opened a vault will still find it shut. Run &f/trial vault unlockall all&e to open them all up again."
 
 # GUI Action Messages - Chamber Operations
 gui-chamber-world-not-loaded: "&cChamber world not loaded!"
@@ -486,8 +494,8 @@ gui-chamber-reset-complete: "&aChamber '{chamber}' has been reset!"
 gui-reset-failed: "&cFailed to reset chamber: {error}"
 gui-expand-teleported: "&eTeleported to &6{chamber}&e. Open the menu again and click &6Travel & Expand&e to scan for missed sections."
 gui-expand-running: "&7Scanning &6{chamber}&7 for missed sections..."
-gui-expand-grown: "&aExpanded &6{chamber}&a by &f{added}&a blocks — now &f{vaults}&a vaults, &f{spawners}&a spawners."
-gui-expand-none: "&7No additional sections found for &6{chamber}&7 — bounds confirmed."
+gui-expand-grown: "&aExpanded &6{chamber}&a by &f{added}&a blocks. Now &f{vaults}&a vaults, &f{spawners}&a spawners."
+gui-expand-none: "&7No additional sections found for &6{chamber}&7. Bounds confirmed."
 gui-no-players-in-chamber: "&eNo players are currently in this chamber."
 gui-players-ejected: "&aEjected {count} player(s) from '{chamber}'!"
 gui-no-snapshot-exists: "&cNo snapshot exists for this chamber!"
@@ -529,6 +537,7 @@ gui-item-added-to-loot: "&aAdded {item} to loot table"
 gui-item-removed-from-loot: "&cRemoved {item} from loot table"
 gui-loot-changes-saved: "&aLoot table changes saved!"
 gui-loot-pool-saved: "&aPool '{pool}' changes saved!"
+gui-loot-pool-vanished: "&cThe pool '{pool}' is no longer part of that loot table, so your changes were not saved. Close this menu and open it again."
 
 # GUI Info Messages - Pool Selector
 gui-pool-create-hint: "&eTo add a new pool, edit loot.yml directly and /trial reload"
@@ -552,7 +561,7 @@ plugin-info-config-spawner-waves: "  &7Spawner Waves: {status}"
 plugin-info-config-spectator: "  &7Spectator Mode: {status}"
 plugin-info-config-statistics: "  &7Statistics: {status}"
 
-# v1.3.0 — Custom Mob Provider GUI
+# v1.3.0: Custom Mob Provider GUI
 gui-provider-set: "&aProvider set to &e{id}&a."
 gui-provider-failed: "&cFailed to update provider."
 gui-mob-input-prompt: "&eType the {section} mob id in chat (or 'cancel')."
@@ -569,7 +578,7 @@ gui-mob-remove-missing: "&cMob id &e{id}&c is not in the list."
 gui-mob-removed: "&aRemoved &e{id}&a."
 gui-mob-remove-failed: "&cFailed to remove mob id."
 
-# v1.3.0 — /trial mobs command
+# v1.3.0: /trial mobs command
 mobs-usage-root: "&cUsage: /trial mobs <chamber> <provider|add|remove|list>"
 mobs-usage-providers: "&7       /trial mobs providers"
 mobs-usage-chamber: "&cUsage: /trial mobs {chamber} <provider|add|remove|list> [...]"
@@ -597,7 +606,7 @@ mobs-vanilla-warning: "&7Note: chamber is still using the vanilla provider. Set 
 mobs-unknown-action: "&cUnknown action '{action}'. Use provider|add|remove|list."
 
 # =====================================================================
-# v1.3.0 — GUI strings (all views)
+# v1.3.0: GUI strings (all views)
 # Keys under `gui.*` are used for item names/lore inside the admin menu.
 # These do NOT receive the chat prefix and default-italic is disabled on
 # item names (Minecraft's default) so they render clean.
@@ -623,7 +632,7 @@ gui:
     materialize-lore:
       - "&7Scan this chamber and list every"
       - "&7container here so you can edit it."
-      - "&7Listing only — loot still rolls fresh"
+      - "&7Listing only, loot still rolls fresh"
       - "&7per player until you edit one."
       - ""
       - "&aClick to scan"
@@ -646,8 +655,8 @@ gui:
       - ""
       - "&cShift + Left-click to confirm"
     entry-name: "&b#{index} &7({x}, {y}, {z})"
-    entry-status-vanilla: "&aVanilla &7— fresh roll per player"
-    entry-status-custom: "&6Custom override &7— per-player copies, persists resets"
+    entry-status-vanilla: "&aVanilla &7- fresh roll per player"
+    entry-status-custom: "&6Custom override &7- per-player copies, persists resets"
     entry-lore:
       - "&7{status}"
       - ""
@@ -1098,7 +1107,7 @@ gui:
       - "&7chamber if chunks were still loading."
       - ""
       - "&cStand inside the chamber to scan for"
-      - "&cmissed sections — click once to travel"
+      - "&cmissed sections, click once to travel"
       - "&chere, then click again to expand."
       - ""
       - "&8Disappears after one scan. Or use"
@@ -1329,7 +1338,7 @@ gui:
       - "&7Drives mob spawning for waves"
       - ""
       - "&fCurrent: &c{provider}"
-      - "&cBacking plugin not installed — falls back to vanilla."
+      - "&cBacking plugin not installed. Falls back to vanilla."
       - ""
       - "&eLeft: next   Right: previous"
       - "&cShift: reset to vanilla"
@@ -1398,6 +1407,15 @@ gui:
     title-global: "Select Pool: {table}"
     pool-name: "&6{name}"
     pool-lore:
+      - "&7Rolls: &f{minRolls}-{maxRolls}"
+      - "&7Items: &f{items}"
+      - "&8  Weighted: {weighted}"
+      - "&8  Guaranteed: {guaranteed}"
+      - ""
+      - "&eClick to edit this pool"
+    # Shown instead of the above when the pool does not run every time.
+    pool-lore-sometimes:
+      - "&7Runs &f{percent}%&7 of openings"
       - "&7Rolls: &f{minRolls}-{maxRolls}"
       - "&7Items: &f{items}"
       - "&8  Weighted: {weighted}"
@@ -1554,7 +1572,7 @@ gui:
     mode-lore-weighted:
       - "&7Each opening makes a set number of draws;"
       - "&7each draw picks ONE item by relative weight."
-      - "&7Weights are relative — only their ratio matters."
+      - "&7Weights are relative; only their ratio matters."
       - ""
       - "&7Best for small/medium tables."
       - ""
@@ -1567,6 +1585,18 @@ gui:
       - "&7Best for large tables (many items)."
       - ""
       - "&eClick to switch to Weighted"
+    chance-name: "&eHow Often This Pool Runs: &f{percent}%"
+    chance-lore:
+      - "&7Some openings skip this pool entirely."
+      - "&f100%&7 = it runs every time."
+      - ""
+      - "&7Minecraft's own vaults use this: the pool"
+      - "&7with the one really good item in it runs"
+      - "&f25%&7 of the time for a normal vault and"
+      - "&f75%&7 for an ominous one."
+      - ""
+      - "&7Left: +5%  |  Right: -5%"
+      - "&7Shift+Left: +25%  |  Shift+Right: -25%"
     max-items-name: "&eMax Items: &f{value}"
     max-items-lore:
       - "&7Independent mode only."
@@ -1745,7 +1775,7 @@ gui:
       - "&7Avg Vaults per Chamber: &f{avg}"
 
 
-# ── /trial setup — the opt-in settings tour (v1.6.0) ───────────────────────────
+# /trial setup: the opt-in settings tour (v1.6.0)
 # Step titles + descriptions are mostly plain English (the tour adds structure/colour);
 # inline MiniMessage is used for emphasis (Enabled/Disabled, Recommended) and the one
 # command reference. Each desc line is a complete thought so the Dialog wraps it cleanly.
@@ -1753,12 +1783,12 @@ gui:
 setup:
   intro:
     - "<gold><bold>Welcome to BetterTrialChambers setup!</bold>"
-    - "<gray>We'll go through the main settings one at a time. For each one, read what it does, then choose <green>Enable</green>, <gray>Skip</gray>, or <red>Disable</red>. Nothing is forced — you can pause or stop at any point."
+    - "<gray>We'll go through the main settings one at a time. For each one, read what it does, then choose <green>Enable</green>, <gray>Skip</gray>, or <red>Disable</red>. Nothing is forced. You can pause or stop at any point."
   complete:
     - "<green><bold>All done!</bold>"
     - "<gray>You've been through the main settings. Re-run <yellow>/trial setup</yellow> anytime, or fine-tune everything in <color:#e8d3a0>config.yml</color>."
     - "<dark_gray>Tip: a few changes take effect on the next chamber reset or /trial reload."
-  reminder: "<yellow>New to BetterTrialChambers? Take a quick, friendly tour of the main settings — nothing is forced. <click:run_command:'/trial setup'><hover:show_text:'<gray>Opens the setup tour'><green><bold>[Start /trial setup]</bold></green></hover></click>"
+  reminder: "<yellow>New to BetterTrialChambers? Take a quick, friendly tour of the main settings. Nothing is forced. <click:run_command:'/trial setup'><hover:show_text:'<gray>Opens the setup tour'><green><bold>[Start /trial setup]</bold></green></hover></click>"
   reminder-resume: "<yellow>You started the setup tour but didn't finish. <click:run_command:'/trial setup continue'><hover:show_text:'<gray>Pick up where you left off'><green><bold>[Resume setup]</bold></green></hover></click>"
   usage: "<red>Usage: <yellow>/trial setup [start|continue]"
   missing-option: "<red>Missing option."
@@ -1772,12 +1802,12 @@ setup:
       desc:
         - "Finds naturally-generated Trial Chambers by itself as players explore, so you don't have to register each one by hand."
         - "Perfect for survival servers where chambers turn up all over the map."
-        - "<green>Recommended</green> — without it, you have to register every chamber yourself, by hand."
+        - "<green>Recommended.</green> Without it, you have to register every chamber yourself, by hand."
     auto-snapshot:
       title: "Snapshot discovered chambers?"
       desc:
         - "When a chamber is auto-discovered, it saves a backup of it right away.<newline>A chamber needs a backup before it can reset, so this makes new chambers reset-ready instantly."
-        - "<green>Recommended</green> — Works best paired with Auto-discover (previous step)."
+        - "<green>Recommended.</green> Works best paired with Auto-discover (previous step)."
     drop-loot:
       title: "Drop vault loot on the ground?"
       desc:
@@ -1800,7 +1830,7 @@ setup:
       title: "How often should chambers reset?"
       desc:
         - "How long after a chamber is cleared should the chamber be reset for the next group?"
-        - "Pick a preset below. Or if none of these options match your preference, you can customise it in <color:#e8d3a0>config.yml</color> — Choosing Never will require you to reset every chamber manually."
+        - "Pick a preset below. Or if none of these options match your preference, you can customise it in <color:#e8d3a0>config.yml</color>. Choosing Never will require you to reset every chamber manually."
       options:
         "off": "Never"
         "6h": "Every 6 hours"
@@ -1835,7 +1865,7 @@ setup:
       title: "Reset trial spawners?"
       desc:
         - "Re-arms trial spawners on reset so they drop their keys and run their waves again."
-        - "<green>Recommended</green> — without it, spawners may stop giving rewards on later runs."
+        - "<green>Recommended.</green> Without it, spawners may stop giving rewards on later runs."
     reset-cooldowns:
       title: "Reset vault cooldowns?"
       desc:
@@ -1848,7 +1878,7 @@ setup:
     boss-bar:
       title: "Show the wave progress boss bar?"
       desc:
-        - "Shows a boss bar with live wave progress while players fight a trial spawner — a nice bit of feedback during the fight."
+        - "Shows a boss bar with live wave progress while players fight a trial spawner, a nice bit of feedback during the fight."
     spectator:
       title: "Let players spectate after death?"
       desc:
@@ -1862,6 +1892,6 @@ setup:
     luck:
       title: "Let Luck affect loot?"
       desc:
-        - "Lets the Luck potion effect nudge loot toward better rolls — a small reward for players who buff up before looting."
+        - "Lets the Luck potion effect nudge loot toward better rolls, a small reward for players who buff up before looting."
         - "<green>Enabled</green> = Luck improves loot."
         - "<red>Disabled</red> = Luck is ignored for loot."

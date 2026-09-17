@@ -2,6 +2,7 @@ package com.esmpfun.bettertrialchambers.dungeon
 
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
 import com.esmpfun.bettertrialchambers.models.BlockSnapshot
+import com.esmpfun.bettertrialchambers.utils.BlockEntityCapture
 import com.esmpfun.bettertrialchambers.utils.CompressionUtil
 import com.esmpfun.bettertrialchambers.utils.NBTUtil
 import kotlinx.coroutines.Dispatchers
@@ -13,6 +14,7 @@ import org.bukkit.World
 import org.bukkit.block.BlockFace
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.coroutines.resume
 
 /**
  * Captures, stores and loads [RoomTemplate]s. Capture scans a selection for
@@ -24,6 +26,29 @@ class RoomTemplateManager(private val plugin: BetterTrialChambers) {
 
     private val dir = File(plugin.dataFolder, "dungeon/rooms").apply { mkdirs() }
     private val cache = ConcurrentHashMap<String, RoomTemplate>()
+
+    /**
+     * Where the file for a room template lives, or null when [id] would put it
+     * somewhere other than the rooms folder.
+     *
+     * A template's name comes straight off the end of a command and used to be
+     * dropped into a file path unchecked, so a name containing `..` or a slash
+     * reached outside the folder. `/trial dungeon delete` would then delete a
+     * file elsewhere on the server, and capturing would write one there. It
+     * needs the dungeon permission, so this is not something an ordinary player
+     * could reach, but a mistyped name should not be able to remove a file
+     * somewhere else either.
+     *
+     * Deliberately a containment check rather than a rewrite of the name:
+     * rewriting would change what existing templates are called and lose track
+     * of every one already saved. Anything that resolves to a file sitting
+     * directly in the rooms folder is accepted exactly as written.
+     */
+    private fun templateFile(id: String): File? {
+        if (id.isBlank()) return null
+        val candidate = File(dir, "$id.dat").canonicalFile
+        return if (candidate.parentFile == dir.canonicalFile) candidate else null
+    }
 
     suspend fun capture(
         world: World,
@@ -54,14 +79,22 @@ class RoomTemplateManager(private val plugin: BetterTrialChambers) {
                                 if (face != null) {
                                     connectors.add(Connector(rel.first, rel.second, rel.third, face))
                                 } else {
-                                    plugin.logger.warning("Room '$id': jigsaw at $x,$y,$z has a vertical/unsupported orientation — treated as wall, no connector.")
+                                    plugin.logger.warning("Room '$id': jigsaw at $x,$y,$z has a vertical/unsupported orientation, treated as wall, no connector.")
                                 }
                             }
                             block.type != Material.AIR ->
-                                blocks[rel] = BlockSnapshot(block.blockData.asString, NBTUtil.captureTileEntity(block.state))
+                                // Saved the way the game saves it, so a room
+                                // template keeps a chest's name and lock, a mob
+                                // spawner, a command block and everything else
+                                // the old hand-written capture did not know about.
+                                blocks[rel] = BlockSnapshot(
+                                    block.blockData.asString,
+                                    null,
+                                    BlockEntityCapture.capture(plugin.server, block),
+                                )
                         }
                     }
-                    cont.resume(Unit) {}
+                    cont.resume(Unit)
                 } catch (e: Exception) {
                     cont.resumeWith(Result.failure(e))
                 }
@@ -86,7 +119,7 @@ class RoomTemplateManager(private val plugin: BetterTrialChambers) {
 
     fun load(id: String): RoomTemplate? {
         cache[id]?.let { return it }
-        val file = File(dir, "$id.dat")
+        val file = templateFile(id) ?: return null
         if (!file.exists()) return null
         return try {
             CompressionUtil.decompressObject<RoomTemplate>(file.readBytes()).also { cache[id] = it }
@@ -103,12 +136,18 @@ class RoomTemplateManager(private val plugin: BetterTrialChambers) {
         dir.listFiles { f -> f.extension == "dat" }?.map { it.nameWithoutExtension }?.sorted() ?: emptyList()
 
     fun delete(id: String): Boolean {
+        val file = templateFile(id) ?: return false
         cache.remove(id)
-        return File(dir, "$id.dat").delete()
+        return file.delete()
     }
 
     private suspend fun save(template: RoomTemplate) = withContext(Dispatchers.IO) {
-        File(dir, "${template.id}.dat").writeBytes(CompressionUtil.compressObject(template))
+        val file = templateFile(template.id)
+            ?: throw IllegalArgumentException(
+                "'${template.id}' cannot be used as a room name, because it would put the " +
+                    "file outside the rooms folder. Use a plain name with no slashes or dots."
+            )
+        file.writeBytes(CompressionUtil.compressObject(template))
     }
 
     /** Sample a solid neighbour to fill a jigsaw cell so unconnected doors stay walls. */

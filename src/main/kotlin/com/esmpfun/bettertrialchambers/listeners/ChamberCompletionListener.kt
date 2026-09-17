@@ -10,7 +10,7 @@ import org.bukkit.event.Listener
 /**
  * Records chamber completions for statistics (v1.5.12).
  *
- * Trial-chamber completion was never credited before — `chambers_completed`
+ * Trial-chamber completion was never credited before, `chambers_completed`
  * was always 0, dead-ending the chambers leaderboard and the
  * `%tcp_chambers_completed%` / `%tcp_leaderboard_chambers%` /
  * `%tcp_top_chambers_*%` placeholders. This listener consumes
@@ -20,7 +20,7 @@ import org.bukkit.event.Listener
  * The event already de-duplicates per cycle (it fires exactly once when the
  * chamber is first fully cleared, and its tracking resets on every chamber
  * reset), so a player can't be credited twice for the same clear. Participants
- * are credited even if offline by the time the chamber clears — the stat write
+ * are credited even if offline by the time the chamber clears, the stat write
  * is keyed by UUID.
  *
  * [ChamberClearedEvent] may fire on a region thread (it is flagged async when

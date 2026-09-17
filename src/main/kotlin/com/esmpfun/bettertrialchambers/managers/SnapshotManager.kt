@@ -1,12 +1,17 @@
 package com.esmpfun.bettertrialchambers.managers
 
+import kotlin.coroutines.resume
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
 import com.esmpfun.bettertrialchambers.models.BlockSnapshot
 import com.esmpfun.bettertrialchambers.models.Chamber
 import com.esmpfun.bettertrialchambers.utils.CompressionUtil
+import com.esmpfun.bettertrialchambers.utils.BlockEntityCapture
+import com.esmpfun.bettertrialchambers.utils.DecorationEntities
 import com.esmpfun.bettertrialchambers.utils.NBTUtil
+import com.esmpfun.bettertrialchambers.utils.SaveVersionStamp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.bukkit.Location
 import org.bukkit.Material
@@ -28,6 +33,7 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
+import kotlin.coroutines.resume
 
 /**
  * Manages chamber snapshots - creating, saving, loading, and validating.
@@ -38,7 +44,7 @@ import java.util.zip.GZIPOutputStream
  * File format (v2, streamed): gzip stream containing a small header followed by
  * per-block records that reference a running palette of block-data strings.
  * Capture writes each batch straight to disk and load reads straight from disk,
- * so memory use no longer scales with three full copies of the chamber — this
+ * so memory use no longer scales with three full copies of the chamber, this
  * is what lets multi-million-block chambers snapshot on small-heap servers.
  * Files written by older versions (Java-serialized [SnapshotData]) are detected
  * by their leading bytes and still load fine.
@@ -46,13 +52,48 @@ import java.util.zip.GZIPOutputStream
 class SnapshotManager(private val plugin: BetterTrialChambers) {
 
     private companion object {
-        /** "BTC2" — first four bytes (after gzip) of a v2 streamed snapshot. */
+        /** "BTC2", first four bytes (after gzip) of a v2 streamed snapshot. */
         const val MAGIC_V2 = 0x42544332
-        const val FORMAT_VERSION = 2
+
+        /**
+         * 3 adds the Minecraft version that wrote the file, straight after
+         * the format byte. Version 2 files still load; they simply do not
+         * say which Minecraft made them, which is the same position
+         * everything was in before, and is safe because an older file
+         * always reads on a newer game.
+         *
+         * 6 adds the far corner of the region that was captured, straight
+         * after the origin. Air is not written out, so the blocks in a file
+         * cannot say how far the capture reached; without this a chamber with
+         * air along an edge looks like a snapshot that no longer covers it.
+         */
+        const val FORMAT_VERSION = 6
+        const val FORMAT_VERSION_MIN = 2
+
+        /**
+         * Written as the far corner when it genuinely is not known, which is
+         * only the case for a file rewritten from the pre-streamed format.
+         */
+        const val UNKNOWN_BOUND = Int.MIN_VALUE
+
+        // How a block's contents were stored, written as one byte per block from
+        // version 4 onwards. Before that the same slot was a true/false for "has
+        // contents", where true always meant the hand-built map, so an older file
+        // reads as NOTHING or LEGACY_MAP and nothing else.
+        const val CONTENTS_NONE = 0
+        const val CONTENTS_LEGACY_MAP = 1
+        const val CONTENTS_STRUCTURE = 2
 
         const val RECORD_END = 0
         const val RECORD_PALETTE = 1
         const val RECORD_BLOCK = 2
+
+        /**
+         * One decoration standing in the chamber: an item frame, painting,
+         * armour stand, display or cushion. Written after all the blocks, and
+         * only from version 5 onwards, so an older file simply has none.
+         */
+        const val RECORD_ENTITY = 3
     }
 
     /**
@@ -89,7 +130,10 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
         worldName: String,
         originX: Int,
         originY: Int,
-        originZ: Int
+        originZ: Int,
+        maxX: Int,
+        maxY: Int,
+        maxZ: Int,
     ) : AutoCloseable {
         private val out = DataOutputStream(
             BufferedOutputStream(GZIPOutputStream(FileOutputStream(file)), 1 shl 16)
@@ -102,10 +146,19 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
         init {
             out.writeInt(MAGIC_V2)
             out.writeByte(FORMAT_VERSION)
+            // Which Minecraft wrote this. A snapshot holds block descriptions
+            // and items in the game's own wording, and the game reads its own
+            // older wording but not a newer one. Recording it lets a restore
+            // say so plainly instead of quietly skipping what it cannot read.
+            out.writeInt(SaveVersionStamp.currentDataVersion())
+            out.writeUTF(SaveVersionStamp.currentMinecraftVersion())
             out.writeUTF(worldName)
             out.writeInt(originX)
             out.writeInt(originY)
             out.writeInt(originZ)
+            out.writeInt(maxX)
+            out.writeInt(maxY)
+            out.writeInt(maxZ)
         }
 
         fun writeBlock(relX: Int, relY: Int, relZ: Int, snapshot: BlockSnapshot) {
@@ -119,21 +172,52 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
             out.writeInt(relY)
             out.writeInt(relZ)
             out.writeInt(paletteId)
+            // Only blocks that actually hold something carry any of this, which
+            // is a small minority, so the ordinary block record stays one byte
+            // bigger than before and no more.
+            val structure = snapshot.structure
             val tile = snapshot.tileEntity
-            if (tile == null) {
-                out.writeBoolean(false)
-            } else {
-                out.writeBoolean(true)
-                // Tile entities are rare (vaults, spawners, pots); a per-entity
-                // serialized blob keeps the common block record tiny.
-                val buffer = ByteArrayOutputStream()
-                ObjectOutputStream(buffer).use { it.writeObject(HashMap(tile)) }
-                val bytes = buffer.toByteArray()
-                out.writeInt(bytes.size)
-                out.write(bytes)
+            when {
+                structure != null -> {
+                    out.writeByte(CONTENTS_STRUCTURE)
+                    out.writeInt(structure.size)
+                    out.write(structure)
+                }
+                tile != null -> {
+                    // Only reached when re-writing something read from an older
+                    // snapshot; fresh captures always take the branch above.
+                    out.writeByte(CONTENTS_LEGACY_MAP)
+                    val buffer = ByteArrayOutputStream()
+                    ObjectOutputStream(buffer).use { it.writeObject(HashMap(tile)) }
+                    val bytes = buffer.toByteArray()
+                    out.writeInt(bytes.size)
+                    out.write(bytes)
+                }
+                else -> out.writeByte(CONTENTS_NONE)
             }
             blocksWritten++
         }
+
+        /** Appends the decorations standing in the chamber. Call before [close]. */
+        fun writeEntity(entity: DecorationEntities.Captured) {
+            out.writeByte(RECORD_ENTITY)
+            out.writeUTF(entity.type)
+            out.writeInt(entity.minX)
+            out.writeInt(entity.minY)
+            out.writeInt(entity.minZ)
+            out.writeInt(entity.sizeX)
+            out.writeInt(entity.sizeY)
+            out.writeInt(entity.sizeZ)
+            out.writeDouble(entity.x)
+            out.writeDouble(entity.y)
+            out.writeDouble(entity.z)
+            out.writeInt(entity.bytes.size)
+            out.write(entity.bytes)
+            entitiesWritten++
+        }
+
+        var entitiesWritten = 0
+            private set
 
         override fun close() {
             if (closed) return
@@ -187,7 +271,7 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
         val midZ = (chamber.minZ + chamber.maxZ) / 2.0
 
         val writer = withContext(Dispatchers.IO) {
-            SnapshotWriter(tempFile, chamber.world, originX, originY, originZ)
+            SnapshotWriter(tempFile, chamber.world, originX, originY, originZ, chamber.maxX, chamber.maxY, chamber.maxZ)
         }
 
         try {
@@ -216,21 +300,26 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
                                             // Capture block data
                                             val blockData = block.blockData.asString
 
-                                            // Capture tile entity data if applicable (MUST be on main thread)
-                                            val tileEntity = NBTUtil.captureTileEntity(block.state)
+                                            // Whatever the block is holding, saved the way the
+                                            // game itself saves it. Covers every kind of block
+                                            // rather than the eleven the old hand-written
+                                            // version knew, and everything each one holds
+                                            // rather than part of it. Must be on the thread
+                                            // that owns this block.
+                                            val contents = BlockEntityCapture.capture(plugin.server, block)
 
                                             captured.add(
                                                 CapturedBlock(
                                                     x - originX,
                                                     y - originY,
                                                     z - originZ,
-                                                    BlockSnapshot(blockData, tileEntity)
+                                                    BlockSnapshot(blockData, null, contents)
                                                 )
                                             )
                                         }
                                     }
                                 }
-                                continuation.resume(batchTotal to captured) {}
+                                continuation.resume(batchTotal to captured)
                             } catch (e: Exception) {
                                 continuation.resumeWith(Result.failure(e))
                             }
@@ -251,6 +340,41 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
             }
 
             plugin.logger.info("Captured $capturedBlocks blocks (${totalBlocks - capturedBlocks} air blocks skipped)")
+
+            // The decorations standing in the chamber: item frames, paintings,
+            // armour stands, displays, cushions. Read on the thread that owns
+            // the chamber and written after the blocks, so a reset can put them
+            // back. Nothing that is not part of the build is included; see
+            // DecorationEntities.
+            val decorations = suspendCancellableCoroutine<List<DecorationEntities.Captured>> { continuation ->
+                val centre = Location(
+                    world,
+                    (chamber.minX + chamber.maxX) / 2.0,
+                    (chamber.minY + chamber.maxY) / 2.0,
+                    (chamber.minZ + chamber.maxZ) / 2.0,
+                )
+                plugin.scheduler.runAtLocation(centre, Runnable {
+                    continuation.resume(
+                        runCatching {
+                        DecorationEntities.capture(
+                            plugin.server, chamber.getEntitiesInside(),
+                            chamber.minX, chamber.minY, chamber.minZ,
+                            chamber.maxX, chamber.maxY, chamber.maxZ,
+                        )
+                    }
+                            .getOrElse {
+                                plugin.logger.warning(
+                                    "Could not record the decorations in ${chamber.name}: ${it.message}"
+                                )
+                                emptyList()
+                            }
+                    )
+                })
+            }
+            if (decorations.isNotEmpty()) {
+                withContext(Dispatchers.IO) { decorations.forEach { writer.writeEntity(it) } }
+                plugin.logger.info("Captured ${decorations.size} decoration(s) standing in the chamber")
+            }
 
             return withContext(Dispatchers.IO) {
                 writer.close()
@@ -281,7 +405,19 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
         val blockCount: Int,
         val minX: Int, val minY: Int, val minZ: Int,
         val maxX: Int, val maxY: Int, val maxZ: Int,
-        val sortedPositions: LongArray
+        val sortedPositions: LongArray,
+        /**
+         * The region the capture actually covered, which is wider than the
+         * blocks in the file whenever the chamber has air along an edge. Null
+         * for a file written before the format recorded it.
+         */
+        val captured: CapturedRegion? = null,
+    )
+
+    /** The box a snapshot was taken from, in world coordinates. */
+    class CapturedRegion(
+        val minX: Int, val minY: Int, val minZ: Int,
+        val maxX: Int, val maxY: Int, val maxZ: Int,
     )
 
     /**
@@ -332,6 +468,7 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
         } catch (e: Exception) {
             plugin.logger.severe("Failed to scan snapshot ${file.name}: ${e.message}")
             e.printStackTrace()
+            com.esmpfun.bettertrialchambers.integrations.MetricsService.reportHandled(e, "snapshot-scan")
             null
         }
     }
@@ -339,7 +476,7 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
     /**
      * Streams a snapshot file's blocks in [batchSize] groups without ever
      * materializing the whole snapshot, invoking [onBatch] for each group.
-     * Legacy files fall back to a full load and are then fed out in batches —
+     * Legacy files fall back to a full load and are then fed out in batches,
      * run [prepareAndScan] first to migrate them so this path stays cheap.
      *
      * @return the total number of blocks streamed, or null on failure.
@@ -347,6 +484,7 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
     suspend fun streamSnapshotBlocks(
         file: File,
         batchSize: Int,
+        onEntity: (DecorationEntities.Captured) -> Unit = {},
         onBatch: suspend (List<Pair<Location, BlockSnapshot>>) -> Unit
     ): Int? = withContext(Dispatchers.IO) {
         try {
@@ -358,7 +496,10 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
                     val magic = if (read == 4) ByteBuffer.wrap(header).int else 0
 
                     if (magic == MAGIC_V2) {
-                        streamV2Blocks(DataInputStream(input), file.name, batchSize, readTiles = true, onBatch)
+                        streamV2Blocks(
+                            DataInputStream(input), file.name, batchSize,
+                            readTiles = true, onEntity = onEntity, onBatch = onBatch,
+                        )
                     } else {
                         input.reset()
                         val blocks = readLegacySnapshot(input, file.name) ?: return@withContext null
@@ -383,8 +524,12 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
         var maxX = Int.MIN_VALUE; var maxY = Int.MIN_VALUE; var maxZ = Int.MIN_VALUE
         var positions = LongArray(4096)
         var count = 0
+        var captured: CapturedRegion? = null
 
-        val streamed = streamV2Blocks(input, label, batchSize = 8192, readTiles = false) { batch ->
+        val streamed = streamV2Blocks(
+            input, label, batchSize = 8192, readTiles = false,
+            onCapturedRegion = { captured = it },
+        ) { batch ->
             for ((location, _) in batch) {
                 if (worldName.isEmpty()) worldName = location.world?.name ?: ""
                 val x = location.blockX; val y = location.blockY; val z = location.blockZ
@@ -397,7 +542,7 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
 
         val sorted = positions.copyOf(count)
         sorted.sort()
-        return SnapshotScan(worldName, streamed, minX, minY, minZ, maxX, maxY, maxZ, sorted)
+        return SnapshotScan(worldName, streamed, minX, minY, minZ, maxX, maxY, maxZ, sorted, captured)
     }
 
     /** Builds a [SnapshotScan] from fully-loaded legacy data. */
@@ -427,7 +572,10 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
     private fun migrateLegacySnapshot(file: File, data: SnapshotData) {
         val tempFile = File(file.parentFile, file.name + ".tmp")
         try {
-            SnapshotWriter(tempFile, data.worldName, data.originX, data.originY, data.originZ).use { writer ->
+            SnapshotWriter(
+                tempFile, data.worldName, data.originX, data.originY, data.originZ,
+                UNKNOWN_BOUND, UNKNOWN_BOUND, UNKNOWN_BOUND,
+            ).use { writer ->
                 data.blocks.forEach { (relativePos, snapshot) ->
                     writer.writeBlock(relativePos.first, relativePos.second, relativePos.third, snapshot)
                 }
@@ -477,7 +625,7 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
      * in that case.
      *
      * @param bytes Gzip-compressed snapshot bytes (v2 streamed format or the
-     *              legacy Java-serialized form — both are accepted).
+     *              legacy Java-serialized form, both are accepted).
      * @param contextLabel Short label included in log messages (e.g. the
      *                     chamber name) so admins can trace which override
      *                     produced a parse failure.
@@ -540,18 +688,46 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
         label: String,
         batchSize: Int,
         readTiles: Boolean,
+        onEntity: (DecorationEntities.Captured) -> Unit = {},
+        onCapturedRegion: (CapturedRegion?) -> Unit = {},
         onBatch: suspend (List<Pair<Location, BlockSnapshot>>) -> Unit
     ): Int? {
         val version = input.readByte().toInt()
-        if (version != FORMAT_VERSION) {
+        if (version !in FORMAT_VERSION_MIN..FORMAT_VERSION) {
             plugin.logger.severe("Snapshot $label has unsupported format version $version")
             return null
+        }
+
+        if (version >= 3) {
+            val stampedDataVersion = input.readInt()
+            val stampedMinecraftVersion = input.readUTF()
+            SaveVersionStamp.warnIfFromNewerVersion(
+                file = File(label),
+                stampedDataVersion = stampedDataVersion,
+                stampedMinecraftVersion = stampedMinecraftVersion,
+                logger = plugin.logger,
+                // A snapshot is remade by taking a new one, not by editing the
+                // old one, so a copy would only double the disk it uses.
+                takeBackup = false,
+            )
         }
 
         val worldName = input.readUTF()
         val originX = input.readInt()
         val originY = input.readInt()
         val originZ = input.readInt()
+
+        if (version >= 6) {
+            val capMaxX = input.readInt()
+            val capMaxY = input.readInt()
+            val capMaxZ = input.readInt()
+            onCapturedRegion(
+                if (capMaxX == UNKNOWN_BOUND) null
+                else CapturedRegion(originX, originY, originZ, capMaxX, capMaxY, capMaxZ)
+            )
+        } else {
+            onCapturedRegion(null)
+        }
 
         if (worldName.isBlank()) {
             plugin.logger.warning("Invalid snapshot $label: empty world name")
@@ -580,19 +756,49 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
                         plugin.logger.severe("Snapshot $label is corrupt: palette id $paletteId out of range")
                         return null
                     }
-                    val tileEntity = if (input.readBoolean()) {
+                    // Version 4 writes which kind of contents follow. Before
+                    // that the slot was a plain yes/no, and yes always meant the
+                    // hand-built map.
+                    val kind = if (version >= 4) {
+                        input.readByte().toInt()
+                    } else {
+                        if (input.readBoolean()) CONTENTS_LEGACY_MAP else CONTENTS_NONE
+                    }
+
+                    var legacyTile: Map<String, Any>? = null
+                    var structure: ByteArray? = null
+                    if (kind != CONTENTS_NONE) {
                         val length = input.readInt()
-                        if (readTiles) {
+                        if (!readTiles) {
+                            // Caller only wants to know which positions are
+                            // covered, so step over the contents unread.
+                            input.skipNBytes(length.toLong())
+                        } else {
                             val blob = ByteArray(length)
                             input.readFully(blob)
-                            @Suppress("UNCHECKED_CAST")
-                            ObjectInputStream(ByteArrayInputStream(blob)).use { it.readObject() as Map<String, Any> }
-                        } else {
-                            input.skipNBytes(length.toLong())
-                            null
+                            when (kind) {
+                                CONTENTS_STRUCTURE -> structure = blob
+                                CONTENTS_LEGACY_MAP -> {
+                                    @Suppress("UNCHECKED_CAST")
+                                    legacyTile = runCatching {
+                                        ObjectInputStream(ByteArrayInputStream(blob)).use {
+                                            it.readObject() as Map<String, Any>
+                                        }
+                                    }.getOrElse {
+                                        plugin.logger.warning(
+                                            "Snapshot $label: the contents of one block could not be " +
+                                                "read (${it.message}); the block itself will still come back."
+                                        )
+                                        null
+                                    }
+                                }
+                                else -> plugin.logger.warning(
+                                    "Snapshot $label: a block records its contents in a way this " +
+                                        "version does not know about ($kind); the block itself will " +
+                                        "still come back."
+                                )
+                            }
                         }
-                    } else {
-                        null
                     }
                     batch.add(
                         Location(
@@ -600,12 +806,38 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
                             (originX + relX).toDouble(),
                             (originY + relY).toDouble(),
                             (originZ + relZ).toDouble()
-                        ) to BlockSnapshot(palette[paletteId], tileEntity)
+                        ) to BlockSnapshot(palette[paletteId], legacyTile, structure)
                     )
                     count++
                     if (batch.size >= batchSize) {
                         onBatch(batch)
                         batch = ArrayList(batchSize)
+                    }
+                }
+                RECORD_ENTITY -> {
+                    val type = input.readUTF()
+                    val boxX = input.readInt()
+                    val boxY = input.readInt()
+                    val boxZ = input.readInt()
+                    val sizeX = input.readInt()
+                    val sizeY = input.readInt()
+                    val sizeZ = input.readInt()
+                    val ex = input.readDouble()
+                    val ey = input.readDouble()
+                    val ez = input.readDouble()
+                    val length = input.readInt()
+                    if (!readTiles) {
+                        // A scan only asks which positions are covered, so the
+                        // decoration itself is stepped over unread.
+                        input.skipNBytes(length.toLong())
+                    } else {
+                        val blob = ByteArray(length)
+                        input.readFully(blob)
+                        onEntity(
+                            DecorationEntities.Captured(
+                                type, boxX, boxY, boxZ, sizeX, sizeY, sizeZ, ex, ey, ez, blob,
+                            )
+                        )
                     }
                 }
                 else -> {

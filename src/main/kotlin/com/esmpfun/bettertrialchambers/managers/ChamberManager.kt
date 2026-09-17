@@ -12,6 +12,7 @@ import org.bukkit.Location
 import org.bukkit.Material
 import java.sql.ResultSet
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.coroutines.resume
 
 /**
  * Manages chamber CRUD operations and caching.
@@ -50,14 +51,63 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
     }
 
     // Registered chambers are a bounded registry of small objects, so ALL of them
-    // are kept cached — never size-evicted. The spatial/by-id lookups below
+    // are kept cached, never size-evicted. The spatial/by-id lookups below
     // (getCachedChamberAt / getCachedChamberById) back vault loot resolution,
     // spawner-wave tracking and tier scaling; under the old LRU cap (100) any
-    // evicted chamber silently fell through to vanilla behaviour — vanilla vault
+    // evicted chamber silently fell through to vanilla behaviour, vanilla vault
     // loot leaking, no scaling. ConcurrentHashMap also makes value iteration
     // safe without external locking.
     private val chamberCache = ConcurrentHashMap<String, Chamber>()
     private val cacheExpiry = ConcurrentHashMap<String, Long>()
+
+    /**
+     * The one box per world that holds every chamber in it, as
+     * min X, min Z, max X, max Z.
+     *
+     * [getCachedChamberAt] runs on events that fire constantly (flowing water
+     * raises one per block per few ticks) and otherwise has to try every
+     * chamber in turn. Almost every one of those questions is about somewhere
+     * with no chamber anywhere near it, and this answers those without looking
+     * at a single chamber.
+     *
+     * Rebuilt from the cache whenever the cache changes, which happens when a
+     * chamber is registered, edited or removed and never on a hot path. Writing
+     * the cache goes through [cachePut] / [cacheRemove] / [cacheClear] so this
+     * cannot drift from it.
+     */
+    private val worldBounds = ConcurrentHashMap<String, IntArray>()
+
+    private fun cachePut(chamber: Chamber) {
+        chamberCache[chamber.name] = chamber
+        rebuildWorldBounds()
+    }
+
+    private fun cacheRemove(name: String) {
+        chamberCache.remove(name)
+        rebuildWorldBounds()
+    }
+
+    private fun cacheClear() {
+        chamberCache.clear()
+        worldBounds.clear()
+    }
+
+    private fun rebuildWorldBounds() {
+        val rebuilt = HashMap<String, IntArray>()
+        for (chamber in chamberCache.values) {
+            val box = rebuilt[chamber.world]
+            if (box == null) {
+                rebuilt[chamber.world] = intArrayOf(chamber.minX, chamber.minZ, chamber.maxX, chamber.maxZ)
+            } else {
+                box[0] = minOf(box[0], chamber.minX)
+                box[1] = minOf(box[1], chamber.minZ)
+                box[2] = maxOf(box[2], chamber.maxX)
+                box[3] = maxOf(box[3], chamber.maxZ)
+            }
+        }
+        worldBounds.keys.retainAll(rebuilt.keys)
+        worldBounds.putAll(rebuilt)
+    }
 
     fun getCachedChambers(): List<Chamber> = chamberCache.values.sortedByDescending { it.createdAt }
 
@@ -68,7 +118,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
     /**
      * First registered chamber whose bounds overlap the given axis-aligned box
      * (inclusive block coords) in [worldName], or null if none. Cache-only and
-     * synchronous — safe to call from an event handler.
+     * synchronous, safe to call from an event handler.
      */
     fun getIntersectingChamber(
         worldName: String,
@@ -93,6 +143,14 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
         location2: Location,
         resetInterval: Long = plugin.config.getLong("global.default-reset-interval", 172800)
     ): Chamber? = withContext(Dispatchers.IO) {
+        // The name becomes the snapshot's file name, so anything that is not a
+        // plain name would write that file somewhere unintended or not at all.
+        if (!com.esmpfun.bettertrialchambers.utils.ChamberNames.isValid(name)) {
+            plugin.logger.warning(
+                "Cannot create chamber '$name': a name may only use letters, digits, - and _, up to 32 characters"
+            )
+            return@withContext null
+        }
         if (location1.world != location2.world) {
             plugin.logger.warning("Cannot create chamber with locations in different worlds")
             return@withContext null
@@ -162,7 +220,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         )
 
                         // Cache the chamber
-                        chamberCache[name] = chamber
+                        cachePut(chamber)
                         updateCacheExpiry(name)
 
                         plugin.logger.info("Created chamber: $name (${chamber.getVolume()} blocks)")
@@ -201,7 +259,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
 
         // Load from database
         return loadChamberFromDb(name)?.also {
-            chamberCache[name] = it
+            cachePut(it)
             updateCacheExpiry(name)
         }
     }
@@ -237,8 +295,32 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
             plugin.databaseManager.connection.use { conn ->
                 conn.createStatement().use { stmt ->
                     val rs = stmt.executeQuery("SELECT * FROM ${tables.chambers} ORDER BY created_at DESC")
+                    var unreadable = 0
                     while (rs.next()) {
-                        chambers.add(parseChamber(rs))
+                        // Guarded per row on purpose. One chamber that will not
+                        // read used to throw all the way out of this loop, and
+                        // the whole list came back empty. Everything works off
+                        // this list, so the plugin would behave as though the
+                        // server had no chambers at all: nothing resetting,
+                        // nothing protected, no chamber loot anywhere. One
+                        // chamber missing is a very much smaller problem.
+                        val row = runCatching { parseChamber(rs) }.getOrElse { e ->
+                            unreadable++
+                            val name = runCatching { rs.getString("name") }.getOrNull() ?: "unnamed"
+                            plugin.logger.severe(
+                                "Chamber '$name' could not be read from the database and has been " +
+                                    "skipped: ${e.message}. Every other chamber has loaded normally."
+                            )
+                            null
+                        }
+                        if (row != null) chambers.add(row)
+                    }
+                    if (unreadable > 0) {
+                        plugin.logger.severe(
+                            "$unreadable chamber(s) could not be read. They are still in the database " +
+                                "and nothing has been deleted, but they will not reset or be protected " +
+                                "until the problem above is fixed."
+                        )
                     }
                 }
             }
@@ -297,10 +379,10 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         // Refresh cache with updated data
                         val refreshed = loadChamberFromDb(chamberName)
                         if (refreshed != null) {
-                            chamberCache[chamberName] = refreshed
+                            cachePut(refreshed)
                             updateCacheExpiry(chamberName)
                         } else {
-                            chamberCache.remove(chamberName)
+                            cacheRemove(chamberName)
                             cacheExpiry.remove(chamberName)
                         }
                         plugin.logger.info("Set exit location for chamber: $chamberName")
@@ -329,10 +411,10 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         // Refresh cache with updated data instead of invalidating only
                         val refreshed = loadChamberFromDb(chamberName)
                         if (refreshed != null) {
-                            chamberCache[chamberName] = refreshed
+                            cachePut(refreshed)
                             updateCacheExpiry(chamberName)
                         } else {
-                            chamberCache.remove(chamberName)
+                            cacheRemove(chamberName)
                             cacheExpiry.remove(chamberName)
                         }
                     }
@@ -368,7 +450,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      */
     suspend fun deleteChamber(name: String): Boolean = withContext(Dispatchers.IO) {
         try {
-            // Resolve BEFORE the row is gone — the wave manager cleanup below needs it.
+            // Resolve BEFORE the row is gone, the wave manager cleanup below needs it.
             val chamberForCleanup = chamberCache[name]
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement("DELETE FROM ${tables.chambers} WHERE name = ?").use { stmt ->
@@ -377,7 +459,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
 
                     if (deleted) {
                         // Remove from cache
-                        chamberCache.remove(name)
+                        cacheRemove(name)
                         cacheExpiry.remove(name)
 
                         // Delete snapshot file
@@ -411,7 +493,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     suspend fun scanChamber(chamber: Chamber): Triple<Int, Int, Int> {
-        // A re-scan implies the spawner set may have changed — drop the wave
+        // A re-scan implies the spawner set may have changed, drop the wave
         // manager's cached count/locations so ChamberClearedEvent re-counts.
         runCatching { plugin.spawnerWaveManager.invalidateChamberSpawnerCaches(chamber.id) }
 
@@ -469,7 +551,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                                 }
                             }
                         }
-                        continuation.resume(Triple(v, s, p)) {}
+                        continuation.resume(Triple(v, s, p))
                     } catch (e: Exception) {
                         continuation.resumeWith(Result.failure(e))
                     }
@@ -715,7 +797,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      * Clears the chamber cache and reloads all chambers from database.
      */
     fun clearCache() {
-        chamberCache.clear()
+        cacheClear()
         cacheExpiry.clear()
         plugin.logger.info("Chamber cache cleared, reloading from database...")
 
@@ -724,7 +806,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
             try {
                 val chambers = getAllChambers()
                 chambers.forEach { chamber ->
-                    chamberCache[chamber.name] = chamber
+                    cachePut(chamber)
                 }
                 plugin.logger.info("Reloaded ${chambers.size} chambers into cache")
             } catch (e: Exception) {
@@ -740,10 +822,20 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
         try {
             val all = getAllChambers()
             all.forEach { chamber ->
-                chamberCache[chamber.name] = chamber
+                cachePut(chamber)
                 updateCacheExpiry(chamber.name)
             }
             plugin.logger.info("Preloaded ${all.size} chambers into cache")
+            // Names have been checked since 2.1.1, but a chamber registered before
+            // that could carry one that cannot be a file name, and its snapshot then
+            // silently never saves. Say so once rather than at every reset.
+            all.filterNot { com.esmpfun.bettertrialchambers.utils.ChamberNames.isValid(it.name) }
+                .forEach {
+                    plugin.logger.warning(
+                        "Chamber '${it.name}' has a name that cannot be saved to a file. Snapshots and resets " +
+                            "will fail for it. Delete and re-register it with a name of letters, digits, - or _."
+                    )
+                }
         } catch (e: Exception) {
             plugin.logger.warning("Failed to preload chamber cache: ${e.message}")
         }
@@ -761,10 +853,10 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
     suspend fun reloadFromStore(name: String): Chamber? {
         val fresh = loadChamberFromDb(name)
         if (fresh != null) {
-            chamberCache[name] = fresh
+            cachePut(fresh)
             updateCacheExpiry(name)
         } else {
-            chamberCache.remove(name)
+            cacheRemove(name)
             cacheExpiry.remove(name)
         }
         return fresh
@@ -776,7 +868,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      * cross-server invalidation when an immediate re-read isn't needed.
      */
     fun invalidateChamber(name: String) {
-        chamberCache.remove(name)
+        cacheRemove(name)
         cacheExpiry.remove(name)
     }
 
@@ -790,6 +882,23 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      * Does not access the database.
      */
     fun getCachedChamberAt(location: Location): Chamber? {
+        // Worth the early exit: this is called from every protection handler,
+        // and some of those fire constantly (flowing water raises one event per
+        // block per few ticks). A server with no chambers registered should pay
+        // nothing at all for having the plugin installed.
+        //
+        // Somewhere with no chamber near it is answered by the world's own box
+        // (see [worldBounds]) without trying a single chamber, which is what
+        // almost every one of these questions is. Inside that box it still walks
+        // the chambers in that world; a chunk-keyed index like the one the
+        // spawner index uses would be the next step if that ever shows up in a
+        // timing report.
+        if (chamberCache.isEmpty()) return null
+        val world = location.world?.name ?: return null
+        val box = worldBounds[world] ?: return null
+        val x = location.blockX
+        val z = location.blockZ
+        if (x < box[0] || x > box[2] || z < box[1] || z > box[3]) return null
         return chamberCache.values.firstOrNull { it.contains(location) }
     }
 
@@ -816,7 +925,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         if (chamber != null) {
                             val refreshed = loadChamberFromDb(chamber.name)
                             if (refreshed != null) {
-                                chamberCache[chamber.name] = refreshed
+                                cachePut(refreshed)
                                 updateCacheExpiry(chamber.name)
                             }
                         }
@@ -824,7 +933,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         // count always starts from zero after a pause or a resume.
                         resetDestructionCounter(chamberId)
                         // v1.7.2: pausing also cancels any scheduled reset countdown,
-                        // its warning messages, and a parked pending confirmation —
+                        // its warning messages, and a parked pending confirmation,
                         // previously "resets in 30 seconds!" kept firing for paused chambers.
                         if (paused) runCatching { plugin.resetManager.cancelScheduledFor(chamberId) }
                         plugin.logger.info("Chamber $chamberId ${if (paused) "paused" else "resumed"}")
@@ -857,7 +966,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         if (chamber != null) {
                             val refreshed = loadChamberFromDb(chamber.name)
                             if (refreshed != null) {
-                                chamberCache[chamber.name] = refreshed
+                                cachePut(refreshed)
                                 updateCacheExpiry(chamber.name)
                             }
                         }
@@ -887,7 +996,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         if (chamber != null) {
                             val refreshed = loadChamberFromDb(chamber.name)
                             if (refreshed != null) {
-                                chamberCache[chamber.name] = refreshed
+                                cachePut(refreshed)
                                 updateCacheExpiry(chamber.name)
                             }
                         }
@@ -910,7 +1019,12 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      * @return True if the update was applied
      */
     suspend fun setDisplayName(chamberId: Int, displayName: String?): Boolean = withContext(Dispatchers.IO) {
-        val clean = displayName?.trim()?.takeIf { it.isNotEmpty() }
+        // A display name is announced to everyone and styled on the way out, so
+        // anything in it that would be clickable, hoverable or a line of its own
+        // is taken out here. Colours and bold survive.
+        val clean = displayName
+            ?.let { com.esmpfun.bettertrialchambers.utils.DisplayText.sanitize(it) }
+            ?.takeIf { it.isNotEmpty() }
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement("UPDATE ${tables.chambers} SET display_name = ? WHERE id = ?").use { stmt ->
@@ -922,7 +1036,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         if (chamber != null) {
                             val refreshed = loadChamberFromDb(chamber.name)
                             if (refreshed != null) {
-                                chamberCache[chamber.name] = refreshed
+                                cachePut(refreshed)
                                 updateCacheExpiry(chamber.name)
                             }
                         }
@@ -978,10 +1092,10 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         // Refresh cache with updated data
                         val refreshed = loadChamberFromDb(chamberName)
                         if (refreshed != null) {
-                            chamberCache[chamberName] = refreshed
+                            cachePut(refreshed)
                             updateCacheExpiry(chamberName)
                         } else {
-                            chamberCache.remove(chamberName)
+                            cacheRemove(chamberName)
                             cacheExpiry.remove(chamberName)
                         }
                         plugin.logger.info("Set ${vaultType.displayName} loot table for chamber $chamberName to: ${tableName ?: "(default)"}")
@@ -1030,10 +1144,17 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         if (chamber != null) {
                             val refreshed = loadChamberFromDb(chamber.name)
                             if (refreshed != null) {
-                                chamberCache[chamber.name] = refreshed
+                                cachePut(refreshed)
                                 updateCacheExpiry(chamber.name)
                             }
                         }
+                        // Drop whatever was already planned for this chamber. Without
+                        // this the reset queued under the old interval still stands,
+                        // including its warnings, so a change from two days to one hour
+                        // only takes effect after the chamber has reset once more, and
+                        // turning resets off (0) lets one more through. The scheduler
+                        // re-plans from the new interval within the minute.
+                        runCatching { plugin.resetManager.cancelScheduledFor(chamberId) }
                         plugin.logger.info("Updated reset interval for chamber $chamberId to $intervalSeconds seconds")
                     }
                     updated
@@ -1076,7 +1197,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         if (chamber != null) {
                             val refreshed = loadChamberFromDb(chamber.name)
                             if (refreshed != null) {
-                                chamberCache[chamber.name] = refreshed
+                                cachePut(refreshed)
                                 updateCacheExpiry(chamber.name)
                             }
                         }
@@ -1096,7 +1217,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      * merging a newly-discovered region into an existing chamber.
      *
      * Caller is responsible for re-scanning vaults/spawners and refreshing the
-     * snapshot afterwards if needed — this method only persists the new bounds.
+     * snapshot afterwards if needed, this method only persists the new bounds.
      */
     suspend fun updateBounds(
         chamberId: Int,
@@ -1122,11 +1243,11 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         if (chamber != null) {
                             val refreshed = loadChamberFromDb(chamber.name)
                             if (refreshed != null) {
-                                chamberCache[chamber.name] = refreshed
+                                cachePut(refreshed)
                                 updateCacheExpiry(chamber.name)
                             }
                         }
-                        // New bounds can contain a different spawner set — stale
+                        // New bounds can contain a different spawner set, stale
                         // counts make ChamberClearedEvent fire early or never.
                         runCatching { plugin.spawnerWaveManager.invalidateChamberSpawnerCaches(chamberId) }
                         plugin.logger.info("Updated bounds for chamber $chamberId: ($minX,$minY,$minZ)-($maxX,$maxY,$maxZ)")
@@ -1165,7 +1286,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         if (chamber != null) {
                             val refreshed = loadChamberFromDb(chamber.name)
                             if (refreshed != null) {
-                                chamberCache[chamber.name] = refreshed
+                                cachePut(refreshed)
                                 updateCacheExpiry(chamber.name)
                             }
                         }
@@ -1205,7 +1326,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
             val normalizedProvider = providerId?.lowercase()?.takeUnless { it == "vanilla" || it.isBlank() }
 
             plugin.databaseManager.connection.use { conn ->
-                // Build dynamic SQL — only touch columns the caller passed.
+                // Build dynamic SQL, only touch columns the caller passed.
                 val setClauses = mutableListOf("custom_mob_provider = ?")
                 if (normalIds != null) setClauses += "custom_mob_ids_normal = ?"
                 if (ominousIds != null) setClauses += "custom_mob_ids_ominous = ?"
@@ -1234,7 +1355,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         if (chamber != null) {
                             val refreshed = loadChamberFromDb(chamber.name)
                             if (refreshed != null) {
-                                chamberCache[chamber.name] = refreshed
+                                cachePut(refreshed)
                                 updateCacheExpiry(chamber.name)
                             }
                         }

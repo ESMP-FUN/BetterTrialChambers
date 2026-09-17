@@ -14,7 +14,7 @@ enum class CpuImpact(val text: String, val color: NamedTextColor, val mini: Stri
 }
 
 /**
- * One step of the `/trial setup` tour — a single setting presented to the operator.
+ * One step of the `/trial setup` tour, a single setting presented to the operator.
  *
  * Render-agnostic on purpose: holds only the config path + message keys + optional metadata,
  * so both the Dialog renderer and the clickable-chat renderer consume the same catalog. Text
@@ -46,7 +46,7 @@ sealed class SetupStep {
         override val configPath: String,
         val options: List<ChoiceOption>,
         override val cpuImpact: CpuImpact? = null,
-        /** Renders the current config value for the "Currently: …" line (e.g. seconds → "2 days"). */
+        /** Renders the current config value for the "Currently: ..." line (e.g. seconds -> "2 days"). */
         val formatCurrent: ((Any?) -> String)? = null,
     ) : SetupStep()
 }

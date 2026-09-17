@@ -80,10 +80,40 @@ class LootManager(private val plugin: BetterTrialChambers) {
         }
 
         val config = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(lootFile)
+
+        // Loot added through the editor is stored the way the game stores items,
+        // so it can be read on this Minecraft version or any later one, but not
+        // on an earlier one. If this file came from a newer version than the
+        // server is running, take a copy and say so before anything fails to
+        // load piecemeal. Files written before stamping existed report 0, which
+        // is always older and so never trips this.
+        com.esmpfun.bettertrialchambers.utils.SaveVersionStamp.warnIfFromNewerVersion(
+            file = lootFile,
+            stampedDataVersion = config.getInt(
+                "${com.esmpfun.bettertrialchambers.utils.SaveVersionStamp.SECTION}.data-version", 0
+            ),
+            stampedMinecraftVersion = config.getString(
+                "${com.esmpfun.bettertrialchambers.utils.SaveVersionStamp.SECTION}.minecraft-version"
+            ),
+            logger = plugin.logger,
+        )
+
         val tablesSection = config.getConfigurationSection("loot-tables") ?: return
 
+        tablesUnreadable.clear()
         tablesSection.getKeys(false).forEach { tableName ->
-            val tableSection = tablesSection.getConfigurationSection(tableName) ?: return@forEach
+            val tableSection = tablesSection.getConfigurationSection(tableName)
+            if (tableSection == null) {
+                // Something is under this name that is not a table at all. Said
+                // out loud rather than passed over: it used to be skipped in
+                // silence, so nobody knew their table was not in use.
+                plugin.logger.severe(
+                    "loot.yml: '$tableName' does not look like a loot table and has been skipped. " +
+                        "A table needs its settings indented underneath its name."
+                )
+                tablesUnreadable.add(tableName)
+                return@forEach
+            }
 
             try {
                 val lootTable = parseLootTable(tableName, tableSection)
@@ -92,12 +122,13 @@ class LootManager(private val plugin: BetterTrialChambers) {
             } catch (e: Exception) {
                 plugin.logger.severe("Failed to parse loot table $tableName: ${e.message}")
                 e.printStackTrace()
+                tablesUnreadable.add(tableName)
             }
         }
 
         // v1.5.1: Surface pre-1.5.0 loot entries that lost their NBT (e.g. an
         // ENCHANTED_BOOK row without any enchant data). They still drop as the
-        // bare material — re-add them through the editor to restore intent.
+        // bare material, re-add them through the editor to restore intent.
         val legacy = findLegacyItems()
         if (legacy.isNotEmpty()) {
             plugin.logger.warning(
@@ -111,9 +142,9 @@ class LootManager(private val plugin: BetterTrialChambers) {
     /**
      * Returns loot entries whose structured fields are obviously insufficient
      * to produce a meaningful item (the v1.5.0 faithful-loot fix only affects
-     * NEW entries — older ones still need to be re-added by the admin).
+     * NEW entries, older ones still need to be re-added by the admin).
      *
-     * Heuristic — only flags rows where the *intended* item plainly differs
+     * Heuristic, only flags rows where the *intended* item plainly differs
      * from what the bare material would produce:
      *  - ENCHANTED_BOOK with no enchant data
      *  - POTION / SPLASH_POTION / LINGERING_POTION / TIPPED_ARROW with no potionType + no customEffect
@@ -233,7 +264,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
      */
     private fun parseRollMode(raw: String?, context: String): com.esmpfun.bettertrialchambers.models.LootRollMode {
         if (raw != null && !com.esmpfun.bettertrialchambers.models.LootRollMode.isKnown(raw)) {
-            plugin.logger.warning("loot.yml: $context has unknown mode '$raw' — using 'weighted'. Valid: weighted, independent.")
+            plugin.logger.warning("loot.yml: $context has unknown mode '$raw', using 'weighted'. Valid: weighted, independent.")
         }
         return com.esmpfun.bettertrialchambers.models.LootRollMode.fromConfig(raw)
     }
@@ -279,9 +310,54 @@ class LootManager(private val plugin: BetterTrialChambers) {
 
         val rollMode = parseRollMode(data["mode"] as? String, "pool '$poolName'")
         val maxItems = ((data["max-items"] as? Number)?.toInt() ?: 0).coerceAtLeast(0)
+        val chance = parsePoolChance(data["chance"], poolName)
 
         return LootPool(poolName, minRolls, maxRolls, guaranteedItems, weightedItems,
-            commandRewards, economyRewards, rollMode, maxItems)
+            commandRewards, economyRewards, rollMode, maxItems, chance)
+    }
+
+    /**
+     * Reads `enchant-with-levels-min` / `-max`: enchant this item the way an
+     * enchanting table would, at a random cost between those two levels.
+     *
+     * This is what vanilla's chamber rewards actually do for their bows,
+     * crossbows, axes and chestplates, and it gives a whole believable set of
+     * enchantments rather than a single one picked off a list. Both values are
+     * required together, because one on its own has no meaning.
+     */
+    private fun parseEnchantWithLevels(data: Map<String, Any>, typeStr: String): Pair<Int, Int>? {
+        val min = (data["enchant-with-levels-min"] as? Number)?.toInt()
+        val max = (data["enchant-with-levels-max"] as? Number)?.toInt()
+        if (min == null && max == null) return null
+        if (min == null || max == null) {
+            plugin.logger.warning(
+                "loot.yml: '$typeStr' sets only one of enchant-with-levels-min / " +
+                    "enchant-with-levels-max. Both are needed, so this has been ignored."
+            )
+            return null
+        }
+        val lo = min.coerceAtLeast(0)
+        val hi = max.coerceAtLeast(0)
+        return if (lo > hi) hi to lo else lo to hi
+    }
+
+    /**
+     * Reads a pool's `chance`: how often the whole pool runs, as a number from
+     * 0 to 1. Accepts a percentage too, so both `chance: 0.25` and `chance: 25`
+     * mean a quarter of the time, because a server owner writing this by hand
+     * could reasonably reach for either.
+     */
+    private fun parsePoolChance(raw: Any?, poolName: String): Double {
+        val value = (raw as? Number)?.toDouble() ?: return 1.0
+        val normalised = if (value > 1.0) value / 100.0 else value
+        if (normalised < 0.0 || normalised > 1.0) {
+            plugin.logger.warning(
+                "loot.yml: pool '$poolName' has chance $value, which is outside 0 to 1 " +
+                    "(or 0 to 100 as a percentage). Treating it as always running."
+            )
+            return 1.0
+        }
+        return normalised
     }
 
     /**
@@ -292,7 +368,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
         var lo = min.coerceAtLeast(0)
         var hi = max.coerceAtLeast(0)
         if (lo > hi) {
-            plugin.logger.warning("loot.yml: $context has min-rolls ($lo) > max-rolls ($hi) — swapped.")
+            plugin.logger.warning("loot.yml: $context has min-rolls ($lo) > max-rolls ($hi); swapped.")
             val t = lo; lo = hi; hi = t
         }
         return lo to hi
@@ -313,7 +389,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
             plugin.logger.severe("")
             plugin.logger.severe("WRONG:")
             plugin.logger.severe("  weighted-items:")
-            plugin.logger.severe("    - type: COMMAND  ← Don't use this!")
+            plugin.logger.severe("    - type: COMMAND   (do not use this)")
             plugin.logger.severe("")
             plugin.logger.severe("CORRECT:")
             plugin.logger.severe("  command-rewards:")
@@ -327,7 +403,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
             return null
         }
 
-        // Vanilla / datapack loot-table passthrough — type: VANILLA_TABLE with table field
+        // Vanilla / datapack loot-table passthrough, type: VANILLA_TABLE with table field
         val vanillaTable = if (typeStr.equals("VANILLA_TABLE", ignoreCase = true)) {
             val tableId = data["table"] as? String
             if (tableId.isNullOrBlank()) {
@@ -340,13 +416,13 @@ class LootManager(private val plugin: BetterTrialChambers) {
                 return null
             }
             if (org.bukkit.NamespacedKey.fromString(tableId.lowercase()) == null) {
-                plugin.logger.warning("Invalid loot table key '$tableId' — expected namespace:path (e.g. minecraft:chests/trial_chambers/reward)")
+                plugin.logger.warning("Invalid loot table key '$tableId', expected namespace:path (e.g. minecraft:chests/trial_chambers/reward)")
                 return null
             }
             tableId.lowercase()
         } else null
 
-        // Custom item plugin support — type: CUSTOM_ITEM with plugin + item-id fields
+        // Custom item plugin support, type: CUSTOM_ITEM with plugin + item-id fields
         val customItemPlugin = data["plugin"] as? String
         val customItemId = data["item-id"] as? String
 
@@ -364,7 +440,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
         val material = if (typeStr.equals("CUSTOM_ITEM", ignoreCase = true) || customItemPlugin != null ||
             vanillaTable != null
         ) {
-            Material.AIR // sentinel — real item(s) resolved at generation time
+            Material.AIR // sentinel, real item(s) resolved at generation time
         } else {
             try {
                 Material.valueOf(typeStr.uppercase())
@@ -381,12 +457,12 @@ class LootManager(private val plugin: BetterTrialChambers) {
         var amountMin = ((data["amount-min"] as? Number)?.toInt() ?: 1).coerceAtLeast(1)
         var amountMax = ((data["amount-max"] as? Number)?.toInt() ?: 1).coerceAtLeast(1)
         if (amountMin > amountMax) {
-            plugin.logger.warning("loot.yml: '$typeStr' has amount-min ($amountMin) > amount-max ($amountMax) — swapped.")
+            plugin.logger.warning("loot.yml: '$typeStr' has amount-min ($amountMin) > amount-max ($amountMax); swapped.")
             val t = amountMin; amountMin = amountMax; amountMax = t
         }
         val weight = (data["weight"] as? Number)?.toDouble() ?: 1.0
         if (weight <= 0.0) {
-            plugin.logger.warning("loot.yml: '$typeStr' has weight $weight — entries with weight <= 0 never drop.")
+            plugin.logger.warning("loot.yml: '$typeStr' has weight $weight, entries with weight <= 0 never drop.")
         }
 
         val name = data["name"] as? String
@@ -398,18 +474,18 @@ class LootManager(private val plugin: BetterTrialChambers) {
         @Suppress("UNCHECKED_CAST")
         (data["enchantments"] as? List<String>)?.forEach { enchStr ->
             val parts = enchStr.split(":")
-            // A namespaced id ("minecraft:sharpness" / "somepack:blaze") also splits on ':' —
+            // A namespaced id ("minecraft:sharpness" / "somepack:blaze") also splits on ':',
             // treat the last segment as the level and everything before it as the id.
             if (parts.size >= 2) {
                 val enchantment = resolveEnchantment(parts.dropLast(1).joinToString(":"), enchStr)
                 val level = parts.last().toIntOrNull()
                 if (level == null) {
-                    plugin.logger.warning("loot.yml: enchantment entry '$enchStr' has a non-numeric level — skipped.")
+                    plugin.logger.warning("loot.yml: enchantment entry '$enchStr' has a non-numeric level; skipped.")
                 } else if (enchantment != null) {
                     enchantments[enchantment] = level
                 }
             } else {
-                plugin.logger.warning("loot.yml: enchantment entry '$enchStr' isn't NAME:level — skipped.")
+                plugin.logger.warning("loot.yml: enchantment entry '$enchStr' isn't NAME:level; skipped.")
             }
         }
 
@@ -445,11 +521,11 @@ class LootManager(private val plugin: BetterTrialChambers) {
         var potionLevelMin = (data["potion-level-min"] as? Number)?.toInt()
         var potionLevelMax = (data["potion-level-max"] as? Number)?.toInt()
         if ((potionLevelMin == null) != (potionLevelMax == null)) {
-            plugin.logger.warning("loot.yml: '$typeStr' sets only one of potion-level-min/potion-level-max — both are required; ignored.")
+            plugin.logger.warning("loot.yml: '$typeStr' sets only one of potion-level-min/potion-level-max, both are required; ignored.")
             potionLevelMin = null; potionLevelMax = null
         }
         if (potionLevelMin != null && potionLevelMax != null && potionLevelMin > potionLevelMax) {
-            plugin.logger.warning("loot.yml: '$typeStr' has potion-level-min > potion-level-max — swapped.")
+            plugin.logger.warning("loot.yml: '$typeStr' has potion-level-min > potion-level-max; swapped.")
             val t = potionLevelMin; potionLevelMin = potionLevelMax; potionLevelMax = t
         }
         val customEffectType = data["custom-effect-type"] as? String
@@ -457,14 +533,14 @@ class LootManager(private val plugin: BetterTrialChambers) {
         val effectDuration = (data["effect-duration"] as? Number)?.toInt()
 
         // Ominous bottles only hold Bad Omen at amplifier 0-4 (Paper's OminousBottleMeta
-        // throws outside that range — pre-1.7.1 a potion-level: 5 killed the whole roll).
+        // throws outside that range, pre-1.7.1 a potion-level: 5 killed the whole roll).
         val isOminousBottle = material == Material.OMINOUS_BOTTLE || (isOminousPotion && material == Material.POTION)
         if (isOminousBottle) {
             if (data["potion-type"] != null) {
-                plugin.logger.warning("loot.yml: '$typeStr' is an ominous bottle — 'potion-type' is ignored (ominous bottles can only hold Bad Omen).")
+                plugin.logger.warning("loot.yml: '$typeStr' is an ominous bottle, 'potion-type' is ignored (ominous bottles can only hold Bad Omen).")
             }
             fun clampAmp(v: Int, field: String): Int {
-                if (v !in 0..4) plugin.logger.warning("loot.yml: ominous bottle $field $v is out of range 0-4 (Bad Omen I-V) — clamped.")
+                if (v !in 0..4) plugin.logger.warning("loot.yml: ominous bottle $field $v is out of range 0-4 (Bad Omen I-V); clamped.")
                 return v.coerceIn(0, 4)
             }
             potionLevel = potionLevel?.let { clampAmp(it, "potion-level") }
@@ -473,6 +549,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
         }
 
         // Parse variable durability
+        val enchantLevels = parseEnchantWithLevels(data, typeStr)
         val durabilityMin = (data["durability-min"] as? Number)?.toInt()
         val durabilityMax = (data["durability-max"] as? Number)?.toInt()
 
@@ -514,6 +591,9 @@ class LootManager(private val plugin: BetterTrialChambers) {
             effectDuration = effectDuration,
             durabilityMin = durabilityMin,
             durabilityMax = durabilityMax,
+            enchantWithLevelsMin = enchantLevels?.first,
+            enchantWithLevelsMax = enchantLevels?.second,
+            enchantWithLevelsTreasure = data["enchant-with-levels-treasure"] as? Boolean ?: false,
             instrument = instrument,
             customItemPlugin = customItemPlugin,
             customItemId = customItemId,
@@ -528,17 +608,15 @@ class LootManager(private val plugin: BetterTrialChambers) {
 
     /**
      * Resolves an enchantment by Bukkit-style name ("SHARPNESS") or namespaced key
-     * ("minecraft:sharpness", "somepack:blaze"). Warns and returns null when unknown —
+     * ("minecraft:sharpness", "somepack:blaze"). Warns and returns null when unknown,
      * pre-1.7.1 an unknown name was skipped silently, so typos lost enchants invisibly.
      */
     private fun resolveEnchantment(name: String, sourceEntry: String): Enchantment? {
         val key = org.bukkit.NamespacedKey.fromString(name.lowercase())
             ?: org.bukkit.NamespacedKey.minecraft(name.lowercase())
-        val enchantment = io.papermc.paper.registry.RegistryAccess.registryAccess()
-            .getRegistry(io.papermc.paper.registry.RegistryKey.ENCHANTMENT)
-            .get(key)
+        val enchantment = com.esmpfun.bettertrialchambers.utils.Registries.enchantment(key)
         if (enchantment == null) {
-            plugin.logger.warning("loot.yml: unknown enchantment '$name' in '$sourceEntry' — skipped. Use the in-game id (e.g. SHARPNESS or minecraft:sharpness).")
+            plugin.logger.warning("loot.yml: unknown enchantment '$name' in '$sourceEntry'; skipped. Use the in-game id (e.g. SHARPNESS or minecraft:sharpness).")
         }
         return enchantment
     }
@@ -547,18 +625,18 @@ class LootManager(private val plugin: BetterTrialChambers) {
     private fun parseEnchantmentRange(enchStr: String): com.esmpfun.bettertrialchambers.models.EnchantmentRange? {
         val parts = enchStr.split(":")
         if (parts.size < 3) {
-            plugin.logger.warning("loot.yml: enchantment range '$enchStr' isn't NAME:minLevel:maxLevel — skipped.")
+            plugin.logger.warning("loot.yml: enchantment range '$enchStr' isn't NAME:minLevel:maxLevel; skipped.")
             return null
         }
         val enchantment = resolveEnchantment(parts.dropLast(2).joinToString(":"), enchStr) ?: return null
         var min = parts[parts.size - 2].toIntOrNull()
         var max = parts.last().toIntOrNull()
         if (min == null || max == null) {
-            plugin.logger.warning("loot.yml: enchantment range '$enchStr' has non-numeric levels — skipped.")
+            plugin.logger.warning("loot.yml: enchantment range '$enchStr' has non-numeric levels; skipped.")
             return null
         }
         if (min > max) {
-            plugin.logger.warning("loot.yml: enchantment range '$enchStr' has min > max — swapped.")
+            plugin.logger.warning("loot.yml: enchantment range '$enchStr' has min > max; swapped.")
             val t = min; min = max; max = t
         }
         return com.esmpfun.bettertrialchambers.models.EnchantmentRange(enchantment, min, max)
@@ -588,7 +666,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
             ?: (data["amount"] as? Number)?.toDouble() ?: return null
         val max = (data["max"] as? Number)?.toDouble() ?: min
         if (min < 0.0 || max < 0.0) {
-            plugin.logger.warning("loot.yml: economy-reward has a negative amount — skipped.")
+            plugin.logger.warning("loot.yml: economy-reward has a negative amount; skipped.")
             return null
         }
         val displayName = data["display-name"] as? String ?: ""
@@ -649,6 +727,13 @@ class LootManager(private val plugin: BetterTrialChambers) {
      */
     private fun generateLootFromPool(pool: LootPool, player: Player, redeem: RedeemContext?): List<ItemStack> {
         val items = mutableListOf<ItemStack>()
+
+        // A pool can be set to run only some of the time. Vanilla's vaults use
+        // this for their best item: a quarter of the time for a normal vault,
+        // three quarters for an ominous one. A pool that does not run this
+        // opening contributes nothing at all, including its guaranteed items
+        // and its command and economy rewards.
+        if (pool.chance < 1.0 && Random.nextDouble() >= pool.chance) return items
 
         // Add all guaranteed items (respect enabled flag + already-claimed redeem cap)
         pool.guaranteedItems.filter { it.enabled && redeem?.isBlocked(it) != true }.forEach { lootItem ->
@@ -733,7 +818,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
 
         // Roll for weighted items (respect enabled flag). The eligible list is
         // recomputed per roll so a capped item claimed on an earlier roll (or already
-        // claimed in the DB) drops out for the remaining rolls — its weight is then
+        // claimed in the DB) drops out for the remaining rolls, its weight is then
         // shared by the other items instead of it appearing twice.
         repeat(rolls) {
             val eligible = pool.weightedItems.filter { it.enabled && redeem?.isBlocked(it) != true }
@@ -765,10 +850,39 @@ class LootManager(private val plugin: BetterTrialChambers) {
      * Expands one rolled loot entry into its item stacks: a regular entry
      * yields exactly [createItemStack]'s single stack; a `VANILLA_TABLE`
      * entry yields every stack the referenced server loot table generates.
+     *
+     * Empty stacks are dropped here rather than passed on. [createItemStack]
+     * answers with an empty stack when an entry cannot be built at all (its
+     * stored item will not read back, or a custom-item plugin does not know the
+     * id any more), and nothing downstream was checking. Handing an empty stack
+     * to the server's item-drop call does not fail loudly: it spawns an item
+     * entity holding nothing, which vanishes on the next tick. So the player
+     * quietly received less loot than the table promised and only the console
+     * said why. Filtering here covers every caller and the vanilla-table path
+     * as well.
      */
     private fun expandLootItem(lootItem: LootItem, player: Player): List<ItemStack> {
-        val tableId = lootItem.vanillaTable ?: return listOf(createItemStack(lootItem, player))
-        return rollVanillaTable(tableId, player)
+        val tableId = lootItem.vanillaTable
+            ?: return splitIntoStacks(createItemStack(lootItem, player))
+        return rollVanillaTable(tableId, player).filterNot { it.isEmpty }
+    }
+
+    /**
+     * Splits an amount larger than the item's stack size into normal stacks, so
+     * "3 totems" hands out three totems rather than one, or one stack of three.
+     */
+    private fun splitIntoStacks(stack: ItemStack): List<ItemStack> {
+        if (stack.isEmpty) return emptyList()
+        val max = stack.maxStackSize.coerceAtLeast(1)
+        if (stack.amount <= max) return listOf(stack)
+        val stacks = ArrayList<ItemStack>()
+        var left = stack.amount
+        while (left > 0) {
+            val take = minOf(left, max)
+            stacks += stack.clone().also { it.amount = take }
+            left -= take
+        }
+        return stacks
     }
 
     /**
@@ -778,7 +892,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
      * run on the player's region thread. Loot generation is invoked from an
      * async coroutine (see VaultInteractListener), so off-thread callers hop
      * via the scheduler and wait on a bounded future; on-thread callers roll
-     * directly. Unknown keys log once per roll and yield no items — the rest
+     * directly. Unknown keys log once per roll and yield no items, the rest
      * of the pool still drops.
      */
     private fun rollVanillaTable(tableId: String, player: Player): List<ItemStack> {
@@ -787,7 +901,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
             return emptyList()
         }
         val table = plugin.server.getLootTable(key) ?: run {
-            plugin.logger.warning("[VanillaTable] Unknown loot table '$tableId' (not registered on this server — check the datapack is loaded)")
+            plugin.logger.warning("[VanillaTable] Unknown loot table '$tableId' (not registered on this server; check the datapack is loaded)")
             return emptyList()
         }
         val roll = {
@@ -817,7 +931,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
      * Selects a random item based on weights.
      */
     private fun selectWeightedItem(items: List<LootItem>): LootItem? {
-        // Weight <= 0 means "never drops" — pre-1.7.1, an all-zero-weight pool made the
+        // Weight <= 0 means "never drops", pre-1.7.1, an all-zero-weight pool made the
         // FIRST zero-weight entry drop every roll (0 * random = 0, first subtraction hit 0).
         val eligible = items.filter { it.weight > 0.0 }
         if (eligible.isEmpty()) return null
@@ -838,7 +952,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
     /**
      * Renders a loot name/lore line to a Component through the plugin's standard text
      * pipeline (MessageParser: `&` codes, `&#RRGGBB` hex, and MiniMessage tags), with
-     * Minecraft's forced-italic for custom names disabled — pre-1.7.1 these went through
+     * Minecraft's forced-italic for custom names disabled, pre-1.7.1 these went through
      * raw `Component.text` with `§` codes, which rendered but left names italic and
      * supported neither hex nor MiniMessage.
      */
@@ -861,6 +975,31 @@ class LootManager(private val plugin: BetterTrialChambers) {
     }
 
     /**
+     * Puts an enchantment on a loot item, in the right place for that item.
+     *
+     * An enchanted book does not work like an enchanted sword. The sword *is*
+     * enchanted; the book *stores* an enchantment for someone to move onto
+     * something else at an anvil, and the game keeps those two in different
+     * places on the item.
+     *
+     * Everything before this went through `addUnsafeEnchantment` for both,
+     * which on a book wrote to the "this item is enchanted" slot instead of the
+     * "this book holds an enchantment" slot. The result looked completely
+     * normal in the tooltip and was useless at an anvil, which is the only
+     * thing anybody wants an enchanted book for. Enchanted books are also one
+     * of the most common trial chamber rewards, so this was worth getting right.
+     */
+    private fun applyEnchantment(itemStack: ItemStack, enchantment: Enchantment, level: Int) {
+        val meta = itemStack.itemMeta
+        if (meta is org.bukkit.inventory.meta.EnchantmentStorageMeta) {
+            meta.addStoredEnchant(enchantment, level, true)
+            itemStack.itemMeta = meta
+        } else {
+            itemStack.addUnsafeEnchantment(enchantment, level)
+        }
+    }
+
+    /**
      * Creates an ItemStack from a LootItem.
      * Applies potions, enchantments, random enchantments, and variable durability.
      */
@@ -875,7 +1014,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
                     plugin.logger.warning("Skipping a loot item with unreadable serialized data.")
                     return ItemStack(Material.AIR, 0)
                 }
-            return base.clone().also { it.amount = amount.coerceIn(1, it.maxStackSize.coerceAtLeast(1)) }
+            return base.clone().also { it.amount = amount }
         }
 
         // Resolve custom plugin item (Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible)
@@ -927,7 +1066,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
             if (this is org.bukkit.inventory.meta.OminousBottleMeta) {
                 // Bad Omen amplifier: rolled from potion-level-min/max when set (matches
                 // vanilla's random-range set_ominous_bottle_amplifier), else potion-level.
-                // Coerced 0..4 defensively — Paper's setAmplifier throws outside that range.
+                // Coerced 0..4 defensively, Paper's setAmplifier throws outside that range.
                 val amplifier = (rolledAmplifier(lootItem) ?: 0).coerceIn(0, 4)
 
                 if (plugin.config.getBoolean("debug.verbose-logging", false)) {
@@ -945,10 +1084,8 @@ class LootManager(private val plugin: BetterTrialChambers) {
                     }
 
                     val effectType = try {
-                        // Use registry access instead of deprecated getByName
-                        org.bukkit.Registry.POTION_EFFECT_TYPE.get(
-                            org.bukkit.NamespacedKey.minecraft(lootItem.customEffectType.lowercase())
-                        )
+                        com.esmpfun.bettertrialchambers.utils.Registries
+                            .potionEffect(lootItem.customEffectType.lowercase())
                     } catch (_: Exception) {
                         null
                     }
@@ -989,13 +1126,13 @@ class LootManager(private val plugin: BetterTrialChambers) {
                 } else if (lootItem.potionType != null) {
                     // Handle standard potion types
                     // Use custom effects when a level (fixed or ranged) or duration is
-                    // specified — otherwise the plain base potion type is fully vanilla.
+                    // specified, otherwise the plain base potion type is fully vanilla.
                     val amplifierOverride = rolledAmplifier(lootItem)
                     val useCustomEffect = amplifierOverride != null ||
                         (lootItem.effectDuration != null && lootItem.effectDuration > 0)
 
                     if (useCustomEffect) {
-                        // v1.7.1: apply EVERY effect the potion type carries — TURTLE_MASTER
+                        // v1.7.1: apply EVERY effect the potion type carries, TURTLE_MASTER
                         // has two (Slowness + Resistance); the old firstOrNull() dropped one.
                         val baseEffects = lootItem.potionType.potionEffects
 
@@ -1081,10 +1218,9 @@ class LootManager(private val plugin: BetterTrialChambers) {
                         "${lootItem.instrument.uppercase()}_GOAT_HORN"
                     }
 
-                    // Resolve via the registry (v1.7.1 — replaces Field reflection)
-                    val instrument = io.papermc.paper.registry.RegistryAccess.registryAccess()
-                        .getRegistry(io.papermc.paper.registry.RegistryKey.INSTRUMENT)
-                        .get(org.bukkit.NamespacedKey.minecraft(instrumentName.lowercase()))
+                    // Resolve via the registry (v1.7.1, replaces Field reflection)
+                    val instrument = com.esmpfun.bettertrialchambers.utils.Registries
+                        .instrument(org.bukkit.NamespacedKey.minecraft(instrumentName.lowercase()))
                     if (instrument != null) {
                         setInstrument(instrument)
                         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
@@ -1110,20 +1246,45 @@ class LootManager(private val plugin: BetterTrialChambers) {
 
         // Add fixed enchantments (legacy format)
         lootItem.enchantments?.forEach { (enchantment, level) ->
-            itemStack.addUnsafeEnchantment(enchantment, level)
+            applyEnchantment(itemStack, enchantment, level)
         }
 
         // Add enchantment ranges (random level within range)
         lootItem.enchantmentRanges?.values?.forEach { range ->
             val randomLevel = Random.nextInt(range.minLevel, range.maxLevel + 1)
-            itemStack.addUnsafeEnchantment(range.enchantment, randomLevel)
+            applyEnchantment(itemStack, range.enchantment, randomLevel)
         }
 
         // Pick one random enchantment from pool
         if (!lootItem.randomEnchantmentPool.isNullOrEmpty()) {
             val randomEnch = lootItem.randomEnchantmentPool.random()
             val randomLevel = Random.nextInt(randomEnch.minLevel, randomEnch.maxLevel + 1)
-            itemStack.addUnsafeEnchantment(randomEnch.enchantment, randomLevel)
+            applyEnchantment(itemStack, randomEnch.enchantment, randomLevel)
+        }
+
+        // Enchant it the way an enchanting table would. Vanilla's chamber
+        // rewards do this for their bows, crossbows, axes and chestplates, and
+        // it produces a whole believable set of enchantments rather than a
+        // single one. Done last, and on the stack rather than the meta, because
+        // the server hands back a fresh item.
+        val enchantMin = lootItem.enchantWithLevelsMin
+        val enchantMax = lootItem.enchantWithLevelsMax
+        if (enchantMin != null && enchantMax != null) {
+            val levels = Random.nextInt(enchantMin, enchantMax + 1)
+            runCatching {
+                Bukkit.getItemFactory().enchantWithLevels(
+                    itemStack,
+                    levels,
+                    lootItem.enchantWithLevelsTreasure,
+                    java.util.Random(),
+                )
+            }.onSuccess { return it }
+                .onFailure {
+                    plugin.logger.warning(
+                        "loot.yml: could not enchant '${lootItem.type}' at level $levels " +
+                            "(${it.message}). The item still drops, just unenchanted."
+                    )
+                }
         }
 
         return itemStack
@@ -1142,7 +1303,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
             else -> pluginName
         }
         if (!org.bukkit.Bukkit.getPluginManager().isPluginEnabled(gatePluginName)) {
-            plugin.logger.warning("Custom item plugin '$gatePluginName' is not enabled — cannot resolve item '$itemId'")
+            plugin.logger.warning("Custom item plugin '$gatePluginName' is not enabled; cannot resolve item '$itemId'")
             return null
         }
         return when (pluginName.lowercase()) {
@@ -1169,7 +1330,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
             plugin.logger.warning("Nexo item not found: '$itemId'")
             null
         } else {
-            wrapper.javaClass.getMethod("build").invoke(wrapper) as? ItemStack
+            com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(wrapper, "build") as? ItemStack
         }
     } catch (e: Exception) {
         plugin.logger.warning("Failed to resolve Nexo item '$itemId': ${e.message}")
@@ -1184,7 +1345,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
             plugin.logger.warning("ItemsAdder item not found: '$itemId'")
             null
         } else {
-            instance.javaClass.getMethod("getItemStack").invoke(instance) as? ItemStack
+            com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(instance, "getItemStack") as? ItemStack
         }
     } catch (e: Exception) {
         plugin.logger.warning("Failed to resolve ItemsAdder item '$itemId': ${e.message}")
@@ -1199,7 +1360,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
             plugin.logger.warning("Oraxen item not found: '$itemId'")
             null
         } else {
-            builder.javaClass.getMethod("build").invoke(builder) as? ItemStack
+            com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(builder, "build") as? ItemStack
         }
     } catch (e: Exception) {
         plugin.logger.warning("Failed to resolve Oraxen item '$itemId': ${e.message}")
@@ -1207,16 +1368,16 @@ class LootManager(private val plugin: BetterTrialChambers) {
     }
 
     /**
-     * Resolves a CraftEngine item via CraftEngineItems.byId(Key) → buildItemStack().
+     * Resolves a CraftEngine item via CraftEngineItems.byId(Key) -> buildItemStack().
      *
      * Notes on the CraftEngine API (verified against Xiao-MoMi/craft-engine main):
      * - `CraftEngineItems.byId` takes a `net.momirealms.craftengine.core.util.Key`, not a String.
      *   We build the Key via its public `Key.from(String)` factory (accepts `"namespace:value"` or bare
-     *   value, defaulting to the `minecraft` namespace — CraftEngine's own items use the `craftengine`
+     *   value, defaulting to the `minecraft` namespace, CraftEngine's own items use the `craftengine`
      *   namespace, so pack items should be referenced as e.g. `"my_pack:item_name"`).
      * - `CustomItem<ItemStack>` exposes a no-arg `buildItemStack()` which returns the Bukkit ItemStack
      *   directly. Player-context overloads exist but take CraftEngine's own `Player` abstraction, not
-     *   Bukkit's — intentionally skipped here; static vault loot doesn't need player-context placeholders.
+     *   Bukkit's, intentionally skipped here; static vault loot doesn't need player-context placeholders.
      */
     private fun resolveCraftEngineItem(itemId: String): ItemStack? = try {
         val keyCls = Class.forName("net.momirealms.craftengine.core.util.Key")
@@ -1227,7 +1388,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
             plugin.logger.warning("CraftEngine item not found: '$itemId'")
             null
         } else {
-            customItem.javaClass.getMethod("buildItemStack").invoke(customItem) as? ItemStack
+            com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(customItem, "buildItemStack") as? ItemStack
         }
     } catch (e: Exception) {
         plugin.logger.warning("Failed to resolve CraftEngine item '$itemId': ${e.message}")
@@ -1238,29 +1399,39 @@ class LootManager(private val plugin: BetterTrialChambers) {
      * Resolves a MythicCrucible item via the MythicMobs API chain:
      *   MythicBukkit.inst().getItemManager().getItem(String) -> Optional<MythicItem>
      *     -> MythicItem.generateItemStack(int) -> AbstractItemStack (BukkitItemStack at runtime)
-     *     -> BukkitItemStack.build() -> org.bukkit.inventory.ItemStack
+     *     -> BukkitItemStack.getItemStack() -> org.bukkit.inventory.ItemStack
+     *        (build() on 4.x and early 5.x; both are tried)
      *
-     * MythicCrucible is an addon of MythicMobs — Crucible items are registered into the Mythic item
+     * MythicCrucible is an addon of MythicMobs, Crucible items are registered into the Mythic item
      * manager, so we query through the MythicBukkit API rather than a Crucible-specific entry point.
      * Amount is always generated as 1; the outer caller scales to the configured amount range.
      */
     private fun resolveMythicCrucibleItem(itemId: String): ItemStack? = try {
         val mythicBukkitCls = Class.forName("io.lumine.mythic.bukkit.MythicBukkit")
         val instance = mythicBukkitCls.getMethod("inst").invoke(null)
-        val itemManager = instance.javaClass.getMethod("getItemManager").invoke(instance)
-        val optional = itemManager.javaClass.getMethod("getItem", String::class.java).invoke(itemManager, itemId) as java.util.Optional<*>
+        val itemManager = com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(instance, "getItemManager")
+            ?: return null
+        val optional = com.esmpfun.bettertrialchambers.utils.Reflect
+            .method(itemManager.javaClass, "getItem", String::class.java)
+            ?.invoke(itemManager, itemId) as? java.util.Optional<*> ?: return null
         val mythicItem = optional.orElse(null)
         if (mythicItem == null) {
             plugin.logger.warning("MythicCrucible item not found: '$itemId' (is the item defined in a Mythic/Crucible item file?)")
             null
         } else {
-            // generateItemStack(int) -> AbstractItemStack; on Bukkit it's BukkitItemStack which has build() -> ItemStack
-            val abstractStack = mythicItem.javaClass.getMethod("generateItemStack", Int::class.javaPrimitiveType).invoke(mythicItem, 1)
+            // generateItemStack(int) -> AbstractItemStack; on Bukkit that is a BukkitItemStack
+            val abstractStack = com.esmpfun.bettertrialchambers.utils.Reflect
+                .method(mythicItem.javaClass, "generateItemStack", Int::class.javaPrimitiveType!!)
+                ?.invoke(mythicItem, 1)
             if (abstractStack == null) {
                 plugin.logger.warning("MythicCrucible.generateItemStack returned null for '$itemId'")
                 null
             } else {
-                abstractStack.javaClass.getMethod("build").invoke(abstractStack) as? ItemStack
+                // Mythic renamed this: 4.x and early 5.x built the Bukkit stack with
+                // build(), current 5.x (checked against 5.13.1) exposes getItemStack()
+                // instead. Asking for both keeps every version working.
+                (com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(abstractStack, "getItemStack")
+                    ?: com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(abstractStack, "build")) as? ItemStack
             }
         }
     } catch (e: Exception) {
@@ -1287,13 +1458,13 @@ class LootManager(private val plugin: BetterTrialChambers) {
     /**
      * Pays an economy reward via Vault. Rolls the amount in `[min, max]`, then
      * deposits + notifies on the main thread (economy providers expect it). A
-     * no-op with a debug warning when no Vault economy provider is installed —
+     * no-op with a debug warning when no Vault economy provider is installed,
      * so a missing provider never silently swallows other loot.
      */
     private fun applyEconomyReward(reward: EconomyReward, player: Player) {
         if (!com.esmpfun.bettertrialchambers.utils.VaultEconomyHook.isAvailable(plugin)) {
             if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-                plugin.logger.warning("Economy reward configured but no Vault economy provider is available — skipping.")
+                plugin.logger.warning("Economy reward configured but no Vault economy provider is available, skipping.")
             }
             return
         }
@@ -1328,10 +1499,51 @@ class LootManager(private val plugin: BetterTrialChambers) {
     fun getLootTableNames(): Set<String> = lootTables.keys
 
 
+    /**
+     * Names of tables in `loot.yml` that would not load this time round.
+     *
+     * They are not in memory, and saving rewrites the file from memory, so
+     * without this they would be quietly deleted from disk the first time
+     * anybody edited any loot in the menu. See [saveAllToFile].
+     */
+    private val tablesUnreadable = mutableSetOf<String>()
+
     fun saveAllToFile() {
         try {
             val file = File(plugin.dataFolder, "loot.yml")
+
+            // Saving rewrites the whole file from what is currently loaded. Any
+            // table that would not load is therefore not in what gets written,
+            // and would be gone for good. Somebody with a typo in one table who
+            // then edits a different one in the menu would lose the first
+            // outright, with no warning and no way back.
+            //
+            // A copy is kept first so nothing is ever actually lost, and the
+            // console says which tables are affected and where the copy is.
+            if (tablesUnreadable.isNotEmpty() && file.exists()) {
+                val backup = com.esmpfun.bettertrialchambers.utils.SaveVersionStamp.backUp(file)
+                plugin.logger.warning("=".repeat(72))
+                plugin.logger.warning(
+                    "These loot tables could not be read when the server started, so they " +
+                        "are not part of what is about to be saved: " + tablesUnreadable.joinToString(", ")
+                )
+                if (backup != null) {
+                    plugin.logger.warning("A copy of loot.yml exactly as it was has been saved as ${backup.name}.")
+                    plugin.logger.warning("Fix the problem the console reported earlier, then copy those tables back.")
+                }
+                plugin.logger.warning("=".repeat(72))
+            }
             val config = org.bukkit.configuration.file.YamlConfiguration()
+
+            // Record which Minecraft wrote this, so that if the server is ever
+            // moved back to an older version the load side can spot it and keep
+            // a copy of the file before anything goes wrong. See SaveVersionStamp.
+            val stamp = com.esmpfun.bettertrialchambers.utils.SaveVersionStamp
+            config.createSection(stamp.SECTION).apply {
+                set("minecraft-version", stamp.currentMinecraftVersion())
+                set("data-version", stamp.currentDataVersion())
+            }
+
             val root = config.createSection("loot-tables")
             lootTables.values.forEach { table ->
                 val sec = root.createSection(table.name)
@@ -1372,6 +1584,9 @@ class LootManager(private val plugin: BetterTrialChambers) {
                         poolMap["name"] = pool.name
                         poolMap["min-rolls"] = pool.minRolls
                         poolMap["max-rolls"] = pool.maxRolls
+                        // Only written when it is actually doing something, so
+                        // hand-authored pools are not littered with `chance: 1.0`.
+                        if (pool.chance < 1.0) poolMap["chance"] = pool.chance
                         if (pool.rollMode != com.esmpfun.bettertrialchambers.models.LootRollMode.WEIGHTED) {
                             poolMap["mode"] = pool.rollMode.name.lowercase()
                         }
@@ -1426,7 +1641,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
      * [parseLootItem] reads: `saveAllToFile` rewrites the whole file on any GUI loot edit,
      * so a field missing here is silently stripped from every hand-written entry (the
      * pre-1.7.1 version dropped potion/ominous/duration/durability/instrument/range fields
-     * and wrote VANILLA_TABLE entries back as `type: AIR` — destroying them).
+     * and wrote VANILLA_TABLE entries back as `type: AIR`, destroying them).
      */
     private fun serializeLootItem(li: LootItem): Map<String, Any> {
         val map = mutableMapOf<String, Any>()
@@ -1464,9 +1679,12 @@ class LootManager(private val plugin: BetterTrialChambers) {
         li.effectDuration?.let { map["effect-duration"] = it }
         li.durabilityMin?.let { map["durability-min"] = it }
         li.durabilityMax?.let { map["durability-max"] = it }
+        li.enchantWithLevelsMin?.let { map["enchant-with-levels-min"] = it }
+        li.enchantWithLevelsMax?.let { map["enchant-with-levels-max"] = it }
+        if (li.enchantWithLevelsTreasure) map["enchant-with-levels-treasure"] = true
         li.instrument?.let { map["instrument"] = it }
         li.serializedItem?.let { map["serialized-item"] = it }
-        // Redeem cap — only written when non-default so untouched tables stay clean.
+        // Redeem cap, only written when non-default so untouched tables stay clean.
         if (li.redeemScope != com.esmpfun.bettertrialchambers.models.RedeemScope.PER_RESET) {
             map["redeemable"] = li.redeemScope.name.lowercase().replace('_', '-')
             li.redeemId?.let { map["redeem-id"] = it }

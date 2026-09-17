@@ -14,7 +14,7 @@ import org.bukkit.event.entity.EntityTargetLivingEntityEvent
  *
  * Vanilla behaviour: a skeleton's arrow that clips another mob makes that mob
  * retaliate, and the wave dissolves into mob-vs-mob brawls (skeleton 1v1s,
- * 3v3s, …). In a Trial Chamber that's not just silly to watch — those deaths
+ * 3v3s, ...). In a Trial Chamber that's not just silly to watch, those deaths
  * still count toward wave/chamber completion, so a wave can clear itself with
  * the player doing nothing (which also corrupts TCP-MythicTrials tier progress,
  * since "clearing" is supposed to mean the player did the work).
@@ -24,7 +24,7 @@ import org.bukkit.event.entity.EntityTargetLivingEntityEvent
  * Player-vs-mob and mob-vs-player combat is never touched, and non-wave mobs
  * (wild animals, other plugins' entities) are left entirely alone.
  *
- * Two hooks, because suppressing the damage alone isn't enough — a mob can also
+ * Two hooks, because suppressing the damage alone isn't enough, a mob can also
  * acquire another wave mob as its AI target through other paths:
  *  - [onWaveMobDamage] cancels the friendly-fire hit (arrow, melee, splash).
  *  - [onWaveMobTarget] stops a wave mob from locking onto another wave mob.
@@ -36,7 +36,7 @@ class MobInfightingListener(private val plugin: BetterTrialChambers) : Listener 
     private fun enabled(): Boolean =
         plugin.isReady && plugin.config.getBoolean("spawner-waves.prevent-infighting", true)
 
-    /** Resolve the living source of a hit — the shooter behind a projectile, or the direct attacker. */
+    /** Resolve the living source of a hit, the shooter behind a projectile, or the direct attacker. */
     private fun sourceOf(damager: Entity): Entity? =
         if (damager is Projectile) damager.shooter as? Entity else damager
 

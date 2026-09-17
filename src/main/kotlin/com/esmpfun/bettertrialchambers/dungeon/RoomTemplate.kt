@@ -8,7 +8,7 @@ import java.io.Serializable
  * coords, jigsaw cells already swapped to a wall block so unconnected doors
  * stay walls), its [Connector]s, and role [tags]. Persisted compressed on disk.
  *
- * Air cells are omitted (parity with chamber snapshots) — dungeons generate
+ * Air cells are omitted (parity with chamber snapshots), dungeons generate
  * into empty space.
  */
 data class RoomTemplate(

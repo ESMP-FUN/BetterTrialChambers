@@ -8,15 +8,15 @@ import org.bukkit.entity.Entity
 /**
  * Citizens integration via reflection (v1.3.0).
  *
- * Mob id is either a numeric Citizens NPC id (preferred — stable across
+ * Mob id is either a numeric Citizens NPC id (preferred, stable across
  * renames) or an exact NPC name. The provider looks the NPC up in the
  * default registry, `clone()`s it so the template NPC isn't moved, and
  * spawns the clone at [location].
  *
- *   CitizensAPI.getNPCRegistry().getById(int) / iterator → NPC
- *   npc.clone() → NPC
- *   clone.spawn(Location) → boolean
- *   clone.getEntity() → org.bukkit.entity.Entity
+ *   CitizensAPI.getNPCRegistry().getById(int) / iterator -> NPC
+ *   npc.clone() -> NPC
+ *   clone.spawn(Location) -> boolean
+ *   clone.getEntity() -> org.bukkit.entity.Entity
  *
  * If the template lookup fails the provider returns null and the wave falls
  * back to vanilla for this spawn.
@@ -26,23 +26,25 @@ class CitizensProvider(private val plugin: BetterTrialChambers) : TrialMobProvid
     override val id: String = "citizens"
     override val displayName: String = "Citizens"
 
-    @Volatile private var cachedAvailable: Boolean? = null
+    /** Whether this plugin's classes are on the server; fixed for the run. */
+    @Volatile private var classPresent: Boolean? = null
 
     override fun isAvailable(): Boolean {
-        cachedAvailable?.let { return it }
-        val present = Bukkit.getPluginManager().getPlugin("Citizens")?.isEnabled == true
-        if (!present) { cachedAvailable = false; return false }
+        // Asked of the plugin manager every time on purpose: it is a map lookup,
+        // and caching the answer meant a plugin that starts after this one was
+        // written off for the rest of the server's run. Only whether its classes
+        // are there is remembered, which cannot change while the server is up.
+        if (Bukkit.getPluginManager().getPlugin("Citizens")?.isEnabled != true) return false
+        classPresent?.let { return it }
         return try {
             Class.forName("net.citizensnpcs.api.CitizensAPI")
-            cachedAvailable = true
+            classPresent = true
             true
         } catch (_: Throwable) {
-            cachedAvailable = false
+            classPresent = false
             false
         }
     }
-
-    fun invalidate() { cachedAvailable = null }
 
     override fun spawnMob(mobId: String, location: Location, ominous: Boolean): Entity? {
         if (!isAvailable()) return null
@@ -64,7 +66,7 @@ class CitizensProvider(private val plugin: BetterTrialChambers) : TrialMobProvid
                     var found: Any? = null
                     while (it.hasNext()) {
                         val npc = it.next() ?: continue
-                        val name = runCatching { npc.javaClass.getMethod("getName").invoke(npc) as? String }.getOrNull()
+                        val name = com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(npc, "getName") as? String
                         if (name?.equals(mobId, ignoreCase = true) == true) { found = npc; break }
                     }
                     found

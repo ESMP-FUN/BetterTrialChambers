@@ -11,12 +11,12 @@ import org.bukkit.inventory.Inventory
  * Subclasses construct themselves with `super(...)`, populate slots via
  * [set] and the [VcGuiItem.Companion.of] builders, then call [open] to
  * show the GUI to a player. Click dispatch happens via [VcGuiItem.onClick]
- * closures — there is no central click-handler method to override.
+ * closures, there is no central click-handler method to override.
  *
  * Lifecycle hooks:
- * - [handleClose] — fires once when the player closes the inventory.
+ * - [handleClose], fires once when the player closes the inventory.
  *   Override to flush debounced saves, cancel timers, etc.
- * - [handleDrag] — fires when a drag lands on a slot whose [VcGuiItem]
+ * - [handleDrag], fires when a drag lands on a slot whose [VcGuiItem]
  *   declares `acceptsDrag = true`. Default cancels (stamp semantics);
  *   override and DON'T cancel to allow the bulk-deposit pattern (drag
  *   many items in, read on close).
@@ -27,7 +27,7 @@ import org.bukkit.inventory.Inventory
  *
  * @property rows 1..6, becomes a chest inventory of [rows] × 9 slots.
  * @property title Adventure [Component], passed straight to Paper's
- *   Component overload of `Bukkit.createInventory` (v1.7.1 — full
+ *   Component overload of `Bukkit.createInventory` (v1.7.1, full
  *   gradient/hover fidelity in titles, no legacy downgrade).
  * @property holder The session-state holder. Set up by the subclass
  *   constructor (concrete `BaseHolder` subclass with whatever fields).
@@ -86,7 +86,7 @@ abstract class VcGui(
     }
 
     /**
-     * Build the inventory and open it for the player. Re-entrant —
+     * Build the inventory and open it for the player. Re-entrant,
      * calling [open] on an already-open GUI reuses the inventory.
      */
     fun open(player: Player) {
@@ -97,7 +97,7 @@ abstract class VcGui(
     }
 
     /**
-     * If true, [VcGuiListener] skips ALL click and drag dispatch — players
+     * If true, [VcGuiListener] skips ALL click and drag dispatch, players
      * can place, take, swap, hotbar, and drag freely. [handleClose] still
      * fires (and is typically where freely-editable GUIs read the final
      * inventory contents).
@@ -107,7 +107,7 @@ abstract class VcGui(
      * the player is the source of truth, not the slot wiring.
      *
      * Subclasses generally shouldn't put `VcGuiItem`s into the inventory
-     * when this is true — anything they set would still be visible but
+     * when this is true, anything they set would still be visible but
      * non-clickable, which is confusing.
      */
     open val freelyEditable: Boolean = false
@@ -122,7 +122,7 @@ abstract class VcGui(
      *  For the bulk-deposit pattern (drag many items in, commit on close),
      *  the deposit GUI overrides [VcGui.handleDrag] to NOT cancel, plus
      *  overrides [VcGuiListener]'s general click-cancel behaviour by having
-     *  every slot declare `acceptsDrag = true` — but in practice you can
+     *  every slot declare `acceptsDrag = true`, but in practice you can
      *  just override `handleDrag` to a no-op and let drags through. */
     open fun handleDrag(ctx: DragContext) {
         ctx.event.isCancelled = true

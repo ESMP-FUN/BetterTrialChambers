@@ -8,7 +8,7 @@ import com.esmpfun.bettertrialchambers.database.TableNames
  *
  * Reads every numeric config value that has a sensible domain, clamps
  * out-of-range values back to a safe default, and logs a warning for each clamp.
- * Does not hard-fail — a misconfigured server still boots, just with corrected
+ * Does not hard-fail, a misconfigured server still boots, just with corrected
  * in-memory values and a visible log trail so the admin can fix `config.yml`.
  *
  * Intentionally permissive: only the keys with known pathological values are
@@ -61,9 +61,30 @@ object ConfigValidator {
     /**
      * Validate and clamp. Returns the number of keys that were corrected.
      */
+    /** Settings an older `/trial setup` wrote under the wrong section, and where they belong. */
+    private val MISPLACED_BY_SETUP = mapOf(
+        "reset.reset-require-confirmation" to "global.reset-require-confirmation",
+        "reset.use-fawe" to "global.use-fawe",
+    )
+
     fun validate(plugin: BetterTrialChambers): Int {
         val config = plugin.config
         var clamped = 0
+
+        // The setup tour wrote two of its answers to the wrong section until
+        // 2.1.1, so anyone who turned these on there had nothing happen. Carry
+        // the answer over to the setting that is actually read, and clear the
+        // one that never did anything.
+        for ((wrong, right) in MISPLACED_BY_SETUP) {
+            if (!config.contains(wrong)) continue
+            val value = config.get(wrong)
+            if (value is Boolean && !config.getBoolean(right, false)) {
+                config.set(right, value)
+                plugin.logger.info("[Config] Moved '$wrong' to '$right' (it was written in the wrong place by an older setup tour).")
+            }
+            config.set(wrong, null)
+            clamped++
+        }
 
         // v1.7.0: database.table-prefix must be letters/digits/underscore, max 16 chars.
         // DatabaseManager falls back to the default at runtime; warn here so the admin
@@ -79,7 +100,7 @@ object ConfigValidator {
         }
 
         for (rule in rules) {
-            if (!config.contains(rule.key)) continue  // key absent → plugin default wins
+            if (!config.contains(rule.key)) continue  // key absent -> plugin default wins
 
             val raw = config.getLong(rule.key, Long.MIN_VALUE)
             if (raw == Long.MIN_VALUE) {
@@ -97,10 +118,12 @@ object ConfigValidator {
 
             val min = rule.min
             val max = rule.max
-            val belowMin = min != null && raw < min
-            val aboveMax = max != null && raw > max
-            if (belowMin || aboveMax) {
-                val clampedTo = if (belowMin) min!! else max!!
+            val clampedTo = when {
+                min != null && raw < min -> min
+                max != null && raw > max -> max
+                else -> null
+            }
+            if (clampedTo != null) {
                 plugin.logger.warning(
                     "[Config] '${rule.key}' = $raw is out of range " +
                         "[${rule.min ?: "-∞"}, ${rule.max ?: "+∞"}]" +

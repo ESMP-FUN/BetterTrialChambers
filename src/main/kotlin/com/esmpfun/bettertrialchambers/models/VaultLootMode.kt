@@ -7,7 +7,7 @@ import com.esmpfun.bettertrialchambers.BetterTrialChambers
  *
  * Added in v2.0.8. Before that there was only the `vaults.per-player-loot`
  * on/off switch, whose name suggested it could be turned off to get shared
- * loot — it couldn't. Off simply handed vaults back to plain Minecraft, which
+ * loot, it couldn't. Off simply handed vaults back to plain Minecraft, which
  * is still one open per player.
  */
 enum class VaultLootMode {
@@ -17,14 +17,14 @@ enum class VaultLootMode {
     /** First player to open a vault claims it; it stays shut for everybody else until the chamber resets. */
     SHARED,
 
-    /** The plugin does not touch vaults at all — plain Minecraft behaviour, custom loot tables ignored. */
+    /** The plugin does not touch vaults at all, plain Minecraft behaviour, custom loot tables ignored. */
     VANILLA;
 
     companion object {
         /**
          * Reads the configured mode, falling back to the old
          * `vaults.per-player-loot` switch for configs written before v2.0.8
-         * (true → [PER_PLAYER], false → [VANILLA], which is what that setting
+         * (true -> [PER_PLAYER], false -> [VANILLA], which is what that setting
          * actually did).
          */
         fun resolve(plugin: BetterTrialChambers): VaultLootMode {

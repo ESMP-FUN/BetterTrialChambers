@@ -13,14 +13,14 @@ import org.bukkit.plugin.Plugin
  * safely touch managers, listeners, and the database from within [onLoad]
  * without worrying about startup-order races.
  *
- * Modules unregister automatically when their backing plugin is disabled —
- * the registry watches `PluginDisableEvent` and invokes [onUnload] on
+ * Modules unregister automatically when their backing plugin is disabled: the
+ * registry watches `PluginDisableEvent` and invokes [onUnload] on
  * matching modules. Manual unregistration is also available via
  * [TCPModuleRegistry.unregister] for hot-reload scenarios.
  *
  * Implementations should be idempotent: [onLoad] may be called once per
  * TCP enable cycle, [onUnload] once per disable. Modules must NOT throw
- * from either method — uncaught exceptions are logged and the module is
+ * from either method; uncaught exceptions are logged and the module is
  * marked failed but the registry continues processing other modules.
  *
  * @since v1.3.3

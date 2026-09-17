@@ -3,6 +3,7 @@ package com.esmpfun.bettertrialchambers.managers
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
 import com.esmpfun.bettertrialchambers.database.DatabaseManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.bukkit.inventory.ItemStack
 import java.io.ByteArrayInputStream
@@ -18,7 +19,7 @@ import java.util.UUID
  * Backs the opt-in `chests.per-player-loot` feature: every player gets a
  * private copy of a chamber container's contents, stored one row per
  * (container position, player) in `player_container_loot`. The real block's
- * inventory is never modified — it stays the pristine template every new
+ * inventory is never modified, it stays the pristine template every new
  * player's copy is cloned from.
  *
  * Lifecycle: rows are cleared per chamber on reset ([clearChamber], called
@@ -36,6 +37,21 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
     data class ContainerPos(val x: Int, val y: Int, val z: Int)
 
     /**
+     * One lock per player, so a copy is never read while the contents from the
+     * last time they closed one are still being written.
+     *
+     * Closing a container saves in the background. Without this, re-opening
+     * before that write landed read the older contents back, and anything taken
+     * out in between existed twice. Locking per player rather than per container
+     * keeps one small entry per player instead of one per container they ever
+     * opened, and only that player's own copies are involved either way.
+     */
+    private val copyLocks = java.util.concurrent.ConcurrentHashMap<UUID, kotlinx.coroutines.sync.Mutex>()
+
+    private fun copyLock(player: UUID) =
+        copyLocks.computeIfAbsent(player) { kotlinx.coroutines.sync.Mutex() }
+
+    /**
      * Loads a player's private contents for a container, or null when they
      * have no copy yet (first open).
      */
@@ -43,7 +59,7 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
         chamberId: Int,
         pos: ContainerPos,
         player: UUID
-    ): Array<ItemStack?>? = withContext(Dispatchers.IO) {
+    ): Array<ItemStack?>? = copyLock(player).withLock { withContext(Dispatchers.IO) {
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
@@ -63,7 +79,7 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
             plugin.logger.warning("[ContainerLoot] Load failed (${pos.x},${pos.y},${pos.z}/$player): ${e.message}")
             null
         }
-    }
+    } }
 
     /** Persists a player's private contents for a container (upsert). */
     suspend fun saveContents(
@@ -71,7 +87,7 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
         pos: ContainerPos,
         player: UUID,
         contents: Array<ItemStack?>
-    ) = withContext(Dispatchers.IO) {
+    ) = copyLock(player).withLock { withContext(Dispatchers.IO) {
         val encoded = encodeContents(contents)
         val sql = if (plugin.databaseManager.databaseType == DatabaseManager.DatabaseType.MYSQL) {
             """
@@ -103,7 +119,7 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
         } catch (e: Exception) {
             plugin.logger.warning("[ContainerLoot] Save failed (${pos.x},${pos.y},${pos.z}/$player): ${e.message}")
         }
-    }
+    } }
 
     /**
      * Loads the shared template (the canonical contents every first-open copy
@@ -138,7 +154,7 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
      * Loads an OP OVERRIDE for a container (a template with `op_edited = 1`), or
      * null when none exists. Unlike [loadTemplate] this ignores auto-registry
      * rows (`op_edited = 0`), which are GUI listing entries only and must NOT
-     * freeze loot — untouched containers always roll fresh per player. v1.6.3.
+     * freeze loot, untouched containers always roll fresh per player. v1.6.3.
      */
     suspend fun loadOverride(
         chamberId: Int,
@@ -203,7 +219,7 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
     ) = withContext(Dispatchers.IO) {
         val encoded = encodeContents(contents)
         // A scan/registry save marks the row as NOT op-edited (op_edited = 0): it
-        // lists the container in the management GUI but never freezes loot —
+        // lists the container in the management GUI but never freezes loot,
         // untouched containers roll fresh per player. An op edit goes through
         // updateTemplateContents, which flips the flag to 1 (an override).
         val sql = if (plugin.databaseManager.databaseType == DatabaseManager.DatabaseType.MYSQL) {
@@ -272,7 +288,7 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
 
     /**
      * One stored template: its position, decoded contents, container icon, and
-     * whether an op has edited it ([opEdited] — edited templates persist across
+     * whether an op has edited it ([opEdited], edited templates persist across
      * resets; auto-rolled ones re-roll).
      */
     data class TemplateRow(
@@ -381,7 +397,7 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
     }
 
     /**
-     * Drops every player's container copies for a chamber — fresh loot for
+     * Drops every player's container copies for a chamber, fresh loot for
      * everyone after a reset. Shared templates are intentionally KEPT (op edits
      * persist across resets). Cheap no-op when the feature is unused. Returns
      * the number of copies removed.
@@ -406,40 +422,15 @@ class ContainerLootManager(private val plugin: BetterTrialChambers) {
 
     // ==== Encoding ====
 
-    fun encodeContents(contents: Array<ItemStack?>): String {
-        val baos = ByteArrayOutputStream()
-        DataOutputStream(baos).use { out ->
-            out.writeInt(contents.size)
-            for (item in contents) {
-                if (item == null || item.type.isAir) {
-                    out.writeInt(-1)
-                } else {
-                    val bytes = item.serializeAsBytes()
-                    out.writeInt(bytes.size)
-                    out.write(bytes)
-                }
-            }
-        }
-        return Base64.getEncoder().encodeToString(baos.toByteArray())
-    }
+    /**
+     * Contents to and from text. Both live in [ItemArrayCodec], which the
+     * chamber snapshots share, so the two cannot drift apart.
+     */
+    fun encodeContents(contents: Array<ItemStack?>): String =
+        com.esmpfun.bettertrialchambers.utils.ItemArrayCodec.encode(contents)
 
-    fun decodeContents(encoded: String): Array<ItemStack?>? = try {
-        val bytes = Base64.getDecoder().decode(encoded)
-        DataInputStream(ByteArrayInputStream(bytes)).use { input ->
-            val size = input.readInt()
-            require(size in 0..128) { "implausible container size $size" }
-            Array(size) {
-                val len = input.readInt()
-                if (len < 0) null
-                else {
-                    val buf = ByteArray(len)
-                    input.readFully(buf)
-                    ItemStack.deserializeBytes(buf)
-                }
-            }
+    fun decodeContents(encoded: String): Array<ItemStack?>? =
+        com.esmpfun.bettertrialchambers.utils.ItemArrayCodec.decode(encoded) { problem ->
+            plugin.logger.warning("[ContainerLoot] $problem")
         }
-    } catch (e: Exception) {
-        plugin.logger.warning("[ContainerLoot] Corrupt contents row ignored: ${e.message}")
-        null
-    }
 }

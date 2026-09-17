@@ -23,7 +23,7 @@ import org.joml.Vector3f
  * duration.
  *
  * Note: `ENTITY_PILLAGER_CELEBRATE` / `ENTITY_PILLAGER_AMBIENT` are random
- * variant pools — the API plays the sound *event*, not a specific `.ogg`.
+ * variant pools, the API plays the sound *event*, not a specific `.ogg`.
  */
 object VaultFeedback {
 
@@ -34,7 +34,7 @@ object VaultFeedback {
 
     /**
      * Spawns a per-player ✓/✗ display above [vaultLocation] and plays the
-     * matching sound. Safe to call from any thread — schedules onto the
+     * matching sound. Safe to call from any thread, schedules onto the
      * location's region thread internally.
      */
     fun showHologram(

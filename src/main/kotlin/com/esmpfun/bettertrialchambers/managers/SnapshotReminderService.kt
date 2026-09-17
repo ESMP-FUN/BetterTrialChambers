@@ -12,15 +12,15 @@ import java.io.File
 
 /**
  * Periodically (and on admin join) reminds operators that auto-discovered chambers
- * exist without a snapshot — without one the chamber can't be reset, so this is
+ * exist without a snapshot, without one the chamber can't be reset, so this is
  * actionable nagging rather than informational chatter.
  *
  * Config (`discovery.snapshot-reminder.*`):
  * - `enabled` (default true)
- * - `interval-minutes` (default 30)  — periodic console summary + admin chat ping
- * - `on-join` (default true)         — ping admins individually when they log in
+ * - `interval-minutes` (default 30) , periodic console summary + admin chat ping
+ * - `on-join` (default true)        , ping admins individually when they log in
  *
- * Notification target is anyone with `tcp.admin.snapshot` (the perm that lets them
+ * Notification target is anyone with `btc.admin.snapshot` (the perm that lets them
  * act on it via `/trial snapshot create`).
  */
 class SnapshotReminderService(private val plugin: BetterTrialChambers) : Listener {
@@ -40,7 +40,7 @@ class SnapshotReminderService(private val plugin: BetterTrialChambers) : Listene
                     val snapshotless = snapshotlessChambers()
                     if (snapshotless.isNotEmpty()) {
                         plugin.logger.info(
-                            "${snapshotless.size} discovered chamber(s) have no snapshot yet — " +
+                            "${snapshotless.size} discovered chamber(s) have no snapshot yet, " +
                                 "they cannot be reset. Run /trial snapshot create <chamber> on each."
                         )
                         plugin.scheduler.runTask(Runnable {
@@ -49,6 +49,10 @@ class SnapshotReminderService(private val plugin: BetterTrialChambers) : Listene
                                 .forEach { sendSummary(it, snapshotless) }
                         })
                     }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    // The plugin is shutting down. Passed on rather than logged,
+                    // so stopping the server does not report a failure.
+                    throw e
                 } catch (e: Exception) {
                     plugin.logger.warning("Snapshot reminder scheduler tick failed: ${e.message}")
                 }
