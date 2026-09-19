@@ -167,6 +167,7 @@ object MetricsService {
     fun reportHandled(t: Throwable, operation: String, vararg context: Pair<String, Any?>) {
         val tracker = errorTracker ?: return
         if (t is java.util.concurrent.CancellationException) return
+        if (!dueToReport(operation)) return
         runCatching {
             val attrs = Attributes.empty().put("operation", operation)
             for ((k, v) in context) {
@@ -220,6 +221,11 @@ object MetricsService {
                 "\\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\b",
                 "[uuid hidden]"
             )
+        // A file or database error quotes the path it failed on, and that names the hosting
+        // account. Longest first, so the plugin folder wins over the server folder inside it.
+        for ((from, to) in serverPaths(plugin)) {
+            tracker.anonymize(java.util.regex.Pattern.quote(from), java.util.regex.Matcher.quoteReplacement(to))
+        }
 
         runCatching {
             tracker.attributes
@@ -231,6 +237,35 @@ object MetricsService {
         }
         return tracker
     }
+
+    /** Absolute paths that should never leave the server, longest first. */
+    private fun serverPaths(plugin: BetterTrialChambers): List<Pair<String, String>> {
+        val data = plugin.dataFolder.absolutePath
+        return listOfNotNull(
+            data to "plugins/${plugin.dataFolder.name}",
+            plugin.dataFolder.parentFile?.parentFile?.absolutePath?.let { it to "." },
+            System.getProperty("user.home")?.takeIf { it.isNotBlank() }?.let { it to "~" },
+            System.getProperty("java.io.tmpdir")?.takeIf { it.isNotBlank() }?.let { it to "<temp>" }
+        ).distinctBy { it.first }.sortedByDescending { it.first.length }
+    }
+
+    /**
+     * Some sites report per interaction, such as opening a vault, so one broken database would
+     * otherwise send a report on every click. One per operation per ten minutes is enough to
+     * know it is happening.
+     */
+    private fun dueToReport(operation: String): Boolean {
+        val now = System.currentTimeMillis()
+        var fire = false
+        lastReported.compute(operation) { _, previous ->
+            if (previous == null || now - previous >= REPORT_INTERVAL_MS) { fire = true; now } else previous
+        }
+        return fire
+    }
+
+    private const val REPORT_INTERVAL_MS = 600_000L
+
+    private val lastReported = java.util.concurrent.ConcurrentHashMap<String, Long>()
 
     // ---- metric helpers (cheap, thread-safe, no player data) --------------------
 
@@ -314,6 +349,7 @@ object MetricsService {
      * needed no such call, so this is new in v2.0.5.
      */
     fun shutdown() {
+        lastReported.clear()
         val ctx = context ?: return
         context = null
         errorTracker = null
