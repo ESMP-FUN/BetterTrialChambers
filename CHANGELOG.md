@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [2.2.1] - 2026-09-20
+### Fixed
+- **Trial spawners are found again after a chunk that another plugin was changing.** When a chunk loaded, the plugin checked it for trial spawners. If another plugin was changing blocks in that chunk from a second thread at the same moment, the check failed with an error and that chunk's spawners were left off the list, so spawner waves could be missed there. The failure is now handled: the console says which chunk it was, and the spawners are picked up the next time the chunk loads or anything in it is broken or placed.
+- **Chunks load faster on busy worlds.** The check above asked the server to build a full description of every chest, barrel, sign, hopper and banner in the chunk, just to find the trial spawners among them. It now asks only about trial spawners.
+- **A repeating problem no longer sends a repeating error report.** Error reports are on by default and some are sent from places that run on every vault opened. One thing going wrong, such as a database that stopped answering, could send a report every time. Reports of the same kind are now sent at most once every ten minutes.
+- **Error reports no longer include the folder your server lives in.** When a file or database problem was reported, the message quoted the full path, which names your hosting account. Reports now show it as `plugins/BetterTrialChambers` instead. Your own console keeps the full path, because that is where it is useful.
+
 ## [2.2.0] - 2026-09-17
 ### Added
 - **Minecraft 26.3 support, as its own download.** This is the `-mc263` jar; keep using `-mc26` on 26.0 to 26.2 and the plain jar on 1.21.x. Each download now follows its own updates, so a 26.3 server is never offered a jar built for an older Minecraft.
@@ -1714,6 +1721,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[2.2.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.2.0...v2.2.1
+[2.2.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.12...v2.1.0
 [2.0.12]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.11...v2.0.12
 [2.0.11]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.10...v2.0.11
