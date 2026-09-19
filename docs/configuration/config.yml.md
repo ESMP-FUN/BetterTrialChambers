@@ -750,7 +750,7 @@ Enforce that normal keys only open normal vaults and ominous keys only open omin
 </details>
 
 {% hint style="info" %}
-BTC does not provide trial-key dupe protection. Use a dedicated plugin such as [AntiDupePro](https://modrinth.com/plugin/AntiDupePro).
+BTC does not provide trial-key dupe protection! Use a dedicated plugin such as [Better Anti-Dupe](https://modrinth.com/plugin/betterantidupe).
 {% endhint %}
 
 ***
