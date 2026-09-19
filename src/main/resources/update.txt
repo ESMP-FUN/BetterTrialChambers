@@ -1,6 +1,11 @@
 <black>.
 <#FF7F50> ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
 <black>.
+<#008080>[2.2.1] <gray>- <white>2026-09-20
+<#FFD700>FIXED: <white>Trial spawners no longer go missing from a chunk another plugin was changing
+<#FFD700>FIXED: <white>Chunks load faster on busy worlds
+<#FFD700>FIXED: <white>Error reports no longer repeat, or name your server's folder
+<black>.
 <#008080>[2.2.0] <gray>- <white>2026-09-17
 <#FFD700>NEW: <white>Minecraft 26.3 support as its own download <gray>(<white>-mc263<gray>)
 <#FFD700>FIXED: <white>Editing a chamber's loot no longer wipes the server's default loot
