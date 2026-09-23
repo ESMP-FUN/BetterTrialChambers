@@ -1,7 +1,7 @@
 package com.esmpfun.bettertrialchambers.listeners
 
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
-import com.esmpfun.bettertrialchambers.integrations.MetricsService
+import com.esmpfun.bettertrialchambers.utils.ChunkBlockEntities
 import org.bukkit.Material
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -18,9 +18,7 @@ import org.bukkit.event.world.WorldUnloadEvent
  *
  * **Chunk load**, re-scan the chunk's tile entities for `TRIAL_SPAWNER` and
  * replace the index's entries for that chunk. Catches spawners that were broken
- * while the chunk was unloaded. The filtering overload is deliberate: the no-arg
- * `tileEntities` builds a snapshot `BlockState` for every chest, sign and hopper
- * in the chunk, on every chunk load, to find at most a handful of spawners.
+ * while the chunk was unloaded.
  *
  * **Block break / place**, keep the index live as players modify the world.
  * MONITOR priority + `ignoreCancelled = true` so cancelled events (by
@@ -37,21 +35,9 @@ class TrialSpawnerIndexListener(private val plugin: BetterTrialChambers) : Liste
     @EventHandler(priority = EventPriority.MONITOR)
     fun onChunkLoad(event: ChunkLoadEvent) {
         val chunk = event.chunk
-        val spawners = try {
-            chunk.getTileEntities({ it.type == Material.TRIAL_SPAWNER }, false).map { it.block }
-        } catch (e: Exception) {
-            // The server walks its own block-entity map here with no copy, so another plugin
-            // writing to it from a second thread breaks the walk mid-way. Skipping one chunk
-            // only delays it: any break or place in it re-indexes, as does the next load.
-            plugin.logger.warning(
-                "Could not check chunk ${chunk.x}, ${chunk.z} in ${chunk.world.name} for trial" +
-                    " spawners, so they may be missing from this session's list until the chunk" +
-                    " loads again. This is usually another plugin changing blocks from a second" +
-                    " thread. Details: ${e.message}"
-            )
-            MetricsService.reportHandled(e, "spawner-index-chunk-load")
-            return
-        }
+        // A skipped chunk only delays it: any break or place in it re-indexes, as does the next load.
+        val spawners = ChunkBlockEntities.find(plugin, chunk, ChunkBlockEntities.TRIAL_SPAWNER, "spawner-index-chunk-load")
+            ?.map { it.block } ?: return
         plugin.trialSpawnerIndex.rescanChunk(chunk.world, chunk.x, chunk.z, spawners)
     }
 

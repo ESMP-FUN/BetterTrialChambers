@@ -631,7 +631,7 @@ class BetterTrialChambers : JavaPlugin() {
                     // won't, if they're permanently spawn-chunked).
                     var seeded = 0
                     for (world in server.worlds) {
-                        seeded += trialSpawnerIndex.seedFromLoadedChunks(world)
+                        seeded += trialSpawnerIndex.seedFromLoadedChunks(this@BetterTrialChambers, world)
                     }
                     logger.info("[Spawner Index] Seeded $seeded trial spawner(s) from already-loaded chunks")
                 })
