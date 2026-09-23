@@ -10,19 +10,5 @@
 <#FFD700>FIXED: <white>The chunk check error from 2.2.1 is fixed everywhere, not just in one place
 <#FFD700>FIXED: <white>Chunks load faster when finding new Trial Chambers is on
 <black>.
-<#008080>[2.2.1] <gray>- <white>2026-09-20
-<#FFD700>FIXED: <white>Trial spawners no longer go missing from a chunk another plugin was changing
-<#FFD700>FIXED: <white>Chunks load faster on busy worlds
-<#FFD700>FIXED: <white>Error reports no longer repeat, or name your server's folder
-<black>.
-<#008080>[2.2.0] <gray>- <white>2026-09-17
-<#FFD700>NEW: <white>Minecraft 26.3 support as its own download <gray>(<white>-mc263<gray>)
-<#FFD700>FIXED: <white>Editing a chamber's loot no longer wipes the server's default loot
-<#FFD700>FIXED: <white>Menu screens now check the permission behind each action
-<#FFD700>FIXED: <white>Update checks find the right download for your server
-<#FFD700>FIXED: <white>Chambers saved by TrialChamberPro load and reset again
-<#FFD700>FIXED: <white>Land-claim protection works on Residence, Lands and GriefPrevention
-<#FFD700>FIXED: <white>Many more fixes, see the full changelog
-<black>.
 <#FF7F50> ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
 <black>.
