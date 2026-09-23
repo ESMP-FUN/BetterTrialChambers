@@ -186,8 +186,9 @@ class DungeonCommand(private val plugin: BetterTrialChambers) : SubcommandHandle
     }
 
     private fun dungeonConfig(): YamlConfiguration {
-        plugin.saveResource("dungeon.yml", false)
-        return YamlConfiguration.loadConfiguration(File(plugin.dataFolder, "dungeon.yml"))
+        val file = File(plugin.dataFolder, "dungeon.yml")
+        if (!file.exists()) plugin.saveResource("dungeon.yml", false)
+        return YamlConfiguration.loadConfiguration(file)
     }
 
     private fun wallFallbackBlockData(): String {
