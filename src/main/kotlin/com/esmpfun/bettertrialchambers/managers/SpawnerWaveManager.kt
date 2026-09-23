@@ -675,8 +675,10 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
         try {
             for (cx in (chamber.minX shr 4)..(chamber.maxX shr 4)) {
                 for (cz in (chamber.minZ shr 4)..(chamber.maxZ shr 4)) {
-                    for (state in world.getChunkAt(cx, cz).tileEntities) {
-                        if (state.type != Material.TRIAL_SPAWNER) continue
+                    val found = com.esmpfun.bettertrialchambers.utils.ChunkBlockEntities.find(
+                        plugin, world.getChunkAt(cx, cz), com.esmpfun.bettertrialchambers.utils.ChunkBlockEntities.TRIAL_SPAWNER, "spawner-scan"
+                    ) ?: return null
+                    for (state in found) {
                         if (state.x in chamber.minX..chamber.maxX &&
                             state.y in chamber.minY..chamber.maxY &&
                             state.z in chamber.minZ..chamber.maxZ

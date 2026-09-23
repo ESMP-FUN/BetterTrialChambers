@@ -163,10 +163,12 @@ class TrialSpawnerIndex {
      *
      * Must be called on the main thread (or the world's region thread on Folia).
      */
-    fun seedFromLoadedChunks(world: World): Int {
+    fun seedFromLoadedChunks(plugin: com.esmpfun.bettertrialchambers.BetterTrialChambers, world: World): Int {
         var count = 0
         for (chunk in world.loadedChunks) {
-            val spawners = chunk.tileEntities.filter { it.block.type == Material.TRIAL_SPAWNER }.map { it.block }
+            val spawners = com.esmpfun.bettertrialchambers.utils.ChunkBlockEntities.find(
+                plugin, chunk, com.esmpfun.bettertrialchambers.utils.ChunkBlockEntities.TRIAL_SPAWNER, "spawner-index-startup-sweep"
+            )?.map { it.block } ?: continue
             if (spawners.isNotEmpty()) {
                 rescanChunk(world, chunk.x, chunk.z, spawners)
                 count += spawners.size

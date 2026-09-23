@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [Unreleased]
+### Fixed
+- **The 2.2.1 chunk fix now covers every place that checks a chunk.** 2.2.1 fixed this for the trial spawner list only. Finding new Trial Chambers when a chunk loads, the same search when the server starts, preparing a chamber's chest loot, and counting a chamber's spawners could all still fail the same way when another plugin was changing blocks from a second thread. Each one now says in the console which chunk it skipped and carries on, and each one asks the server only about the blocks it needs, so chunks load faster when finding new chambers is turned on.
+
 ## [2.2.1] - 2026-09-20
 ### Fixed
 - **Trial spawners are found again after a chunk that another plugin was changing.** When a chunk loaded, the plugin checked it for trial spawners. If another plugin was changing blocks in that chunk from a second thread at the same moment, the check failed with an error and that chunk's spawners were left off the list, so spawner waves could be missed there. The failure is now handled: the console says which chunk it was, and the spawners are picked up the next time the chunk loads or anything in it is broken or placed.

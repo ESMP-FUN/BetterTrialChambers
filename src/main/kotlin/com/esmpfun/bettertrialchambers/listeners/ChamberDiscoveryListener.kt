@@ -2,6 +2,7 @@ package com.esmpfun.bettertrialchambers.listeners
 
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
 import com.esmpfun.bettertrialchambers.managers.ChamberDiscoveryManager
+import com.esmpfun.bettertrialchambers.utils.ChunkBlockEntities
 import org.bukkit.Location
 import org.bukkit.World
 import org.bukkit.event.EventHandler
@@ -22,12 +23,11 @@ class ChamberDiscoveryListener(private val plugin: BetterTrialChambers) : Listen
         val world = event.world
         if (world.environment != World.Environment.NORMAL) return
 
-        val tileEntities = event.chunk.tileEntities
-        if (tileEntities.isEmpty()) return
+        val seeds = ChunkBlockEntities.find(
+            plugin, event.chunk, ChamberDiscoveryManager.SEED_BLOCKS, "discovery-chunk-load"
+        ) ?: return
 
-        for (state in tileEntities) {
-            if (!ChamberDiscoveryManager.isSeedBlock(state.type)) continue
-
+        for (state in seeds) {
             // Skip if this block already lives inside a registered chamber
             val blockX = state.x
             val blockY = state.y
