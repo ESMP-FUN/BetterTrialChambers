@@ -26,12 +26,14 @@ import org.bukkit.event.block.SpongeAbsorbEvent
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.hanging.HangingBreakByEntityEvent
 import org.bukkit.event.hanging.HangingBreakEvent
+import org.bukkit.event.hanging.HangingPlaceEvent
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent
 import org.bukkit.event.player.PlayerBucketEmptyEvent
 import org.bukkit.event.world.StructureGrowEvent
 import org.bukkit.event.entity.EntityChangeBlockEvent
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityExplodeEvent
+import org.bukkit.event.entity.EntityPlaceEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerMoveEvent
 import org.bukkit.event.player.PlayerTeleportEvent
@@ -613,6 +615,29 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         if (protectionOff("protect-decorations", true)) return
         val remover = (event as? HangingBreakByEntityEvent)?.remover
         if (denyDecorationRemoval(event.entity, remover)) event.isCancelled = true
+    }
+
+    /** Placing a decoration counts as placing a block, so `prevent-block-place` covers it too. */
+    private fun denyDecorationPlace(entity: org.bukkit.entity.Entity, player: Player?): Boolean {
+        if (player == null || protectionOff("prevent-block-place", true)) return false
+        if (player.hasPermission("btc.bypass.protection")) return false
+        val location = entity.location
+        protectedChamberAt(location) ?: return false
+        if (deferToWorldGuard(location, player)) return false
+        notifyBlocked(player, "cannot-place-blocks")
+        return true
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onHangingPlace(event: HangingPlaceEvent) {
+        if (denyDecorationPlace(event.entity, event.player)) event.isCancelled = true
+    }
+
+    /** Armour stands, and cushions on 26.3. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onEntityPlace(event: EntityPlaceEvent) {
+        if (!isDecoration(event.entity)) return
+        if (denyDecorationPlace(event.entity, event.player)) event.isCancelled = true
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
