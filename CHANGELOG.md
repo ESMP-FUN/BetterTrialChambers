@@ -6,7 +6,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [Unreleased]
 ### Fixed
-- **The 2.2.1 chunk fix now covers every place that checks a chunk, and the real cause is fixed.** 2.2.1 blamed another plugin changing blocks from a second thread. The actual cause was the server itself: while listing a chunk's chests, spawners and other blocks with stored data, it could tidy up an entry from that same list partway through, which broke the listing. The plugin now makes the list first and only looks at each block after the list is finished, so this cannot happen. This covers every place the plugin checks a chunk: the trial spawner list, finding new Trial Chambers when chunks load and when the server starts, preparing a chamber's chest loot, and counting a chamber's spawners. If a chunk check still fails for any other reason, the console names the chunk and the plugin carries on. Chunks also load faster when finding new chambers is turned on, because the plugin now asks the server only about vaults and trial spawners.
+- **Fixed the chunk check error for good.** The server could break its own list of a chunk's blocks while the plugin read it. 2.2.1 fixed one of five chunk checks and wrongly blamed other plugins. All five are fixed now.
+- **Chunks load faster when finding new Trial Chambers is on.** The plugin now asks the server only about vaults and trial spawners.
 
 ## [2.2.1] - 2026-09-20
 ### Fixed
