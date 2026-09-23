@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [Unreleased]
+### Fixed
+- **Players can no longer place item frames, paintings, armour stands or cushions in a protected chamber.** These now follow the `prevent-block-place` setting, like blocks do.
+
 ## [2.2.2] - 2026-09-23
 ### Fixed
 - **Fixed the chunk check error for good.** The server could break its own list of a chunk's blocks while the plugin read it. 2.2.1 fixed one of five chunk checks and wrongly blamed other plugins. All five are fixed now.
