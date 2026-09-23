@@ -120,10 +120,10 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
     }
 
     private fun sweepChunk(world: World, chunk: org.bukkit.Chunk) {
-        val tileEntities = chunk.tileEntities
-        if (tileEntities.isEmpty()) return
-        for (state in tileEntities) {
-            if (!isSeedBlock(state.type)) continue
+        val seeds = com.esmpfun.bettertrialchambers.utils.ChunkBlockEntities.find(
+            plugin, chunk, SEED_BLOCKS, "discovery-startup-sweep"
+        ) ?: return
+        for (state in seeds) {
             val loc = Location(world, state.x + 0.5, state.y + 0.5, state.z + 0.5)
             if (plugin.chamberManager.getCachedChamberAt(loc) != null) continue
             seed(world, state.x, state.y, state.z,
@@ -862,6 +862,8 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
             else -> false
         }
 
-        fun isSeedBlock(m: Material): Boolean = m == Material.VAULT || m == Material.TRIAL_SPAWNER
+        val SEED_BLOCKS = setOf(Material.VAULT, Material.TRIAL_SPAWNER)
+
+        fun isSeedBlock(m: Material): Boolean = m in SEED_BLOCKS
     }
 }
