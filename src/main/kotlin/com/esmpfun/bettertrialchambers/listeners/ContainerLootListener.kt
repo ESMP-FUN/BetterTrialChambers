@@ -416,7 +416,11 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
                         val results = mutableListOf<Triple<ContainerLootManager.ContainerPos, Array<ItemStack?>, Material>>()
                         try {
                             if (!world.isChunkLoaded(cx, cz)) world.getChunkAt(cx, cz)
-                            for (te in world.getChunkAt(cx, cz).tileEntities) {
+                            val found = com.esmpfun.bettertrialchambers.utils.ChunkBlockEntities.find(
+                                plugin, world.getChunkAt(cx, cz), ELIGIBLE, "container-loot-chamber-scan",
+                                useSnapshot = true
+                            ).orEmpty()
+                            for (te in found) {
                                 if (te !is Container) continue
                                 val b = te.block
                                 if (b.type !in ELIGIBLE) continue
