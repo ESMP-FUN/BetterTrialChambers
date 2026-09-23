@@ -118,7 +118,8 @@ class LootManager(private val plugin: BetterTrialChambers) {
             try {
                 val lootTable = parseLootTable(tableName, tableSection)
                 lootTables[tableName] = lootTable
-                plugin.logger.info("Loaded loot table: $tableName (${lootTable.weightedItems.size} weighted items)")
+                val itemCount = lootTable.getEffectivePools().sumOf { it.guaranteedItems.size + it.weightedItems.size }
+                plugin.logger.info("Loaded loot table: $tableName ($itemCount items)")
             } catch (e: Exception) {
                 plugin.logger.severe("Failed to parse loot table $tableName: ${e.message}")
                 e.printStackTrace()

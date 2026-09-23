@@ -193,8 +193,9 @@ class BetterTrialChambers : JavaPlugin() {
 
         // Save default config files (only written when absent)
         saveDefaultConfig()
-        saveResource("messages.yml", false)
-        saveResource("loot.yml", false)
+        for (name in listOf("messages.yml", "loot.yml")) {
+            if (!java.io.File(dataFolder, name).exists()) saveResource(name, false)
+        }
 
         // Merge keys added in newer versions into the user's existing settings/text files.
         // saveResource/saveDefaultConfig only write when the file is ABSENT, so upgraders would
