@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [Unreleased]
+## [2.2.2] - 2026-09-23
 ### Fixed
 - **Fixed the chunk check error for good.** The server could break its own list of a chunk's blocks while the plugin read it. 2.2.1 fixed one of five chunk checks and wrongly blamed other plugins. All five are fixed now.
 - **Chunks load faster when finding new Trial Chambers is on.** The plugin now asks the server only about vaults and trial spawners.
@@ -1728,6 +1728,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[2.2.2]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.2.1...v2.2.2
 [2.2.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.0.12...v2.1.0
