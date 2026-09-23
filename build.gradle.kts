@@ -14,7 +14,7 @@ plugins {
 }
 
 group = "com.esmpfun"
-version = "2.2.2"
+version = "2.2.3"
 
 repositories {
     mavenCentral()
@@ -75,7 +75,7 @@ dependencies {
 
     // PluginPulse — multi-source update checking + verified install staging.
     // Its no-restart reload module is left out: it cannot reload the bundled SQLite driver.
-    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.8.0")
+    implementation("com.github.ESMP-FUN.PluginPulse:pluginpulse-core:v0.9.0")
 
     // Anonymous usage metrics (relocated below). Replaced bStats in v2.0.5.
     // Pulls dev.faststats.metrics:core (+ :config at runtime) transitively.

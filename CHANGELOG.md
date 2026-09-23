@@ -4,8 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [Unreleased]
+## [2.2.3] - 2026-09-23
 ### Fixed
+- **Stopping the server right after it starts no longer prints an error from the update checker.** The same goes for stopping it while an update check is running.
+- **The update checker picks the download made for your Minecraft version,** including the separate 26.3 download.
 - **Players can no longer place item frames, paintings, armour stands or cushions in a protected chamber.** These now follow the `prevent-block-place` setting, like blocks do.
 - **No more "could not save messages.yml" warnings on every restart.** The same goes for `loot.yml` and `/trial dungeon`.
 - **The console now shows how many items each loot table has.** It used to say 0 for the default tables, which looked like they were empty.
@@ -1732,6 +1734,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[2.2.3]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.2.2...v2.2.3
 [2.2.2]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.2.1...v2.2.2
 [2.2.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.1.0...v2.2.0
