@@ -1,10 +1,10 @@
 <center>
 
-<img width="750" alt="Better Trial Chambers Banner" src="https://cdn.modrinth.com/data/cached_images/deb2866a173c3b758b82a8c950ea2269d93bcd78_0.webp" /><br>
+<img alt="Better Trial Chambers" src="https://raw.githubusercontent.com/ESMP-FUN/BetterTrialChambers/master/brand/btc-banner-animated.webp" /><br>
 
 Free forever. Updated almost daily.<br>
 
-[![Discord](https://img.shields.io/badge/join_%E2%86%92_-_Discord-gray?style=flat&logo=discord&logoSize=amd)](http://discord.gg/qwYcTpHsNC)
+[![Discord](https://img.shields.io/badge/join_%E2%86%92_-_Discord-gray?style=flat&logo=discord&logoSize=amd)](https://discord.gg/aWMU2JNXex)
 [![Ko-Fi](https://img.shields.io/badge/support_%E2%86%92_-_KoFi-gray?style=flat&logo=kofi&logoSize=amd)](https://ko-fi.com/darkstarworks)
 [![Patreon](https://img.shields.io/badge/support_%E2%86%92_-_Patreon-gray?style=flat&logo=patreon&logoSize=amd)](https://patreon.com/cw/darkstarworks)
 
@@ -46,9 +46,9 @@ Chambers register themselves as you find them. Done.
 <details>
 <summary>Old world, or you want to pick the chambers yourself?</summary>
 
-> Auto-discovery is off by default on purpose, because on established worlds, player-built stuff made of tuff and copper, which in rare cases the plugin mistakes for a trial chamber.
+> Auto-discovery is off by default on purpose, because on established worlds, player-built stuff made of tuff and copper in rare cases are mistaken by the plugin for a trial chamber.
 
-Select it with WorldEdit instead:
+Select chambers with WorldEdit instead (if your world has many of those structures):
 
 ```
 //wand
@@ -66,11 +66,11 @@ Same features either way. [Docs →](https://esmp-fun.gitbook.io/plugins/better-
 
 **Loot**
 - Every player gets their own vault loot
-- Chests, barrels, droppers and pots too, if you want
+  - Chests, barrels, droppers and pots too, if you want
 - Or make it a race: first player claims the vault, it stays shut for everyone else
 - Build your own loot tables. By weight, or by plain % chance
 - Different loot per chamber
-- Edit it all in a menu. No YAML
+- Edit it all in a menu. No YAML *(optional)*
 
 **Resets**
 - Chambers restore on a timer you set
@@ -81,7 +81,7 @@ Same features either way. [Docs →](https://esmp-fun.gitbook.io/plugins/better-
 - Nobody breaks blocks or spawners inside a chamber
 - Optional: let players tunnel in through the wall. They get no drops, the wall heals on reset
 
-**Custom chambers**
+**Custom chambers** *(optional)*
 - Use a datapack, such as [Crazy Chambers](https://modrinth.com/datapack/crazy-chambers)
 - Or make rooms yourself, the plugin stitches them into a new chamber
 
@@ -197,18 +197,18 @@ discovery:
 
 ### Want more?
 
-This plugin stays free. Three paid add-ons, if you want them — [esmp.fun/plugins](https://esmp.fun/plugins):
+This plugin stays free. Three paid add-ons, if you want them - [esmp.fun/plugins](https://esmp.fun/plugins):
 
-- **Mythic Trials** — chambers get harder every time a player clears them -> 25 difficulty tiers with custom tweaked smarter vanilla MobAI, better rewards and optional seasons
-- **Wild Spawners** — (custom-mob) trial spawners, anywhere on the map and/or in your shops
-- **Vault Crates** — crates that use real Trial Vaults instead of chests (no resource packs!)
+- **Mythic Trials** - chambers get harder every time a player clears them -> 25 difficulty tiers with custom tweaked smarter vanilla MobAI, better rewards and optional seasons
+- **Wild Spawners** - (custom-mob) trial spawners, anywhere on the map and/or in your shops
+- **Vault Crates** - crates that use real Trial Vaults instead of chests (no resource packs!)
 
 <br>
 
 ### Help
 
-- **[Docs](https://esmp-fun.gitbook.io/plugins/better-trial-chambers)** — start here
-- **[Discord](https://discord.gg/qwYcTpHsNC)** — ask me directly. Suggestions often ship the same week (more like hours, in most cases)
+- **[Docs](https://esmp-fun.gitbook.io/plugins/better-trial-chambers)** - start here
+- **[Discord](https://discord.gg/qwYcTpHsNC)** - ask me directly. Suggestions often ship the same week (more like hours, in most cases)
 - **[Bug reports](https://github.com/ESMP-FUN/BetterTrialChambers/issues)** · **[Source](https://github.com/ESMP-FUN/BetterTrialChambers)**
 
 <br>
@@ -219,6 +219,6 @@ This plugin stays free. Three paid add-ons, if you want them — [esmp.fun/plugi
 
 Made with Kotlin by [darkstarworks](https://github.com/ESMP-FUN)<br>
 
-[![Servers](https://img.shields.io/endpoint?url=https%3A%2F%2Ffaststats.dev%2Fapi%2Fshields%2Fbetter-trial-chambers%3Fmetric%3Dservers%26color%3Dorange%26icon%3D1&style=flat)](https://faststats.dev/project/better-trial-chambers)<br>
+[![Servers & Players](https://faststats.dev/embed/default:65de7feb-8979-46e4-b117-dda4a8a6e062:servers-and-players.svg?w=1000&h=300&theme=dark)](https://faststats.dev/project/better-trial-chambers/better-trial-chambers)
 
 </div>
