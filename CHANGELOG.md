@@ -7,6 +7,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ## [Unreleased]
 ### Fixed
 - **Players can no longer place item frames, paintings, armour stands or cushions in a protected chamber.** These now follow the `prevent-block-place` setting, like blocks do.
+- **No more "could not save messages.yml" warnings on every restart.** The same goes for `loot.yml` and `/trial dungeon`.
+- **The console now shows how many items each loot table has.** It used to say 0 for the default tables, which looked like they were empty.
 
 ## [2.2.2] - 2026-09-23
 ### Fixed
