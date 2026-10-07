@@ -446,6 +446,26 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
     }
 
     /**
+     * Records the first loot since the last reset, or clears it with null. Setting
+     * only takes when none is recorded yet, so the first looter starts the clock.
+     */
+    suspend fun setFirstLooted(chamberId: Int, timestamp: Long?): Boolean = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                val sql = if (timestamp == null) "UPDATE ${tables.chambers} SET first_looted_at = NULL WHERE id = ?"
+                else "UPDATE ${tables.chambers} SET first_looted_at = ? WHERE id = ? AND first_looted_at IS NULL"
+                conn.prepareStatement(sql).use { stmt ->
+                    if (timestamp == null) stmt.setInt(1, chamberId) else { stmt.setLong(1, timestamp); stmt.setInt(2, chamberId) }
+                    stmt.executeUpdate() > 0
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.severe("Failed to update first loot time: ${e.message}")
+            false
+        }
+    }
+
+    /**
      * Deletes a chamber and all associated data.
      */
     suspend fun deleteChamber(name: String): Boolean = withContext(Dispatchers.IO) {
@@ -748,6 +768,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
             snapshotFile = rs.getString("snapshot_file"),
             resetInterval = rs.getLong("reset_interval"),
             lastReset = rs.getLong("last_reset").takeIf { !rs.wasNull() },
+            firstLootedAt = runCatching { rs.getLong("first_looted_at").takeIf { !rs.wasNull() } }.getOrNull(),
             createdAt = rs.getLong("created_at"),
             normalLootTable = rs.getString("normal_loot_table"),
             ominousLootTable = rs.getString("ominous_loot_table"),

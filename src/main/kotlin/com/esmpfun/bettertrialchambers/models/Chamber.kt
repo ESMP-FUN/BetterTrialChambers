@@ -73,7 +73,9 @@ data class Chamber(
     val isPaused: Boolean = false,
     val broadcastResetComplete: Boolean = true,
     val displayName: String? = null,
-    val boundsConfirmed: Boolean = false
+    val boundsConfirmed: Boolean = false,
+    /** When someone first looted it since its last reset; null while untouched. */
+    val firstLootedAt: Long? = null,
 ) {
     /**
      * The effective player-facing name: the [displayName] if set (non-blank), otherwise

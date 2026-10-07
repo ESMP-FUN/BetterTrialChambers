@@ -55,6 +55,11 @@ global:
   # Set to 0 to disable automatic resets (manual reset only via /trial reset or GUI)
   # Common values: 86400 (daily), 172800 (48h), 604800 (weekly)
   default-reset-interval: 172800
+  # When true, a chamber's reset clock only starts once someone loots it (opens
+  # a vault or a chest inside), and a chamber nobody has touched never resets.
+  # Saves a lot of memory and work on servers with many chambers: only the
+  # chambers players actually use get reset. Off by default.
+  reset-after-first-loot: false
   reset-warning-times: [300, 60, 30] # Warnings in seconds before reset
   reset-complete-alert: true # Set to false to suppress the "chamber has been reset" message entirely
   # Who gets the "chamber has been reset" message.
