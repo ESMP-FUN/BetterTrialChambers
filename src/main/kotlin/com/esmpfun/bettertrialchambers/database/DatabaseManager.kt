@@ -436,6 +436,15 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
                     // Column already exists
                 }
 
+                // v2.3.0: when a chamber was first looted since its last reset, for
+                // reset-after-first-loot (NULL = untouched, so its timer hasn't started)
+                try {
+                    stmt.execute("ALTER TABLE ${tables.chambers} ADD COLUMN first_looted_at BIGINT")
+                    plugin.logger.info("Migration executed: Added first_looted_at column")
+                } catch (_: SQLException) {
+                    // Column already exists
+                }
+
                 // v1.6.3: marks a chamber whose bounds were confirmed via a thorough
                 // player-present expand pass (so the GUI hides its one-time expand prompt)
                 try {
