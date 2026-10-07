@@ -174,7 +174,7 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
             }
 
             openVirtual(
-                player, CopyHolder(chamber.id, pos), size,
+                player, CopyHolder(chamber.id, pos).also { plugin.resetManager.markLooted(chamber.id) }, size,
                 plugin.getGuiText("gui.container-loot.title"), contents
             )
         }

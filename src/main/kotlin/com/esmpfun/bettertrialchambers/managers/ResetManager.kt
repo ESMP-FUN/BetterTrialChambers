@@ -118,7 +118,11 @@ class ResetManager(private val plugin: BetterTrialChambers) {
             return
         }
 
-        val lastReset = chamber.lastReset ?: chamber.createdAt
+        // With reset-after-first-loot, an untouched chamber never resets, and the
+        // clock runs from its first loot rather than its last reset.
+        val afterLoot = plugin.config.getBoolean("global.reset-after-first-loot", false)
+        if (afterLoot && chamber.firstLootedAt == null) return
+        val lastReset = (if (afterLoot) chamber.firstLootedAt else null) ?: chamber.lastReset ?: chamber.createdAt
         val resetIntervalMs = chamber.resetInterval * 1000
         val nextResetTime = lastReset + resetIntervalMs
         val now = System.currentTimeMillis()
@@ -142,6 +146,12 @@ class ResetManager(private val plugin: BetterTrialChambers) {
 
             scheduledResets[chamber.id] = resetJob
         }
+    }
+
+    /** Starts a chamber's reset clock the first time it is looted after a reset. */
+    fun markLooted(chamberId: Int) {
+        if (!plugin.config.getBoolean("global.reset-after-first-loot", false)) return
+        resetScope.launch { plugin.chamberManager.setFirstLooted(chamberId, System.currentTimeMillis()) }
     }
 
     /**
@@ -381,6 +391,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
             // so a reset chamber starts counting from zero again.
             val now = System.currentTimeMillis()
             plugin.chamberManager.updateLastReset(chamber.id, now)
+            plugin.chamberManager.setFirstLooted(chamber.id, null)
             plugin.chamberManager.resetDestructionCounter(chamber.id)
 
             // Step 6: Optionally reset vault cooldowns (defaults to true for vanilla behavior)
@@ -1163,7 +1174,8 @@ class ResetManager(private val plugin: BetterTrialChambers) {
      * Gets the time until the next reset for a chamber.
      */
     fun getTimeUntilReset(chamber: Chamber): Long {
-        val lastReset = chamber.lastReset ?: chamber.createdAt
+        val afterLoot = plugin.config.getBoolean("global.reset-after-first-loot", false)
+        val lastReset = (if (afterLoot) chamber.firstLootedAt else null) ?: chamber.lastReset ?: chamber.createdAt
         val resetIntervalMs = chamber.resetInterval * 1000
         val nextResetTime = lastReset + resetIntervalMs
         val now = System.currentTimeMillis()
