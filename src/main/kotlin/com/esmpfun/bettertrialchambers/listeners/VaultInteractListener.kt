@@ -620,6 +620,7 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                     // Fire post-event for downstream consumers. Items are cloned so
                     // listeners can inspect the loot snapshot independently of the
                     // player's inventory state.
+                    chamber?.let { plugin.resetManager.markLooted(it.id) }
                     plugin.server.pluginManager.callEvent(
                         com.esmpfun.bettertrialchambers.api.events.VaultOpenedEvent(
                             player = player,
