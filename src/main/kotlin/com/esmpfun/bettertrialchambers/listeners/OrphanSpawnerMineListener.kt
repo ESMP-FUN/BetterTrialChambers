@@ -31,9 +31,7 @@ import org.bukkit.persistence.PersistentDataType
  *
  * TCP-WildSpawners (when installed) handles wild-preset spawner recovery
  * without Silk Touch via its own configurable hardness system. There is no
- * conflict: WildSpawners drives mining via [BlockDamageEvent] and sets the
- * block to AIR directly, [BlockBreakEvent] never fires for spawners it
- * manages, so this listener only ever runs when WildSpawners is absent.
+ * conflict: WildSpawners presets are left to WildSpawners, which mines them itself.
  *
  * "Orphaned" means: block has `tcp:preset_id` on its TileState AND
  * [com.esmpfun.bettertrialchambers.managers.ChamberManager.getCachedChamberAt]
@@ -58,6 +56,12 @@ class OrphanSpawnerMineListener(private val plugin: BetterTrialChambers) : Liste
 
         // If inside a registered chamber, leave it alone, ProtectionListener handles that.
         if (plugin.chamberManager.getCachedChamberAt(block.location) != null) return
+
+        // A WildSpawners preset is mined by WildSpawners, which also fires a test BlockBreakEvent
+        // for claim plugins. Acting on that test broke the block and dropped a plain spawner.
+        if (plugin.spawnerPresetManager.get(presetId) == null &&
+            plugin.server.pluginManager.isPluginEnabled("WildSpawners")
+        ) return
 
         event.isCancelled = true
 
