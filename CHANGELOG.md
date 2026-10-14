@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [2.3.1] - 2026-10-14
+### Fixed
+- **Wild Spawners can be picked up again without losing their type.** With Wild Spawners installed, mining one of its spawners outside a chamber dropped a plain, empty trial spawner instead, or asked for Silk Touch. Better Trial Chambers now leaves Wild Spawners' own spawners to Wild Spawners.
+
 ## [2.3.0] - 2026-10-07
 ### Added
 - **Chambers can wait to be looted before they reset.** Turn on `reset-after-first-loot` and a chamber's reset clock only starts when someone first opens a vault or a chest inside it. A chamber nobody has touched never resets. On servers with many chambers this saves a lot of memory and work, because only the chambers players actually use get reset. Off by default, so nothing changes until you switch it on.
