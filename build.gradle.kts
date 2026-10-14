@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "com.esmpfun"
-version = "2.3.0"
+version = "2.3.1"
 
 repositories {
     mavenCentral()
