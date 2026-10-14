@@ -1742,6 +1742,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[2.3.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.2.3...v2.3.0
 [2.2.3]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.2.2...v2.2.3
 [2.2.2]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.2.1...v2.2.2
