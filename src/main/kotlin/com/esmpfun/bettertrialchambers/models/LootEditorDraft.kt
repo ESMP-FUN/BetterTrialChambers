@@ -7,7 +7,7 @@ package com.esmpfun.bettertrialchambers.models
  * navigation under a stable per-table-and-pool key so unsaved changes survive
  * back/forward clicks.
  *
- * Extracted from `LootEditorView.Draft` in v1.3.0 Phase 3 so amount/loot editors
+ * Extracted from `LootEditorView.Draft` in v1.3.0 so amount/loot editors
  * and `MenuService` no longer reach into the view class for a shared data type.
  *
  * @property tableName  Target loot-table name. For chamber-specific edits this

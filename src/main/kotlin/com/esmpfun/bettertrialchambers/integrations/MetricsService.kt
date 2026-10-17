@@ -92,7 +92,7 @@ object MetricsService {
                 .create()
 
             // Must run on the main thread and inside enable, on Paper this also
-            // registers the server exception handlers. Phase 10 already executes
+            // registers the server exception handlers. Integration setup already runs
             // inside scheduler.runTask, so we're on the right thread here.
             ctx.ready()
             context = ctx
