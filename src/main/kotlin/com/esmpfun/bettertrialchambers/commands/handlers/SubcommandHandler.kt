@@ -4,7 +4,7 @@ import org.bukkit.command.CommandSender
 
 /**
  * Contract for an extracted `/trial <subcommand>` handler. Introduced in v1.3.0
- * Phase 3 to factor the largest branches of the [TCPCommand] dispatcher into
+ * to factor the largest branches of the [TCPCommand] dispatcher into
  * standalone classes, see `commands/handlers/` for concrete instances.
  *
  * Handlers are constructed once at plugin enable, take any dependencies (the

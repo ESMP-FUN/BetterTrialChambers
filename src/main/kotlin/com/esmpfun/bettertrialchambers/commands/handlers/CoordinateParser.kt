@@ -2,7 +2,7 @@ package com.esmpfun.bettertrialchambers.commands.handlers
 
 /**
  * Pure-logic coordinate parsing for `/trial generate` argument shapes. Extracted
- * from [GenerateCommand] in v1.3.0 Phase 5 so the parsers can be unit-tested
+ * from [GenerateCommand] in v1.3.0 so the parsers can be unit-tested
  * without mocking Bukkit's `World` registry. The world-aware composite parsing
  * (resolving world names, falling back to the sender's world, etc.) stays in
  * `GenerateCommand.parseCoordsArgs` because it needs the live Bukkit `World`

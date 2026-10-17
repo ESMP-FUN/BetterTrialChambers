@@ -408,7 +408,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
                 try {
                     val world = wave.location.world ?: return@Runnable
 
-                    // Phase 1: drop UUIDs whose entity is gone
+                    // Step 1: drop UUIDs whose entity is gone
                     val stale = wave.trackedMobs.filter { uuid ->
                         val ent = world.getEntity(uuid)
                         ent == null || ent.isDead || !ent.isValid
@@ -421,14 +421,14 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
                         updateBossBar(wave)
                     }
 
-                    // Phase 2: spawner block gone? cancel.
+                    // Step 2: spawner block gone? cancel.
                     val block = world.getBlockAt(wave.location)
                     if (block.type != Material.TRIAL_SPAWNER) {
                         cancelWaveAt(wave.location)
                         return@Runnable
                     }
 
-                    // Phase 3: spawner finished vanilla-side? force-complete (handles inflated
+                    // Step 3: spawner finished vanilla-side? force-complete (handles inflated
                     // expected counts and silently-vanished mobs).
                     val stateStr = block.blockData.asString
                     val vanillaDone = stateStr.contains("trial_spawner_state=cooldown") ||
@@ -438,7 +438,7 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
                         return@Runnable
                     }
 
-                    // Phase 4: normal completion check (in case stale removal tipped us over)
+                    // Step 4: normal completion check (in case stale removal tipped us over)
                     if (wave.isAllMobsKilled() && wave.trackedMobs.isEmpty()) {
                         completeWave(wave)
                     }

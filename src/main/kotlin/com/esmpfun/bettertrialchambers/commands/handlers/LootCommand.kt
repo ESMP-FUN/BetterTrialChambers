@@ -9,7 +9,7 @@ import org.bukkit.command.CommandSender
  * overrides. Wraps the four sub-actions (`set`, `clear`, `info`, `list`) that
  * were previously private methods on `TCPCommand`.
  *
- * Extracted in v1.3.0 Phase 3.
+ * Extracted in v1.3.0.
  */
 class LootCommand(private val plugin: BetterTrialChambers) : SubcommandHandler {
 

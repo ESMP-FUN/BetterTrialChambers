@@ -17,7 +17,7 @@ import kotlin.coroutines.resume
 /**
  * Main command dispatcher for `/trial` subcommands. Large/self-contained handlers
  * (`generate`, `mobs`, the `loot` family) live in `commands/handlers/` as
- * dedicated [SubcommandHandler] classes, see v1.3.0 Phase 3 in the changelog.
+ * dedicated [SubcommandHandler] classes, see v1.3.0 in the changelog.
  * Smaller handlers remain inline as private methods.
  */
 class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
