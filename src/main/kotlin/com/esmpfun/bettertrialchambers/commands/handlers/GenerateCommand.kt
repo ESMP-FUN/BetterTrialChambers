@@ -14,7 +14,7 @@ import kotlin.math.ceil
  * `/trial generate <mode> ...`, handles the four generation modes (`value`,
  * `coords`, `wand`, `blocks`) and the `value save|list|delete` sub-ops.
  *
- * Extracted from `TCPCommand.handleGenerate` in v1.3.0 Phase 3 along with all
+ * Extracted from `TCPCommand.handleGenerate` in v1.3.0 along with all
  * generation-only helpers (region validation, coord parsing, dimension
  * computation, player-relative placement) that were private to `TCPCommand`
  * and used nowhere else.
