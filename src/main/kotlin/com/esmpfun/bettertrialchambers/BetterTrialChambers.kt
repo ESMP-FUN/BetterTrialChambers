@@ -938,6 +938,10 @@ class BetterTrialChambers : JavaPlugin() {
      * wave tracking; case-insensitive on world name.
      */
     fun isWorldExcluded(world: org.bukkit.World): Boolean {
+        val name = world.name.lowercase()
+        // //regen in FastAsyncWorldEdit and WorldEdit builds a throwaway copy of the world for a
+        // moment; chambers found there vanish with it.
+        if (TEMPORARY_WORLD_PREFIXES.any { name.startsWith(it) }) return true
         return config.getStringList("global.excluded-worlds")
             .any { it.equals(world.name, ignoreCase = true) }
     }
@@ -1074,3 +1078,5 @@ class BetterTrialChambers : JavaPlugin() {
         }
     }
 }
+
+private val TEMPORARY_WORLD_PREFIXES = listOf("faweregentempworld", "worldeditregentempworld")
