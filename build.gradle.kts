@@ -1,8 +1,8 @@
 import org.gradle.api.attributes.java.TargetJvmVersion
 
 plugins {
-    kotlin("jvm") version "2.3.21"
-    id("com.gradleup.shadow") version "9.0.0"
+    kotlin("jvm") version "2.4.21"
+    id("com.gradleup.shadow") version "9.6.1"
     id("xyz.jpenilla.run-paper") version "2.3.1"
     // v1.3.3: enable Maven publication so Jitpack can serve TCP as a
     // compile-time dependency to premium add-on modules and third-party
@@ -46,10 +46,10 @@ dependencies {
 
     // Kotlin
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
 
     // Database
-    implementation("org.xerial:sqlite-jdbc:3.44.1.0")
+    implementation("org.xerial:sqlite-jdbc:3.53.4.0")
     // MySQL classic-protocol JDBC driver. config.yml has offered `type: MYSQL`
     // since 1.0 and DatabaseManager asks Hikari for com.mysql.cj.jdbc.Driver, but
     // the driver was never shipped — MySQL only worked because Paper happens to
@@ -62,7 +62,7 @@ dependencies {
     implementation("com.mysql:mysql-connector-j:8.4.0") {
         exclude(group = "com.google.protobuf", module = "protobuf-java")
     }
-    implementation("com.zaxxer:HikariCP:5.1.0")
+    implementation("com.zaxxer:HikariCP:7.1.0")
 
     // GUI Framework — TCP uses its own in-house VcGui framework
     // (`gui/framework/`) as of v1.5.0; the prior InventoryFramework
@@ -70,7 +70,7 @@ dependencies {
     // dropped in the same release.
 
     // JSON parsing for update checker
-    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.google.code.gson:gson:2.14.0")
 
     // PluginPulse — multi-source update checking + verified install staging.
     // Its no-restart reload module is left out: it cannot reload the bundled SQLite driver.
@@ -84,7 +84,7 @@ dependencies {
     // classes reference (JsonObject/JsonArray/JsonPrimitive/JsonParser, including the
     // newer isEmpty() and parseString()) exists in 2.11.0. Re-check this if the SDK is
     // upgraded — a NoSuchMethodError here would surface as silent telemetry failure.
-    implementation("dev.faststats.metrics:bukkit:0.28.0")
+    implementation("dev.faststats.metrics:bukkit:0.30.2")
 
     // Economy (optional)
     compileOnly("com.github.MilkBowl:VaultAPI:1.7")
@@ -94,22 +94,22 @@ dependencies {
 
     // Optional integrations
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.9")
-    compileOnly("me.clip:placeholderapi:2.11.5")
+    compileOnly("me.clip:placeholderapi:2.12.3")
     // Land-claim plugins (Residence / Lands / GriefPrevention) are integrated purely
     // via reflection (see integrations/claims/) — no compile-time dependency or version
     // pin, so TCP binds to whatever version each server actually runs.
 
     // FastAsyncWorldEdit (FAWE) - preferred over vanilla WorldEdit for performance
     // Using BOM for version management and transitive=false to avoid dependency bloat
-    implementation(platform("com.intellectualsites.bom:bom-newest:1.55"))
+    implementation(platform("com.intellectualsites.bom:bom-newest:1.56"))
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Core")
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit") {
         isTransitive = false
     }
 
     // Testing
-    testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
-    testImplementation("io.mockk:mockk:1.13.8")
+    testImplementation("org.junit.jupiter:junit-jupiter:6.1.3")
+    testImplementation("io.mockk:mockk:1.14.11")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     // Paper API on the test classpath so unit tests can mock Bukkit types directly.
     // Deliberately older than the version above: on the 26.x API, MockK cannot stand
