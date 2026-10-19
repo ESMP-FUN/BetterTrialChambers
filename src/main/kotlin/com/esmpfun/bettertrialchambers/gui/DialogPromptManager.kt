@@ -54,14 +54,8 @@ class DialogPromptManager(@Suppress("unused") private val plugin: BetterTrialCha
 
         fun canCloseWithEscape(allow: Boolean): Builder = apply { canCloseWithEscape = allow }
 
-        /** Text right after text joins the same block: the dialog screen pads every block. */
         fun bodyText(component: Component): Builder = apply {
-            val last = body.lastOrNull() as? io.papermc.paper.registry.data.dialog.body.PlainMessageDialogBody
-            if (last != null) {
-                body[body.lastIndex] = DialogBody.plainMessage(Component.join(net.kyori.adventure.text.JoinConfiguration.newlines(), last.contents(), component), last.width())
-            } else {
-                body += DialogBody.plainMessage(component)
-            }
+            body += DialogBody.plainMessage(component)
         }
 
         fun bodyItem(stack: ItemStack): Builder = apply {
