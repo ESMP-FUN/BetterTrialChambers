@@ -278,9 +278,14 @@ vaults:
   drop-loot-owner-grace-seconds: 30
 
 # Protection settings
+# These apply to every chamber. A chamber can choose its own instead: open
+# /trial menu, pick the chamber, then Settings and Protection. Anything a
+# chamber has not chosen for itself follows what is set here.
 protection:
   enabled: true
   prevent-block-break: true
+  # Also covers emptying a bucket of water, lava or powder snow inside a
+  # chamber, and putting up item frames, paintings and armour stands.
   prevent-block-place: true
   # Let players mine INTO a walled chamber without letting them farm it (v1.7.0).
   # When enabled, the blocks below can be broken inside a registered chamber but
@@ -352,11 +357,10 @@ protection:
   # with the tcp.bypass.protection permission (which includes operators) ignores
   # them entirely.
 
-  # Stop water and lava getting into a chamber. This covers emptying a bucket
-  # inside one, pouring it just outside so it flows in, and a dispenser firing a
-  # bucket through the wall. Emptying a bucket is not the same as placing a
-  # block as far as the server is concerned, which is why it needs its own
-  # setting. Liquid that was already part of the build keeps flowing normally.
+  # Stop water and lava getting into a chamber from outside: poured just past
+  # the wall so it flows in, or fired in by a dispenser. A player emptying a
+  # bucket inside the chamber follows prevent-block-place instead. Liquid that
+  # was already part of the build keeps flowing normally.
   prevent-liquid-flow: true
 
   # Stop fires being lit inside a chamber, and stop fire spreading through one

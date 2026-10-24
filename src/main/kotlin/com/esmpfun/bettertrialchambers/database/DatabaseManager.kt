@@ -445,6 +445,14 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
                     // Column already exists
                 }
 
+                // v2.4.0: protection switches a chamber sets for itself (JSON object, NULL = none)
+                try {
+                    stmt.execute("ALTER TABLE ${tables.chambers} ADD COLUMN protection_overrides TEXT")
+                    plugin.logger.info("Migration executed: Added protection_overrides column")
+                } catch (_: SQLException) {
+                    // Column already exists
+                }
+
                 // v1.6.3: marks a chamber whose bounds were confirmed via a thorough
                 // player-present expand pass (so the GUI hides its one-time expand prompt)
                 try {
@@ -535,6 +543,7 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
         "broadcast_reset_complete" to "BOOLEAN NOT NULL DEFAULT 1",
         "display_name" to "VARCHAR(64)",
         "bounds_confirmed" to "BOOLEAN NOT NULL DEFAULT 0",
+        "protection_overrides" to "TEXT",
     )
 
     /** Every table TCP owns, for the schema report. */

@@ -90,7 +90,12 @@ class ChamberSettingsView(
             }
         })
 
-        // Row 3: spawner cooldown + broadcast toggle
+        // Row 3: protection, spawner cooldown, broadcast toggle
+        set(29, VcGuiItem.wrap(
+            GuiComponents.infoItem(plugin, Material.SHIELD,
+                "gui.chamber-settings.protection-name", "gui.chamber-settings.protection-lore",
+                "count" to chamber.protectionOverrides.size)
+        ) { ctx -> menu.openChamberProtection(ctx.player, chamber) })
         set(31, VcGuiItem.wrap(createSpawnerCooldownItem()) { ctx ->
             when {
                 ctx.event.isShiftClick && ctx.event.isRightClick -> clearSpawnerCooldown(ctx.player)

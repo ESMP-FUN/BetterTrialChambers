@@ -76,6 +76,8 @@ data class Chamber(
     val boundsConfirmed: Boolean = false,
     /** When someone first looted it since its last reset; null while untouched. */
     val firstLootedAt: Long? = null,
+    /** Protection switches this chamber sets for itself, by [ProtectionSetting.key]; the rest follow config.yml. */
+    val protectionOverrides: Map<String, Boolean> = emptyMap(),
 ) {
     /**
      * The effective player-facing name: the [displayName] if set (non-blank), otherwise

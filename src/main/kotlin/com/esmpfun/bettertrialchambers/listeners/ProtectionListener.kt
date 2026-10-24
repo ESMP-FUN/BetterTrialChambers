@@ -1,6 +1,8 @@
 package com.esmpfun.bettertrialchambers.listeners
 
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
+import com.esmpfun.bettertrialchambers.models.Chamber
+import com.esmpfun.bettertrialchambers.models.ProtectionSetting
 import org.bukkit.GameMode
 import org.bukkit.Material
 import org.bukkit.entity.Player
@@ -73,8 +75,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onBlockBreak(event: BlockBreakEvent) {
-        if (!plugin.config.getBoolean("protection.enabled", true)) return
-        if (!plugin.config.getBoolean("protection.prevent-block-break", true)) return
+        if (offEverywhere(ProtectionSetting.BLOCK_BREAK)) return
 
         val player = event.player
         val location = event.block.location
@@ -82,9 +83,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         // Check bypass permission
         if (player.hasPermission("btc.bypass.protection")) return
 
-        // Check if in chamber (synchronous, cache-based); skip protection for paused chambers
-        val chamber = plugin.chamberManager.getCachedChamberAt(location) ?: return
-        if (chamber.isPaused) return
+        val chamber = guardedChamberAt(location, ProtectionSetting.BLOCK_BREAK) ?: return
         // Respect WorldGuard: defer to a region that grants this player build rights.
         if (deferToWorldGuard(location, player)) return
 
@@ -138,7 +137,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         return settings
     }
 
-    private fun tunnelBreakVerdict(chamber: com.esmpfun.bettertrialchambers.models.Chamber, block: org.bukkit.block.Block): TunnelVerdict {
+    private fun tunnelBreakVerdict(chamber: Chamber, block: org.bukkit.block.Block): TunnelVerdict {
         val s = tunnelSettings()
         if (!s.enabled || block.type !in s.blocks) return TunnelVerdict.NOT_TUNNELABLE
         if (s.shellDepth == 0) return TunnelVerdict.ALLOW // 0 = anywhere in the chamber
@@ -200,8 +199,9 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onPvp(event: EntityDamageByEntityEvent) {
-        if (!plugin.config.getBoolean("protection.enabled", true)) return
-        if (plugin.config.getBoolean("protection.allow-pvp", true)) return // PvP allowed -> nothing to do
+        if (masterOff()) return
+        if (ProtectionSetting.PVP.globalValue(plugin.config) &&
+            !plugin.chamberManager.anyChamberSets(ProtectionSetting.PVP.key, false)) return
 
         val victim = event.entity as? Player ?: return
         val attacker = when (val damager = event.damager) {
@@ -211,8 +211,8 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         } ?: return
         if (attacker.uniqueId == victim.uniqueId) return
 
-        val chamber = plugin.chamberManager.getCachedChamberAt(victim.location) ?: return
-        if (chamber.isPaused) return
+        val chamber = protectedChamberAt(victim.location) ?: return
+        if (isOn(chamber, ProtectionSetting.PVP)) return // PvP allowed here
         if (attacker.hasPermission("btc.bypass.protection")) {
             dbg("PvP in '${chamber.name}' allowed: ${attacker.name} has btc.bypass.protection (note: OPs have this by default)")
             return
@@ -256,12 +256,10 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         to: org.bukkit.Location?,
         cause: PlayerTeleportEvent.TeleportCause,
     ): Boolean {
-        if (!plugin.config.getBoolean("protection.enabled", true)) return false
-        if (!plugin.config.getBoolean("protection.prevent-teleport-into-chamber", false)) return false
+        if (offEverywhere(ProtectionSetting.TELEPORT)) return false
 
         val destination = to ?: return false
-        val toChamber = plugin.chamberManager.getCachedChamberAt(destination) ?: return false // not arriving in a chamber
-        if (toChamber.isPaused) return false
+        val toChamber = guardedChamberAt(destination, ProtectionSetting.TELEPORT) ?: return false
         // Allow teleporting *within* the same chamber (e.g. /back while inside it).
         if (plugin.chamberManager.getCachedChamberAt(from)?.id == toChamber.id) return false
 
@@ -287,15 +285,13 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onWalkIntoChamber(event: PlayerMoveEvent) {
-        if (!plugin.config.getBoolean("protection.enabled", true)) return
-        if (!plugin.config.getBoolean("protection.prevent-entry-without-permission", false)) return
+        if (offEverywhere(ProtectionSetting.ENTRY)) return
 
         val to = event.to
         val from = event.from
         if (from.blockX == to.blockX && from.blockY == to.blockY && from.blockZ == to.blockZ) return // sub-block move
 
-        val toChamber = plugin.chamberManager.getCachedChamberAt(to) ?: return // not stepping into a chamber
-        if (toChamber.isPaused) return
+        val toChamber = guardedChamberAt(to, ProtectionSetting.ENTRY) ?: return
         if (plugin.chamberManager.getCachedChamberAt(from)?.id == toChamber.id) return // already inside it
 
         val player = event.player
@@ -315,8 +311,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onBlockPlace(event: BlockPlaceEvent) {
-        if (!plugin.config.getBoolean("protection.enabled", true)) return
-        if (!plugin.config.getBoolean("protection.prevent-block-place", true)) return
+        if (offEverywhere(ProtectionSetting.BLOCK_PLACE)) return
 
         val player = event.player
         val location = event.block.location
@@ -324,9 +319,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         // Check bypass permission
         if (player.hasPermission("btc.bypass.protection")) return
 
-        // Check if in chamber (synchronous, cache-based); skip protection for paused chambers
-        val chamber = plugin.chamberManager.getCachedChamberAt(location) ?: return
-        if (chamber.isPaused) return
+        guardedChamberAt(location, ProtectionSetting.BLOCK_PLACE) ?: return
         if (deferToWorldGuard(location, player)) return
         event.isCancelled = true
         notifyBlocked(player, "cannot-place-blocks")
@@ -354,8 +347,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onContainerAccess(event: PlayerInteractEvent) {
-        if (!plugin.config.getBoolean("protection.enabled", true)) return
-        if (!plugin.config.getBoolean("protection.prevent-container-access", false)) return
+        if (offEverywhere(ProtectionSetting.CONTAINERS)) return
         // Right-click fires PlayerInteractEvent twice (main + off hand); only act on the
         // main-hand pass so the denial message isn't sent twice.
         if (event.hand != org.bukkit.inventory.EquipmentSlot.HAND) return
@@ -376,9 +368,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         // Allow vault access (handled by VaultInteractListener)
         if (block.type.name.contains("VAULT")) return
 
-        // Check if in chamber (cache-only, sync); skip protection for paused chambers
-        val chamber = plugin.chamberManager.getCachedChamberAt(location) ?: return
-        if (chamber.isPaused) return
+        guardedChamberAt(location, ProtectionSetting.CONTAINERS) ?: return
         if (deferToWorldGuard(location, player)) return
         event.isCancelled = true
         notifyBlocked(player, "cannot-access-container")
@@ -386,8 +376,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onEntityExplode(event: EntityExplodeEvent) {
-        if (!plugin.config.getBoolean("protection.enabled", true)) return
-        if (!plugin.config.getBoolean("protection.prevent-mob-griefing", true)) return
+        if (offEverywhere(ProtectionSetting.MOB_GRIEFING)) return
 
         // v1.7.2: filter per BLOCK, not by the explosion center's chamber. The old
         // check resolved the chamber at the CENTER, a creeper/TNT detonating just
@@ -395,7 +384,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         // blocks unprotected (same outside-in hole the AdvancedEnchantments check
         // had before 1.5.21). Cache-only, sync-safe.
         event.blockList().removeIf { block ->
-            plugin.chamberManager.getCachedChamberAt(block.location)?.takeIf { !it.isPaused } != null
+            guardedChamberAt(block.location, ProtectionSetting.MOB_GRIEFING) != null
         }
     }
 
@@ -407,18 +396,16 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onBlockExplode(event: org.bukkit.event.block.BlockExplodeEvent) {
-        if (!plugin.config.getBoolean("protection.enabled", true)) return
-        if (!plugin.config.getBoolean("protection.prevent-mob-griefing", true)) return
+        if (offEverywhere(ProtectionSetting.MOB_GRIEFING)) return
 
         event.blockList().removeIf { block ->
-            plugin.chamberManager.getCachedChamberAt(block.location)?.takeIf { !it.isPaused } != null
+            guardedChamberAt(block.location, ProtectionSetting.MOB_GRIEFING) != null
         }
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onEntityChangeBlock(event: EntityChangeBlockEvent) {
-        if (!plugin.config.getBoolean("protection.enabled", true)) return
-        if (!plugin.config.getBoolean("protection.prevent-mob-griefing", true)) return
+        if (offEverywhere(ProtectionSetting.MOB_GRIEFING)) return
 
         val location = event.block.location
 
@@ -426,8 +413,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         if (event.entity is Player) return
 
         // Prevent endermen, silverfish, etc. from modifying blocks in non-paused chambers
-        val chamber = plugin.chamberManager.getCachedChamberAt(location) ?: return
-        if (chamber.isPaused) return
+        guardedChamberAt(location, ProtectionSetting.MOB_GRIEFING) ?: return
         event.isCancelled = true
     }
 
@@ -462,19 +448,39 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     private fun protectedChamberAt(location: org.bukkit.Location) =
         plugin.chamberManager.getCachedChamberAt(location)?.takeIf { !it.isPaused }
 
-    /** True when protection as a whole, or this one setting, is switched off. */
-    private fun protectionOff(setting: String, default: Boolean): Boolean =
-        !plugin.config.getBoolean("protection.enabled", true) ||
-            !plugin.config.getBoolean("protection." + setting, default)
+    /** The chamber at [location] when [setting] is on in it, otherwise null. */
+    private fun guardedChamberAt(location: org.bukkit.Location, setting: ProtectionSetting): Chamber? =
+        protectedChamberAt(location)?.takeIf { isOn(it, setting) }
 
-    /** Emptying a bucket does not raise a block-place event, so it needs its own. */
+    private fun isOn(chamber: Chamber, setting: ProtectionSetting): Boolean =
+        setting.valueFor(chamber, plugin.config)
+
+    private fun masterOff(): Boolean = !plugin.config.getBoolean("protection.enabled", true)
+
+    /**
+     * True when [setting] cannot apply anywhere: protection is off as a whole,
+     * or the setting is off server-wide and no chamber turned it on for itself.
+     * Checked first so the events that fire constantly stay cheap.
+     */
+    private fun offEverywhere(setting: ProtectionSetting): Boolean {
+        if (masterOff()) return true
+        if (setting.globalValue(plugin.config)) return false
+        return !plugin.chamberManager.anyChamberSets(setting.key, true)
+    }
+
+    /**
+     * Emptying a bucket does not raise a block-place event, so it needs its own.
+     * It is still a player putting something into the chamber, so it answers to
+     * `prevent-block-place`: with that off, water, lava and powder snow can be
+     * placed like any block.
+     */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onBucketEmpty(event: PlayerBucketEmptyEvent) {
-        if (protectionOff("prevent-liquid-flow", true)) return
+        if (offEverywhere(ProtectionSetting.BLOCK_PLACE)) return
         val player = event.player
         if (player.hasPermission("btc.bypass.protection")) return
         val location = event.block.location
-        protectedChamberAt(location) ?: return
+        guardedChamberAt(location, ProtectionSetting.BLOCK_PLACE) ?: return
         if (deferToWorldGuard(location, player)) return
         event.isCancelled = true
         notifyBlocked(player, "cannot-place-blocks")
@@ -483,10 +489,10 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     /** Water or lava poured just outside the walls, running in. */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onLiquidFlow(event: BlockFromToEvent) {
-        if (protectionOff("prevent-liquid-flow", true)) return
+        if (offEverywhere(ProtectionSetting.LIQUIDS)) return
         // Only stop it crossing INTO a chamber. Liquid already inside one, in a
         // build that was made with it, goes on working.
-        if (protectedChamberAt(event.toBlock.location) == null) return
+        if (guardedChamberAt(event.toBlock.location, ProtectionSetting.LIQUIDS) == null) return
         if (protectedChamberAt(event.block.location) != null) return
         event.isCancelled = true
     }
@@ -494,18 +500,18 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     /** A dispenser outside the walls, firing a bucket through them. */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onDispense(event: BlockDispenseEvent) {
-        if (protectionOff("prevent-liquid-flow", true)) return
+        if (offEverywhere(ProtectionSetting.LIQUIDS)) return
         if (event.item.type != Material.WATER_BUCKET && event.item.type != Material.LAVA_BUCKET) return
-        protectedChamberAt(event.block.location) ?: return
+        guardedChamberAt(event.block.location, ProtectionSetting.LIQUIDS) ?: return
         event.isCancelled = true
     }
 
     /** Lighting a fire inside a chamber. */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onIgnite(event: BlockIgniteEvent) {
-        if (protectionOff("prevent-fire", true)) return
+        if (offEverywhere(ProtectionSetting.FIRE)) return
         val location = event.block.location
-        protectedChamberAt(location) ?: return
+        guardedChamberAt(location, ProtectionSetting.FIRE) ?: return
         val player = event.player
         if (player != null) {
             if (player.hasPermission("btc.bypass.protection")) return
@@ -521,8 +527,8 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     /** Fire eating the chamber once something is already alight. */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onBurn(event: BlockBurnEvent) {
-        if (protectionOff("prevent-fire", true)) return
-        protectedChamberAt(event.block.location) ?: return
+        if (offEverywhere(ProtectionSetting.FIRE)) return
+        guardedChamberAt(event.block.location, ProtectionSetting.FIRE) ?: return
         event.isCancelled = true
     }
 
@@ -537,7 +543,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onPistonExtend(event: BlockPistonExtendEvent) {
-        if (protectionOff("prevent-piston-movement", true)) return
+        if (offEverywhere(ProtectionSetting.PISTONS)) return
         if (pistonReachesIntoChamber(event.block.location, event.blocks.map { it.location })) {
             event.isCancelled = true
         }
@@ -545,7 +551,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onPistonRetract(event: BlockPistonRetractEvent) {
-        if (protectionOff("prevent-piston-movement", true)) return
+        if (offEverywhere(ProtectionSetting.PISTONS)) return
         if (pistonReachesIntoChamber(event.block.location, event.blocks.map { it.location })) {
             event.isCancelled = true
         }
@@ -558,7 +564,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     ): Boolean {
         val pistonChamber = protectedChamberAt(piston)
         return moved.any { movedBlock ->
-            val chamber = protectedChamberAt(movedBlock) ?: return@any false
+            val chamber = guardedChamberAt(movedBlock, ProtectionSetting.PISTONS) ?: return@any false
             chamber.id != pistonChamber?.id
         }
     }
@@ -593,7 +599,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         remover: org.bukkit.entity.Entity?,
     ): Boolean {
         val location = entity.location
-        protectedChamberAt(location) ?: return false
+        guardedChamberAt(location, ProtectionSetting.DECORATIONS) ?: return false
         if (remover is Player) {
             if (remover.hasPermission("btc.bypass.protection")) return false
             if (deferToWorldGuard(location, remover)) return false
@@ -614,7 +620,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onHangingBreak(event: HangingBreakEvent) {
-        if (protectionOff("protect-decorations", true)) return
+        if (offEverywhere(ProtectionSetting.DECORATIONS)) return
         val remover = (event as? HangingBreakByEntityEvent)?.remover
         if (denyDecorationRemoval(event.entity, remover)) event.isCancelled = true
     }
@@ -627,7 +633,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onEntityBreak(event: EntityBreakEvent) {
-        if (protectionOff("protect-decorations", true)) return
+        if (offEverywhere(ProtectionSetting.DECORATIONS)) return
         if (!isDecoration(event.entity)) return
         val remover = (event as? EntityBreakByEntityEvent)?.remover
         if (denyDecorationRemoval(event.entity, remover)) event.isCancelled = true
@@ -635,10 +641,10 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
 
     /** Placing a decoration counts as placing a block, so `prevent-block-place` covers it too. */
     private fun denyDecorationPlace(entity: org.bukkit.entity.Entity, player: Player?): Boolean {
-        if (player == null || protectionOff("prevent-block-place", true)) return false
+        if (player == null || offEverywhere(ProtectionSetting.BLOCK_PLACE)) return false
         if (player.hasPermission("btc.bypass.protection")) return false
         val location = entity.location
-        protectedChamberAt(location) ?: return false
+        guardedChamberAt(location, ProtectionSetting.BLOCK_PLACE) ?: return false
         if (deferToWorldGuard(location, player)) return false
         notifyBlocked(player, "cannot-place-blocks")
         return true
@@ -658,11 +664,11 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onArmorStandManipulate(event: PlayerArmorStandManipulateEvent) {
-        if (protectionOff("protect-decorations", true)) return
+        if (offEverywhere(ProtectionSetting.DECORATIONS)) return
         val player = event.player
         if (player.hasPermission("btc.bypass.protection")) return
         val location = event.rightClicked.location
-        protectedChamberAt(location) ?: return
+        guardedChamberAt(location, ProtectionSetting.DECORATIONS) ?: return
         if (deferToWorldGuard(location, player)) return
         event.isCancelled = true
         notifyBlocked(player, "cannot-break-blocks")
@@ -676,7 +682,7 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onDecorationDamaged(event: EntityDamageEvent) {
-        if (protectionOff("protect-decorations", true)) return
+        if (offEverywhere(ProtectionSetting.DECORATIONS)) return
         if (!isDecoration(event.entity)) return
         val damager = (event as? EntityDamageByEntityEvent)?.damager
         if (denyDecorationRemoval(event.entity, damager)) event.isCancelled = true
@@ -690,22 +696,22 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onLeavesDecay(event: LeavesDecayEvent) {
-        if (protectionOff("prevent-natural-decay", false)) return
-        protectedChamberAt(event.block.location) ?: return
+        if (offEverywhere(ProtectionSetting.NATURAL_DECAY)) return
+        guardedChamberAt(event.block.location, ProtectionSetting.NATURAL_DECAY) ?: return
         event.isCancelled = true
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onBlockFade(event: BlockFadeEvent) {
-        if (protectionOff("prevent-natural-decay", false)) return
-        protectedChamberAt(event.block.location) ?: return
+        if (offEverywhere(ProtectionSetting.NATURAL_DECAY)) return
+        guardedChamberAt(event.block.location, ProtectionSetting.NATURAL_DECAY) ?: return
         event.isCancelled = true
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onBlockForm(event: BlockFormEvent) {
-        if (protectionOff("prevent-natural-decay", false)) return
-        protectedChamberAt(event.block.location) ?: return
+        if (offEverywhere(ProtectionSetting.NATURAL_DECAY)) return
+        guardedChamberAt(event.block.location, ProtectionSetting.NATURAL_DECAY) ?: return
         event.isCancelled = true
     }
 
@@ -713,37 +719,37 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     fun onBlockSpread(event: BlockSpreadEvent) {
         // Fire spreading is griefing rather than nature, so it answers to the
         // fire setting; everything else here answers to the decay setting.
-        val fire = event.newState.type == Material.FIRE
-        if (protectionOff(if (fire) "prevent-fire" else "prevent-natural-decay", fire)) return
-        protectedChamberAt(event.block.location) ?: return
+        val setting = if (event.newState.type == Material.FIRE) ProtectionSetting.FIRE else ProtectionSetting.NATURAL_DECAY
+        if (offEverywhere(setting)) return
+        guardedChamberAt(event.block.location, setting) ?: return
         event.isCancelled = true
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onBlockGrow(event: BlockGrowEvent) {
-        if (protectionOff("prevent-natural-decay", false)) return
-        protectedChamberAt(event.block.location) ?: return
+        if (offEverywhere(ProtectionSetting.NATURAL_DECAY)) return
+        guardedChamberAt(event.block.location, ProtectionSetting.NATURAL_DECAY) ?: return
         event.isCancelled = true
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onStructureGrow(event: StructureGrowEvent) {
-        if (protectionOff("prevent-natural-decay", false)) return
-        if (event.blocks.none { protectedChamberAt(it.location) != null }) return
+        if (offEverywhere(ProtectionSetting.NATURAL_DECAY)) return
+        if (event.blocks.none { guardedChamberAt(it.location, ProtectionSetting.NATURAL_DECAY) != null }) return
         event.isCancelled = true
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onFertilize(event: BlockFertilizeEvent) {
-        if (protectionOff("prevent-natural-decay", false)) return
-        if (event.blocks.none { protectedChamberAt(it.location) != null }) return
+        if (offEverywhere(ProtectionSetting.NATURAL_DECAY)) return
+        if (event.blocks.none { guardedChamberAt(it.location, ProtectionSetting.NATURAL_DECAY) != null }) return
         event.isCancelled = true
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onSpongeAbsorb(event: SpongeAbsorbEvent) {
-        if (protectionOff("prevent-natural-decay", false)) return
-        if (event.blocks.none { protectedChamberAt(it.block.location) != null }) return
+        if (offEverywhere(ProtectionSetting.NATURAL_DECAY)) return
+        if (event.blocks.none { guardedChamberAt(it.block.location, ProtectionSetting.NATURAL_DECAY) != null }) return
         event.isCancelled = true
     }
 

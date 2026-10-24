@@ -5,6 +5,7 @@ import com.esmpfun.bettertrialchambers.gui.components.GuiComponents
 import com.esmpfun.bettertrialchambers.gui.framework.BaseHolder
 import com.esmpfun.bettertrialchambers.gui.framework.VcGui
 import com.esmpfun.bettertrialchambers.gui.framework.VcGuiItem
+import com.esmpfun.bettertrialchambers.models.ProtectionSetting
 import org.bukkit.Material
 import org.bukkit.entity.Player
 
@@ -29,29 +30,18 @@ class ProtectionMenuView(
         val default: Boolean = true,
     )
 
-    private val toggles = listOf(
-        ToggleDef("protection.enabled",
+    private val toggles = buildList {
+        add(ToggleDef("protection.enabled",
             "gui.protection-menu.system-label",
-            "gui.protection-menu.system-desc", 1 * 9 + 4),       // (4,1) = 13
-        ToggleDef("protection.prevent-block-break",
-            "gui.protection-menu.block-break-label",
-            "gui.protection-menu.block-break-desc", 2 * 9 + 1),  // (1,2) = 19
-        ToggleDef("protection.prevent-block-place",
-            "gui.protection-menu.block-place-label",
-            "gui.protection-menu.block-place-desc", 2 * 9 + 3),  // (3,2) = 21
-        ToggleDef("protection.prevent-container-access",
-            "gui.protection-menu.containers-label",
-            "gui.protection-menu.containers-desc", 2 * 9 + 5, default = false),   // (5,2) = 23
-        ToggleDef("protection.prevent-mob-griefing",
-            "gui.protection-menu.mob-griefing-label",
-            "gui.protection-menu.mob-griefing-desc", 2 * 9 + 7), // (7,2) = 25
-        ToggleDef("protection.allow-pvp",
-            "gui.protection-menu.pvp-label",
-            "gui.protection-menu.pvp-desc", 3 * 9 + 3),          // (3,3) = 30
-        ToggleDef("protection.worldguard-integration",
+            "gui.protection-menu.system-desc", 1 * 9 + 4))
+        val slots = (19..25) + (28..32)
+        ProtectionSetting.entries.forEachIndexed { i, setting ->
+            add(ToggleDef(setting.configPath, setting.labelKey, setting.descKey, slots[i], setting.default))
+        }
+        add(ToggleDef("protection.worldguard-integration",
             "gui.protection-menu.worldguard-label",
-            "gui.protection-menu.worldguard-desc", 3 * 9 + 5),   // (5,3) = 32
-    )
+            "gui.protection-menu.worldguard-desc", 3 * 9 + 7))
+    }
 
     init { layout() }
 
