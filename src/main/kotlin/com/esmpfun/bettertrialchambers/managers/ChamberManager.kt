@@ -750,6 +750,10 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
             rs.getBoolean("bounds_confirmed")
         } catch (_: Exception) { false }
 
+        val protectionOverrides = try {
+            decodeProtectionOverrides(rs.getString("protection_overrides"))
+        } catch (_: Exception) { emptyMap() }
+
         return Chamber(
             id = rs.getInt("id"),
             name = rs.getString("name"),
@@ -779,8 +783,23 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
             isPaused = isPaused,
             broadcastResetComplete = broadcastResetComplete,
             displayName = displayName,
-            boundsConfirmed = boundsConfirmed
+            boundsConfirmed = boundsConfirmed,
+            protectionOverrides = protectionOverrides
         )
+    }
+
+    /** Unknown keys and anything that is not true or false are dropped, so a bad value never stops a chamber loading. */
+    private fun decodeProtectionOverrides(raw: String?): Map<String, Boolean> {
+        if (raw.isNullOrBlank()) return emptyMap()
+        return try {
+            val obj = com.google.gson.JsonParser.parseString(raw).asJsonObject
+            val known = com.esmpfun.bettertrialchambers.models.ProtectionSetting.entries.map { it.key }.toSet()
+            obj.entrySet()
+                .filter { (k, v) -> k in known && v.isJsonPrimitive && v.asJsonPrimitive.isBoolean }
+                .associate { (k, v) -> k to v.asBoolean }
+        } catch (_: Exception) {
+            emptyMap()
+        }
     }
 
     /**
@@ -967,6 +986,41 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
             false
         }
     }
+
+    /**
+     * Replaces the protection switches a chamber sets for itself. An empty map
+     * puts the chamber back on the server-wide settings.
+     */
+    suspend fun setProtectionOverrides(chamberId: Int, overrides: Map<String, Boolean>): Boolean = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement("UPDATE ${tables.chambers} SET protection_overrides = ? WHERE id = ?").use { stmt ->
+                    if (overrides.isEmpty()) stmt.setNull(1, java.sql.Types.VARCHAR)
+                    else stmt.setString(1, com.google.gson.Gson().toJson(overrides))
+                    stmt.setInt(2, chamberId)
+                    val updated = stmt.executeUpdate() > 0
+                    if (updated) {
+                        val chamber = chamberCache.values.find { it.id == chamberId }
+                        if (chamber != null) {
+                            val refreshed = loadChamberFromDb(chamber.name)
+                            if (refreshed != null) {
+                                cachePut(refreshed)
+                                updateCacheExpiry(chamber.name)
+                            }
+                        }
+                    }
+                    updated
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.severe("Failed to set protection_overrides: ${e.message}")
+            false
+        }
+    }
+
+    /** True when at least one cached chamber has set [key] to [value] for itself. */
+    fun anyChamberSets(key: String, value: Boolean): Boolean =
+        chamberCache.values.any { it.protectionOverrides[key] == value }
 
     /**
      * Toggles whether the server-wide reset-complete broadcast is sent for this chamber.

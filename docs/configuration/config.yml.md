@@ -496,6 +496,8 @@ Players with `btc.bypass.droplock` (default: op) can always pick up dropped loot
 
 Stops griefing and preserves chamber structures. Every setting here applies only inside a registered chamber, and anyone with `btc.bypass.protection` (includes operators) is exempt.
 
+Each chamber can also choose its own: open `/trial menu`, pick the chamber, then **Settings** and **Protection**. Left click sets a switch for that chamber only, right click puts it back on the server-wide value below. Anything a chamber has not set for itself follows this file.
+
 ```yaml
 protection:
   enabled: true
@@ -541,7 +543,7 @@ Master toggle for chamber protection. **Default:** `true`. Turn off to rely enti
 
 <summary><code>prevent-block-break</code> / <code>prevent-block-place</code></summary>
 
-Stop players breaking or placing blocks inside chambers. **Default:** `true` for both.
+Stop players breaking or placing blocks inside chambers. **Default:** `true` for both. `prevent-block-place` also covers emptying a bucket of water, lava or powder snow, and putting up item frames, paintings and armour stands.
 
 </details>
 
@@ -648,7 +650,7 @@ Stop mobs changing chamber blocks (creeper explosions, endermen picking up block
 
 <summary><code>prevent-liquid-flow</code></summary>
 
-Stop water and lava getting into a chamber. **Default:** `true`. Covers emptying a bucket inside one, pouring it just outside so it flows in, and a dispenser firing a bucket through the wall. Liquid that was part of the build keeps flowing.
+Stop water and lava getting into a chamber from outside. **Default:** `true`. Covers pouring it just outside so it flows in, and a dispenser firing a bucket. A player emptying a bucket inside the chamber follows `prevent-block-place` instead. Liquid that was part of the build keeps flowing.
 
 </details>
 
