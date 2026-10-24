@@ -61,6 +61,7 @@ class MenuService(private val plugin: BetterTrialChambers) {
         CHAMBER_LIST,
         CHAMBER_DETAIL,
         CHAMBER_SETTINGS,
+        CHAMBER_PROTECTION,
         VAULT_MANAGEMENT,
         CONTAINER_LOOT,
 
@@ -157,6 +158,10 @@ class MenuService(private val plugin: BetterTrialChambers) {
             Screen.CHAMBER_SETTINGS -> {
                 val chamber = s.chamberId?.let { plugin.chamberManager.getCachedChamberById(it) }
                 if (chamber != null) openChamberSettings(player, chamber) else openMainMenu(player)
+            }
+            Screen.CHAMBER_PROTECTION -> {
+                val chamber = s.chamberId?.let { plugin.chamberManager.getCachedChamberById(it) }
+                if (chamber != null) openChamberProtection(player, chamber) else openMainMenu(player)
             }
             Screen.VAULT_MANAGEMENT -> {
                 val chamber = s.chamberId?.let { plugin.chamberManager.getCachedChamberById(it) }
@@ -543,6 +548,16 @@ class MenuService(private val plugin: BetterTrialChambers) {
         val view = GlobalSettingsView(plugin, this)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.GLOBAL_SETTINGS
+        }
+        view.open(player)
+    }
+
+    fun openChamberProtection(player: Player, chamber: Chamber) {
+        if (denied(player, "btc.admin.reload")) return
+        val view = ChamberProtectionView(plugin, this, chamber)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.CHAMBER_PROTECTION
+            chamberId = chamber.id
         }
         view.open(player)
     }
