@@ -148,7 +148,7 @@ class PlayerMovementListener(private val plugin: BetterTrialChambers) : Listener
         // Optional: Send entry message (suppressed on chamber->chamber transitions).
         if (sendEntryMessage && plugin.config.getBoolean("messages.chamber-entry-message", false)) {
             player.sendMessage(
-                plugin.getMessageComponent("chamber-entered", "chamber" to chamber.name)
+                plugin.getMessageComponent("chamber-entered", "chamber" to chamber.label())
             )
         }
     }

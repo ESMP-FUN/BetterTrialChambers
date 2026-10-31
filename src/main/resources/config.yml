@@ -117,13 +117,16 @@ global:
 # DISPLAY name shown in player-facing announcements (reset/clear broadcasts, /trial info).
 # Rename any chamber with /trial rename <chamber> <name>, or via the chamber GUI.
 naming:
-  # Auto-assign a random unused display name from the pool below to each newly
-  # registered chamber (both manual /trial generate and auto-discovered). The internal
-  # name is unchanged. Set false to leave new chambers nameless until renamed.
+  # Give each chamber a random unused display name: new chambers when they are
+  # registered (by /trial generate or found on their own), and any chamber still
+  # without one when the server starts. The internal name is unchanged. Set false
+  # to leave chambers nameless until you rename them.
   auto-assign: true
-  # The pool to draw from. A name already used by another chamber is skipped; when all
-  # are taken, new chambers fall back to their internal name until you add more or
-  # rename manually. Add your own, these are just a starting set.
+  # Once every name in the pool below is taken, make up new ones like Copperhold or
+  # Galewatch. Set false to leave further chambers nameless instead.
+  make-up-names: true
+  # The pool to draw from first. A name already used by another chamber is skipped.
+  # Add your own, these are just a starting set.
   name-pool:
     - Bastion
     - Ashfall Hollow

@@ -556,7 +556,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
 
                                 // teleportAsync is required on Folia/Luminol; sync teleport throws in region threads
                                 player.teleportAsync(destination).thenRun {
-                                    player.sendMessage(plugin.getMessageComponent("teleported-to-exit", "chamber" to chamber.name))
+                                    player.sendMessage(plugin.getMessageComponent("teleported-to-exit", "chamber" to chamber.label()))
                                     synchronized(this) {
                                         remaining--
                                         if (remaining == 0) {

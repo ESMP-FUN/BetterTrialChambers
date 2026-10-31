@@ -866,6 +866,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                 updateCacheExpiry(chamber.name)
             }
             plugin.logger.info("Preloaded ${all.size} chambers into cache")
+            nameUnnamedChambers()
             // Names have been checked since 2.1.1, but a chamber registered before
             // that could carry one that cannot be a file name, and its snapshot then
             // silently never saves. Say so once rather than at every reset.
@@ -1126,16 +1127,29 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
     }
 
     /**
-     * Picks a random unused display name from the configured `naming.name-pool`, or null
-     * when auto-naming is disabled, the pool is empty, or every pool name is already taken.
-     * "Used" is compared case-insensitively against current chambers' display names.
+     * Picks a random unused display name from the configured `naming.name-pool`, then a
+     * made-up one once the pool is used up (`naming.make-up-names`). Null when auto-naming
+     * is disabled or nothing is left. "Used" is compared case-insensitively.
      */
     private fun pickAutoDisplayName(): String? {
         if (!plugin.config.getBoolean("naming.auto-assign", true)) return null
-        val pool = plugin.config.getStringList("naming.name-pool")
-        if (pool.isEmpty()) return null
         val used = chamberCache.values.mapNotNull { it.displayName?.lowercase() }.toSet()
-        return pool.filter { it.lowercase() !in used }.randomOrNull()
+        plugin.config.getStringList("naming.name-pool").filter { it.lowercase() !in used }.randomOrNull()
+            ?.let { return it }
+        if (!plugin.config.getBoolean("naming.make-up-names", true)) return null
+        return com.esmpfun.bettertrialchambers.utils.InventedNames.next(used)
+    }
+
+    /** Gives every chamber that has no display name one, oldest first, when auto-naming is on. */
+    private suspend fun nameUnnamedChambers() {
+        if (!plugin.config.getBoolean("naming.auto-assign", true)) return
+        val unnamed = chamberCache.values.filter { it.displayName.isNullOrBlank() }.sortedBy { it.createdAt }
+        var named = 0
+        for (chamber in unnamed) {
+            val name = pickAutoDisplayName() ?: break
+            if (setDisplayName(chamber.id, name)) named++
+        }
+        if (named > 0) plugin.logger.info("Gave $named chamber(s) without a name a display name")
     }
 
     /**
