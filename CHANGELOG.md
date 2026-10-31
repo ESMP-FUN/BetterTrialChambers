@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [2.4.1] - 2026-10-31
+### Added
+- **Every chamber gets a name.** Once the name pool is used up, names like Copperhold or Galewatch are made up, and every chamber still without a name gets one when the server starts (`naming.make-up-names`).
+- **A used vault says when it opens again:** "It opens again when Copperhold resets in 9d 3h."
+- **Buttons to watch or respawn** after dying in a chamber, instead of typing a word in chat.
+
+### Changed
+- **Players read the chamber's name** in the entry, death, exit and spectate messages instead of its internal name.
+- **`/trial help` only lists the commands each player may use.**
+
 ## [2.4.0] - 2026-10-31
 ### Added
 - **Each chamber can set its own protection.** Open a chamber's settings, then Protection, and turn any protection switch on or off for that chamber alone. Anything a chamber leaves alone follows `config.yml`. The server-wide protection menu now shows every switch as well.
@@ -1750,6 +1760,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[2.4.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.4.0...v2.4.1
+[2.4.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.3.1...v2.4.0
 [2.3.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.2.3...v2.3.0
 [2.2.3]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.2.2...v2.2.3
