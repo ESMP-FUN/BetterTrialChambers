@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [2.4.0] - 2026-10-31
+### Added
+- **Each chamber can set its own protection.** Open a chamber's settings, then Protection, and turn any protection switch on or off for that chamber alone. Anything a chamber leaves alone follows `config.yml`. The server-wide protection menu now shows every switch as well.
+
+### Changed
+- **Emptying a bucket inside a chamber follows `prevent-block-place`,** so turning block placing off lets players place water and lava too. `prevent-liquid-flow` still stops liquid flowing in from outside.
+
+### Fixed
+- **No more chambers found in the temporary worlds that `//regen` builds** in WorldEdit and FastAsyncWorldEdit.
+
 ## [2.3.1] - 2026-10-14
 ### Fixed
 - **Wild Spawners can be picked up again without losing their type.** With Wild Spawners installed, mining one of its spawners outside a chamber dropped a plain, empty trial spawner instead, or asked for Silk Touch. Better Trial Chambers now leaves Wild Spawners' own spawners to Wild Spawners.
