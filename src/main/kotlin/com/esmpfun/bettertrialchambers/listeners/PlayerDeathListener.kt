@@ -57,7 +57,7 @@ class PlayerDeathListener(private val plugin: BetterTrialChambers) : Listener {
             event.deathMessage(
                 plugin.getMessageComponent("player-died-in-chamber",
                     "player" to player.name,
-                    "chamber" to chamber.name
+                    "chamber" to chamber.label()
                 )
             )
         }

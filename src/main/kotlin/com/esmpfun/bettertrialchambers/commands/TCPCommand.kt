@@ -71,6 +71,7 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
             "claims" -> handleClaims(sender, args)
             "setup" -> setupHandler.execute(sender, args)
             "debug" -> handleDebug(sender, args)
+            "spectate" -> handleSpectate(sender, args)
             "update" -> handleUpdate(sender, args)
             else -> sender.sendMessage(plugin.getMessageComponent("unknown-command"))
         }
@@ -81,45 +82,22 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
     private fun sendHelp(sender: CommandSender) {
         // Order mirrors the logical grouping in HelpMenuView: browse, create,
         // manage, loot/mobs, players, admin. Keep this list in sync with both
-        // the GUI tiles and the messages.yml `help-*` keys.
+        // the GUI tiles and the messages.yml `help-*` keys. Each line shows only
+        // to those allowed to run it.
         sender.sendMessage(plugin.getMessageComponent("help-header"))
-        // Browse
-        sender.sendMessage(plugin.getMessageComponent("help-list"))
-        sender.sendMessage(plugin.getMessageComponent("help-info"))
-        // Create
-        sender.sendMessage(plugin.getMessageComponent("help-generate"))
-        sender.sendMessage(plugin.getMessageComponent("help-dungeon"))
-        sender.sendMessage(plugin.getMessageComponent("help-paste"))
-        // Manage
-        sender.sendMessage(plugin.getMessageComponent("help-scan"))
-        sender.sendMessage(plugin.getMessageComponent("help-scan-add"))
-        sender.sendMessage(plugin.getMessageComponent("help-setexit"))
-        sender.sendMessage(plugin.getMessageComponent("help-snapshot"))
-        sender.sendMessage(plugin.getMessageComponent("help-snapshot-bulk"))
-        sender.sendMessage(plugin.getMessageComponent("help-snapshot-missing"))
-        sender.sendMessage(plugin.getMessageComponent("help-reset"))
-        sender.sendMessage(plugin.getMessageComponent("help-pause"))
-        sender.sendMessage(plugin.getMessageComponent("help-resume"))
-        sender.sendMessage(plugin.getMessageComponent("help-rename"))
-        sender.sendMessage(plugin.getMessageComponent("help-delete"))
-        // Loot & mobs
-        sender.sendMessage(plugin.getMessageComponent("help-loot"))
-        sender.sendMessage(plugin.getMessageComponent("help-mobs"))
-        // Players & rewards
-        sender.sendMessage(plugin.getMessageComponent("help-vault"))
-        sender.sendMessage(plugin.getMessageComponent("help-vault-unlockall"))
-        sender.sendMessage(plugin.getMessageComponent("help-key"))
-        sender.sendMessage(plugin.getMessageComponent("help-give"))
-        sender.sendMessage(plugin.getMessageComponent("help-stats"))
-        sender.sendMessage(plugin.getMessageComponent("help-leaderboard"))
-        // Admin
-        sender.sendMessage(plugin.getMessageComponent("help-setup"))
-        sender.sendMessage(plugin.getMessageComponent("help-menu"))
-        sender.sendMessage(plugin.getMessageComponent("help-container"))
-        sender.sendMessage(plugin.getMessageComponent("help-claims"))
-        sender.sendMessage(plugin.getMessageComponent("help-debug"))
-        sender.sendMessage(plugin.getMessageComponent("help-update"))
-        sender.sendMessage(plugin.getMessageComponent("help-reload"))
+        HELP_LINES.filter { (_, permission) -> sender.hasPermission(permission) }
+            .forEach { (key, _) -> sender.sendMessage(plugin.getMessageComponent(key)) }
+    }
+
+    /** `/trial spectate yes|no|exit`: what the buttons in the spectate offer run. */
+    private fun handleSpectate(sender: CommandSender, args: Array<out String>) {
+        val player = sender as? Player ?: return
+        val spectators = plugin.spectatorManager
+        when (args.getOrNull(1)?.lowercase()) {
+            "yes" -> if (spectators.hasPendingOffer(player)) spectators.acceptSpectatorMode(player)
+            "no" -> if (spectators.hasPendingOffer(player)) spectators.declineSpectatorMode(player)
+            "exit" -> if (spectators.isSpectating(player)) spectators.exitSpectatorMode(player)
+        }
     }
 
     private fun handleDebug(sender: CommandSender, args: Array<out String>) {
@@ -1168,4 +1146,28 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
         }
     }
 
+
+    private companion object {
+        /** Help line key and the permission its command checks. */
+        val HELP_LINES = listOf(
+            "help-list" to "btc.admin", "help-info" to "btc.admin",
+            "help-generate" to "btc.admin.generate", "help-dungeon" to "btc.admin.generate",
+            "help-paste" to "btc.admin.generate",
+            "help-scan" to "btc.admin.scan", "help-scan-add" to "btc.admin.scan",
+            "help-setexit" to "btc.admin.create",
+            "help-snapshot" to "btc.admin.snapshot", "help-snapshot-bulk" to "btc.admin.snapshot",
+            "help-snapshot-missing" to "btc.admin.snapshot",
+            "help-reset" to "btc.admin.reset",
+            "help-pause" to "btc.admin.pause", "help-resume" to "btc.admin.pause",
+            "help-rename" to "btc.admin.create", "help-delete" to "btc.admin.create",
+            "help-loot" to "btc.admin.loot", "help-mobs" to "btc.admin.mobs",
+            "help-vault" to "btc.admin.vault", "help-vault-unlockall" to "btc.admin.vault",
+            "help-key" to "btc.admin.key", "help-give" to "btc.give",
+            "help-stats" to "btc.stats", "help-leaderboard" to "btc.leaderboard",
+            "help-setup" to "btc.admin.setup", "help-menu" to "btc.admin.menu",
+            "help-container" to "btc.admin.containers", "help-claims" to "btc.admin.reload",
+            "help-debug" to "btc.admin.reload", "help-update" to "btc.admin",
+            "help-reload" to "btc.admin.reload",
+        )
+    }
 }

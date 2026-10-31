@@ -370,10 +370,19 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                 "player" to (sharedClaimantName ?: "?"),
                 "time" to plugin.statisticsManager.formatTime(cooldownRemainingMs / 1000))
         } else {
+            val chamber = plugin.chamberManager.getCachedChamberAt(location)
+            val afterLoot = plugin.config.getBoolean("global.reset-after-first-loot", false)
+            val resetInMs = chamber
+                ?.takeIf { it.resetInterval > 0 && !it.isPaused && (!afterLoot || it.firstLootedAt != null) }
+                ?.let { plugin.resetManager.getTimeUntilReset(it) }
+                ?.takeIf { it > 0 }
+            val key = if (isShared) "vault-locked-shared" else "vault-locked"
             plugin.getMessageComponent(
-                if (isShared) "vault-locked-shared" else "vault-locked",
+                if (resetInMs != null) "$key-timed" else key,
                 "type" to plugin.vaultTypeDisplay(vaultType),
-                "player" to (sharedClaimantName ?: "?"))
+                "player" to (sharedClaimantName ?: "?"),
+                "chamber" to (chamber?.label() ?: ""),
+                "time" to plugin.statisticsManager.formatTime((resetInMs ?: 0) / 1000))
         }
         routeVaultFeedback(player, location, false, feedback) {
             playErrorSound(player)

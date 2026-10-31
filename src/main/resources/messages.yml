@@ -84,6 +84,9 @@ reset-failed: "&cFailed to reset chamber: {error}"
 vault-opened: "&aYou opened a {type} Vault!"
 vault-cooldown: "&cThis {type} Vault is on cooldown for &e{time}&c."
 vault-locked: "&cYou have already opened this {type} Vault! It will unlock when the chamber resets."
+# The same two lines when the chamber resets on its own: {chamber} and {time} say when.
+vault-locked-timed: "&cYou have already opened this {type} Vault! It opens again when {chamber} resets in &e{time}&c."
+vault-locked-shared-timed: "&c{player} got to this {type} Vault first! It opens again when {chamber} resets in &e{time}&c."
 # Shown instead of the two lines above when vaults.loot-mode is SHARED. There,
 # the first player to open a vault takes it and nobody else can, so the message
 # names them to make clear nothing is broken.
@@ -247,11 +250,11 @@ spawner-wave-boss-bar-normal: "Trial Spawner - Wave {wave}"
 spawner-wave-boss-bar-progress: "{type} - {killed}/{total}"
 
 # Spectator Mode
-spectate-offer: "&7You died in &e{chamber}&7. Would you like to spectate?"
-spectate-hint: "&7Type &aspectate &7to watch or &cno &7to respawn normally."
+spectate-offer: "&7You died in &e{chamber}&7. Watch your team until the run ends?"
+spectate-hint: "<click:run_command:'/trial spectate yes'><hover:show_text:'<gray>Watch the rest of the run'><green>[Watch]</green></hover></click> <click:run_command:'/trial spectate no'><hover:show_text:'<gray>Respawn as usual'><red>[Respawn]</red></hover></click> &7or type &aspectate &7or &cno&7."
 spectate-offer-expired: "&7Spectate offer expired."
 spectate-started: "&aYou are now spectating &e{chamber}&a!"
-spectate-exit-hint: "&7Type &eexit &7to leave spectator mode."
+spectate-exit-hint: "<click:run_command:'/trial spectate exit'><hover:show_text:'<gray>Stop watching'><yellow>[Stop watching]</yellow></hover></click> &7or type &eexit&7."
 spectate-exited: "&7You have left spectator mode."
 spectate-declined: "&7Spectator mode declined."
 spectate-boundary-warning: "&cYou cannot leave the chamber while spectating!"
