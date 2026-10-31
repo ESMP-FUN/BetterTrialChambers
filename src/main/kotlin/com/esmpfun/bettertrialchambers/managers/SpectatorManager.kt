@@ -124,7 +124,7 @@ class SpectatorManager(private val plugin: BetterTrialChambers) {
         pendingSpectate[player.uniqueId] = data
 
         // Send offer message
-        player.sendMessage(plugin.getMessageComponent("spectate-offer", "chamber" to chamber.name))
+        player.sendMessage(plugin.getMessageComponent("spectate-offer", "chamber" to chamber.label()))
         player.sendMessage(plugin.getMessageComponent("spectate-hint"))
 
         // Expire the offer after configured time
@@ -165,7 +165,7 @@ class SpectatorManager(private val plugin: BetterTrialChambers) {
 
         // Folia-safe: All player operations must run on entity's region thread
         val center = chamber.getCenter()
-        val startMessage = plugin.getMessageComponent("spectate-started", "chamber" to chamber.name)
+        val startMessage = plugin.getMessageComponent("spectate-started", "chamber" to chamber.label())
         val exitHintMessage = plugin.getMessageComponent("spectate-exit-hint")
 
         plugin.scheduler.runAtEntity(player, Runnable {
