@@ -1,73 +1,58 @@
-# Welcome
+# BetterTrialChambers
 
-BetterTrialChambers makes Minecraft's Trial Chambers reusable on a multiplayer server: every player gets their own vault loot, chambers reset on a schedule, and spawners are protected from griefing. It can find and manage every natural chamber in your world with no per-chamber setup.
+BetterTrialChambers makes Minecraft's Trial Chambers work on a multiplayer
+server. Every player gets their own loot from each vault, chambers rebuild
+themselves on a timer, and nobody can dig out the spawners. It finds the
+chambers in your world by itself, so most servers never register one by hand.
 
-***
+<figure><img src=".gitbook/assets/hero-chamber.png" alt="Skeletons coming out of a Trial Spawner in a chamber, with the wave bar at the top of the screen"><figcaption></figcaption></figure>
 
-## Features
+## How these pages work
 
-* **Automatic resets.** Chambers restore on a schedule, with warnings before each reset.
-* **Per-player vaults.** Every player gets their own loot roll and cooldown. Optional `SHARED` mode for one reward per vault, server-wide.
-* **Protection.** Block break/place, container access, mob griefing, PvP. WorldGuard-aware and claim-plugin-aware (Residence, Lands, GriefPrevention).
-* **Statistics and leaderboards.** Vaults opened, mobs killed, chambers completed, time spent.
-* **Custom loot.** Multi-pool tables, command rewards, potions, tipped arrows, custom-plugin items (Nexo, ItemsAdder, Oraxen, CraftEngine, MythicCrucible), resource-pack items via `custom-model-data`.
-* **Auto-discovery.** Opt-in. Finds and registers natural chambers automatically, no WorldEdit needed.
-* **Admin GUI.** `/trial menu` covers everything without editing YAML.
-* **Spawner wave tracking.** Boss bar shows progress during a fight.
-* **Spectator mode.** Dead players can watch teammates finish.
-* **Custom mob providers.** MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens.
-* **PlaceholderAPI.** 20+ placeholders for scoreboards, holograms, tab lists.
-* **Full translation.** Every user-facing string is in `messages.yml`.
+Read them in order. Each step only uses what an earlier step showed you, and
+every step has a picture of what you should see in the game.
 
-***
+These pages follow one server from the first start: Emerald SMP, a made-up
+survival server. Follow along with your own server.
 
-## Requirements
+1. [Install it](getting-started/installation.md). Drop in the jar and start the server.
+2. [Run the setup tour](getting-started/quick-start.md). Answer a few questions in game. For most servers this is the whole setup.
+3. [Your first chamber is found](getting-started/first-chamber.md). Walk into a chamber and watch it get registered.
 
-* **Minecraft 1.21.1+**, including 26.x. One download works on every version.
-* **Paper, Folia, Purpur, or Pufferfish.**
-* **Java 21+** (Minecraft 26.3 servers run on Java 25).
-* _Optional:_ WorldEdit / FAWE, WorldGuard, Residence / Lands / GriefPrevention, AdvancedEnchantments, PlaceholderAPI, Vault, LuckPerms, Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible.
+After that, [Run your chambers](running-chambers/what-players-see.md) shows
+what players get and every part of the admin menu, one page at a time.
 
-***
+{% hint style="info" %}
+**No Trial Chambers in your world?** Superflat, one-block and custom worlds
+have none for the plugin to find. Do the first two steps, then
+[Register a chamber by hand](getting-started/your-first-chamber.md).
+{% endhint %}
 
-## Where to go next
+## What it needs
 
-[installation.md](getting-started/installation.md) - Install the JAR and start the server.
-
-[quick-start.md](getting-started/quick-start.md) - Run `/trial setup`, turn on auto-discovery, done.
-
-[basic-configuration.md](getting-started/basic-configuration.md) - The settings most servers change.
-
-[config.yml.md](configuration/config.yml.md) - Full `config.yml` reference.
-
-[loot.yml.md](configuration/loot.yml.md) - Loot tables: pools, custom items, command rewards.
-
-[your-first-chamber.md](getting-started/your-first-chamber.md) - Register a chamber by hand (superflat / custom worldgen).
-
-[troubleshooting.md](troubleshooting.md) - Known issues and their fixes.
-
-***
+* **Paper, Purpur, Pufferfish or Folia.** One download works on every
+  Minecraft version from 1.21.1 to 26.3. Spigot is not supported.
+* **Java 21 or newer.** Minecraft 26.3 servers already run on Java 25.
+* Nothing else. WorldEdit, WorldGuard, PlaceholderAPI, Vault and the land
+  claim plugins are all optional extras.
 
 ## Premium add-ons
 
-They require BetterTrialChambers and are sold on [ESMP.fun](https://esmp.fun/).
+These need BetterTrialChambers and are sold on [ESMP.fun](https://esmp.fun/).
 
-[**MythicTrials**](https://esmp.fun/plugins/mythic-trials) - Per-player chamber progression + Mythic difficulty tiers
+* [**MythicTrials**](https://esmp.fun/plugins/mythic-trials). Each player climbs through harder and harder runs of a chamber.
+* [**Vault Crates**](https://esmp.fun/plugins/vault-crates). Crates built on real Trial Vault blocks.
+* [**Wild Spawners**](https://esmp.fun/plugins/wild-spawners). Your own Trial Spawners, with your own mobs, anywhere in the world.
 
-[**Vault Crates**](https://esmp.fun/plugins/vault-crates) - Crate system built on real Trial Vault blocks
+## Help
 
-[**Wild Spawners**](https://esmp.fun/plugins/wild-spawners) - Custom Trial Spawners for Better Trial Chambers
+* [**Discord**](https://dc.esmp.fun). Questions, help and announcements.
+* [**GitHub Issues**](https://github.com/ESMP-FUN/BetterTrialChambers/issues). Bug reports and ideas.
+* [**Modrinth**](https://modrinth.com/plugin/trialchamberpro). Downloads and what changed in each version.
 
-***
-
-## Support
-
-* [**GitHub Issues**](https://github.com/ESMP-FUN/BetterTrialChambers/issues) - bug reports, feature requests
-* [**Discord**](https://dc.esmp.fun) - community support, announcements
-* [**Modrinth**](https://modrinth.com/plugin/trialchamberpro) - downloads and release notes
-
-Source-available, free to use, no redistribution (see [LICENSE](https://github.com/ESMP-FUN/BetterTrialChambers/blob/master/LICENSE)).
-
-***
+Free to use, no redistribution (see the
+[LICENSE](https://github.com/ESMP-FUN/BetterTrialChambers/blob/master/LICENSE)).
 
 [![Servers](https://img.shields.io/endpoint?url=https%3A%2F%2Ffaststats.dev%2Fapi%2Fshields%2Fbetter-trial-chambers%3Fmetric%3Dservers%26color%3Dorange%26icon%3D1&style=flat)](https://faststats.dev/project/better-trial-chambers)
+
+Next: [Install it](getting-started/installation.md).

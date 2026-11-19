@@ -1,0 +1,11 @@
+# Spots used for the docs pictures, world seed "emerald-smp", Paper 26.3-248.
+# Chamber found at 64 ~ 208 by: locate structure minecraft:trial_chambers
+# Registered as auto_world_89_206, bounds 22,-49,144 to 156,34,268.
+discovery     tp BSTester 64 -10 208 0 30            (spectator, wait for the chat line)
+info shots    tp BSTester 116 -27 174 180 30         (creative, inside the chamber)
+boss bar      tp BSTester 114.5 -28 179.5 facing 111.5 -27.5 176.5   (survival, spawner 111 -28 176)
+vault         tp BSTester 113.5 -28 171.5 facing 116.5 -27.9 171.5   (normal vault 116 -27 171)
+place block   tp BSTester 113.5 -28 171.5 facing 116.5 -28 173.5
+menus         same spot as the vault, operator, creative; the exit point is set here too
+kill credit   execute as @e[type=!player,type=!item,type=!arrow,type=!experience_orb,x=111,y=-28,z=176,distance=..24] run damage @s 200 minecraft:player_attack by BSTester
+by hand       trial delete auto_world_89_206, then as the player: /trial generate coords 60,-40,160 130,0,220 Arena

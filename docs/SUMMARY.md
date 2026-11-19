@@ -1,17 +1,37 @@
-# Table of Contents
+# Table of contents
 
-## Getting Started
+* [BetterTrialChambers](README.md)
 
-* [Welcome](README.md)
-* [Installation](getting-started/installation.md)
-* [Quick Start](getting-started/quick-start.md)
-* [Basic Configuration](getting-started/basic-configuration.md)
-* [Example Setups](getting-started/example-setups.md)
+## Start here
+
+* [Install it](getting-started/installation.md)
+* [Run the setup tour](getting-started/quick-start.md)
+* [Your first chamber is found](getting-started/first-chamber.md)
+
+## Run your chambers
+
+* [What players see](running-chambers/what-players-see.md)
+* [The admin menu](running-chambers/admin-menu.md)
+* [Give a chamber a name](running-chambers/names.md)
+* [Resets and the exit point](running-chambers/resets.md)
+* [Protection](running-chambers/protection.md)
+* [Vault loot](running-chambers/loot.md)
+* [Stats and leaderboards](running-chambers/stats.md)
+
+## No natural chambers?
+
+* [Register a chamber by hand](getting-started/your-first-chamber.md)
+
+## Last steps
+
+* [Settings the tour doesn't ask about](getting-started/basic-configuration.md)
+* [Example setups](getting-started/example-setups.md)
 * [PlaceholderAPI](getting-started/placeholders.md)
-* [Manual Chamber Setup](getting-started/your-first-chamber.md)
 
-## Configuration
+## Reference
 
+* [Commands](reference/commands.md)
+* [Permissions](reference/permissions.md)
 * [config.yml](configuration/config.yml.md)
 * [loot.yml](configuration/loot.yml.md)
 * [messages.yml](configuration/messages.yml.md)
@@ -19,19 +39,6 @@
 * [Custom Mobs](configuration/custom-mobs.md)
 * [spawner\_presets.yml](configuration/spawner-presets.yml.md)
 * [dungeon.yml](configuration/dungeon.yml.md)
-
-## Reference
-
-* [Commands](reference/commands.md)
-* [Permissions](reference/permissions.md)
-
-## API
-
-* [Events](api/events.md)
-* [Custom Mob Providers](api/mob-providers.md)
-
-## Troubleshooting
-
-* [Common Issues](troubleshooting.md)
-* [Performance Tips](troubleshooting.md#performance-tips)
-* [Reporting Bugs](troubleshooting.md#reporting-bugs)
+* [Events (for developers)](api/events.md)
+* [Custom mob providers (for developers)](api/mob-providers.md)
+* [Troubleshooting](troubleshooting.md)

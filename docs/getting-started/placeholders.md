@@ -46,7 +46,7 @@ Every placeholder resolves for the player it is parsed against, unless noted.
 
 ## The player's own leaderboard rank
 
-1-based rank. `0` means the player is unranked (outside the top 100 that is tracked).
+`1` is first place. `0` means the player is not in the top 100.
 
 | Placeholder                  | Ranks by                               |
 | ---------------------------- | -------------------------------------- |
@@ -78,12 +78,12 @@ For the `time` board, `_value` is formatted like `%btc_time_spent%`; the other b
 
 ***
 
-## Freshness
+## How often they update
 
-The expansion never blocks the server thread for a database read, so a value that is not cached yet reads as `0` or a default on the first request and fills in on the next refresh.
+Placeholders never make your server wait. The first time one is shown it can read `0` for a moment, and it fills in on the next update.
 
-* Player stats: cached per player for 30 seconds.
-* Leaderboards (rank and top boards): cached for 60 seconds, built from the top 100 of each stat.
+* A player's own stats update every 30 seconds.
+* Ranks and top players update every minute.
 
 ***
 
@@ -107,4 +107,4 @@ Hologram leaderboard:
 
 ***
 
-Next: [**Commands**](../reference/commands.md)
+Next: [Commands](../reference/commands.md).

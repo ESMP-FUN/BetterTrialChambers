@@ -1,9 +1,9 @@
 # Example Setups
 
-Ready-to-paste `config.yml` recipes for common "I only want one thing" setups. BetterTrialChambers has many subsystems (resets, snapshots, protection, statistics, leaderboards, spawner waves, spectator mode, custom mob providers). Each can be turned off on its own without affecting the others.
+Ready-to-paste `config.yml` recipes for servers that only want one part of the plugin. Resets, protection, statistics, the wave boss bar and spectating can each be turned off without touching the others.
 
 {% hint style="info" %}
-Each recipe only sets the keys that matter for that setup. Everything else stays at its default. Paste onto a fresh `config.yml`, then run `/trial reload`.
+Each recipe only sets the keys that matter for that setup. Everything else stays at its default. Change the same lines in your `config.yml`, then run `/trial reload`.
 {% endhint %}
 
 ***
@@ -67,7 +67,7 @@ spectator-mode:
 
 ## Other minimal setups
 
-To drop a subsystem you do not want, set its top-level `enabled` to `false`:
+To drop a part you don't want, set its `enabled` line to `false`:
 
 | Setting | What `false` disables |
 | --- | --- |
@@ -78,3 +78,5 @@ To drop a subsystem you do not want, set its top-level `enabled` to `false`:
 | `discovery.enabled` | Auto-registration of chambers (you would register manually with `/trial generate`) |
 
 Combine these freely. Turning one off does not affect the others.
+
+Next: [PlaceholderAPI](placeholders.md).

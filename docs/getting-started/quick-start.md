@@ -1,82 +1,118 @@
----
-description: >-
-  The fastest way to get BetterTrialChambers running, and for most servers, the
-  only setup you need.
-layout:
-  width: default
-  title:
-    visible: true
-  description:
-    visible: true
-  tableOfContents:
-    visible: true
-  outline:
-    visible: true
-  pagination:
-    visible: true
-  metadata:
-    visible: true
-  tags:
-    visible: true
-  actions:
-    visible: true
----
+# Run the setup tour
 
-# Quick Start
+The tour asks you about the plugin's main settings one at a time, in plain
+words, and saves each answer for you. For most servers this is the only setup
+there is.
 
-Set up BetterTrialChambers so it finds and manages every natural Trial Chamber on your server by itself. This is the only setup most servers need. No WorldEdit, no per-chamber commands.
+## Step 1 - Start the tour
 
-## 1. Run the setup tour
-
-In-game as an operator, run:
+In game, as an operator, run:
 
 ```
 /trial setup
 ```
 
-Or click the green text in chat:
+A window opens over the game with the first question:
 
-<figure><img src="../.gitbook/assets/Screenshot 2026-06-27 153421.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/tour-discovery.png" alt="The tour window on question 1 of 16, 'Auto-discover Trial Chambers?', with its buttons"><figcaption></figcaption></figure>
 
-The tour walks you through BTC's main settings one at a time, in plain English, with **Enable / Skip / Disable** for each. Nothing is forced. You can stop at any point and re-run it later. On Paper 1.21.7+ it is a dialog window; on older servers it is the same content as clickable chat.
+Every question looks the same:
 
-<figure><img src="../.gitbook/assets/Screenshot 2026-06-27 153509.png" alt=""><figcaption></figcaption></figure>
+* **The top line** shows where you are, here question 1 of 16.
+* **The yellow line** is the question, with what it does underneath.
+* **CPU impact** says how much work it gives your server. Most say "tiny" or
+  "little", or nothing at all.
+* **Currently** shows what the setting is right now.
+* **Enable** and **Disable** save your answer and go to the next question.
+  **Skip Question** goes on without changing anything, and **Prev** goes back
+  one.
 
-## 2. Enable these two settings in the tour
+{% hint style="info" %}
+**On a server older than Minecraft 1.21.7?** The game has no such windows
+there, so the tour runs in chat instead, with the same questions and the same
+buttons as clickable text.
+{% endhint %}
 
-* **Auto-discover Trial Chambers.** BTC finds naturally-generated chambers as players explore and registers each one for you.
-* **Snapshot discovered chambers.** Saves a backup of each chamber the moment it is found. A chamber needs a snapshot before it can reset, so this makes it reset-ready right away.
+## Step 2 - Turn on the first two
+
+Emerald SMP is a normal survival world, full of chambers nobody has found yet.
+Two answers make the plugin look after all of them:
+
+1. **Auto-discover Trial Chambers?** Click **Enable**. The plugin now finds
+   each chamber by itself, the first time a player comes near it.
+2. **Snapshot discovered chambers?** Click **Enable**. The plugin saves a copy
+   of each chamber the moment it finds it. A chamber needs that copy before it
+   can rebuild itself, so with this on, every chamber is ready straight away.
+
+<figure><img src="../.gitbook/assets/tour-auto-snapshot.png" alt="Question 2 of 16, 'Snapshot discovered chambers?', Currently: Disabled"><figcaption></figcaption></figure>
 
 {% hint style="success" %}
-That is the whole setup. With those two on, every Trial Chamber a player walks into is registered, backed up, and put on an automatic reset schedule.
+**That is the important part done.** With these two on, every Trial Chamber a
+player walks into is registered, saved and put on a timer to rebuild. You can
+skip every other question and still have a working setup.
 {% endhint %}
 
-## 3. Done
+## Step 3 - Pick how often chambers rebuild
 
-From here on:
+Some questions have a choice instead of Enable and Disable. The sixth one
+asks how long a chamber waits before it rebuilds itself for the next group:
 
-* Chambers are found and backed up automatically as players explore.
-* Each chamber resets on a schedule (default every 2 days). Change it in the tour or in [Basic Configuration](basic-configuration.md).
-* Every player gets their own loot with their own cooldown, so the second player into a chamber does not find empty vaults.
+<figure><img src="../.gitbook/assets/tour-reset-interval.png" alt="Question 6 of 16, 'How often should chambers reset?', six choice buttons, Currently: 2 days (default)"><figcaption></figcaption></figure>
 
-To adjust loot, reset timing, or protection, see [Basic Configuration](basic-configuration.md). You do not have to change anything to have a working setup.
+Emerald SMP keeps **Every 2 days**, so it clicks **Skip Question**. Pick
+**Never** only if you want to rebuild every chamber yourself.
 
-## Good to know
+## Step 4 - Pick who gets the loot
+
+The seventh question decides what happens when a group reaches the same vault:
+
+<figure><img src="../.gitbook/assets/tour-loot-mode.png" alt="Question 7 of 16, 'Who gets the loot from a vault?', three choice buttons"><figcaption></figcaption></figure>
+
+* **Everyone gets their own.** Each player opens every vault once and gets
+  their own reward. Ten players, ten rewards. Most servers want this, and it
+  is already set.
+* **First come, first served.** The first player to open a vault takes the
+  reward, and it stays shut for everybody else until the chamber rebuilds.
+* **Leave it to Minecraft.** The plugin leaves vaults alone, and they work
+  exactly like in a single-player world.
+
+## Step 5 - Go through the rest
+
+The other questions are already set the way most servers want them. Read
+each one and click **Enable**, **Disable** or **Skip Question**:
+
+| # | Question | Already set to | What it means |
+| --- | --- | --- | --- |
+| 3 | Drop vault loot on the ground? | Disabled | Loot goes straight into the player's inventory. Enable it to have it pop out of the vault instead, like in vanilla. |
+| 4 | Confirm before chambers reset? | Disabled | Chambers rebuild on their own. Enable it to have them wait until an admin says yes. |
+| 5 | Use FastAsyncWorldEdit for faster resets? | Disabled | Only for servers with the FastAsyncWorldEdit plugin. |
+| 8 | Tidy up dropped items on reset? | Enabled | Items left on the floor are cleared away when a chamber rebuilds. |
+| 9 | Clear leftover mobs on reset? | Enabled | Mobs left from the last group are removed. |
+| 10 | Reset trial spawners? | Enabled | Spawners fight again and drop keys again after each rebuild. |
+| 11 | Reset vault cooldowns? | Enabled | Players can open each vault again after a rebuild. |
+| 12 | Track spawner wave progress? | Enabled | Counts the mobs each spawner sends. Needed for the next question. |
+| 13 | Show the wave progress boss bar? | Enabled | A bar at the top of the screen shows how much of the fight is left. |
+| 14 | Let players spectate after death? | Enabled | A player who dies can watch the rest of their group finish. |
+| 15 | Track player statistics? | Enabled | Counts vaults opened, mobs killed and time spent, for the leaderboards. |
+| 16 | Let Luck affect loot? | Disabled | Players with the Luck effect get a little more from each vault. |
+
+Question 5 needs the FastAsyncWorldEdit plugin. Without it, the Enable button
+is replaced by one that says FastAsyncWorldEdit is not present:
+
+<figure><img src="../.gitbook/assets/tour-fawe-missing.png" alt="Question 5 of 16, the Enable button replaced by 'FastAsyncWorldEdit not present'"><figcaption></figcaption></figure>
+
+After the last question the tour says it's done:
+
+<figure><img src="../.gitbook/assets/tour-complete.png" alt="The 'Setup complete' window with its Done button"><figcaption></figcaption></figure>
 
 {% hint style="info" %}
-**Very old worlds:** Auto-discovery looks for the blocks a Trial Chamber is built from (tuff bricks, copper, vaults, trial spawners). On worlds from before 1.21, a decorative player build made of those blocks could be mistaken for a chamber. This does not happen on fresh or normal worlds. If a wrong one is ever registered, remove it with `/trial delete <name>`.
+**Need a break?** **Pause Setup** remembers which question you were on. Run
+`/trial setup continue`, or click **[Resume]** in chat, to carry on from
+there. **Stop Setup** ends the tour, and `/trial setup` starts it again from
+the first question whenever you like.
 {% endhint %}
 
-{% hint style="info" %}
-**Re-run anytime:** `/trial setup` is always available. Every setting it covers is also in `config.yml` if you prefer to edit it directly.
-{% endhint %}
+Every answer is saved in `config.yml` as you click, so there is nothing to
+reload. You can run the tour again at any time to change your mind.
 
-## No natural chambers on your server?
-
-Some servers have no naturally-generated Trial Chambers: superflat and one-block worlds, custom world generation, or `generate-structures` turned off. If that is you, auto-discovery has nothing to find, and you register chambers by hand instead:
-
-{% content-ref url="your-first-chamber.md" %}
-[your-first-chamber.md](your-first-chamber.md)
-{% endcontent-ref %}
-
-For everyone else, you're already finished.
+Next: [Your first chamber is found](first-chamber.md).

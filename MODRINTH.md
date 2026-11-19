@@ -28,20 +28,21 @@ Turn one-time Trial Chambers into replayable multiplayer dungeons.
 
 ### Setup
 
-1. Drop the JAR in `/plugins`
+1. Drop the JAR in `/plugins`. One jar for every version from 1.21.1 to 26.3
 2. Start the server
-3. Type `/trial setup`
-4. Answer the questions
-5. Walk around your world & see the magic happen
+3. Type `/trial setup` and answer the questions
+4. Walk around your world & see the magic happen
 
 Chambers register themselves as you find them. Done.
 
-<img src="https://raw.githubusercontent.com/ESMP-FUN/BetterTrialChambers/master/setup-chat.png" alt="The /trial setup prompt in-game" width="800" /><br>
+<img src="https://raw.githubusercontent.com/ESMP-FUN/BetterTrialChambers/master/docs/.gitbook/assets/tour-discovery.png" alt="The /trial setup tour asking whether to find Trial Chambers by itself, with Enable and Disable buttons" width="800" /><br>
 
 <details>
-<summary>Screenshot: native Dialog UI on Paper 1.21.7+</summary>
-<img src="https://raw.githubusercontent.com/ESMP-FUN/BetterTrialChambers/master/setup-dialog.png" alt="The /trial setup tour as a native Dialog popup" width="800" />
+<summary>Screenshot: a chamber being found</summary>
+<img src="https://raw.githubusercontent.com/ESMP-FUN/BetterTrialChambers/master/docs/.gitbook/assets/discovery-message.png" alt="The chat line an operator gets when a Trial Chamber is found" width="800" />
 </details>
+
+On servers older than 1.21.7 the tour runs in chat, with the same questions and buttons.
 
 <details>
 <summary>Old world, or you want to pick the chambers yourself?</summary>
@@ -56,7 +57,7 @@ Select chambers with WorldEdit instead (if your world has many of those structur
 /trial snapshot create MyChamber
 ```
 
-Same features either way. [Docs →](https://esmp-fun.gitbook.io/plugins/better-trial-chambers/getting-started/your-first-chamber)
+Same features either way. [Docs](https://esmp-fun.gitbook.io/plugins/better-trial-chambers/getting-started/your-first-chamber)
 
 </details>
 
@@ -125,7 +126,7 @@ Same features either way. [Docs →](https://esmp-fun.gitbook.io/plugins/better-
 | `/trial leaderboard <type>` | Top players |
 | `/trial reload` | Reload config |
 
-[All commands →](https://esmp-fun.gitbook.io/plugins/better-trial-chambers/reference/commands)
+[All commands](https://esmp-fun.gitbook.io/plugins/better-trial-chambers/reference/commands)
 
 </details>
 
@@ -141,9 +142,9 @@ Same features either way. [Docs →](https://esmp-fun.gitbook.io/plugins/better-
 | `btc.bypass.protection` | Build inside chambers | OP |
 | `btc.discovery.notify` | Get told when a chamber is found | OP |
 
-> Cooldowns look broken when you test as OP! Set `btc.bypass.cooldown` to `false` for yourself during testing or `deop` yourself
+> Cooldowns and protection look broken when you test as OP! Set `btc.bypass.cooldown` to `false` for yourself during testing or `deop` yourself
 
-[All permissions →](https://esmp-fun.gitbook.io/plugins/better-trial-chambers/reference/permissions)
+[All permissions](https://esmp-fun.gitbook.io/plugins/better-trial-chambers/reference/permissions)
 
 </details>
 
@@ -171,7 +172,7 @@ discovery:
   auto-snapshot: true              # let them reset
 ```
 
-[config.yml →](https://esmp-fun.gitbook.io/plugins/better-trial-chambers/configuration/config.yml) · [loot.yml →](https://esmp-fun.gitbook.io/plugins/better-trial-chambers/configuration/loot.yml)
+[config.yml](https://esmp-fun.gitbook.io/plugins/better-trial-chambers/configuration/config.yml) · [loot.yml](https://esmp-fun.gitbook.io/plugins/better-trial-chambers/configuration/loot.yml)
 
 </details>
 
@@ -199,7 +200,7 @@ discovery:
 
 This plugin stays free. Three paid add-ons, if you want them - [esmp.fun/plugins](https://esmp.fun/plugins):
 
-- **Mythic Trials** - chambers get harder every time a player clears them -> 25 difficulty tiers with custom tweaked smarter vanilla MobAI, better rewards and optional seasons
+- **Mythic Trials** - chambers get harder every time a player clears them: 25 difficulty tiers with custom tweaked smarter vanilla MobAI, better rewards and optional seasons
 - **Wild Spawners** - (custom-mob) trial spawners, anywhere on the map and/or in your shops
 - **Vault Crates** - crates that use real Trial Vaults instead of chests (no resource packs!)
 

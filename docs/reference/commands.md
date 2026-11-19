@@ -49,7 +49,7 @@ For the full permission list, see the [Permissions](permissions.md) page.
 | `/trial rename <chamber> <display name>` | Set a friendly display name. Use `none`, `reset`, or `-` to clear it | `btc.admin.create` |
 | `/trial pause <chamber>` | Pause a chamber: stop resets, protection, and vault use, keep all data | `btc.admin.pause` |
 | `/trial resume <chamber>` | Resume a paused chamber | `btc.admin.pause` |
-| `/trial delete <chamber>` | Permanently delete a chamber and its data (the snapshot file stays on disk) | `btc.admin.create` |
+| `/trial delete <chamber>` | Permanently delete a chamber and its data (its saved snapshot file is deleted too) | `btc.admin.create` |
 
 ### Snapshots
 
@@ -414,7 +414,7 @@ With a chamber name, shows that chamber's world, bounds, block volume, exit loca
 
 <summary><code>/trial delete &lt;chamber&gt;</code></summary>
 
-Permanently deletes a chamber, its vault and spawner data, and its player cooldowns. The snapshot file on disk is not deleted.
+Permanently deletes a chamber, its vault and spawner data, and its player cooldowns. Its snapshot file in `snapshots/` is deleted too.
 
 **Usage:**
 

@@ -133,7 +133,7 @@ Cause: a bug in 2.0.2 and earlier where the Normal/Ominous Loot buttons ignored 
 2. Restart once.
 3. Walk or fly around your world. Chambers register themselves as their chunks load; pre-loaded chunks are picked up by a one-time startup sweep.
 
-For manual control (custom names, only specific chambers), the WorldEdit workflow still works: `/trial generate wand MyChamber`. See [Manual Chamber Setup](getting-started/your-first-chamber.md).
+For manual control (custom names, only specific chambers), the WorldEdit workflow still works: `/trial generate wand MyChamber`. See [Register a chamber by hand](getting-started/your-first-chamber.md).
 
 Full details: [Auto-Discovery config](configuration/config.yml.md#auto-discovery-of-natural-trial-chambers).
 
