@@ -212,6 +212,7 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
                         z INT NOT NULL,
                         type VARCHAR(16) DEFAULT 'NORMAL',
                         loot_table VARCHAR(64) NOT NULL,
+                        block_type VARCHAR(16),
                         FOREIGN KEY (chamber_id) REFERENCES ${tables.chambers}(id) ON DELETE CASCADE,
                         UNIQUE (chamber_id, x, y, z, type)
                     )
@@ -458,6 +459,15 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
                 try {
                     stmt.execute("ALTER TABLE ${tables.chambers} ADD COLUMN bounds_confirmed BOOLEAN NOT NULL DEFAULT 0")
                     plugin.logger.info("Migration executed: Added bounds_confirmed column")
+                } catch (_: SQLException) {
+                    // Column already exists
+                }
+
+                // What each vault block really is (normal or ominous), so counts and the vault
+                // list show one entry per vault instead of one per stored cooldown type.
+                try {
+                    stmt.execute("ALTER TABLE ${tables.vaults} ADD COLUMN block_type VARCHAR(16)")
+                    plugin.logger.info("Migration executed: Added vault block_type column")
                 } catch (_: SQLException) {
                     // Column already exists
                 }

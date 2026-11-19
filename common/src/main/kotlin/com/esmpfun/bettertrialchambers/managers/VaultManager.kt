@@ -57,7 +57,7 @@ class VaultManager(private val plugin: BetterTrialChambers) {
                     """
                     SELECT type, COUNT(*) as count
                     FROM ${tables.vaults}
-                    WHERE chamber_id = ?
+                    WHERE chamber_id = ? AND (block_type IS NULL OR block_type = type)
                     GROUP BY type
                     """.trimIndent()
                 ).use { stmt ->
@@ -89,7 +89,7 @@ class VaultManager(private val plugin: BetterTrialChambers) {
     fun refreshVaultCountsAsync(chamberId: Int) {
         plugin.launchAsync {
             try {
-                val vaults = getVaultsForChamber(chamberId)
+                val vaults = getVaultsForChamber(chamberId).filter { it.matchesBlock }
                 val normal = vaults.count { it.type == VaultType.NORMAL }
                 val ominous = vaults.count { it.type == VaultType.OMINOUS }
                 countsCache[chamberId] = VaultCounts(normal, ominous, System.currentTimeMillis())
@@ -687,7 +687,10 @@ class VaultManager(private val plugin: BetterTrialChambers) {
             y = rs.getInt("y"),
             z = rs.getInt("z"),
             type = parseVaultType(rs.getString("type"), rs.getInt("id")),
-            lootTable = rs.getString("loot_table")
+            lootTable = rs.getString("loot_table"),
+            blockType = rs.getString("block_type")?.let { stored ->
+                VaultType.entries.firstOrNull { it.name.equals(stored, ignoreCase = true) }
+            },
         )
     }
 

@@ -13,8 +13,6 @@ import com.esmpfun.bettertrialchambers.models.LootRollMode
 import com.esmpfun.bettertrialchambers.models.LootTable
 import com.esmpfun.bettertrialchambers.models.VaultType
 import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.format.NamedTextColor
-import net.kyori.adventure.text.format.TextDecoration
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.event.inventory.ClickType
@@ -217,8 +215,7 @@ class LootEditorView(
         lore += plugin.getGuiText(if (li.enabled) "gui.loot-editor.item-enabled" else "gui.loot-editor.item-disabled")
         if (plugin.lootManager.isLegacy(li)) {
             lore += Component.empty()
-            lore += Component.text("⚠ Legacy entry, re-add to capture NBT", NamedTextColor.GOLD)
-                .decoration(TextDecoration.ITALIC, false)
+            lore += plugin.getGuiText("gui.loot-editor.item-legacy")
         }
         lore += Component.empty()
         lore += plugin.getGuiText("gui.loot-editor.item-controls-header")
@@ -233,8 +230,7 @@ class LootEditorView(
         }
         lore += plugin.getGuiText("gui.loot-editor.item-controls-right")
         lore += plugin.getGuiText("gui.loot-editor.item-controls-middle")
-        lore += Component.text("Q / drop key: remove", NamedTextColor.RED)
-            .decoration(TextDecoration.ITALIC, false)
+        lore += plugin.getGuiText("gui.loot-editor.item-controls-drop")
 
         val faithful = li.serializedItem?.let { plugin.lootManager.deserializeItem(it) }
         val item = faithful?.clone() ?: ItemStack(li.type)
@@ -459,22 +455,8 @@ class LootEditorView(
         })
 
         // Bulk add at (6, 5) = slot 51
-        val bulkAdd = ItemStack(Material.CHEST).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(
-                    Component.text("Bulk add (drag items in)", NamedTextColor.AQUA)
-                        .decoration(TextDecoration.ITALIC, false)
-                )
-                lore(listOf(
-                    Component.text("Opens a chest, drag or shift-click", NamedTextColor.GRAY)
-                        .decoration(TextDecoration.ITALIC, false),
-                    Component.text("items in, then close to add them all", NamedTextColor.GRAY)
-                        .decoration(TextDecoration.ITALIC, false),
-                    Component.text("(enchants/potions/NBT preserved).", NamedTextColor.GRAY)
-                        .decoration(TextDecoration.ITALIC, false),
-                ))
-            }
-        }
+        val bulkAdd = GuiComponents.infoItem(plugin, Material.CHEST,
+            "gui.loot-editor.bulk-add-name", "gui.loot-editor.bulk-add-lore")
         set(51, VcGuiItem.wrap(bulkAdd) { ctx ->
             // Persist current draft so the deposit appends to it, then open the chest.
             if (chamber != null) menu.saveDraft(ctx.player, chamber, kind, poolName, draft)
@@ -586,16 +568,18 @@ private fun buildTitle(
     poolName: String?,
     globalTableName: String?,
 ): Component {
-    val base = if (chamber != null) {
+    val suffix = poolName?.let { plugin.getGuiText("gui.loot-editor.title-pool-suffix", "pool" to it) }
+    fun withSuffix(base: Component) = if (suffix != null) base.append(suffix) else base
+    return if (chamber != null) {
         val key = when (kind) {
             MenuService.LootKind.NORMAL -> "gui.loot-editor.title-chamber-normal"
             MenuService.LootKind.OMINOUS -> "gui.loot-editor.title-chamber-ominous"
         }
-        plugin.getGuiText(key, "chamber" to chamber.name)
+        com.esmpfun.bettertrialchambers.gui.components.MenuTitle.fitName(
+            chamber.label(),
+            withoutName = { withSuffix(plugin.getGuiText(key.replace("title-chamber-", "title-"))) },
+        ) { withSuffix(plugin.getGuiText(key, "chamber" to it)) }
     } else {
-        plugin.getGuiText("gui.loot-editor.title-global", "table" to (globalTableName ?: ""))
+        withSuffix(plugin.getGuiText("gui.loot-editor.title-global", "table" to (globalTableName ?: "")))
     }
-    return if (poolName != null) {
-        base.append(plugin.getGuiText("gui.loot-editor.title-pool-suffix", "pool" to poolName))
-    } else base
 }

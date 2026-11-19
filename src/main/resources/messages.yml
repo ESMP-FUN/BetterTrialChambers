@@ -46,7 +46,7 @@ chamber-already-paused: "&cChamber &e{chamber}&c is already paused. Use /trial r
 chamber-not-paused: "&cChamber &e{chamber}&c is not paused."
 chamber-is-paused: "&cThis chamber is currently paused and cannot be interacted with."
 chamber-auto-paused: "&c[BTC] Chamber &e{chamber}&c was auto-paused: &e{count}&c critical block(s) destroyed (last: &e{block}&c). Use /trial resume {chamber} to re-activate it."
-chamber-list-item: "&e{chamber} &7- &f{world} &7({volume} blocks)"
+chamber-list-item: "&f{name} &7- &e{chamber} &7- &f{world} &7({volume} blocks)"
 chamber-list-empty: "&cNo chambers registered yet."
 no-selection: "&cYou must make a WorldEdit selection first."
 worldedit-not-found: "&cWorldEdit is not installed or enabled."
@@ -229,7 +229,7 @@ wevar-list-empty: "&7No saved regions yet. Use &e/trial generate value save <nam
 
 # Undo integration (passive hints; BTC never intercepts //undo)
 undo-cleanup-hint: "&7Tip: if &f//undo &7rolled back chamber &e{chamber}&7's blocks, also run &f/trial delete {chamber} &7to clear the registration."
-chamber-created-rollback-tip: "&7To roll this back: &f//undo &7for the blocks, then &f/trial delete {chamber} &7to unregister."
+chamber-created-rollback-tip: "&7Registering changed no blocks. To unregister it again: &f/trial delete {chamber}&7. If you pasted the build with WorldEdit, &f//undo &7removes the blocks."
 
 # Schematic paste confirmation
 paste-loading: "&7Loading schematic dimensions..."
@@ -292,7 +292,7 @@ pagination-next-disabled: "<dark_gray>Next »</dark_gray>"
 
 # /trial list
 list-page-header: "<gold>Chambers <gray>(page <yellow>{page}</yellow>/<yellow>{maxPage}</yellow>, <yellow>{total}</yellow> total). <i>/trial list current</i> to locate"
-chamber-list-item-interactive: "<click:copy_to_clipboard:'{chamber}'><hover:show_text:'<gray>Click to copy <yellow>{chamber}'><yellow>{chamber}</yellow></hover></click> <gray>{world} ({volume} blocks)</gray> <click:run_command:'/trial menu {chamber}'><hover:show_text:'<gray>Open <yellow>{chamber}</yellow> in the GUI'><aqua>[menu]</aqua></hover></click>"
+chamber-list-item-interactive: "<white>{name}</white> <click:copy_to_clipboard:'{chamber}'><hover:show_text:'<gray>Click to copy <yellow>{chamber}'><yellow>{chamber}</yellow></hover></click> <gray>{world} ({volume} blocks)</gray> <click:run_command:'/trial menu {chamber}'><hover:show_text:'<gray>Open <yellow>{chamber}</yellow> in the GUI'><aqua>[menu]</aqua></hover></click>"
 list-current-inside: "<green>You are inside <yellow>{chamber}</yellow> <gray>(volume {volume})"
 list-current-none: "<gray>No chambers found in this world."
 list-current-nearest: "<gold>Nearest chamber: <yellow>{chamber}</yellow> <gray>~{distance}m at <white>{x} {y} {z}</white> <click:suggest_command:'/tp {x} {y} {z}'><aqua>[/tp]</aqua></click>"
@@ -961,8 +961,9 @@ gui:
 
   chamber-list:
     title: "Chambers (Page {page}/{total})"
-    chamber-name: "&b&l{chamber}"
+    chamber-name: "&b&l{name}"
     chamber-lore:
+      - "&7Name in commands: &f{chamber}"
       - "&7World: &f{world}"
       - "&7Volume: &f{volume} blocks"
       - ""
@@ -972,6 +973,20 @@ gui:
       - ""
       - "&fReset: &e{reset}"
       - "&fLast Reset: &7{lastReset} ago"
+      - ""
+      - "&aClick to manage"
+    # The same, for a chamber that has not been reset yet.
+    chamber-lore-never-reset:
+      - "&7Name in commands: &f{chamber}"
+      - "&7World: &f{world}"
+      - "&7Volume: &f{volume} blocks"
+      - ""
+      - "&fPlayers: &a{inside} inside"
+      - "&fVaults: &a{normal}&7 Normal, &5{ominous}&7 Ominous"
+      - "&fYour Locked: &c{normalLocked}&7 Normal, &c{ominousLocked}&7 Ominous"
+      - ""
+      - "&fReset: &e{reset}"
+      - "&fLast Reset: &7Never"
       - ""
       - "&aClick to manage"
     chamber-custom-loot-tag: "&dCustom Loot Tables"
@@ -1479,6 +1494,9 @@ gui:
   pool-selector:
     title-chamber-normal: "{chamber}: Select Normal Pool"
     title-chamber-ominous: "{chamber}: Select Ominous Pool"
+    # Used instead when the chamber's name doesn't fit in the title.
+    title-normal: "Select Normal Pool"
+    title-ominous: "Select Ominous Pool"
     title-global: "Select Pool: {table}"
     pool-name: "&6{name}"
     pool-lore:
@@ -1589,6 +1607,9 @@ gui:
   loot-editor:
     title-chamber-normal: "{chamber}: Normal Loot"
     title-chamber-ominous: "{chamber}: Ominous Loot"
+    # Used instead when the chamber's name doesn't fit in the title.
+    title-normal: "Normal Loot"
+    title-ominous: "Ominous Loot"
     title-global: "Edit: {table}"
     title-pool-suffix: " - {pool}"
     item-name-weighted-enabled: "&bChance: {item}"
@@ -1613,6 +1634,9 @@ gui:
     item-controls-shift-right-pct: "&7Shift+Right: -1% chance"
     item-controls-right: "&bRight Click: Edit Amounts"
     item-controls-middle: "&7Middle Click: Toggle"
+    item-controls-drop: "&cQ / drop key: remove"
+    # On an entry saved by a version from before items kept their enchantments and names.
+    item-legacy: "&6⚠ Legacy entry, add it again to keep its enchantments and name"
     save-name: "&aSave"
     save-lore-dirty:
       - "&7Apply changes and update loot tables"
@@ -1627,6 +1651,11 @@ gui:
     add-lore:
       - "&7Add your held item"
       - "&7Added as weighted (weight: 1.0)"
+    bulk-add-name: "&bBulk add (drag items in)"
+    bulk-add-lore:
+      - "&7Opens a chest, drag or shift-click"
+      - "&7items in, then close to add them all"
+      - "&7(enchants, potions and names are kept)."
     rolls-name: "&eDraws per Opening"
     rolls-lore:
       - "&7Each vault opening makes &f{min}-{max}"
@@ -1869,6 +1898,8 @@ setup:
   missing-option: "<red>Missing option."
   invalid-step: "<red>Invalid setup step."
   requires-plugin: "<gray>That option needs the <yellow>{plugin}</yellow> plugin, which isn't installed."
+  # Shown on the Enable button instead when that plugin is missing. Keep it short, the button fits about 24 characters.
+  requires-plugin-button: "Needs the {plugin} plugin"
   paused: "<yellow>Setup paused. <click:run_command:'/trial setup continue'><hover:show_text:'<gray>Pick up where you left off'><gold>[Resume]</gold></hover></click>"
   stopped: "<gray>Setup stopped. Restart at any time using <click:run_command:'/trial setup'><hover:show_text:'<gray>Start the tour again'><yellow>/trial setup</yellow></hover></click>."
   steps:

@@ -142,7 +142,10 @@ private fun buildPoolSelectorTitle(
             MenuService.LootKind.NORMAL -> "gui.pool-selector.title-chamber-normal"
             MenuService.LootKind.OMINOUS -> "gui.pool-selector.title-chamber-ominous"
         }
-        plugin.getGuiText(key, "chamber" to chamber.name)
+        com.esmpfun.bettertrialchambers.gui.components.MenuTitle.fitName(
+            chamber.label(),
+            withoutName = { plugin.getGuiText(key.replace("title-chamber-", "title-")) },
+        ) { plugin.getGuiText(key, "chamber" to it) }
     } else {
         plugin.getGuiText("gui.pool-selector.title-global", "table" to (globalTableName ?: ""))
     }

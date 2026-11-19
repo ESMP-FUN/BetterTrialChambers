@@ -50,7 +50,7 @@ copy it rebuilds from, all in one go:
 <figure><img src="../.gitbook/assets/hand-generate.png" alt="Chat lines 'Chamber Arena created successfully!', 'Scanning complete! Found 6 vaults, 7 spawners, 52 decorated pots.', 'Snapshot created successfully!'"><figcaption></figcaption></figure>
 
 Nothing in the world changes. The command only tells the plugin where the
-chamber is, so you can ignore the line about `//undo`.
+chamber is.
 
 {% hint style="warning" %}
 **Found 0 vaults?** The box missed them. Remove it with `/trial delete Arena`

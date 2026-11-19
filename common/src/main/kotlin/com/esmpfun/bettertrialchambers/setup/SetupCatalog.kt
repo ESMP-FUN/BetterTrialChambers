@@ -17,7 +17,7 @@ object SetupCatalog {
         SetupStep.Toggle("auto-snapshot", "discovery.auto-snapshot", default = false, cpuImpact = CpuImpact.LITTLE),
         SetupStep.Toggle("drop-loot", "vaults.drop-loot-at-vault", default = false),
         SetupStep.Toggle("reset-confirm", "global.reset-require-confirmation", default = false),
-        SetupStep.Toggle("fawe", "global.use-fawe", default = false, requiresPlugin = "FastAsyncWorldEdit"),
+        SetupStep.Toggle("fawe", "global.use-fawe", default = false, requiresPlugin = "FastAsyncWorldEdit", requiresPluginLabel = "FAWE"),
 
         // ── Choice: how often chambers auto-reset ──────────────────────────────
         // 6 options (even count) so the 2-column button grid lays out cleanly with the
@@ -57,7 +57,7 @@ object SetupCatalog {
         SetupStep.Toggle("boss-bar", "spawner-waves.show-boss-bar", default = true),
         SetupStep.Toggle("spectator", "spectator-mode.enabled", default = true),
         SetupStep.Toggle("statistics", "statistics.enabled", default = true, cpuImpact = CpuImpact.TINY),
-        SetupStep.Toggle("luck", "loot.apply-luck-effect", default = true),
+        SetupStep.Toggle("luck", "loot.apply-luck-effect", default = false),
     )
 
     fun stepAt(index: Int): SetupStep? = steps.getOrNull(index)

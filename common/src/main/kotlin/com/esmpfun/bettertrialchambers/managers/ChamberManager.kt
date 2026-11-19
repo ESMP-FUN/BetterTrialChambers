@@ -611,18 +611,20 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                     com.esmpfun.bettertrialchambers.database.DatabaseManager.DatabaseType.SQLITE
                 val sql = if (isSQLite) {
                     """
-                    INSERT INTO ${tables.vaults} (chamber_id, x, y, z, type, loot_table)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO ${tables.vaults} (chamber_id, x, y, z, type, loot_table, block_type)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(chamber_id, x, y, z, type)
                     DO UPDATE SET
-                        loot_table = excluded.loot_table
+                        loot_table = excluded.loot_table,
+                        block_type = excluded.block_type
                     """.trimIndent()
                 } else {
                     """
-                    INSERT INTO ${tables.vaults} (chamber_id, x, y, z, type, loot_table)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO ${tables.vaults} (chamber_id, x, y, z, type, loot_table, block_type)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                     ON DUPLICATE KEY UPDATE
-                        loot_table = VALUES(loot_table)
+                        loot_table = VALUES(loot_table),
+                        block_type = VALUES(block_type)
                     """.trimIndent()
                 }
 
@@ -639,6 +641,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         stmt.setInt(4, z)
                         stmt.setString(5, type.name)
                         stmt.setString(6, lootTable)
+                        stmt.setString(7, currentType.name)
                         stmt.executeUpdate()
                     }
                 }

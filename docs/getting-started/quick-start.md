@@ -97,9 +97,9 @@ each one and click **Enable**, **Disable** or **Skip Question**:
 | 16 | Let Luck affect loot? | Disabled | Players with the Luck effect get a little more from each vault. |
 
 Question 5 needs the FastAsyncWorldEdit plugin. Without it, the Enable button
-is replaced by one that says FastAsyncWorldEdit is not present:
+is replaced by one that says it needs that plugin:
 
-<figure><img src="../.gitbook/assets/tour-fawe-missing.png" alt="Question 5 of 16, the Enable button replaced by 'FastAsyncWorldEdit not present'"><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/tour-fawe-missing.png" alt="Question 5 of 16, the Enable button replaced by 'Needs the FAWE plugin'"><figcaption></figcaption></figure>
 
 After the last question the tour says it's done:
 

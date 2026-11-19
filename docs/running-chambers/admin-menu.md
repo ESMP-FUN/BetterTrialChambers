@@ -27,8 +27,9 @@ need most:
 
 ## Step 2 - Find your chamber
 
-Click **Chambers**. Each chamber is one item, with its world, size, how many
-players are inside and when it next rebuilds:
+Click **Chambers**. Each chamber is one item, shown by its display name, with
+the name you use in commands, how many players are inside and when it next
+rebuilds:
 
 <figure><img src="../.gitbook/assets/menu-chambers.png" alt="The 'Chambers' list with one chamber, its tooltip open"><figcaption></figcaption></figure>
 

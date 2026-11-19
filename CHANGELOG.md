@@ -13,6 +13,14 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - **Signs that run a command keep working after a chamber reset on 26.3.** A sign copied in from a structure file or an older snapshot kept its text but lost the switch that lets it run a command.
 - **Blank sides of a decorated pot stay blank after a reset on 26.3**, instead of turning into bricks.
 - **Cushions inside a chamber are protected on 26.3**, like item frames and paintings.
+- **Vault counts are right again.** The chamber menus counted every vault twice, once as normal and once as ominous ("15 Normal, 15 Ominous" for 10 normal and 5 ominous vaults), and Vault Management listed each vault twice. A chamber already registered shows the right numbers after `/trial scan <chamber>`.
+- **A chamber that never reset says "Last Reset: Never"** in the chamber list, instead of counting from when it was registered.
+- **The chamber list and `/trial list` show each chamber's display name**, with the name you use in commands next to it.
+- **Registering a chamber no longer tells you to `//undo` its blocks.** `/trial generate` never changes a block; the tip now says so.
+- **The setup tour's FastAsyncWorldEdit button fits again:** "Needs the FAWE plugin" instead of a label cut off halfway.
+- **Loot menu titles stay inside the menu.** A long chamber name is shortened, or left out, instead of running past the edge.
+- **Every line of the loot editor can be translated.** The Bulk add button, the remove hint and the old-entry warning were the last English-only text.
+- **The tour's Luck question no longer assumes Luck is on** when `loot.apply-luck-effect` is missing from `config.yml`; it ships off.
 
 ## [2.4.1] - 2026-10-31
 ### Added

@@ -69,7 +69,8 @@ class SetupTourChat(
             is SetupStep.Toggle -> {
                 val missingPlugin = step.requiresPlugin?.let { !Bukkit.getPluginManager().isPluginEnabled(it) } ?: false
                 if (missingPlugin) {
-                    b.append("<dark_gray>[${step.requiresPlugin} not present]")
+                    b.append("<dark_gray>[" + plugin.rawMessage("setup.requires-plugin-button",
+                        "plugin" to (step.requiresPluginLabel ?: step.requiresPlugin)) + "]")
                 } else {
                     b.append(link("/trial setup enable $index", "<green>[Enable]", "Turn this on"))
                 }

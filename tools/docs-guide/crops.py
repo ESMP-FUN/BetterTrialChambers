@@ -27,7 +27,7 @@ CROPS = {
     "player-vault-locked.png": ("full-vault-locked.png", FULL),
     "player-cannot-place.png": ("full-cannot-place.png", (0, 300, 1280, 800)),
     "menu-main.png": ("full-menu-main.png", GUI6),
-    "menu-chambers.png": ("full-menu-chambers.png", (462, 176, 870, 456)),
+    "menu-chambers.png": ("full-menu-chambers.png", (462, 176, 912, 480)),
     "menu-chamber.png": ("full-menu-chamber.png", GUI6),
     "rename-prompt.png": ("full-rename-prompt.png", (0, 683, 660, 724)),
     "rename-done.png": ("full-rename-done.png", (0, 655, 660, 724)),
@@ -35,14 +35,14 @@ CROPS = {
     "menu-reset-interval.png": ("full-menu-reset-interval.png", (462, 196, 910, 416)),
     "menu-chamber-protection.png": ("full-menu-chamber-protection.png", (462, 200, 1050, 462)),
     "menu-protection.png": ("full-menu-protection.png", (462, 200, 824, 414)),
-    "loot-pools.png": ("full-loot-pools.png", (462, 176, 880, 430)),
+    "loot-pools.png": ("full-loot-pools.png", GUI6),
     "loot-editor.png": ("full-loot-editor.png", GUI6),
-    "loot-item-tooltip.png": ("full-loot-item-tooltip.png", (462, 176, 875, 452)),
+    "loot-item-tooltip.png": ("full-loot-item-tooltip.png", (462, 176, 880, 452)),
     "reset-done.png": ("full-reset-done.png", (0, 664, 560, 724)),
     "stats-chat.png": ("full-stats-chat.png", (0, 592, 350, 724)),
     "leaderboard-chat.png": ("full-leaderboard-chat.png", (0, 682, 360, 724)),
     "menu-leaderboard.png": ("full-menu-leaderboard.png", GUI6),
-    "hand-generate.png": ("full-hand-generate.png", (0, 555, 640, 724)),
+    "hand-generate.png": ("full-hand-generate.png", (0, 505, 660, 724)),
 }
 
 for name, (source, box) in CROPS.items():

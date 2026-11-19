@@ -57,7 +57,7 @@ class VaultManagementView(
         })
 
         // Rows 1-4: vaults (up to 36, slots 9..44)
-        val vaults = runBlocking { plugin.vaultManager.getVaultsForChamber(chamber.id) }
+        val vaults = runBlocking { plugin.vaultManager.getVaultsForChamber(chamber.id) }.filter { it.matchesBlock }
         vaults.take(36).forEachIndexed { index, vault ->
             val slot = 9 + index
             set(slot, VcGuiItem.wrap(createVaultItem(vault)) { ctx ->

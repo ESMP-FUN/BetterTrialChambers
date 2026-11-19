@@ -78,7 +78,11 @@ class SetupTourDialog(
                 val missingPlugin = step.requiresPlugin?.let { !Bukkit.getPluginManager().isPluginEnabled(it) } ?: false
                 if (missingPlugin) {
                     list += DialogPromptManager.Action(
-                        Component.text("${step.requiresPlugin} not present", NamedTextColor.DARK_GRAY)
+                        Component.text(
+                            plugin.rawMessage("setup.requires-plugin-button",
+                                "plugin" to (step.requiresPluginLabel ?: step.requiresPlugin)),
+                            NamedTextColor.DARK_GRAY,
+                        )
                     ) {
                         player.sendMessage(plugin.getMessageComponent("setup.requires-plugin", "plugin" to step.requiresPlugin))
                         render(player, index)

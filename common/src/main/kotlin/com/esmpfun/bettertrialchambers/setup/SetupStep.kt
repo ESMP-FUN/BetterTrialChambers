@@ -38,6 +38,8 @@ sealed class SetupStep {
         override val cpuImpact: CpuImpact? = null,
         /** When set and that plugin is absent, the Enable button is shown disabled. */
         val requiresPlugin: String? = null,
+        /** Short name for [requiresPlugin] on that disabled button, which only fits about 24 characters. */
+        val requiresPluginLabel: String? = null,
     ) : SetupStep()
 
     /** A pick-one setting (e.g. reset interval). Skip keeps the current value. */

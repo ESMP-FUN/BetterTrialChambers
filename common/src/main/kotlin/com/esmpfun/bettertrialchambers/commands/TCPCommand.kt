@@ -588,12 +588,14 @@ class TCPCommand(private val plugin: BetterTrialChambers) : CommandExecutor {
                     // click [menu] to jump straight into the chamber's GUI.
                     sender.sendMessage(plugin.getMessageComponent("chamber-list-item-interactive",
                         "chamber" to chamber.name,
+                        "name" to chamber.label(),
                         "world" to chamber.world,
                         "volume" to chamber.getVolume()
                     ))
                 } else {
                     sender.sendMessage(plugin.getMessageComponent("chamber-list-item",
                         "chamber" to chamber.name,
+                        "name" to chamber.label(),
                         "world" to chamber.world,
                         "volume" to chamber.getVolume()
                     ))

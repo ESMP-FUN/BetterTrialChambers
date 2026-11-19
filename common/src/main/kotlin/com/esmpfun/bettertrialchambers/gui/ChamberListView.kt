@@ -92,8 +92,7 @@ class ChamberListView(
 
     private fun createChamberItem(chamber: Chamber, player: Player): ItemStack {
         val timeUntilMs = plugin.resetManager.getTimeUntilReset(chamber)
-        val lastResetMs = chamber.lastReset ?: chamber.createdAt
-        val sinceLastMs = System.currentTimeMillis() - lastResetMs
+        val sinceLastMs = chamber.lastReset?.let { System.currentTimeMillis() - it }
         val playersInside = chamber.getPlayersInside().size
         val (normalCount, ominousCount) = plugin.vaultManager.getVaultCounts(chamber.id)
         val (normalLocked, ominousLocked) = runBlocking {
@@ -102,8 +101,10 @@ class ChamberListView(
 
         val base = GuiComponents.infoItem(
             plugin, Material.LODESTONE,
-            "gui.chamber-list.chamber-name", "gui.chamber-list.chamber-lore",
+            "gui.chamber-list.chamber-name",
+            if (sinceLastMs == null) "gui.chamber-list.chamber-lore-never-reset" else "gui.chamber-list.chamber-lore",
             "chamber" to chamber.name,
+            "name" to chamber.label(),
             "world" to chamber.world,
             "volume" to chamber.getVolume(),
             "inside" to playersInside,
@@ -111,7 +112,7 @@ class ChamberListView(
             "normalLocked" to normalLocked, "ominousLocked" to ominousLocked,
             "reset" to if (chamber.resetInterval <= 0) plugin.rawMessage("gui.chamber-settings.reset-disabled")
                 else DurationFmt.humanize(plugin, timeUntilMs),
-            "lastReset" to DurationFmt.humanize(plugin, sinceLastMs)
+            "lastReset" to (sinceLastMs?.let { DurationFmt.humanize(plugin, it) } ?: "")
         )
 
         if (chamber.normalLootTable != null || chamber.ominousLootTable != null) {
