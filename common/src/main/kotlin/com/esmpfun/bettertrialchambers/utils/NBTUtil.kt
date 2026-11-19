@@ -146,9 +146,26 @@ object NBTUtil {
      * stored item otherwise.
      */
     private fun captureDecoratedPot(pot: DecoratedPot): Map<String, Any> {
+        // A pot side can be genuinely blank, and 26.3 made that a real state: a
+        // blank side drops nothing when the pot is broken, where a brick side
+        // drops a brick. Asking a pot what is on a side still cannot tell the two
+        // apart, though - checked against Paper's 26.3 work on 2026-09-06, a
+        // blank side answers "brick", and there is no way to ask for a blank one
+        // back. So a pot read through here loses its blank sides.
+        //
+        // This is only ever reached for snapshots taken before the plugin started
+        // saving a block the way the game itself saves it, and those had already
+        // recorded the blank sides as bricks, so nothing is lost that was not lost
+        // already. Every snapshot taken since keeps them blank.
+        //
+        // The blank check below stays anyway: it costs nothing and covers a
+        // server that does answer honestly.
         val sherds = mutableMapOf<String, String>()
         DecoratedPot.Side.entries.forEach { side ->
-            sherds[side.name] = pot.getSherd(side).name
+            val sherd: org.bukkit.Material? = runCatching { pot.getSherd(side) }.getOrNull()
+            if (sherd != null && !sherd.isAir) {
+                sherds[side.name] = sherd.name
+            }
         }
 
         val map = mutableMapOf<String, Any>(
@@ -203,9 +220,60 @@ object NBTUtil {
 
     private val gson = net.kyori.adventure.text.serializer.gson.GsonComponentSerializer.gson()
 
-    /** Sign: both sides' lines (Component JSON), glow + dye color per side, waxed state. */
+    /**
+     * Reads and writes a sign's "op features" switch, which 26.3 introduced.
+     *
+     * Up to 26.2, clicking a sign whose text carried a command just ran it. In
+     * 26.3 that only happens when the sign has this switch turned on, and a sign
+     * the game creates fresh has it off.
+     *
+     * A chamber reset does not come through here: a snapshot saves each block
+     * the way the game itself saves it, which already carries the switch. What
+     * does come through here is a room imported from a structure file and a
+     * snapshot taken before that format, so this is what keeps an imported
+     * "click here" sign working.
+     *
+     * Paper 26.3 calls it isOperatorFeaturesAllowed / setOperatorFeaturesAllowed. This
+     * jar also builds against older APIs that lack them, so they are looked up on the
+     * running server; where they are missing every call here does nothing.
+     */
+    private object SignOpFeatures {
+        private val getter by lazy {
+            runCatching {
+                org.bukkit.block.Sign::class.java.methods.firstOrNull {
+                    it.name == "isOperatorFeaturesAllowed" &&
+                        it.parameterCount == 0 &&
+                        (it.returnType == Boolean::class.javaPrimitiveType || it.returnType == Boolean::class.javaObjectType)
+                }
+            }.getOrNull()
+        }
+        private val setter by lazy {
+            runCatching {
+                org.bukkit.block.Sign::class.java.methods.firstOrNull {
+                    it.name == "setOperatorFeaturesAllowed" &&
+                        it.parameterCount == 1 &&
+                        (it.parameterTypes[0] == Boolean::class.javaPrimitiveType || it.parameterTypes[0] == Boolean::class.javaObjectType)
+                }
+            }.getOrNull()
+        }
+
+        /** The sign's current setting, or null on a server that has no such setting. */
+        fun read(sign: org.bukkit.block.Sign): Boolean? =
+            runCatching { getter?.invoke(sign) as? Boolean }.getOrNull()
+
+        /** Applies [value]; does nothing on a server that has no such setting. */
+        fun write(sign: org.bukkit.block.Sign, value: Boolean) {
+            runCatching { setter?.invoke(sign, value) }
+        }
+    }
+
+    /**
+     * Sign: both sides' lines (Component JSON), glow + dye color per side, waxed
+     * state, and (26.3 and later) whether the sign is allowed to run commands.
+     */
     private fun captureSign(sign: org.bukkit.block.Sign): Map<String, Any> = try {
         val map = mutableMapOf<String, Any>("type" to "SIGN", "waxed" to sign.isWaxed)
+        SignOpFeatures.read(sign)?.let { map["allowOpFeatures"] = it }
         for (side in org.bukkit.block.sign.Side.entries) {
             val s = sign.getSide(side)
             map["${side.name}_lines"] = s.lines().map { gson.serialize(it) }
@@ -231,6 +299,7 @@ object NBTUtil {
                 }
             }
             (data["waxed"] as? Boolean)?.let { sign.isWaxed = it }
+            (data["allowOpFeatures"] as? Boolean)?.let { SignOpFeatures.write(sign, it) }
             sign.update(true, false)
             true
         } catch (_: Exception) {
@@ -643,17 +712,16 @@ object NBTUtil {
             @Suppress("UNCHECKED_CAST")
             val sherds = data["sherds"] as? Map<String, String> ?: return false
 
+            // Only sides the snapshot actually recorded are written back. A side
+            // that was blank when captured is left exactly as the freshly restored
+            // block has it, which is blank, so blank sides stay blank across a
+            // reset rather than turning into bricks.
             sherds.forEach { (sideName, sherdName) ->
-                val side = DecoratedPot.Side.valueOf(sideName)
-                val material = try {
-                    org.bukkit.Material.valueOf(sherdName)
-                } catch (_: IllegalArgumentException) {
-                    null
-                }
-
-                if (material != null) {
-                    pot.setSherd(side, material)
-                }
+                val side = runCatching { DecoratedPot.Side.valueOf(sideName) }.getOrNull()
+                    ?: return@forEach
+                val material = runCatching { org.bukkit.Material.valueOf(sherdName) }.getOrNull()
+                    ?: return@forEach
+                runCatching { pot.setSherd(side, material) }
             }
 
             // Re-arm the break-loot the pot lost on a BlockData restore: its loot

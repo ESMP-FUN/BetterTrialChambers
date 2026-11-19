@@ -401,6 +401,14 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         }
     }
 
+    /**
+     * Mobs changing blocks. Also how a projectile breaking a decorated pot arrives: the
+     * projectile is the entity, so a pot shot by anyone is kept.
+     *
+     * TODO(26.4): from snapshot 5 on, mobs can break decorated pots with projectiles in
+     * adventure mode unless mob_griefing is off. On Paper 26.4, re-test that a skeleton's or
+     * a breeze's shot at a pot inside a chamber is still stopped here.
+     */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onEntityChangeBlock(event: EntityChangeBlockEvent) {
         if (offEverywhere(ProtectionSetting.MOB_GRIEFING)) return
@@ -495,7 +503,13 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         event.isCancelled = true
     }
 
-    /** A dispenser outside the walls, firing a bucket through them. */
+    /**
+     * A dispenser outside the walls, firing a bucket through them.
+     *
+     * TODO(26.4): dispensers are data driven from snapshot 9 on and Paper has to rebuild
+     * BlockDispenseEvent on them. On Paper 26.4, re-test that a water and a lava bucket fired
+     * from outside a chamber are still stopped here.
+     */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onDispense(event: BlockDispenseEvent) {
         if (offEverywhere(ProtectionSetting.LIQUIDS)) return
@@ -621,6 +635,16 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         if (offEverywhere(ProtectionSetting.DECORATIONS)) return
         val remover = (event as? HangingBreakByEntityEvent)?.remover
         if (denyDecorationRemoval(event.entity, remover)) event.isCancelled = true
+    }
+
+    /**
+     * For a version adapter's own break event (26.3 cushions): true when taking [entity]
+     * must be stopped. Same checks as [onHangingBreak].
+     */
+    fun denyDecorationRemovalFor(entity: org.bukkit.entity.Entity, remover: org.bukkit.entity.Entity?): Boolean {
+        if (offEverywhere(ProtectionSetting.DECORATIONS)) return false
+        if (!isDecoration(entity)) return false
+        return denyDecorationRemoval(entity, remover)
     }
 
     /** Placing a decoration counts as placing a block, so `prevent-block-place` covers it too. */

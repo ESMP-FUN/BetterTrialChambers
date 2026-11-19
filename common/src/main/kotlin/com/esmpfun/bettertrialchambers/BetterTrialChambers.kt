@@ -125,6 +125,7 @@ class BetterTrialChambers : JavaPlugin() {
     lateinit var claimIntegrationManager: com.esmpfun.bettertrialchambers.integrations.claims.ClaimIntegrationManager
 
     // Listeners with coroutine scopes (stored for proper shutdown)
+    private lateinit var serverAdapter: com.esmpfun.bettertrialchambers.adapter.ServerAdapter
     private lateinit var playerMovementListener: PlayerMovementListener
     private lateinit var playerDeathListener: PlayerDeathListener
     private lateinit var pasteConfirmListener: PasteConfirmListener
@@ -182,6 +183,7 @@ class BetterTrialChambers : JavaPlugin() {
         } else {
             logger.info("Paper/Spigot detected - using standard scheduling")
         }
+        serverAdapter = com.esmpfun.bettertrialchambers.adapter.ServerAdapters.pick(logger)
 
         // v1.3.3: Module registry instantiated synchronously so that external
         // plugins can call `plugin.moduleRegistry.register(myModule)` from
@@ -214,21 +216,20 @@ class BetterTrialChambers : JavaPlugin() {
         // primary, GitHub Releases fallback, clickable admin notices, and (when
         // enabled in config) checksum-verified downloads staged into the server's
         // update folder for install on the next restart. Runs after config load
-        // because update.* keys drive its mode. `-mc26` releases are matched
-        // automatically when the server itself runs MC 26+.
+        // because update.* keys drive its mode. One jar serves every Minecraft
+        // version, so there is no update track. Jars from before that carry track
+        // mc26 or mc263 and fall back to the plain versions once no Modrinth
+        // version ends in -mc26 or -mc263 any more.
         val updateMode = when (config.getString("update.mode", "notify")!!.lowercase()) {
             "check-only", "check", "silent" -> UpdateMode.CHECK_ONLY
             "download" -> UpdateMode.DOWNLOAD
             "auto-stage", "auto" -> UpdateMode.AUTO_STAGE
             else -> UpdateMode.NOTIFY
         }
-        val onMc26 = runCatching {
-            server.minecraftVersion.substringBefore('.').toInt() >= 26
-        }.getOrDefault(false)
         updater = Updater.builder(this)
             // Project id rather than slug, so a rename on Modrinth can't break checks.
             .source(ModrinthSource("ownTWGOH"))
-            // One GitHub release carries every build, so pick this build's jar by name.
+            // Older releases also carried -mc26 and -mc263 jars; skip those.
             .fallbackSource(GitHubReleasesSource("ESMP-FUN/BetterTrialChambers", null) { name ->
                 name.lowercase().let { it.endsWith(".jar") && !it.contains("-mc") }
             })
@@ -241,7 +242,6 @@ class BetterTrialChambers : JavaPlugin() {
             .changelogUrl("https://raw.githubusercontent.com/ESMP-FUN/BetterTrialChambers/master/src/main/resources/update.txt")
             .userAgentContact("https://github.com/ESMP-FUN/BetterTrialChambers")
             .requireHash(config.getBoolean("update.require-hash", true))
-            .apply { if (onMc26) track("mc26") }
             .build()
         updater.start()
         updateSubcommand = UpdateSubcommand(updater)
@@ -392,8 +392,11 @@ class BetterTrialChambers : JavaPlugin() {
                         vaultInteractListener,
                         this@BetterTrialChambers
                     )
+                    val protectionListener = ProtectionListener(this@BetterTrialChambers)
+                    server.pluginManager.registerEvents(protectionListener, this@BetterTrialChambers)
+                    serverAdapter.registerListeners(this@BetterTrialChambers, protectionListener::denyDecorationRemovalFor)
                     server.pluginManager.registerEvents(
-                        ProtectionListener(this@BetterTrialChambers),
+                        com.esmpfun.bettertrialchambers.listeners.WaveMobTransformListener(this@BetterTrialChambers),
                         this@BetterTrialChambers
                     )
                     containerLootListener = com.esmpfun.bettertrialchambers.listeners.ContainerLootListener(this@BetterTrialChambers)

@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [Unreleased]
+### Changed
+- **One download for every Minecraft version.** The same jar now runs on 1.21.1 and newer, including 26.x. If your server has a jar ending in `-mc26` or `-mc263`, replace it with this one. The console says at startup which Minecraft version it is set up for.
+
+### Fixed
+- **Wave mobs stay what they were spawned as.** A zombie that drowns, or (from 26.4) freezes in powder snow, no longer turns into another mob mid-wave, which left the wave waiting for a mob that was gone.
+- **Signs that run a command keep working after a chamber reset on 26.3.** A sign copied in from a structure file or an older snapshot kept its text but lost the switch that lets it run a command.
+- **Blank sides of a decorated pot stay blank after a reset on 26.3**, instead of turning into bricks.
+- **Cushions inside a chamber are protected on 26.3**, like item frames and paintings.
+
 ## [2.4.1] - 2026-10-31
 ### Added
 - **Every chamber gets a name.** Once the name pool is used up, names like Copperhold or Galewatch are made up, and every chamber still without a name gets one when the server starts (`naming.make-up-names`).

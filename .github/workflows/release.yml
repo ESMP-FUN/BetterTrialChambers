@@ -22,42 +22,23 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      # One jar for every supported server. Gradle compiles with JDK 25 and
+      # reads JDK 21's modules for the shrinking step, so it is told where both are.
       - name: Build
-        run: ./gradlew build
+        run: ./gradlew build "-Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64"
         env:
-          JAVA_HOME: ${{ env.JAVA_HOME_21_X64 }}
+          JAVA_HOME: ${{ env.JAVA_HOME_25_X64 }}
 
       - name: Extract changelog section
         run: |
           awk '/^## \[/{n++} n==1' CHANGELOG.md > RELEASE_NOTES.md || echo "See CHANGELOG.md" > RELEASE_NOTES.md
 
+      # Servers still on a 2.4.1 or older "-mc26" or "-mc263" jar take the newest Modrinth
+      # version whose number ends in their track, and only fall back to a plain version when
+      # none exists. Rename the old suffixed Modrinth versions once (for example to +mc26), and
+      # this one plain upload reaches them too. GitHub needs nothing extra: without a matching
+      # tag they fall back to the newest release.
       - name: Create release
         run: gh release create "$GITHUB_REF_NAME" build/libs/BetterTrialChambers-*.jar --title "$GITHUB_REF_NAME" --notes-file RELEASE_NOTES.md
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      # mc26 companion jar — built from the mc26 branch (merge master -> mc26 before tagging)
-      - name: Build and attach mc26 jar
-        run: |
-          if git fetch origin mc26 2>/dev/null; then
-            git checkout -f FETCH_HEAD
-            JAVA_HOME="$JAVA_HOME_25_X64" ./gradlew build -x test
-            gh release upload "$GITHUB_REF_NAME" build/libs/*-mc26.jar || echo "no mc26 jar produced"
-          else
-            echo "no mc26 branch — skipping"
-          fi
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      # mc263 companion jar, built from the mc263 branch (it does not merge master)
-      - name: Build and attach mc263 jar
-        run: |
-          if git fetch origin mc263 2>/dev/null; then
-            git checkout -f FETCH_HEAD
-            JAVA_HOME="$JAVA_HOME_25_X64" ./gradlew build -x test
-            gh release upload "$GITHUB_REF_NAME" build/libs/*-mc263.jar || echo "no mc263 jar produced"
-          else
-            echo "no mc263 branch, skipping"
-          fi
         env:
           GH_TOKEN: ${{ github.token }}

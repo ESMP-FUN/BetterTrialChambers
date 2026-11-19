@@ -6,7 +6,7 @@ Install BetterTrialChambers on your server.
 
 You need:
 
-* **Paper**, or a fork (Purpur, Pufferfish, Folia). Pick the download that matches your Minecraft version: the plain jar for 1.21.x, `-mc26` for 26.0 to 26.2, and `-mc263` for 26.3 (both 26.x downloads need Java 25).
+* **Paper**, or a fork (Purpur, Pufferfish, Folia). One download works on every Minecraft version from 1.21.1 on. If you used a jar ending in `-mc26` or `-mc263` before, replace it with this one.
 * **Java 21** or newer.
 * **WorldEdit** (optional, only needed for the manual chamber setup path).
 
