@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [Unreleased]
+## [2.4.2] - 2026-11-19
 ### Changed
 - **One download for every Minecraft version.** The same jar now runs on 1.21.1 and newer, including 26.x. If your server has a jar ending in `-mc26` or `-mc263`, replace it with this one. The console says at startup which Minecraft version it is set up for.
 
@@ -1778,6 +1778,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[2.4.2]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.4.1...v2.4.2
 [2.4.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.3.1...v2.4.0
 [2.3.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.3.0...v2.3.1

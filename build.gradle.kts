@@ -30,7 +30,7 @@ plugins {
 }
 
 group = "com.esmpfun"
-version = "2.4.1"
+version = "2.4.2"
 
 // ============================================================================
 // One jar for every supported Minecraft version (1.21 and newer):
