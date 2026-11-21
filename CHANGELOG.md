@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [2.4.3] - 2026-11-22
+### Added
+- **`/trial setup chat` forces the chat-based setup tour** on any server, and `/trial setup` automatically falls back to chat if the Dialog screen cannot open.
+- **26.3 and 26.4 protection updates:** stops dyeing cushions on 26.3, blocks Frost Walker and mob block-forming (such as 26.4 Cold Sulfur Cubes) inside protected chambers, protects 26.4 Brittle Ice and decorated pots from player-shot projectiles, and supports all 8 Copper Chest variants for per-player container loot.
+
+### Changed
+- **Vault Management loads without freezing the server** and now pages chambers with more than 36 vaults.
+- **Walking around outside a chamber no longer hits the database** on every block step; chamber lookups use the in-memory cache, and portal/respawn transitions are tracked cleanly.
+
+### Fixed
+- **Full Paper 1.21.1 compatibility in the single jar.** Vault opens, Luck bonus calculation, and chamber resets now fall back cleanly on 1.21.1–1.21.3 servers where newer Paper Vault/Attribute methods do not exist.
+- **Vault loot and key exploits closed:** command and economy rewards only run after the key is taken and the vault is marked opened; shared-mode vaults lock per-vault instead of per-player during concurrent clicks; `validate-key-type: false` still requires a trial key; multi-key reopen costs no longer consume keys on a short stack; and dropped vault loot / spawner keys respect the owner-lock grace timer and cannot be stolen by merging item stacks.
+- **Chamber protection gaps closed:** outside dispensers firing into a chamber, pistons pushing/pulling across chamber walls, scooping liquids with an empty bucket, hoppers pulling from chamber containers, off-hand container opens, and riding vehicles past entry gates are all blocked; Wind Charges can still flip copper bulbs, doors, and trapdoors inside chambers.
+- **Resets and snapshots restore cleanly:** freshly reset Trial Spawners no longer start on a cooldown timer; WorldEdit and FAWE restores keep 26.3+ block-entity data and reset spawner state; decoration restores no longer blank adjacent vaults, spawners, chests, or pots; `remove-non-chamber-mobs: false` is respected; and `reset-after-first-loot` reports the right time until reset.
+- **Disconnecting with the Loot Editor's Bulk Add chest open returns your items** to your inventory instead of losing them.
+- **The Leaderboard GUI shows all 10 ranks** instead of cutting off at 7.
+- **Custom death messages and post-death spectate offers still work** when `statistics.enabled` is turned off, and spectators cannot leave chamber bounds by latching onto an entity.
+- **Fixed HikariCP connection pool deadlocks** on small pool sizes, Folia entity-scheduler retired callbacks and chunk-seeding thread safety, Citizens cloned-NPC persistence on disk, and legacy setup-tour config migration.
+
 ## [2.4.2] - 2026-11-19
 ### Changed
 - **One download for every Minecraft version.** The same jar now runs on 1.21.1 and newer, including 26.x. If your server has a jar ending in `-mc26` or `-mc263`, replace it with this one. The console says at startup which Minecraft version it is set up for.
@@ -1778,6 +1797,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[2.4.3]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.4.2...v2.4.3
 [2.4.2]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.4.1...v2.4.2
 [2.4.1]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/ESMP-FUN/BetterTrialChambers/compare/v2.3.1...v2.4.0

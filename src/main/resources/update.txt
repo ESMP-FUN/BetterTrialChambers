@@ -1,6 +1,10 @@
 <black>.
 <#FF7F50> ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
 <black>.
+<#008080>[2.4.3] <gray>- <white>2026-11-22
+<#FFD700>ADDED: <white>/trial setup chat fallback, 26.3/26.4 protection & all 8 Copper Chest variants
+<#FFD700>FIXED: <white>Paper 1.21.1 support, vault/protection exploits, spawner resets, Folia & GUI fixes
+<black>.
 <#008080>[2.4.2] <gray>- <white>2026-11-19
 <#FFD700>CHANGED: <white>One jar for every Minecraft version (1.21.1 to 26.3)
 <#FFD700>FIXED: <white>Wave mobs stay what they were spawned as, 26.3 cushions/pots/signs, vault counts, and display names
