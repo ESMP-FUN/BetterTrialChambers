@@ -8,7 +8,7 @@ Edit `messages.yml`, run `/trial reload`, done. The plugin never overwrites this
 
 ## Edit and reload
 
-1. Open `plugins/BetterTrialChambers/messages.yml`. It is created from the bundled defaults on first run and never touched again.
+1. Open `plugins/BetterTrialChambers/messages.yml`. It is created from the bundled defaults on first run; when a future plugin update introduces brand-new keys, they are merged additively (preserving your edits and comments, with a `messages.yml.bak` backup).
 2. Change the values you want. Keep the keys and the YAML indentation intact. Use spaces, never tabs.
 3. Run `/trial reload`. This rereads `config.yml`, `loot.yml`, and `messages.yml` together. No restart needed.
 
@@ -93,8 +93,8 @@ All GUI strings sit under one nested `gui:` tree, one sub-section per view.
 | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | `gui.common`                                                                          | Back / close / prev / next buttons, destination labels, toggle templates |
 | `gui.main-menu`                                                                       | Main hub                                                          |
-| `gui.chamber-list` / `gui.chamber-detail` / `gui.chamber-settings`                    | Chamber browse and manage                                        |
-| `gui.vault-management`                                                                | Vault cooldown management                                        |
+| `gui.chamber-list` / `gui.chamber-detail` / `gui.chamber-settings` / `gui.chamber-protection` | Chamber browse, manage, and per-chamber protection overrides |
+| `gui.vault-management` / `gui.container-loot`                                         | Vault cooldown and per-player container loot management           |
 | `gui.custom-mob`                                                                      | Per-chamber mob provider config                                  |
 | `gui.loot-table-list` / `gui.pool-selector` / `gui.loot-editor` / `gui.amount-editor` | Loot editing flow                                                |
 | `gui.stats-menu` / `gui.leaderboard` / `gui.player-stats`                             | Statistics views                                                 |

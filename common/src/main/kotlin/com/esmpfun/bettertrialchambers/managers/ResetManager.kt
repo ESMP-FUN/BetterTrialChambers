@@ -554,12 +554,16 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                                     else -> chamber.getExitLocation() ?: player.world.spawnLocation
                                 }
 
-                                // teleportAsync is required on Folia/Luminol; sync teleport throws in region threads
-                                player.teleportAsync(destination).thenRun {
-                                    player.sendMessage(plugin.getMessageComponent("teleported-to-exit", "chamber" to chamber.label()))
+                                // teleportAsync is required on Folia/Luminol; sync teleport throws in region threads.
+                                // Use whenComplete (not thenRun) so a failed/cancelled teleport still decrements
+                                // remaining instead of stalling until the 5s timeout aborts the whole reset.
+                                player.teleportAsync(destination).whenComplete { ok, err ->
+                                    if (err == null && ok == true) {
+                                        player.sendMessage(plugin.getMessageComponent("teleported-to-exit", "chamber" to chamber.label()))
+                                    }
                                     synchronized(this) {
                                         remaining--
-                                        if (remaining == 0) {
+                                        if (remaining == 0 && continuation.isActive) {
                                             continuation.resume(Unit)
                                         }
                                     }
@@ -667,14 +671,11 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                                     entity.remove()
                                 }
                                 entity is LivingEntity && entity !is Player -> {
-                                    val shouldRemove = when {
-                                        plugin.config.getBoolean("reset.remove-spawner-mobs", true) -> {
-                                            // Check if mob is from a spawner (simplified check)
-                                            true
-                                        }
-                                        plugin.config.getBoolean("reset.remove-non-chamber-mobs", false) -> true
-                                        else -> false
-                                    }
+                                    val removeSpawnerMobs = plugin.config.getBoolean("reset.remove-spawner-mobs", true)
+                                    val removeNonChamberMobs = plugin.config.getBoolean("reset.remove-non-chamber-mobs", false)
+                                    val isChamberHostile = plugin.spawnerWaveManager.isWaveMob(entity) ||
+                                        (entity is org.bukkit.entity.Enemy && (entity !is org.bukkit.entity.Tameable || !entity.isTamed))
+                                    val shouldRemove = removeNonChamberMobs || (removeSpawnerMobs && isChamberHostile)
 
                                     if (shouldRemove) {
                                         entity.remove()
@@ -808,18 +809,13 @@ class ResetManager(private val plugin: BetterTrialChambers) {
                                             }
 
                                             // Clear the LEFTOVER active cooldown + pending spawn timer so the spawner
-                                            // is actually READY after the reset. This is the real "reset", clearing
-                                            // tracked players (above) alone leaves a just-completed spawner stuck in its
-                                            // post-completion cooldown (getCooldownEnd() still in the future), so it never
-                                            // re-activates. Per Paper, cooldownEnd == 0 means "not in cooldown". For a
-                                            // positive configured cooldown we instead end it `cooldownMinutes` from now.
+                                            // is actually READY immediately after the reset. `cooldownLength` (set above)
+                                            // controls how long it rests AFTER players defeat the next wave.
                                             // Guarded: setCooldownEnd/setNextSpawnAttempt are newer TrialSpawner API, so a
-                                            // very old Paper build degrades to the tracked-player clear rather than aborting.
+                                            // Paper 1.21.1 server degrades to the tracked-player clear rather than aborting.
                                             runCatching {
                                                 state.nextSpawnAttempt = 0L
-                                                state.cooldownEnd = if (cooldownMinutes > 0)
-                                                    world.gameTime + cooldownMinutes.toLong() * 60 * 20
-                                                else 0L
+                                                state.cooldownEnd = 0L
                                             }
 
                                             // Commit changes
@@ -1176,6 +1172,7 @@ class ResetManager(private val plugin: BetterTrialChambers) {
      */
     fun getTimeUntilReset(chamber: Chamber): Long {
         val afterLoot = plugin.config.getBoolean("global.reset-after-first-loot", false)
+        if (afterLoot && chamber.firstLootedAt == null) return Long.MAX_VALUE
         val lastReset = (if (afterLoot) chamber.firstLootedAt else null) ?: chamber.lastReset ?: chamber.createdAt
         val resetIntervalMs = chamber.resetInterval * 1000
         val nextResetTime = lastReset + resetIntervalMs

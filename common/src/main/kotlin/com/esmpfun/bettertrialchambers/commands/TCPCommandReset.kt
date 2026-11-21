@@ -1,14 +1,8 @@
 package com.esmpfun.bettertrialchambers.commands
 
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
-
-private val resetCommandScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
 fun handleReset(plugin: BetterTrialChambers, sender: CommandSender, args: Array<out String>) {
     if (!sender.hasPermission("btc.admin.reset")) {
@@ -49,11 +43,11 @@ fun handleReset(plugin: BetterTrialChambers, sender: CommandSender, args: Array<
                 )
                 return
             }
-            resetCommandScope.launch {
+            plugin.launchAsync {
                 val chamber = plugin.chamberManager.getChamber(target)
                 if (chamber == null) {
                     sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to target))
-                    return@launch
+                    return@launchAsync
                 }
                 if (plugin.resetManager.confirmReset(chamber)) {
                     sender.sendMessage(plugin.getMessageComponent("reset-confirmed", "chamber" to target))
@@ -67,11 +61,11 @@ fun handleReset(plugin: BetterTrialChambers, sender: CommandSender, args: Array<
 
     val chamberName = args[1]
 
-    resetCommandScope.launch {
+    plugin.launchAsync {
         val chamber = plugin.chamberManager.getChamber(chamberName)
         if (chamber == null) {
             sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
-            return@launch
+            return@launchAsync
         }
 
         sender.sendMessage(plugin.getMessageComponent("chamber-resetting", "chamber" to chamberName))

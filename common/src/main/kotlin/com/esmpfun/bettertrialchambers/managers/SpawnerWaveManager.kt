@@ -562,15 +562,15 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
             bar.progress(1.0f)
             bar.color(BossBar.Color.GREEN)
 
-            // Remove after a short delay (must be sync - removeBossBar accesses Bukkit API)
+            // Remove after a short delay (must be sync - removeBossBar accesses Bukkit API).
+            // Value-checked remove avoids deleting a brand-new wave if the spawner reactivated within 3s.
             plugin.scheduler.runTaskLater(Runnable {
                 removeBossBar(wave)
-                // Clean up wave state after delay
-                activeWaves.remove(wave.spawnerId)
+                activeWaves.remove(wave.spawnerId, wave)
             }, 60L) // 3 seconds
         } ?: run {
             // No boss bar, clean up immediately
-            activeWaves.remove(wave.spawnerId)
+            activeWaves.remove(wave.spawnerId, wave)
         }
 
         // Fire post-event for downstream consumers (stat plugins, custom rewards, etc).
@@ -765,8 +765,9 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
                         org.bukkit.persistence.PersistentDataType.LONG,
                         now
                     )
-                    // Pickup-hint visual
-                    try { itemEntity.owner = uuid } catch (_: Throwable) { /* owner setter unavailable on some forks */ }
+                    // Do NOT set vanilla itemEntity.owner: it permanently blocks other players
+                    // (including btc.bypass.droplock) before EntityPickupItemEvent fires.
+                    // SpawnerKeyDropOwnerListener enforces ownership + grace + bypass via PDC.
                 }
 
                 if (plugin.config.getBoolean("debug.verbose-logging", false)) {
@@ -1028,6 +1029,14 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
 
         plugin.scheduler.runAtLocation(wave.location, Runnable {
             try {
+                // If chamber-remaining mode already spawned a standalone glow shulker here,
+                // remove it before spawning the wave-attached one so they never stack.
+                plugin.chamberManager.getCachedChamberAt(wave.location)?.let { chamber ->
+                    chamberRemainingGlows[chamber.id]?.remove(wave.spawnerId)?.let { oldId ->
+                        com.esmpfun.bettertrialchambers.utils.GlowTeams.release(oldId)
+                        runCatching { world.getEntity(oldId)?.remove() }
+                    }
+                }
                 val colorHex = if (wave.isOminous) {
                     plugin.config.getString("spawner-waves.glow-color-ominous", "#A020F0") ?: "#A020F0"
                 } else {
@@ -1101,22 +1110,26 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
      * spawner so the next wave-start can re-create it cleanly.
      */
     private fun removeGlowDisplay(wave: WaveState) {
-        // Drop the standalone-glow record for this spawner if present (no entity
-        // to remove, the wave-attached entity is the one that was visible).
-        plugin.chamberManager.getCachedChamberAt(wave.location)?.let { chamber ->
+        val world = wave.location.world
+        val standaloneId = plugin.chamberManager.getCachedChamberAt(wave.location)?.let { chamber ->
             chamberRemainingGlows[chamber.id]?.remove(wave.spawnerId)
         }
-        val id = wave.glowEntityId ?: return
+        val id = wave.glowEntityId
         wave.glowEntityId = null
-        val world = wave.location.world ?: return
-        plugin.scheduler.runAtLocation(wave.location, Runnable {
-            com.esmpfun.bettertrialchambers.utils.GlowTeams.release(id)
-            try {
-                world.getEntity(id)?.remove()
-            } catch (_: Throwable) {
-                // Entity may already be unloaded/removed; harmless
+        val idsToRemove = listOfNotNull(id, standaloneId).distinct()
+        if (idsToRemove.isEmpty() || world == null) return
+
+        val removeNow = Runnable {
+            for (eid in idsToRemove) {
+                com.esmpfun.bettertrialchambers.utils.GlowTeams.release(eid)
+                runCatching { world.getEntity(eid)?.remove() }
             }
-        })
+        }
+        if (plugin.isEnabled) {
+            plugin.scheduler.runAtLocation(wave.location, removeNow)
+        } else if (!plugin.scheduler.isFolia) {
+            runCatching { removeNow.run() }
+        }
     }
 
     /**
@@ -1218,16 +1231,27 @@ class SpawnerWaveManager(private val plugin: BetterTrialChambers) {
      */
     private fun clearChamberRemainingGlows(chamberId: Int) {
         val entries = chamberRemainingGlows.remove(chamberId) ?: return
-        for ((_, entityId) in entries) {
-            // Best-effort removal across any world the entity might be in.
-            for (world in plugin.server.worlds) {
-                val ent = world.getEntity(entityId) ?: continue
-                plugin.scheduler.runAtEntity(ent, Runnable {
-                    com.esmpfun.bettertrialchambers.utils.GlowTeams.release(entityId)
-                    try { ent.remove() } catch (_: Throwable) { /* already gone */ }
-                })
-                break
+        val removeAll = Runnable {
+            for ((_, entityId) in entries) {
+                for (world in plugin.server.worlds) {
+                    val ent = runCatching { world.getEntity(entityId) }.getOrNull() ?: continue
+                    if (plugin.isEnabled) {
+                        plugin.scheduler.runAtEntity(ent, Runnable {
+                            com.esmpfun.bettertrialchambers.utils.GlowTeams.release(entityId)
+                            runCatching { ent.remove() }
+                        })
+                    } else if (!plugin.scheduler.isFolia) {
+                        com.esmpfun.bettertrialchambers.utils.GlowTeams.release(entityId)
+                        runCatching { ent.remove() }
+                    }
+                    break
+                }
             }
+        }
+        if (plugin.isEnabled) {
+            plugin.scheduler.runTask(removeAll)
+        } else if (!plugin.scheduler.isFolia) {
+            runCatching { removeAll.run() }
         }
     }
 

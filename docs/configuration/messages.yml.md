@@ -96,9 +96,10 @@ Every entry below exists in the shipped `messages.yml` with that exact spelling.
 | Key | What it is / placeholders |
 | --- | --- |
 | `chamber-created` | Chamber registered. `{chamber}` |
+| `chamber-name-invalid` | Invalid internal chamber name. `{name}` |
 | `chamber-not-found` | No chamber by that name. `{chamber}` |
 | `chamber-deleted` | Chamber unregistered. `{chamber}` |
-| `chamber-list-item` | One row of `/trial list` (plain). `{chamber}` `{world}` `{volume}` |
+| `chamber-list-item` | One row of `/trial list` (plain). `{name}` `{chamber}` `{world}` `{volume}` |
 | `chamber-list-empty` | Nothing registered yet. |
 | `chamber-renamed` | Display name set. `{chamber}` `{name}` |
 | `chamber-rename-cleared` | Display name removed. `{chamber}` |
@@ -221,7 +222,9 @@ Every entry below exists in the shipped `messages.yml` with that exact spelling.
 | `vault-opened` | Vault opened. `{type}` |
 | `vault-cooldown` | Vault on personal cooldown. `{type}` `{time}` |
 | `vault-locked` | Already opened, unlocks on reset. `{type}` |
+| `vault-locked-timed` | Already opened, unlocks at timed reset. `{type}` `{chamber}` `{time}` |
 | `vault-locked-shared` | Someone else opened this shared vault first. `{player}` `{type}` |
+| `vault-locked-shared-timed` | Shared vault opened by someone else, unlocks at timed reset. `{player}` `{type}` `{chamber}` `{time}` |
 | `vault-cooldown-shared` | Shared vault, reopens later. `{player}` `{type}` `{time}` |
 | `vault-reopened` | Paid keys to reopen a vault. `{type}` `{cost}` |
 | `vault-reopen-need` | Hold matching keys to reopen. `{type}` `{cost}` |
@@ -298,6 +301,7 @@ Every entry below exists in the shipped `messages.yml` with that exact spelling.
 | `pvp-disabled-in-chamber` | PvP is off in chambers. |
 | `cannot-teleport-into-chamber` | Teleport into a chamber blocked. |
 | `cannot-enter-chamber` | No permission to enter this chamber. |
+| `chamber-protection-set` / `chamber-protection-follows-server` / `chamber-protection-cleared-all` / `chamber-protection-failed` | Per-chamber protection override changes. `{setting}` `{value}` `{chamber}` |
 
 </details>
 
@@ -332,6 +336,7 @@ Every entry below exists in the shipped `messages.yml` with that exact spelling.
 | `info-exit-location-set` / `info-exit-location-not-set` | Fills `{exit}` above. `{x}` `{y}` `{z}` |
 | `info-snapshot-created` / `info-snapshot-not-created` | Fills `{status}` above. |
 | `exit-set` | Exit point saved. `{chamber}` |
+| `exit-wrong-world` | Exit point must be in the chamber's world. `{chamber}` `{world}` |
 | `usage-setexit` | Wrong usage of `/trial setexit`. |
 
 </details>
@@ -464,7 +469,7 @@ One line per command. All start with `help-`:
 | `pagination-list-item` | Prev/Next row template. `{prev}` `{next}` |
 | `pagination-prev-active` / `pagination-prev-disabled` / `pagination-next-active` / `pagination-next-disabled` | The clickable arrows. `{command}` |
 | `list-page-header` | `/trial list` page header. `{page}` `{maxPage}` `{total}` |
-| `chamber-list-item-interactive` | Clickable `/trial list` row. `{chamber}` `{world}` `{volume}` |
+| `chamber-list-item-interactive` | Clickable `/trial list` row. `{name}` `{chamber}` `{world}` `{volume}` |
 | `list-current-inside` / `list-current-none` / `list-current-nearest` | `/trial list current`. `{chamber}` `{volume}` `{distance}` `{x}` `{y}` `{z}` |
 
 </details>

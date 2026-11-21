@@ -60,6 +60,15 @@ class SpawnerKeyDropOwnerListener(private val plugin: BetterTrialChambers) : Lis
         if (stillOwned(item)) event.isCancelled = true
     }
 
+    /** Stops an owner-locked key drop from merging into an unowned or differently-owned key stack. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onItemMerge(event: org.bukkit.event.entity.ItemMergeEvent) {
+        val srcOwner = readOwner(event.entity)?.takeIf { stillOwned(event.entity) }
+        val dstOwner = readOwner(event.target)?.takeIf { stillOwned(event.target) }
+        if (srcOwner == null && dstOwner == null) return
+        if (srcOwner != dstOwner) event.isCancelled = true
+    }
+
     /** True while this drop is still held for whoever it belongs to. */
     private fun stillOwned(item: Item): Boolean {
         val graceSeconds = plugin.config.getLong("reset.spawner-key-drop-owner-grace-seconds", 30L)

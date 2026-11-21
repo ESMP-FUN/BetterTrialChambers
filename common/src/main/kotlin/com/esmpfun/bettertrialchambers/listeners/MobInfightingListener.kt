@@ -36,9 +36,12 @@ class MobInfightingListener(private val plugin: BetterTrialChambers) : Listener 
     private fun enabled(): Boolean =
         plugin.isReady && plugin.config.getBoolean("spawner-waves.prevent-infighting", true)
 
-    /** Resolve the living source of a hit, the shooter behind a projectile, or the direct attacker. */
-    private fun sourceOf(damager: Entity): Entity? =
-        if (damager is Projectile) damager.shooter as? Entity else damager
+    /** Resolve the living source of a hit: projectile shooter, lingering cloud thrower, or direct attacker. */
+    private fun sourceOf(damager: Entity): Entity? = when (damager) {
+        is Projectile -> damager.shooter as? Entity
+        is org.bukkit.entity.AreaEffectCloud -> damager.source as? Entity
+        else -> damager
+    }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     fun onWaveMobDamage(event: EntityDamageByEntityEvent) {

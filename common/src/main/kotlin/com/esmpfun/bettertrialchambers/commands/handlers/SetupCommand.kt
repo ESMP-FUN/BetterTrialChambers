@@ -27,13 +27,13 @@ class SetupCommand(
 
     private val chatTour = SetupTourChat(plugin, controller)
 
-    // The check is inline rather than a helper on DialogPromptManager: naming that
-    // class would make the JVM link it, and on a server without the Dialog API
-    // linking it fails, which is the very thing the check exists to avoid.
+    // Both the class probe and instantiation are inside runCatching so any LinkageError
+    // on an older or changed Paper build degrades cleanly to the clickable-chat tour.
     private val dialogTour: com.esmpfun.bettertrialchambers.setup.SetupTourDialog? =
-        if (runCatching { Class.forName("io.papermc.paper.dialog.Dialog") }.isSuccess)
+        runCatching {
+            Class.forName("io.papermc.paper.dialog.Dialog")
             com.esmpfun.bettertrialchambers.setup.SetupTourDialog(plugin, controller)
-        else null
+        }.getOrNull()
 
     override fun execute(sender: CommandSender, args: Array<out String>) {
         if (!sender.hasPermission("btc.admin.setup")) {
@@ -44,7 +44,8 @@ class SetupCommand(
         }
 
         when (args.getOrNull(1)?.lowercase()) {
-            null, "start" -> startTour(player)
+            null, "start" -> startTour(player, forceChat = false)
+            "chat" -> startTour(player, forceChat = true)
             "continue", "resume" -> continueTour(player)
             "enable" -> applyToggle(player, args, enabled = true)
             "disable" -> applyToggle(player, args, enabled = false)
@@ -64,21 +65,32 @@ class SetupCommand(
         }
     }
 
-    private fun startTour(player: Player) {
+    private fun startTour(player: Player, forceChat: Boolean) {
         controller.start(player.uniqueId)
-        render(player, 0, intro = true)
+        render(player, 0, intro = true, forceChat = forceChat)
     }
 
     private fun continueTour(player: Player) {
-        if (!controller.hasPaused(player.uniqueId)) { startTour(player); return }
+        if (!controller.hasPaused(player.uniqueId)) { startTour(player, forceChat = false); return }
         val idx = controller.resume(player.uniqueId)
-        render(player, idx, intro = false)
+        render(player, idx, intro = false, forceChat = false)
     }
 
     /** Apply a Toggle action (from a chat link or by hand), then show the next step in chat. */
     private fun applyToggle(player: Player, args: Array<out String>, enabled: Boolean) {
         val index = indexArg(player, args) ?: return
-        (controller.stepAt(index) as? SetupStep.Toggle)?.let { controller.applyToggle(it.configPath, enabled) }
+        val step = controller.stepAt(index) as? SetupStep.Toggle
+        if (step != null) {
+            if (enabled && step.requiresPlugin != null &&
+                !plugin.server.pluginManager.isPluginEnabled(step.requiresPlugin)
+            ) {
+                player.sendMessage(plugin.getMessageComponent("setup.requires-plugin", "plugin" to (step.requiresPluginLabel ?: step.requiresPlugin)))
+                chatTour.render(player, index)
+                return
+            }
+            controller.markTouched()
+            controller.applyToggle(step.configPath, enabled)
+        }
         renderNext(player, index)
     }
 
@@ -87,7 +99,12 @@ class SetupCommand(
         val optionId = args.getOrNull(3) ?: run { player.sendMessage(plugin.getMessageComponent("setup.missing-option")); return }
         val choice = controller.stepAt(index) as? SetupStep.Choice
         val opt = choice?.options?.firstOrNull { it.optionId == optionId }
-        if (choice != null && opt != null) controller.applyChoice(choice.configPath, opt.value)
+        if (choice == null || opt == null) {
+            player.sendMessage(plugin.getMessageComponent("setup.missing-option"))
+            return
+        }
+        controller.markTouched()
+        controller.applyChoice(choice.configPath, opt.value, player)
         renderNext(player, index)
     }
 
@@ -105,14 +122,14 @@ class SetupCommand(
         if (next >= controller.stepCount) chatTour.complete(player) else chatTour.render(player, next)
     }
 
-    /** Pick the renderer (Dialog if available, else chat) and show the step at [index]. */
-    private fun render(player: Player, index: Int, intro: Boolean) {
-        val tour = dialogTour
+    /** Pick the renderer (Dialog if available and not forced to chat, else chat) and show [index]. */
+    private fun render(player: Player, index: Int, intro: Boolean, forceChat: Boolean) {
+        val tour = if (forceChat) null else dialogTour
         if (tour != null) {
-            tour.render(player, index)
-        } else {
-            if (intro) chatTour.intro(player)
-            chatTour.render(player, index)
+            val ok = runCatching { tour.render(player, index) }.isSuccess
+            if (ok) return
         }
+        if (intro) chatTour.intro(player)
+        chatTour.render(player, index)
     }
 }

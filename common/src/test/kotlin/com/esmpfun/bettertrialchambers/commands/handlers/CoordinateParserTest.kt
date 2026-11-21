@@ -125,4 +125,11 @@ class CoordinateParserTest {
         assertNull(CoordinateParser.parseHyphenated(""))
         assertNull(CoordinateParser.parseHyphenated("---"))
     }
+
+    @Test
+    fun `parseTriple and parseHyphenated reject integer overflow without throwing`() {
+        assertNull(CoordinateParser.parseTriple("999999999999,64,0"))
+        assertNull(CoordinateParser.parseTriple("0,-999999999999,0"))
+        assertNull(CoordinateParser.parseHyphenated("999999999999,64,0-10,70,10"))
+    }
 }

@@ -794,13 +794,14 @@ class BetterTrialChambers : JavaPlugin() {
      * the owner's edits.
      */
     private fun mergeYamlDefaults(resourceName: String) {
-        val resource = getResource(resourceName) ?: return
         val file = java.io.File(dataFolder, resourceName)
         if (!file.exists()) return // fresh install: saveResource already wrote the full default
 
-        val defaults = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(
-            java.io.InputStreamReader(resource, Charsets.UTF_8)
-        )
+        val defaults = getResource(resourceName)?.use { resource ->
+            org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(
+                java.io.InputStreamReader(resource, Charsets.UTF_8)
+            )
+        } ?: return
         val current = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(file)
         val missing = defaults.getKeys(true).filter { key ->
             !current.isSet(key) && !defaults.isConfigurationSection(key)
@@ -1032,7 +1033,7 @@ class BetterTrialChambers : JavaPlugin() {
         vararg replacements: Pair<String, Any?>
     ): String {
         val messages = loadedMessages()
-        val prefix = messages.getString("prefix", "&8[&6TCP&8]&r ")
+        val prefix = messages.getString("prefix", "&8[&6BTC&8]&r ")
         var message = messages.getString(key, "&cMessage not found: $key")!!
 
         replacements.forEach { (placeholder, value) ->

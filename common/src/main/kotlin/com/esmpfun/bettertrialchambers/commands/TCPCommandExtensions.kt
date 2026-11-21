@@ -155,13 +155,17 @@ fun handleKey(plugin: BetterTrialChambers, sender: CommandSender, args: Array<ou
             }
 
             val keyItem = ItemStack(keyMaterial, amount)
-            targetPlayer.inventory.addItem(keyItem)
-
-            sender.sendMessage(plugin.getMessageComponent("key-given",
-                "amount" to amount,
-                "type" to plugin.normalOminousLabel(keyTypeStr == "ominous"),
-                "player" to playerName
-            ))
+            val keyTypeLabel = plugin.normalOminousLabel(keyTypeStr == "ominous")
+            plugin.scheduler.runAtEntity(targetPlayer, Runnable {
+                if (!targetPlayer.isOnline) return@Runnable
+                val leftover = targetPlayer.inventory.addItem(keyItem)
+                leftover.values.forEach { targetPlayer.world.dropItemNaturally(targetPlayer.location, it) }
+                sender.sendMessage(plugin.getMessageComponent("key-given",
+                    "amount" to amount,
+                    "type" to keyTypeLabel,
+                    "player" to playerName
+                ))
+            })
         }
         "check" -> {
             if (args.size < 3) {
@@ -176,30 +180,27 @@ fun handleKey(plugin: BetterTrialChambers, sender: CommandSender, args: Array<ou
                 return
             }
 
-            var normalKeys = 0
-            var ominousKeys = 0
+            plugin.scheduler.runAtEntity(targetPlayer, Runnable {
+                if (!targetPlayer.isOnline) return@Runnable
+                var normalKeys = 0
+                var ominousKeys = 0
 
-            targetPlayer.inventory.contents.forEach { item ->
-                if (item != null) {
-                    when (item.type) {
-                        Material.TRIAL_KEY -> normalKeys += item.amount
-                        else -> {
-                            val materialName = item.type.name
-                            if (materialName == "OMINOUS_TRIAL_KEY" ||
-                                (materialName.contains("OMINOUS", ignoreCase = true) &&
-                                 materialName.contains("TRIAL_KEY", ignoreCase = true))) {
-                                ominousKeys += item.amount
-                            }
+                targetPlayer.inventory.contents.forEach { item ->
+                    if (item != null) {
+                        when (item.type) {
+                            Material.TRIAL_KEY -> normalKeys += item.amount
+                            Material.OMINOUS_TRIAL_KEY -> ominousKeys += item.amount
+                            else -> {}
                         }
                     }
                 }
-            }
 
-            sender.sendMessage(plugin.getMessageComponent("key-check",
-                "player" to playerName,
-                "normal" to normalKeys,
-                "ominous" to ominousKeys
-            ))
+                sender.sendMessage(plugin.getMessageComponent("key-check",
+                    "player" to playerName,
+                    "normal" to normalKeys,
+                    "ominous" to ominousKeys
+                ))
+            })
         }
         else -> {
             sender.sendMessage(plugin.getMessageComponent("usage-key"))

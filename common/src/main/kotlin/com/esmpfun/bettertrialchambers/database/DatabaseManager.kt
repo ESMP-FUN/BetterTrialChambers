@@ -143,7 +143,7 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
         val poolSize = config.getInt("database.pool-size", 10)
 
         val hikariConfig = HikariConfig().apply {
-            jdbcUrl = "jdbc:mysql://$host:$port/$database?useSSL=false&serverTimezone=UTC"
+            jdbcUrl = "jdbc:mysql://$host:$port/$database?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
             driverClassName = "com.mysql.cj.jdbc.Driver"
             this.username = username
             this.password = password
@@ -248,6 +248,8 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
                     """.trimIndent()
                 )
 
+                val largeText = if (databaseType == DatabaseType.MYSQL) "MEDIUMTEXT" else "TEXT"
+
                 // v1.5.7: per-player chamber container loot (chests/barrels).
                 // One row per (container position, player) holding their private
                 // copy of the container's contents. Cleared on chamber reset;
@@ -260,7 +262,7 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
                         y INT NOT NULL,
                         z INT NOT NULL,
                         player_uuid VARCHAR(36) NOT NULL,
-                        contents TEXT NOT NULL,
+                        contents $largeText NOT NULL,
                         updated_at BIGINT NOT NULL,
                         PRIMARY KEY (chamber_id, x, y, z, player_uuid),
                         FOREIGN KEY (chamber_id) REFERENCES ${tables.chambers}(id) ON DELETE CASCADE
@@ -281,7 +283,7 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
                         x INT NOT NULL,
                         y INT NOT NULL,
                         z INT NOT NULL,
-                        contents TEXT NOT NULL,
+                        contents $largeText NOT NULL,
                         material VARCHAR(64) NOT NULL DEFAULT 'CHEST',
                         op_edited BOOLEAN NOT NULL DEFAULT 0,
                         updated_at BIGINT NOT NULL,
@@ -554,6 +556,7 @@ open class DatabaseManager(protected val plugin: BetterTrialChambers) {
         "display_name" to "VARCHAR(64)",
         "bounds_confirmed" to "BOOLEAN NOT NULL DEFAULT 0",
         "protection_overrides" to "TEXT",
+        "first_looted_at" to "BIGINT",
     )
 
     /** Every table TCP owns, for the schema report. */

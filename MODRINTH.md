@@ -4,7 +4,7 @@
 
 Free forever. Updated almost daily.<br>
 
-[![Discord](https://img.shields.io/badge/join_%E2%86%92_-_Discord-gray?style=flat&logo=discord&logoSize=amd)](https://discord.gg/aWMU2JNXex)
+[![Discord](https://img.shields.io/badge/join_%E2%86%92_-_Discord-gray?style=flat&logo=discord&logoSize=amd)](https://discord.gg/qwYcTpHsNC)
 [![Ko-Fi](https://img.shields.io/badge/support_%E2%86%92_-_KoFi-gray?style=flat&logo=kofi&logoSize=amd)](https://ko-fi.com/darkstarworks)
 [![Patreon](https://img.shields.io/badge/support_%E2%86%92_-_Patreon-gray?style=flat&logo=patreon&logoSize=amd)](https://patreon.com/cw/darkstarworks)
 
@@ -135,7 +135,7 @@ Same features either way. [Docs](https://esmp-fun.gitbook.io/plugins/better-tria
 
 | Permission | What it does | Default |
 |------------|--------------|---------|
-| `btc.admin` | Everything | OP |
+| `btc.admin.*` | Everything | OP |
 | `btc.stats` · `btc.leaderboard` | See stats | Everyone |
 | `btc.spectate` | Spectate after dying | Everyone |
 | `btc.bypass.cooldown` | Skip vault cooldowns | OP |

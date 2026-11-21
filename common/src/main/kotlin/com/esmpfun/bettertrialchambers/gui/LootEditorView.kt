@@ -407,7 +407,7 @@ class LootEditorView(
         // How often the pool runs, at (3, 5) = slot 48. Only a pool of a
         // multi-pool table has this; a table with one pool always runs.
         if (poolName != null) {
-            val percent = (draft.chance * 100.0).toInt()
+            val percent = kotlin.math.round(draft.chance * 100.0).toInt()
             val chanceItem = GuiComponents.infoItem(plugin, Material.CLOCK,
                 "gui.loot-editor.chance-name", "gui.loot-editor.chance-lore",
                 "percent" to percent)
@@ -487,7 +487,7 @@ class LootEditorView(
         // branch below would build a fresh single-pool table out of this one
         // pool's contents and every other pool in it would be gone. Better to
         // save nothing and say so.
-        if (poolName != null && (existingTable == null || existingTable.isLegacyFormat())) {
+        if (poolName != null && (existingTable == null || existingTable.isLegacyFormat() || existingTable.pools.none { it.name == poolName })) {
             player.sendMessage(plugin.getMessageComponent("gui-loot-pool-vanished", "pool" to poolName))
             plugin.logger.warning(
                 "Loot editor: '${draft.tableName}' no longer has a pool named '$poolName', " +

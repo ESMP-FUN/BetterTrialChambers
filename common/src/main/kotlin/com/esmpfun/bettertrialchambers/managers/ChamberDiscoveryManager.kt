@@ -491,7 +491,7 @@ class ChamberDiscoveryManager(private val plugin: BetterTrialChambers) {
         }
 
         val maxMerged = plugin.config.getLong("discovery.max-merged-volume", 1_500_000L)
-        if (newVolume > maxMerged) {
+        if (maxMerged >= 0 && newVolume > maxMerged) {
             return ExpandResult(false, "expansion would exceed max-merged-volume ($newVolume > $maxMerged)", oldVolume, newVolume, 0, 0)
         }
 

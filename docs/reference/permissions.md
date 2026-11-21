@@ -30,10 +30,10 @@ Every permission below is a `btc.*` node. The old `tcp.*` names from before v2.0
 | Node | What it grants | Default |
 | --- | --- | --- |
 | `btc.admin.*` | Every admin node in this table, including `btc.admin`, `btc.admin.setup` and `btc.give`. Not the bypass or player nodes. | op |
-| `btc.admin` | `/trial list`, `/trial info`, `/trial update`, and update notices on join. Not a wildcard. | op |
-| `btc.admin.setup` | `/trial setup` and `/trial setup continue` (the guided settings tour), plus the op-join setup reminder. | op |
-| `btc.admin.generate` | `/trial generate <mode>` and `/trial dungeon ...` (register chambers, procedural assembly). | op |
-| `btc.admin.create` | `/trial delete <chamber>` and `/trial setexit <chamber>`. | op |
+| `btc.admin` | `/trial list`, `/trial info`, `/trial update`, `/trial claims scan`, `/trial debug`, and update notices on join. Not a wildcard. | op |
+| `btc.admin.setup` | `/trial setup`, `/trial setup continue`, and `/trial setup chat` (the guided settings tour), plus the op-join setup reminder. | op |
+| `btc.admin.generate` | `/trial generate <mode>`, `/trial paste ...`, and `/trial dungeon ...` (register chambers, schematic paste, procedural assembly). | op |
+| `btc.admin.create` | `/trial delete <chamber>`, `/trial rename <chamber>`, and `/trial setexit <chamber>`. | op |
 | `btc.admin.scan` | `/trial scan <chamber>` and `/trial scan add`. | op |
 | `btc.admin.snapshot` | `/trial snapshot create / update / restore / missing`. | op |
 | `btc.admin.reset` | `/trial reset <chamber>` and the reset-confirmation commands. | op |

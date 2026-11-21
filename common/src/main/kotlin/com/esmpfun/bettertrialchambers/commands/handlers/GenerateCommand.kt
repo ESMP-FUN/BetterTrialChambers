@@ -277,7 +277,8 @@ class GenerateCommand(private val plugin: BetterTrialChambers) : SubcommandHandl
         val dx = box.maxX - box.minX + 1
         val dy = box.maxY - box.minY + 1
         val dz = box.maxZ - box.minZ + 1
-        val volume = dx * dy * dz
+        // Compute in Long so huge coordinate spans cannot overflow Int negative and bypass maxVolume.
+        val volume = dx.toLong() * dy.toLong() * dz.toLong()
 
         if (dx < MIN_XZ || dz < MIN_XZ || dy < MIN_Y) {
             sender.sendMessage(plugin.getMessageComponent("error-region-too-small",
@@ -286,7 +287,7 @@ class GenerateCommand(private val plugin: BetterTrialChambers) : SubcommandHandl
         }
 
         // Default matches ConfigValidator + discovery (was 500000 here, drifted)
-        val maxVolume = plugin.config.getInt("generation.max-volume", 750000).coerceAtLeast(1)
+        val maxVolume = plugin.config.getInt("generation.max-volume", 750000).coerceAtLeast(1).toLong()
         if (volume > maxVolume) {
             sender.sendMessage(plugin.getMessageComponent("error-region-too-large",
                 "maxVolume" to maxVolume, "volume" to volume))

@@ -21,36 +21,47 @@ class SetupState(private val dataFolder: File) {
     private val cfg = YamlConfiguration().apply { if (file.exists()) runCatching { load(file) } }
 
     var touched: Boolean
-        get() = cfg.getBoolean("touched", false)
-        set(v) { cfg.set("touched", v); save() }
+        @Synchronized get() = cfg.getBoolean("touched", false)
+        @Synchronized set(v) { cfg.set("touched", v); save() }
 
     var reminderCount: Int
-        get() = cfg.getInt("reminder.count", 0)
-        set(v) { cfg.set("reminder.count", v); save() }
+        @Synchronized get() = cfg.getInt("reminder.count", 0)
+        @Synchronized set(v) { cfg.set("reminder.count", v); save() }
 
     var lastReminderEpoch: Long
-        get() = cfg.getLong("reminder.last-epoch", 0L)
-        set(v) { cfg.set("reminder.last-epoch", v); save() }
+        @Synchronized get() = cfg.getLong("reminder.last-epoch", 0L)
+        @Synchronized set(v) { cfg.set("reminder.last-epoch", v); save() }
+
+    /** Atomically increments reminder count and records timestamp in a single disk write. */
+    @Synchronized
+    fun recordReminder(epochMs: Long) {
+        cfg.set("reminder.count", cfg.getInt("reminder.count", 0) + 1)
+        cfg.set("reminder.last-epoch", epochMs)
+        save()
+    }
 
     /** True once the operator has walked the tour all the way to the end. */
     var completed: Boolean
-        get() = cfg.getBoolean("completed", false)
-        set(v) { cfg.set("completed", v); save() }
+        @Synchronized get() = cfg.getBoolean("completed", false)
+        @Synchronized set(v) { cfg.set("completed", v); save() }
 
     /** When set (epoch ms), a single "you started but didn't finish" nudge is due after it. 0 = none. */
     var followUpEpoch: Long
-        get() = cfg.getLong("follow-up-epoch", 0L)
-        set(v) { cfg.set("follow-up-epoch", v); save() }
+        @Synchronized get() = cfg.getLong("follow-up-epoch", 0L)
+        @Synchronized set(v) { cfg.set("follow-up-epoch", v); save() }
 
     var followUpShown: Boolean
-        get() = cfg.getBoolean("follow-up-shown", false)
-        set(v) { cfg.set("follow-up-shown", v); save() }
+        @Synchronized get() = cfg.getBoolean("follow-up-shown", false)
+        @Synchronized set(v) { cfg.set("follow-up-shown", v); save() }
 
+    @Synchronized
     fun pausedIndex(uuid: UUID): Int? =
         if (cfg.contains("paused.$uuid")) cfg.getInt("paused.$uuid") else null
 
+    @Synchronized
     fun setPaused(uuid: UUID, index: Int) { cfg.set("paused.$uuid", index); save() }
 
+    @Synchronized
     fun clearPaused(uuid: UUID) { cfg.set("paused.$uuid", null); save() }
 
     private fun save() {

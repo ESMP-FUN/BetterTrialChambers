@@ -32,8 +32,7 @@ class PasteConfirmListener(private val plugin: BetterTrialChambers) : Listener {
             "confirm" -> {
                 event.isCancelled = true
                 
-                val pending = plugin.pasteConfirmationManager.getPending(player) ?: return
-                plugin.pasteConfirmationManager.cancelPending(player, silent = true)
+                val pending = plugin.pasteConfirmationManager.takePending(player) ?: return
                 
                 player.sendMessage(plugin.getMessageComponent("paste-confirming"))
                 

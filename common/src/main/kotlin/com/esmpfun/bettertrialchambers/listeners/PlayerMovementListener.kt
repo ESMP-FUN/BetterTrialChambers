@@ -65,6 +65,20 @@ class PlayerMovementListener(private val plugin: BetterTrialChambers) : Listener
         handleTransition(event.player, event.from, event.to)
     }
 
+    /** Portals have their own HandlerList; track chamber exits/entries across portals too. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    fun onPlayerPortal(event: org.bukkit.event.player.PlayerPortalEvent) {
+        val to: org.bukkit.Location? = event.to
+        if (to == null) return
+        handleTransition(event.player, event.from, to)
+    }
+
+    /** Dying inside a chamber and respawning outside never fires Move/Teleport; close the session. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    fun onPlayerRespawn(event: org.bukkit.event.player.PlayerRespawnEvent) {
+        handleTransition(event.player, event.player.location, event.respawnLocation)
+    }
+
     /**
      * v1.7.2: joining inside a chamber (logout inside -> login) never registered
      * as an entry until the first move, time tracking and the public
@@ -78,34 +92,30 @@ class PlayerMovementListener(private val plugin: BetterTrialChambers) : Listener
         val location = player.location
         val statsEnabled = plugin.config.getBoolean("statistics.enabled", true) &&
             plugin.config.getBoolean("statistics.track-time-spent", true)
+        val chamber = plugin.chamberManager.getCachedChamberAt(location)?.takeIf { !it.isPaused } ?: return
         movementScope.launch {
-            val chamber = plugin.chamberManager.getChamberAt(location)?.takeIf { !it.isPaused } ?: return@launch
             onChamberEntered(player, uuid, chamber, statsEnabled, sendEntryMessage = false)
         }
     }
 
-    /** Shared chamber-transition dispatch for moves and teleports. */
+    /** Shared chamber-transition dispatch for moves, teleports, portals, and respawns. */
     private fun handleTransition(player: org.bukkit.entity.Player, from: org.bukkit.Location, to: org.bukkit.Location) {
+        // Use the full in-memory chamber cache synchronously — avoids launching coroutines
+        // and hitting the DB on every block step outside chambers.
+        val previousChamber = plugin.chamberManager.getCachedChamberAt(from)?.takeIf { !it.isPaused }
+        val currentChamber = plugin.chamberManager.getCachedChamberAt(to)?.takeIf { !it.isPaused }
+        if (previousChamber?.id == currentChamber?.id) return
+
         val uuid = player.uniqueId
         val statsEnabled = plugin.config.getBoolean("statistics.enabled", true) &&
             plugin.config.getBoolean("statistics.track-time-spent", true)
 
         movementScope.launch {
-            val previousChamber = plugin.chamberManager.getChamberAt(from)?.takeIf { !it.isPaused }
-            val currentChamber = plugin.chamberManager.getChamberAt(to)?.takeIf { !it.isPaused }
-            val wasInChamber = previousChamber != null
-            val isInChamber = currentChamber != null
-
-            // Player entered a chamber (or crossed straight from one chamber to another).
-            if (!wasInChamber && isInChamber) {
+            if (previousChamber == null && currentChamber != null) {
                 onChamberEntered(player, uuid, currentChamber, statsEnabled, sendEntryMessage = true)
-            }
-            // Player left a chamber (or crossed straight from one chamber to another).
-            else if (wasInChamber && !isInChamber) {
+            } else if (previousChamber != null && currentChamber == null) {
                 onChamberExited(player, uuid, previousChamber, statsEnabled, sendExitMessage = true)
-            }
-            // Direct chamber-to-chamber transition (different chamber ids). Fire both.
-            else if (wasInChamber && isInChamber && previousChamber.id != currentChamber.id) {
+            } else if (previousChamber != null && currentChamber != null) {
                 onChamberExited(player, uuid, previousChamber, statsEnabled, sendExitMessage = false)
                 onChamberEntered(player, uuid, currentChamber, statsEnabled, sendEntryMessage = false)
             }
@@ -190,9 +200,9 @@ class PlayerMovementListener(private val plugin: BetterTrialChambers) : Listener
         //, keeps the entry/exit pair balanced for downstream listeners (e.g. MT's HUD
         // that allocates per-player state on entry). Decoupled from stats so it fires
         // whether or not time-tracking is on.
-        movementScope.launch {
-            val chamber = plugin.chamberManager.getChamberAt(location)?.takeIf { !it.isPaused }
-            if (chamber != null) {
+        val chamber = plugin.chamberManager.getCachedChamberAt(location)?.takeIf { !it.isPaused }
+        if (chamber != null) {
+            movementScope.launch {
                 plugin.server.pluginManager.callEvent(ChamberExitedEvent(player, chamber))
             }
         }
@@ -257,7 +267,13 @@ class PlayerMovementListener(private val plugin: BetterTrialChambers) : Listener
             )
             return
         }
-        updates.keys.forEach { playerEntryTimes[it] = currentTime }
+        // Only advance the clock if the player is still inside a chamber (computeIfPresent
+        // avoids re-inserting an exited/offline player who left during the async DB flush).
+        updates.keys.forEach { uuid ->
+            if (playersInChambers.contains(uuid)) {
+                playerEntryTimes.computeIfPresent(uuid) { _, _ -> currentTime }
+            }
+        }
 
         // Only when asked for. This runs every five minutes for as long as
         // anybody is stood in a chamber, so on a busy server it was a few

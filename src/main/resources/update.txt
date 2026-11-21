@@ -1,17 +1,21 @@
 <black>.
 <#FF7F50> ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
 <black>.
+<#008080>[2.4.2] <gray>- <white>2026-11-19
+<#FFD700>CHANGED: <white>One jar for every Minecraft version (1.21.1 to 26.3)
+<#FFD700>FIXED: <white>Wave mobs stay what they were spawned as, 26.3 cushions/pots/signs, vault counts, and display names
+<black>.
+<#008080>[2.4.1] <gray>- <white>2026-10-31
+<#FFD700>ADDED: <white>Every chamber gets a display name, used vaults show next reset time, clickable death-spectate buttons
+<black>.
+<#008080>[2.4.0] <gray>- <white>2026-10-31
+<#FFD700>ADDED: <white>Per-chamber protection settings; buckets follow block placing; skip //regen temp worlds
+<black>.
+<#008080>[2.3.1] <gray>- <white>2026-10-14
+<#FFD700>FIXED: <white>Wild Spawners compatibility when mining wild spawners
+<black>.
 <#008080>[2.3.0] <gray>- <white>2026-10-07
 <#FFD700>ADDED: <white>reset-after-first-loot: a chamber only starts its reset clock once someone loots it
-<black>.
-<#008080>[2.2.3] <gray>- <white>2026-09-23
-<#FFD700>FIXED: <white>Players can no longer place frames, paintings, armour stands or cushions in a protected chamber
-<#FFD700>FIXED: <white>No more "could not save" warnings on every restart
-<#FFD700>FIXED: <white>No more update checker error when the server stops right after starting
-<black>.
-<#008080>[2.2.2] <gray>- <white>2026-09-23
-<#FFD700>FIXED: <white>The chunk check error from 2.2.1 is fixed everywhere, not just in one place
-<#FFD700>FIXED: <white>Chunks load faster when finding new Trial Chambers is on
 <black>.
 <#FF7F50> ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
 <black>.

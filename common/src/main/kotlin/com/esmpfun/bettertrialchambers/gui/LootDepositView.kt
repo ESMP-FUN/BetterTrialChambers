@@ -119,16 +119,13 @@ class LootDepositView(
                     "The items have been handed back to ${player.name} rather than kept."
             )
         } finally {
-            // Hand items back on the player's region thread (Folia-correct; on Paper this
-            // is just the main thread). Safe inside the close event, we're only mutating
-            // the player's own inventory and dropping items into the world, not opening
-            // anything new.
-            plugin.scheduler.runAtEntity(player, Runnable {
-                for (item in itemsToReturn) {
-                    val leftover = player.inventory.addItem(item)
-                    leftover.values.forEach { player.world.dropItemNaturally(player.location, it) }
-                }
-            })
+            // InventoryCloseEvent already runs on the player's owning region/main thread.
+            // Return items synchronously so a disconnect/kick never drops a deferred task
+            // and destroys the admin's items.
+            for (item in itemsToReturn) {
+                val leftover = player.inventory.addItem(item)
+                leftover.values.forEach { player.world.dropItemNaturally(player.location, it) }
+            }
         }
 
         // CRITICAL: opening a new inventory while still inside `InventoryCloseEvent`

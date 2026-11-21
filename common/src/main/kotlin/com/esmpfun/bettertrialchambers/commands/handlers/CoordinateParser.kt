@@ -21,10 +21,13 @@ object CoordinateParser {
             "^\\s*(-?\\d+)\\s*,\\s*(-?\\d+)\\s*,\\s*(-?\\d+)\\s*-\\s*(-?\\d+)\\s*,\\s*(-?\\d+)\\s*,\\s*(-?\\d+)\\s*$"
         )
         val m = regex.matchEntire(input) ?: return null
-        return Pair(
-            Triple(m.groupValues[1].toInt(), m.groupValues[2].toInt(), m.groupValues[3].toInt()),
-            Triple(m.groupValues[4].toInt(), m.groupValues[5].toInt(), m.groupValues[6].toInt())
-        )
+        val x1 = m.groupValues[1].toIntOrNull() ?: return null
+        val y1 = m.groupValues[2].toIntOrNull() ?: return null
+        val z1 = m.groupValues[3].toIntOrNull() ?: return null
+        val x2 = m.groupValues[4].toIntOrNull() ?: return null
+        val y2 = m.groupValues[5].toIntOrNull() ?: return null
+        val z2 = m.groupValues[6].toIntOrNull() ?: return null
+        return Pair(Triple(x1, y1, z1), Triple(x2, y2, z2))
     }
 
     /**

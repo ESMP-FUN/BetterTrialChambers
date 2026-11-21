@@ -59,18 +59,13 @@ class EcoMobsProvider(private val plugin: BetterTrialChambers) : TrialMobProvide
                 (it as Enum<*>).name.equals("CUSTOM", ignoreCase = true)
             } ?: spawnReasonCls.enumConstants.firstOrNull() ?: return null
 
-            val spawn = mob.javaClass.methods.firstOrNull {
-                it.name == "spawn" && it.parameterCount == 2 &&
-                    it.parameterTypes[0] == Location::class.java &&
-                    it.parameterTypes[1] == spawnReasonCls
-            } ?: return null
+            val spawn = com.esmpfun.bettertrialchambers.utils.Reflect.method(
+                mob.javaClass, "spawn", Location::class.java, spawnReasonCls
+            ) ?: return null
             val livingMob = spawn.invoke(mob, location, spawnReason) ?: return null
 
             // LivingMob.entity is a Mob (org.bukkit.entity.Mob); exposed as getEntity()
-            val getEntity = livingMob.javaClass.methods.firstOrNull {
-                it.name == "getEntity" && it.parameterCount == 0
-            } ?: return null
-            getEntity.invoke(livingMob) as? Entity
+            com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(livingMob, "getEntity") as? Entity
         } catch (e: Throwable) {
             if (plugin.config.getBoolean("debug.verbose-logging", false)) {
                 plugin.logger.warning("[EcoMobsProvider] Failed to spawn '$mobId': ${e.javaClass.simpleName}: ${e.message}")

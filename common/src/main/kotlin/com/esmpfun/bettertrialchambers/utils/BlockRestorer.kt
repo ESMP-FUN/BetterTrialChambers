@@ -255,9 +255,10 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
 
         val cleared = java.util.concurrent.atomic.AtomicInteger(0)
         val pending = java.util.concurrent.atomic.AtomicInteger(0)
+        val allSubmitted = java.util.concurrent.atomic.AtomicBoolean(false)
         val signal = CompletableDeferred<Unit>()
         fun batchFinished() {
-            if (pending.decrementAndGet() == 0) signal.complete(Unit)
+            if (pending.decrementAndGet() == 0 && allSubmitted.get()) signal.complete(Unit)
         }
 
         val minChunkX = minX shr 4
@@ -301,6 +302,7 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
             }
         }
 
+        allSubmitted.set(true)
         if (pending.get() == 0) signal.complete(Unit)
         signal.await()
 
@@ -549,11 +551,23 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
                 Class.forName("com.sk89q.worldedit.world.block.BlockStateHolder"))
             setBlockMethod.invoke(weSession.editSession, position, weBlockState)
 
-            // Handle tile entity data separately with Bukkit API (WorldEdit doesn't support all NBT)
-            snapshot.tileEntity?.let { tileEntityData ->
-                val block = location.block
-                val state = block.state
-                NBTUtil.restoreTileEntity(state, tileEntityData)
+            // Handle tile entity data separately with Bukkit API (WorldEdit doesn't support all NBT).
+            // Snapshots v4+ store block entities in `structure` (with `tileEntity == null`); restore
+            // that first and re-apply the corrected BlockData (for reset trial spawner state).
+            val contents = snapshot.structure
+            if (contents != null) {
+                if (BlockEntityCapture.restore(plugin.server, contents, location)) {
+                    val block = location.block
+                    if (block.blockData.asString != bukkitBlockData.asString) {
+                        block.setBlockData(bukkitBlockData, false)
+                    }
+                }
+            } else {
+                snapshot.tileEntity?.let { tileEntityData ->
+                    val block = location.block
+                    val state = block.state
+                    NBTUtil.restoreTileEntity(state, tileEntityData)
+                }
             }
         } catch (e: Exception) {
             // Fall back to direct Bukkit API
@@ -583,9 +597,13 @@ class BlockRestorer(private val plugin: BetterTrialChambers) {
                 }
             }
 
-            // Remember this session in player's undo history
+            // Remember this session in player's undo history. EditSession is a class,
+            // not an interface, so resolve it by name rather than scanning interfaces.
             val localSessionClass = weSession.localSession.javaClass
-            val rememberMethod = localSessionClass.getMethod("remember", editSessionClass.interfaces.first { it.simpleName == "EditSession" } ?: editSessionClass)
+            val editSessionApiClass = runCatching {
+                Class.forName("com.sk89q.worldedit.EditSession")
+            }.getOrDefault(editSessionClass)
+            val rememberMethod = localSessionClass.getMethod("remember", editSessionApiClass)
             rememberMethod.invoke(weSession.localSession, weSession.editSession)
 
             plugin.logger.info("WorldEdit undo history updated for ${player.name}")

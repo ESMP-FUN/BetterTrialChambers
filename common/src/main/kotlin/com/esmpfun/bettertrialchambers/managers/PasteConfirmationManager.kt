@@ -36,21 +36,32 @@ class PasteConfirmationManager(private val plugin: BetterTrialChambers) {
         // Cancel any existing pending paste
         cancelPending(player, silent = true)
 
+        val playerUuid = player.uniqueId
         val pending = PendingPaste(schematicName, location)
-        pendingPastes[player.uniqueId] = pending
+        pendingPastes[playerUuid] = pending
 
-        // Schedule timeout (5 minutes) - use entity scheduling for Folia compatibility
+        // Schedule timeout (5 minutes) — hold UUID rather than Player to avoid retaining disconnected instances.
         val timeoutTask = plugin.scheduler.runTaskLater(Runnable {
-            if (hasPending(player)) {
-                // Send message on player's region thread
-                plugin.scheduler.runAtEntity(player, Runnable {
-                    player.sendMessage(plugin.getMessageComponent("paste-timeout"))
-                })
-                cancelPending(player, silent = true)
+            if (pendingPastes.remove(playerUuid, pending)) {
+                timeoutTasks.remove(playerUuid)
+                plugin.server.getPlayer(playerUuid)?.let { online ->
+                    plugin.particleVisualizer.stopVisualization(online)
+                    plugin.scheduler.runAtEntity(online, Runnable {
+                        online.sendMessage(plugin.getMessageComponent("paste-timeout"))
+                    })
+                }
             }
         }, 20L * 60 * 5) // 5 minutes
 
-        timeoutTasks[player.uniqueId] = timeoutTask
+        timeoutTasks[playerUuid] = timeoutTask
+    }
+
+    /** Atomically removes and returns the pending paste (prevents duplicate-confirm double-paste). */
+    fun takePending(player: Player): PendingPaste? {
+        val taken = pendingPastes.remove(player.uniqueId) ?: return null
+        timeoutTasks.remove(player.uniqueId)?.cancel()
+        plugin.particleVisualizer.stopVisualization(player)
+        return taken
     }
 
     /**

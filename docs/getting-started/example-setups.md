@@ -30,7 +30,7 @@ global:
 
 vaults:
   normal-cooldown-hours: 1   # hours until a player can reopen the SAME vault
-  ominous-cooldown-hours: 1  # 0 = reopenable immediately
+  ominous-cooldown-hours: 1  # 0 = locked until the chamber resets (vanilla)
 
 protection:
   enabled: false             # players can mine and build inside chambers
@@ -55,7 +55,7 @@ spectator-mode:
 
 | Value | Effect |
 | --- | --- |
-| `0` | Reopenable immediately. For skill-arena and minigame servers. |
+| `0` | Locked until the chamber resets (vanilla behavior; with resets off, each player opens each vault once). |
 | `1` | Reopenable after 1 hour. |
 | `6` | Reopenable after 6 hours. Roughly once per play session. |
 | `24` | Once per day per player. |

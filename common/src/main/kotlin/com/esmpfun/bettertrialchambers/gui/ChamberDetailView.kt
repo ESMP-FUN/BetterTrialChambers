@@ -127,6 +127,7 @@ class ChamberDetailView(
         }
         val world = chamber.getWorld() ?: return
         if (!chamber.contains(player.location)) {
+            player.closeInventory()
             val loc = org.bukkit.Location(
                 world,
                 ((chamber.minX + chamber.maxX) / 2) + 0.5,
@@ -508,9 +509,10 @@ class ChamberDetailView(
             })
         }
         plugin.scheduler.runTaskLater(Runnable {
-            exitPlayers(playersToExit)
+            val stillInside = playersToExit.filter { it.isOnline && chamber.contains(it.location) }
+            exitPlayers(stillInside)
             plugin.scheduler.runAtEntity(player, Runnable {
-                player.sendMessage(plugin.getMessageComponent("gui-players-ejected", "count" to playersToExit.size, "chamber" to chamber.name))
+                player.sendMessage(plugin.getMessageComponent("gui-players-ejected", "count" to stillInside.size, "chamber" to chamber.name))
             })
         }, seconds * 20L)
     }
@@ -519,9 +521,10 @@ class ChamberDetailView(
         val dest = chamber.getExitLocation() ?: chamber.getWorld()?.spawnLocation ?: return
         players.forEach { p ->
             plugin.scheduler.runAtEntity(p, Runnable {
-                if (p.isOnline) {
-                    p.teleport(dest)
-                    p.sendMessage(plugin.getMessageComponent("gui-player-ejected"))
+                if (p.isOnline && chamber.contains(p.location)) {
+                    p.teleportAsync(dest).thenRun {
+                        p.sendMessage(plugin.getMessageComponent("gui-player-ejected"))
+                    }
                 }
             })
         }

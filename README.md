@@ -62,7 +62,7 @@ These need BetterTrialChambers and are sold on [esmp.fun](https://esmp.fun/).
 
 * **[Discord](https://discord.gg/qwYcTpHsNC)** for questions and announcements
 * **[GitHub Issues](https://github.com/ESMP-FUN/BetterTrialChambers/issues)** for bug reports and ideas
-* **[Modrinth](https://modrinth.com/plugin/trialchamberpro)** for downloads and release notes
+* **[Modrinth](https://modrinth.com/plugin/better-trial-chambers)** for downloads and release notes
 
 Source-available, free to use, no redistribution (see [LICENSE](LICENSE)).
 Made with Kotlin by [darkstarworks](https://github.com/darkstarworks).

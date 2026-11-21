@@ -25,15 +25,16 @@ import org.bukkit.event.player.PlayerTeleportEvent
  */
 class SpawnerWaveListener(private val plugin: BetterTrialChambers) : Listener {
 
-    // Detection radius for nearby trial spawners (to add players to boss bar)
-    private val detectionRadius = plugin.config.getInt("spawner-waves.detection-radius", 20)
+    // Detection radius for nearby trial spawners (read live so /trial reload applies immediately)
+    private val detectionRadius: Int
+        get() = plugin.config.getInt("spawner-waves.detection-radius", 20)
 
-    // Distance at which a player is removed from an existing boss bar.
-    // Must be > detectionRadius to provide hysteresis (avoid flicker at the boundary).
-    private val removeDistance = plugin.config.getDouble(
-        "spawner-waves.remove-distance",
-        (detectionRadius * 1.6).coerceAtLeast(32.0)
-    )
+    // Distance at which a player is removed from an existing boss bar (hysteresis > detectionRadius)
+    private val removeDistance: Double
+        get() = plugin.config.getDouble(
+            "spawner-waves.remove-distance",
+            (detectionRadius * 1.6).coerceAtLeast(32.0)
+        )
 
     /**
      * Handles mob spawns from trial spawners.
@@ -53,10 +54,9 @@ class SpawnerWaveListener(private val plugin: BetterTrialChambers) : Listener {
         val entity = event.entity
         val location = event.location
 
-        // Find the trial spawner that spawned this mob (search nearby)
-        // The spawning spawner is by definition adjacent (vanilla trial-spawn radius
-        // is 5). Query the index instead of poking 1,331 blocks; take the closest.
-        val spawnerLocation = plugin.trialSpawnerIndex.query(location, 5)
+        // Query a 16-block radius (vanilla spawn range is 4-5, but custom presets/datapacks
+        // can configure larger spawnRange values) and pick the closest indexed spawner.
+        val spawnerLocation = plugin.trialSpawnerIndex.query(location, 16)
             .minByOrNull { it.distanceSquared(location) } ?: return
 
         // Determine if ominous from spawner block state
@@ -370,6 +370,16 @@ class SpawnerWaveListener(private val plugin: BetterTrialChambers) : Listener {
         // The chamber's spawner count just changed, drop the cached count so
         // ChamberClearedEvent's all-spawners threshold re-scans.
         plugin.chamberManager.getCachedChamberAt(loc)?.let {
+            plugin.spawnerWaveManager.invalidateChamberSpawnerCaches(it.id)
+        }
+    }
+
+    /** Keeps ChamberClearedEvent's spawner count fresh when a trial spawner is placed inside a chamber. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    fun onBlockPlace(event: org.bukkit.event.block.BlockPlaceEvent) {
+        if (!plugin.isReady) return
+        if (event.block.type != Material.TRIAL_SPAWNER) return
+        plugin.chamberManager.getCachedChamberAt(event.block.location)?.let {
             plugin.spawnerWaveManager.invalidateChamberSpawnerCaches(it.id)
         }
     }

@@ -5,7 +5,7 @@ Put the plugin on your server and check that it started.
 ## Step 1 - Download the jar
 
 Get `BetterTrialChambers-<version>.jar` from
-[Modrinth](https://modrinth.com/plugin/trialchamberpro) or
+[Modrinth](https://modrinth.com/plugin/better-trial-chambers) or
 [GitHub Releases](https://github.com/ESMP-FUN/BetterTrialChambers/releases).
 
 There is one jar for every Minecraft version from 1.21.1 to 26.3. It picks

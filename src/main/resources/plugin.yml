@@ -70,7 +70,7 @@ permissions:
     description: Register chambers from coordinates or blocks
     default: op
   btc.admin.create:
-    description: Delete chambers and set chamber exit points (/trial delete, /trial setexit)
+    description: Delete, rename, and set chamber exit points (/trial delete, /trial rename, /trial setexit)
     default: op
   btc.admin.menu:
     description: Open the admin GUI menu
@@ -112,7 +112,7 @@ permissions:
     description: Manage per-chamber loot tables (/trial loot set/clear/audit)
     default: op
   btc.admin.containers:
-    description: Edit per-player container loot templates (sneak-click in-world, /trial container, and the GUI)
+    description: Edit per-player container loot templates (/trial container and the GUI)
     default: op
   btc.admin.mobs:
     description: Manage per-chamber custom mob provider configuration

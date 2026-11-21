@@ -7,9 +7,10 @@ import org.bukkit.entity.Entity
  * Pluggable mob source for trial spawner waves.
  *
  * A provider is consulted from the [CreatureSpawnEvent] handler when a chamber
- * has a non-vanilla `customMobProvider` configured. The vanilla mob spawned by
- * the trial spawner is removed the same tick and [spawnMob] is called at the
- * same location. The returned entity is then tracked by
+ * has a non-vanilla `customMobProvider` configured. [spawnMob] is called at the
+ * vanilla mob's location first; only when it returns a non-null entity is the
+ * vanilla mob removed and replaced. If [spawnMob] returns null, the vanilla mob
+ * stays in place as a safe fallback. The active entity is then tracked by
  * [com.esmpfun.bettertrialchambers.managers.SpawnerWaveManager] exactly
  * like a vanilla mob would be.
  *
@@ -35,7 +36,7 @@ interface TrialMobProvider {
      * @param location Where to spawn; caller has already validated chunk/region ownership
      * @param ominous True when the originating spawner was in ominous mode
      * @return The spawned entity, or null on failure (invalid id, plugin offline, etc.).
-     *         Returning null causes the wave system to skip tracking this spawn.
+     *         Returning null leaves the original vanilla mob in place as a fallback.
      */
     fun spawnMob(mobId: String, location: Location, ominous: Boolean): Entity?
 

@@ -65,8 +65,13 @@ class SetupTourDialog(
                         else Component.text("Disabled", NamedTextColor.RED))
         }
         is SetupStep.Choice -> {
-            val label = step.formatCurrent?.invoke(plugin.config.get(step.configPath))
-                ?: (plugin.config.get(step.configPath)?.toString() ?: "default")
+            val rawVal = if (step.configPath == "vaults.loot-mode") {
+                com.esmpfun.bettertrialchambers.models.VaultLootMode.resolve(plugin).name
+            } else {
+                plugin.config.get(step.configPath)
+            }
+            val label = step.formatCurrent?.invoke(rawVal)
+                ?: (rawVal?.toString() ?: "default")
             Component.text("Currently: ", NamedTextColor.GRAY).append(Component.text(label, NamedTextColor.WHITE))
         }
     }
@@ -99,7 +104,7 @@ class SetupTourDialog(
             is SetupStep.Choice -> {
                 step.options.forEach { opt ->
                     list += DialogPromptManager.Action(plugin.getGuiText(opt.labelKey).color(NamedTextColor.AQUA)) {
-                        controller.applyChoice(step.configPath, opt.value); next(player)
+                        controller.applyChoice(step.configPath, opt.value, player); next(player)
                     }
                 }
             }

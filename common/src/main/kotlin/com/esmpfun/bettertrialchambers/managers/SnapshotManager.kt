@@ -11,6 +11,7 @@ import com.esmpfun.bettertrialchambers.utils.NBTUtil
 import com.esmpfun.bettertrialchambers.utils.SaveVersionStamp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.bukkit.Location
@@ -25,6 +26,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.io.ObjectInputFilter
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
@@ -33,7 +35,6 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
-import kotlin.coroutines.resume
 
 /**
  * Manages chamber snapshots - creating, saving, loading, and validating.
@@ -69,6 +70,19 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
          */
         const val FORMAT_VERSION = 6
         const val FORMAT_VERSION_MIN = 2
+
+        /** Hard cap (32 MB) on any single embedded tile-entity or decoration blob to prevent OOM on corrupt files. */
+        const val MAX_BLOB_BYTES = 32 * 1024 * 1024
+
+        /** Allowlist for legacy Java-serialized snapshot/tile blobs so untrusted .dat files cannot trigger gadgets. */
+        val SNAPSHOT_OIS_FILTER: ObjectInputFilter = ObjectInputFilter.Config.createFilter(
+            "com.esmpfun.bettertrialchambers.**;" +
+                "com.darkstarworks.trialchamberpro.**;" +
+                "java.util.**;" +
+                "java.lang.**;" +
+                "kotlin.**;" +
+                "!*"
+        )
 
         /**
          * Written as the far corner when it genuinely is not known, which is
@@ -254,8 +268,8 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
 
         // Written to a temp file first so a crash mid-capture never corrupts an
         // existing good snapshot; moved into place only after a clean finish.
-        val finalFile = File(plugin.snapshotsDir, "${chamber.name}.dat")
-        val tempFile = File(plugin.snapshotsDir, "${chamber.name}.dat.tmp")
+        val finalFile = snapshotFileFor(chamber.name, ".dat")
+        val tempFile = snapshotFileFor(chamber.name, ".dat.tmp")
 
         // v1.7.0: capture in X-slice batches, one scheduled task per batch, so snapshotting
         // a multi-million-block chamber (structure-bounds discovery / imported dungeons)
@@ -385,8 +399,8 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
 
                 finalFile
             }
-        } catch (e: Exception) {
-            withContext(Dispatchers.IO) {
+        } catch (e: Throwable) {
+            withContext(Dispatchers.IO + NonCancellable) {
                 runCatching { writer.close() }
                 tempFile.delete()
             }
@@ -450,7 +464,10 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
                         scan = scanV2(DataInputStream(input), file.name)
                     } else {
                         input.reset()
-                        legacyData = com.esmpfun.bettertrialchambers.utils.RenamedClassInputStream(input).use { it.readObject() as SnapshotData }
+                        legacyData = com.esmpfun.bettertrialchambers.utils.RenamedClassInputStream(input).use { ois ->
+                            ois.setObjectInputFilter(SNAPSHOT_OIS_FILTER)
+                            ois.readObject() as SnapshotData
+                        }
                     }
                 }
             }
@@ -769,6 +786,10 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
                     var structure: ByteArray? = null
                     if (kind != CONTENTS_NONE) {
                         val length = input.readInt()
+                        if (length < 0 || length > MAX_BLOB_BYTES) {
+                            plugin.logger.severe("Snapshot $label has corrupt block-entity length ($length)")
+                            return null
+                        }
                         if (!readTiles) {
                             // Caller only wants to know which positions are
                             // covered, so step over the contents unread.
@@ -781,8 +802,11 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
                                 CONTENTS_LEGACY_MAP -> {
                                     @Suppress("UNCHECKED_CAST")
                                     legacyTile = runCatching {
-                                        ObjectInputStream(ByteArrayInputStream(blob)).use {
-                                            it.readObject() as Map<String, Any>
+                                        com.esmpfun.bettertrialchambers.utils.RenamedClassInputStream(
+                                            ByteArrayInputStream(blob)
+                                        ).use { ois ->
+                                            ois.setObjectInputFilter(SNAPSHOT_OIS_FILTER)
+                                            ois.readObject() as Map<String, Any>
                                         }
                                     }.getOrElse {
                                         plugin.logger.warning(
@@ -826,6 +850,10 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
                     val ey = input.readDouble()
                     val ez = input.readDouble()
                     val length = input.readInt()
+                    if (length < 0 || length > MAX_BLOB_BYTES) {
+                        plugin.logger.severe("Snapshot $label has corrupt entity length ($length)")
+                        return null
+                    }
                     if (!readTiles) {
                         // A scan only asks which positions are covered, so the
                         // decoration itself is stepped over unread.
@@ -853,7 +881,10 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
 
     /** Reads a legacy Java-serialized [SnapshotData] snapshot (pre-v2 files). */
     private fun readLegacySnapshot(input: InputStream, label: String): Map<Location, BlockSnapshot>? {
-        val snapshotData = com.esmpfun.bettertrialchambers.utils.RenamedClassInputStream(input).use { it.readObject() as SnapshotData }
+        val snapshotData = com.esmpfun.bettertrialchambers.utils.RenamedClassInputStream(input).use { ois ->
+            ois.setObjectInputFilter(SNAPSHOT_OIS_FILTER)
+            ois.readObject() as SnapshotData
+        }
 
         if (!validateSnapshot(snapshotData)) {
             plugin.logger.severe("Snapshot validation failed: $label")
@@ -915,13 +946,26 @@ class SnapshotManager(private val plugin: BetterTrialChambers) {
     }
 
     /**
+     * Resolves a snapshot file inside [BetterTrialChambers.snapshotsDir], rejecting path
+     * traversal (e.g. `../` or path separators in a chamber name).
+     */
+    private fun snapshotFileFor(chamberName: String, suffix: String = ".dat"): File {
+        val baseDir = plugin.snapshotsDir.canonicalFile
+        val candidate = File(baseDir, "$chamberName$suffix").canonicalFile
+        require(candidate.parentFile == baseDir) {
+            "Invalid chamber name for snapshot path: '$chamberName'"
+        }
+        return candidate
+    }
+
+    /**
      * Gets the snapshot file for a chamber.
      *
      * @param chamberName The chamber name
      * @return The snapshot file, or null if not found
      */
     fun getSnapshotFile(chamberName: String): File? {
-        val file = File(plugin.snapshotsDir, "$chamberName.dat")
+        val file = runCatching { snapshotFileFor(chamberName, ".dat") }.getOrNull() ?: return null
         return if (file.exists()) file else null
     }
 

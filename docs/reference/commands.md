@@ -19,7 +19,7 @@ For the full permission list, see the [Permissions](permissions.md) page.
 | Command | What it does | Permission |
 | --- | --- | --- |
 | `/trial help` | Show the command list | None |
-| `/trial setup [start\|continue]` | Guided, optional walk-through of the main settings. `continue` resumes a paused tour | `btc.admin.setup` |
+| `/trial setup [start\|continue\|chat]` | Guided, optional walk-through of the main settings. `continue` resumes a paused tour; `chat` forces the clickable-chat tour | `btc.admin.setup` |
 | `/trial menu [chamber]` | Open the admin GUI. With a chamber name, open that chamber's page directly | `btc.admin.menu` |
 | `/trial list [page]` | List registered chambers, 10 per page | `btc.admin` |
 | `/trial list current` | Report the chamber you are standing in, or the nearest one. Aliases: `here`, `near`, `nearest` | `btc.admin` |
@@ -29,7 +29,7 @@ For the full permission list, see the [Permissions](permissions.md) page.
 | `/trial debug structure` | Test that this server can save a block with its contents and put it back unchanged | `btc.admin.reload` |
 | `/trial claims scan` | List chambers that overlap an existing land claim (Residence, Lands, GriefPrevention) | `btc.admin.reload` |
 | `/trial reload` | Reload `config.yml`, `loot.yml`, `messages.yml`, and `spawner_presets.yml` | `btc.admin.reload` |
-| `/trial update [check\|status\|download\|apply\|restore\|ignore <version>\|unignore <version>]` | Check for and install plugin updates | `btc.admin` |
+| `/trial update [check\|status\|download\|restore\|ignore <version>\|unignore <version>]` | Check for and install plugin updates | `btc.admin` |
 
 ### Chambers
 
@@ -148,7 +148,7 @@ Leaderboard types: `chambers` (or `completions`), `normal` (or `normalvaults`), 
 
 ### Register an existing chamber
 
-1. Select the chamber with the WorldEdit wand: `/wand`, then left-click one corner and right-click the opposite corner.
+1. Select the chamber with the WorldEdit wand: `//wand`, then left-click one corner and right-click the opposite corner.
 2. Register it: `/trial generate wand MyChamber`.
 3. Scanning and snapshotting run automatically. Re-run `/trial scan MyChamber` if you change the build.
 4. Stand just outside the entrance and run `/trial setexit MyChamber`.
@@ -683,7 +683,7 @@ Shows the top players for one statistic. Also `/trial lb` and `/trial top`.
 
 Types: `chambers` (`completions`), `normal` (`normalvaults`), `ominous` (`ominousvaults`), `mobs` (`kills`), `time` (`playtime`).
 
-Player count comes from `statistics.top-players-count` (default 10). Results are cached and refresh on `statistics.leaderboard-update-interval` (default 1 hour).
+Player count comes from `statistics.top-players-count` (default 10). The command queries live database data; PlaceholderAPI top placeholders cache results for 60 seconds.
 
 </details>
 
@@ -776,7 +776,7 @@ In the default `notify` mode the plugin only reports that an update exists. Beha
 <summary><strong>Register an existing chamber</strong></summary>
 
 ```bash
-/wand
+//wand
 # left-click one corner, right-click the opposite corner
 /trial generate wand MyChamber
 /trial scan MyChamber
@@ -838,7 +838,7 @@ In the default `notify` mode the plugin only reports that an update exists. Beha
 
 **"Chamber not found"** - run `/trial list`. Names are case-sensitive; use tab completion.
 
-**"No WorldEdit selection found"** - install WorldEdit, run `/wand`, and select two corners that enclose a volume.
+**"No WorldEdit selection found"** - install WorldEdit, run `//wand`, and select two corners that enclose a volume.
 
 **"Player not found or not online"** - `/trial key give` and `/trial key check` need the player online. `/trial vault reset` works offline.
 

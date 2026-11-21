@@ -7,6 +7,7 @@ import com.esmpfun.bettertrialchambers.models.VaultType
 import com.esmpfun.bettertrialchambers.utils.AdvancementUtil
 import com.esmpfun.bettertrialchambers.utils.MessageUtil
 import kotlinx.coroutines.*
+import kotlin.coroutines.resume
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
@@ -86,29 +87,27 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
             plugin.logger.info("Vault interaction: blockData='$blockDataString', detected type=$vaultType")
         }
 
-        // Check if key validation is enabled
+        // Always require a trial key; trial-keys.validate-key-type controls whether
+        // normal keys must match normal vaults and ominous keys must match ominous vaults.
+        val keyType = when (item.type) {
+            Material.TRIAL_KEY -> KeyType.NORMAL
+            Material.OMINOUS_TRIAL_KEY -> KeyType.OMINOUS
+            else -> null
+        }
+
+        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+            plugin.logger.info("Key check: item=${item.type.name}, keyType=$keyType")
+        }
+
+        if (keyType == null) {
+            event.isCancelled = true
+            routeVaultFeedback(player, block.location, false, plugin.getMessageComponent("no-key")) {
+                playErrorSound(player)
+            }
+            return
+        }
+
         if (plugin.config.getBoolean("trial-keys.validate-key-type", true)) {
-            // Validate key type using direct Material enum
-            val keyType = when (item.type) {
-                Material.TRIAL_KEY -> KeyType.NORMAL
-                Material.OMINOUS_TRIAL_KEY -> KeyType.OMINOUS
-                else -> null
-            }
-
-            // Debug logging
-            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-                plugin.logger.info("Key check: item=${item.type.name}, keyType=$keyType")
-            }
-
-            if (keyType == null) {
-                event.isCancelled = true
-                routeVaultFeedback(player, block.location, false, plugin.getMessageComponent("no-key")) {
-                    playErrorSound(player)
-                }
-                return
-            }
-
-            // Check if key matches vault type
             val requiredKeyType = when (vaultType) {
                 VaultType.NORMAL -> KeyType.NORMAL
                 VaultType.OMINOUS -> KeyType.OMINOUS
@@ -133,10 +132,15 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
         if (lootMode != VaultLootMode.VANILLA) {
             event.isCancelled = true // We'll handle the vault opening ourselves
 
-            // CRITICAL: Check the lock SYNCHRONOUSLY before launching async work
-            // This prevents the spam-click race condition where multiple coroutines could
-            // be launched before any of them checks the lock
-            val lockKey = "${player.uniqueId}:${block.location.blockX}:${block.location.blockY}:${block.location.blockZ}:${vaultType.name}"
+            // CRITICAL: Check the lock SYNCHRONOUSLY before launching async work.
+            // In SHARED mode, omit player UUID so two players clicking the same vault
+            // concurrently cannot both claim it.
+            val worldName = block.world.name
+            val lockKey = if (lootMode == VaultLootMode.SHARED) {
+                "SHARED:$worldName:${block.location.blockX}:${block.location.blockY}:${block.location.blockZ}:${vaultType.name}"
+            } else {
+                "${player.uniqueId}:$worldName:${block.location.blockX}:${block.location.blockY}:${block.location.blockZ}:${vaultType.name}"
+            }
             val now = System.currentTimeMillis()
 
             // Periodically clean up old entries to prevent memory leaks (entries older than 30 seconds)
@@ -157,16 +161,12 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
             // Set the lock SYNCHRONOUSLY before launching async work
             openingVaults[lockKey] = now
 
-            // Launch coroutine WITHOUT explicit lock removal
-            // The timestamp check above handles expiration - removing explicitly causes
-            // a race condition at the 5-second boundary where the remove() races with
-            // new events checking the lock
-            // v1.7.2: remember which hotbar slot held the key at click time, the
-            // open flow is async and the player may scroll slots before delivery.
+            // Snapshot entity-thread state (held slot + luck bonus) before hopping async (Folia-safe).
             val keySlot = player.inventory.heldItemSlot
+            val luckBonus = plugin.lootManager.computeLuckBonus(player)
 
             listenerScope.launch(exceptionHandler) {
-                handleVaultOpen(player, block.location, vaultType, keySlot, lootMode)
+                handleVaultOpen(player, block.location, vaultType, keySlot, lootMode, luckBonus)
             }
         }
     }
@@ -186,7 +186,8 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
         location: org.bukkit.Location,
         vaultType: VaultType,
         keySlot: Int,
-        lootMode: VaultLootMode
+        lootMode: VaultLootMode,
+        luckBonus: Int,
     ) {
         // Get vault data for the specific type (normal or ominous) - needed for loot table resolution
         val vaultData = plugin.vaultManager.getVault(location, vaultType)
@@ -196,33 +197,29 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
         }
 
         // Check permission bypass - skip cooldown check entirely.
-        // v2.0.8: a bypassing player also leaves NO trace on the vault. Marking them
-        // used to write into Minecraft's own "already rewarded" list, so an admin who
-        // tested a few vaults silently locked themselves out of them for plain
-        // Minecraft, which is what made switching to VANILLA mode look like it had
-        // broken vaults entirely. In SHARED mode it would also have claimed the vault
-        // for the whole server.
         if (player.hasPermission("btc.bypass.cooldown")) {
             if (plugin.config.getBoolean("debug.verbose-logging", false)) {
                 plugin.logger.info("[Vault API] Player ${player.name} has btc.bypass.cooldown permission - " +
                     "SKIPPING cooldown check (and leaving the vault unmarked)")
             }
-            openVault(player, vaultData, vaultType, location, keySlot, markUsed = false)
+            openVault(player, vaultData, vaultType, location, keySlot, luckBonus, markUsed = false)
             return
         }
 
         // SHARED mode: the vault belongs to whoever opened it first, and stays shut
-        // for everybody until the chamber resets. The claim is the earliest recorded
-        // open, which chamber reset already clears.
+        // for everybody until the chamber resets.
         if (lootMode == VaultLootMode.SHARED) {
             val claim = plugin.vaultManager.getSharedClaim(vaultData.id)
             if (claim == null) {
-                openVault(player, vaultData, vaultType, location, keySlot)
+                openVault(player, vaultData, vaultType, location, keySlot, luckBonus)
             } else {
+                val claimantName = kotlinx.coroutines.withContext(Dispatchers.IO) {
+                    Bukkit.getOfflinePlayer(claim.first).name
+                }
                 handleLockedVault(
-                    player, vaultData, vaultType, location, keySlot,
+                    player, vaultData, vaultType, location, keySlot, luckBonus,
                     sharedClaimedAtMs = claim.second,
-                    sharedClaimantName = Bukkit.getOfflinePlayer(claim.first).name
+                    sharedClaimantName = claimantName
                 ) {
                     // Unlocking a shared vault frees it for everyone, not just this player.
                     plugin.vaultManager.resetAllCooldowns(vaultData.id)
@@ -231,42 +228,46 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
             return
         }
 
-        // Use Paper's native Vault API for cooldown checking
-        // This MUST be done on the main thread (or region thread for Folia)
-        val hasAlreadyRewarded = kotlinx.coroutines.suspendCancellableCoroutine<Boolean> { continuation ->
+        // Use Paper's native Vault API for cooldown checking on 1.21.2+, falling back to DB
+        // tracking on Paper 1.21.1 where Vault has no rewarded-players API.
+        // Returns null when the native API is unavailable (Paper 1.21.1).
+        val nativeRewarded: Boolean? = kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
             plugin.scheduler.runAtLocation(location, Runnable {
+                var result: Boolean? = false
                 try {
                     val block = location.block
                     val vaultState = block.state as? Vault
-
                     if (vaultState == null) {
                         plugin.logger.warning("Block at $location is not a Vault TileState!")
-                        continuation.resume(false) {}
-                        return@Runnable
+                        result = false
+                    } else {
+                        val hasRewarded = vaultState.hasRewardedPlayer(player.uniqueId)
+                        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                            plugin.logger.info("[Vault API] hasRewardedPlayer(${player.name}): $hasRewarded")
+                        }
+                        result = hasRewarded
                     }
-
-                    val hasRewarded = vaultState.hasRewardedPlayer(player.uniqueId)
-
-                    if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-                        plugin.logger.info("[Vault API] hasRewardedPlayer(${player.name}): $hasRewarded")
-                    }
-
-                    continuation.resume(hasRewarded) {}
-                } catch (e: Exception) {
+                } catch (_: NoSuchMethodError) {
+                    result = null // Paper 1.21.1: fall back to DB tracking
+                } catch (e: Throwable) {
                     plugin.logger.severe("Error checking vault reward status: ${e.message}")
                     e.printStackTrace()
-                    continuation.resume(false) {} // Allow opening on error
+                    result = false
+                } finally {
+                    if (continuation.isActive) continuation.resume(result)
                 }
             })
         }
 
+        val hasAlreadyRewarded = nativeRewarded
+            ?: (plugin.vaultManager.getLastOpened(player.uniqueId, vaultData.id) > 0L)
+
         if (hasAlreadyRewarded) {
-            handleLockedVault(player, vaultData, vaultType, location, keySlot) {
+            handleLockedVault(player, vaultData, vaultType, location, keySlot, luckBonus) {
                 clearNativeRewardedFlag(location, player)
             }
         } else {
-            // Can open the vault - player hasn't been rewarded yet
-            openVault(player, vaultData, vaultType, location, keySlot)
+            openVault(player, vaultData, vaultType, location, keySlot, luckBonus)
         }
     }
 
@@ -286,29 +287,21 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
         vaultType: VaultType,
         location: Location,
         keySlot: Int,
+        luckBonus: Int,
         sharedClaimedAtMs: Long? = null,
         sharedClaimantName: String? = null,
         unlock: suspend () -> Unit
     ) {
         val isShared = sharedClaimedAtMs != null
 
-        // Determine the configured cooldown. > 0 = timed (reopen N hours
-        // after the last open); <= 0 = permanent until the chamber
-        // resets (vanilla). The DB-backed timestamp lives in player_vaults;
-        // the native rewarded flag is cleared on chamber reset, so a reset is
-        // always a full unlock regardless of the timed cooldown.
         val cooldownHours = when (vaultType) {
             VaultType.NORMAL -> plugin.config.getLong("vaults.normal-cooldown-hours", 0)
             VaultType.OMINOUS -> plugin.config.getLong("vaults.ominous-cooldown-hours", 0)
         }
 
-        // Timed cooldown elapsed -> free reopen (clear the hold so
-        // openVault can mark it fresh and re-record the timestamp).
         var cooldownRemainingMs = 0L
         if (cooldownHours > 0) {
             val (canOpen, remaining) = if (isShared) {
-                // Shared vaults time out from the moment they were claimed,
-                // whoever the claimant was.
                 val elapsed = System.currentTimeMillis() - sharedClaimedAtMs
                 val window = cooldownHours * 60 * 60 * 1000
                 (elapsed >= window) to (window - elapsed).coerceAtLeast(0L)
@@ -316,21 +309,14 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                 plugin.vaultManager.canOpenVault(player.uniqueId, vaultData)
             }
             if (canOpen) {
-                unlock()
-                openVault(player, vaultData, vaultType, location, keySlot)
+                openVault(player, vaultData, vaultType, location, keySlot, luckBonus, beforeMark = unlock)
                 return
             }
             cooldownRemainingMs = remaining
         }
 
-        // v1.5.7: key-to-reopen. With vaults.reopen-cost-keys > 0, a player
-        // can pay that many matching keys to reopen now, an instant paid
-        // alternative to waiting out the cooldown (or to a permanent lock).
         val reopenCost = plugin.config.getInt("vaults.reopen-cost-keys", 0)
         if (reopenCost > 0) {
-            // v1.7.2: validate the loot table BEFORE taking payment. tryPayReopenCost
-            // pre-consumes cost-1 keys; openVault refuses only the FINAL key on a
-            // missing table, so a config typo used to burn the pre-consumed keys.
             val chamberForTable = plugin.chamberManager.getChamberById(vaultData.chamberId)
             val tableForReopen = plugin.chamberManager.getEffectiveLootTable(
                 chamberForTable, vaultType, vaultData.lootTable
@@ -340,29 +326,26 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                 player.sendMessage(plugin.getMessageComponent("vault-loot-table-missing"))
                 return
             }
-            if (tryPayReopenCost(player, vaultType, reopenCost)) {
-                unlock()
-                player.sendMessage(plugin.getMessageComponent("vault-reopened",
-                    "cost" to reopenCost, "type" to plugin.vaultTypeDisplay(vaultType)))
-                openVault(player, vaultData, vaultType, location, keySlot)
+            if (hasEnoughKeys(player, vaultType, keySlot, reopenCost)) {
+                openVault(
+                    player, vaultData, vaultType, location, keySlot, luckBonus,
+                    keyCost = reopenCost,
+                    reopenNoticeCost = reopenCost,
+                    beforeMark = unlock
+                )
                 return
             }
-            // Reopen offered but the player can't afford it, tell them the
-            // price instead of the dead-end "locked" message.
-            routeVaultFeedback(
-                player, location, false,
-                plugin.getMessageComponent("vault-reopen-need",
-                    "cost" to reopenCost, "type" to plugin.vaultTypeDisplay(vaultType))
-            ) {
-                playErrorSound(player)
-            }
-            showCooldownParticles(player, location, vaultType)
+            val needMsg = plugin.getMessageComponent(
+                "vault-reopen-need",
+                "cost" to reopenCost, "type" to plugin.vaultTypeDisplay(vaultType)
+            )
+            plugin.scheduler.runAtEntity(player, Runnable {
+                routeVaultFeedback(player, location, false, needMsg) { playErrorSound(player) }
+                showCooldownParticles(player, location, vaultType)
+            })
             return
         }
 
-        // Locked: show the remaining time for a timed cooldown, or the
-        // permanent "unlocks on reset" message otherwise. In shared mode we
-        // also name whoever got there first, so it doesn't look broken.
         val feedback = if (cooldownHours > 0 && cooldownRemainingMs > 0 && cooldownRemainingMs != Long.MAX_VALUE) {
             plugin.getMessageComponent(
                 if (isShared) "vault-cooldown-shared" else "vault-cooldown",
@@ -384,60 +367,117 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                 "chamber" to (chamber?.label() ?: ""),
                 "time" to plugin.statisticsManager.formatTime((resetInMs ?: 0) / 1000))
         }
-        routeVaultFeedback(player, location, false, feedback) {
-            playErrorSound(player)
-        }
-        showCooldownParticles(player, location, vaultType)
+        plugin.scheduler.runAtEntity(player, Runnable {
+            routeVaultFeedback(player, location, false, feedback) { playErrorSound(player) }
+            showCooldownParticles(player, location, vaultType)
+        })
     }
 
     /**
-     * Key-to-reopen payment: verifies the player's main hand holds at least
-     * [cost] matching trial keys, and pre-consumes `cost - 1` of them, the
-     * normal [openVault] flow consumes the final key on success, so the total
-     * paid equals [cost]. Runs on the player's entity thread (Folia-safe).
-     *
-     * Returns false (and consumes nothing) when the held stack is the wrong
-     * key type or too small. Pre-consuming before the open mirrors the risk
-     * profile players already accept for the base key; the open after a passed
-     * cooldown gate only fails in pathological cases (missing loot table),
-     * which [openVault] already refuses to charge the final key for.
+     * Checks whether the player holds at least [cost] matching trial keys (checking [preferredSlot]
+     * first, then anywhere in their inventory) without mutating their inventory. Folia-safe.
      */
-    private suspend fun tryPayReopenCost(
+    private suspend fun hasEnoughKeys(
         player: org.bukkit.entity.Player,
         vaultType: VaultType,
+        preferredSlot: Int,
         cost: Int
     ): Boolean = kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
         plugin.scheduler.runAtEntity(player, Runnable {
-            try {
-                val expected = when (vaultType) {
-                    VaultType.NORMAL -> Material.TRIAL_KEY
-                    VaultType.OMINOUS -> Material.OMINOUS_TRIAL_KEY
-                }
-                val item = player.inventory.itemInMainHand
-                if (item.type != expected || item.amount < cost) {
-                    continuation.resume(false) {}
-                    return@Runnable
-                }
-                if (cost > 1) item.amount -= (cost - 1)
-                continuation.resume(true) {}
-            } catch (e: Exception) {
-                plugin.logger.warning("[VaultReopen] Payment check failed: ${e.message}")
-                continuation.resume(false) {}
+            val ok = try {
+                countMatchingKeys(player, vaultType, preferredSlot) >= cost
+            } catch (_: Exception) {
+                false
             }
+            if (continuation.isActive) continuation.resume(ok)
+        }, Runnable {
+            if (continuation.isActive) continuation.resume(false)
+        })
+    }
+
+    private fun isAcceptedKey(material: Material, vaultType: VaultType): Boolean {
+        val validateType = plugin.config.getBoolean("trial-keys.validate-key-type", true)
+        if (!validateType) {
+            return material == Material.TRIAL_KEY || material == Material.OMINOUS_TRIAL_KEY
+        }
+        return when (vaultType) {
+            VaultType.NORMAL -> material == Material.TRIAL_KEY
+            VaultType.OMINOUS -> material == Material.OMINOUS_TRIAL_KEY
+        }
+    }
+
+    private fun countMatchingKeys(player: org.bukkit.entity.Player, vaultType: VaultType, preferredSlot: Int): Int {
+        val inv = player.inventory
+        var total = 0
+        for (i in 0 until inv.size) {
+            val stack = inv.getItem(i) ?: continue
+            if (isAcceptedKey(stack.type, vaultType)) total += stack.amount
+        }
+        return total
+    }
+
+    /**
+     * Atomically verifies [player] is online and holds [cost] accepted keys, and deducts them.
+     * Returns the exact stacks removed (for refund if vault marking fails), or null if the player
+     * is offline or no longer holds enough keys (key-drop / disconnect exploit guard).
+     */
+    private suspend fun tryChargeKeys(
+        player: org.bukkit.entity.Player,
+        preferredSlot: Int,
+        vaultType: VaultType,
+        cost: Int,
+    ): List<ItemStack>? = kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
+        plugin.scheduler.runAtEntity(player, Runnable {
+            var taken: List<ItemStack>? = null
+            try {
+                if (player.isOnline && countMatchingKeys(player, vaultType, preferredSlot) >= cost) {
+                    val inv = player.inventory
+                    var remaining = cost
+                    val removed = mutableListOf<ItemStack>()
+                    fun takeFromSlot(slot: Int) {
+                        if (remaining <= 0) return
+                        val stack = inv.getItem(slot) ?: return
+                        if (!isAcceptedKey(stack.type, vaultType)) return
+                        val take = minOf(remaining, stack.amount)
+                        removed += stack.clone().also { it.amount = take }
+                        if (stack.amount > take) stack.amount -= take else inv.setItem(slot, null)
+                        remaining -= take
+                    }
+                    takeFromSlot(preferredSlot)
+                    for (slot in 0 until inv.size) {
+                        if (slot == preferredSlot) continue
+                        takeFromSlot(slot)
+                        if (remaining <= 0) break
+                    }
+                    if (remaining == 0) taken = removed
+                }
+            } catch (e: Exception) {
+                plugin.logger.warning("[Vault] Key charge failed for ${player.name}: ${e.message}")
+            }
+            if (continuation.isActive) continuation.resume(taken)
+        }, Runnable {
+            if (continuation.isActive) continuation.resume(null)
+        })
+    }
+
+    private fun refundKeys(player: org.bukkit.entity.Player, keys: List<ItemStack>, fallbackLoc: Location) {
+        if (keys.isEmpty()) return
+        plugin.scheduler.runAtEntity(player, Runnable {
+            if (player.isOnline) {
+                val leftover = player.inventory.addItem(*keys.toTypedArray())
+                leftover.values.forEach { player.world.dropItemNaturally(player.location, it) }
+            } else {
+                ejectLootAtVault(keys, player, fallbackLoc)
+            }
+        }, Runnable {
+            ejectLootAtVault(keys, player, fallbackLoc)
         })
     }
 
     /**
      * Opens a vault for a player.
-     * CRITICAL FIX: Handles race condition where player may disconnect during loot generation.
-     * CRITICAL FIX: Does NOT consume key if no loot was generated (missing loot table).
-     *
-     * Uses Paper's native Vault API to mark player as rewarded (addRewardedPlayer).
-     *
-     * @param markUsed when false the vault is left completely untouched, no entry in
-     *   Minecraft's own "already rewarded" list and no open record of our own. Used for
-     *   players opening with `btc.bypass.cooldown` so admin testing can't quietly lock a
-     *   vault for its real owner (or, in SHARED mode, claim it for the whole server).
+     * Rolls loot purely first (without running commands/economy), charges keys atomically,
+     * marks the vault as opened, and only then delivers items + side effects.
      */
     private suspend fun openVault(
         player: org.bukkit.entity.Player,
@@ -445,18 +485,17 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
         vaultType: VaultType,
         location: Location,
         keySlot: Int,
-        markUsed: Boolean = true
+        luckBonus: Int,
+        markUsed: Boolean = true,
+        keyCost: Int = 1,
+        reopenNoticeCost: Int = 0,
+        beforeMark: (suspend () -> Unit)? = null,
     ) {
-        // Resolve the effective loot table (chamber override > vault default)
         val chamber = plugin.chamberManager.getChamberById(vaultData.chamberId)
         val resolvedLootTable = plugin.chamberManager.getEffectiveLootTable(
             chamber, vaultType, vaultData.lootTable
         )
 
-        // v1.3.3: PreVaultOpenEvent, give third-party plugins (e.g. premium
-        // Vault Crate / custom-keys module) a chance to cancel the open or
-        // substitute a different loot table. Fired AFTER all gates passed
-        // (cooldown, spam-click, key validation) but BEFORE any side effects.
         val preEvent = com.esmpfun.bettertrialchambers.api.events.PreVaultOpenEvent(
             player = player,
             vault = vaultData,
@@ -469,11 +508,10 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
             if (plugin.config.getBoolean("debug.verbose-logging", false)) {
                 plugin.logger.info("[PreVaultOpenEvent] Open cancelled by listener for vault ID ${vaultData.id}")
             }
-            return  // Listener owns user-facing feedback; don't consume key, don't mark vault.
+            return
         }
         val effectiveLootTable = preEvent.lootTableOverride ?: resolvedLootTable
 
-        // Debug logging
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
             val chamberOverride = chamber?.getLootTable(vaultType)
             plugin.logger.info("Opening vault ID ${vaultData.id}: type=${vaultData.type}, " +
@@ -482,91 +520,85 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                 "(override-set=${preEvent.lootTableOverride != null})")
         }
 
-        // Check if the loot table exists BEFORE generating loot
         val tableExists = plugin.lootManager.getTable(effectiveLootTable) != null
         if (!tableExists) {
             plugin.logger.warning("Loot table '$effectiveLootTable' not found! Key will NOT be consumed.")
             player.sendMessage(plugin.getMessageComponent("vault-loot-table-missing"))
-            return  // Don't consume key, don't mark vault as opened
+            return
         }
 
-        // Generate loot (async, player might disconnect during this). Per-player
-        // redeem caps (v2.1.0): load this player's already-claimed capped entries so
-        // items flagged once / per-chamber they already have are excluded from the roll.
         val redeemCtx = com.esmpfun.bettertrialchambers.managers.LootManager.RedeemContext(
             plugin.vaultManager.getRedeemedLootIds(player.uniqueId, vaultData.chamberId)
         )
-        val loot = plugin.lootManager.generateLoot(effectiveLootTable, player, redeemCtx)
+        val rolled = plugin.lootManager.rollLoot(effectiveLootTable, player, redeemCtx, luckBonus)
 
-        // CRITICAL: If no loot was generated, don't consume the key or mark the vault
-        if (loot.isEmpty()) {
+        if (rolled.isEmpty) {
             plugin.logger.warning("No loot generated from table '$effectiveLootTable'! Key will NOT be consumed.")
             player.sendMessage(plugin.getMessageComponent("vault-no-loot-generated"))
-            return  // Don't consume key, don't mark vault as opened
+            return
         }
 
-        // Mark player as rewarded using Paper's native Vault API
-        // This MUST be done on the region thread (before giving items).
-        // Skipped entirely for bypassing admins (markUsed = false) so the vault is
-        // left exactly as it was found.
+        // Charge the required key(s) BEFORE marking the vault or delivering loot/commands/economy,
+        // so disconnecting or dropping the key mid-open cannot yield free rewards.
+        val chargedKeys = tryChargeKeys(player, keySlot, vaultType, keyCost)
+        if (chargedKeys == null) {
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.info("Vault open aborted for ${player.name}: required key(s) no longer present or player disconnected.")
+            }
+            return
+        }
+
+        // Perform timed/paid unlock right before re-marking fresh.
+        beforeMark?.invoke()
+
+        // Mark player as rewarded using Paper's native Vault API (on Paper 1.21.1,
+        // NoSuchMethodError degrades cleanly to DB-backed tracking).
         val rewardMarked = if (!markUsed) true else kotlinx.coroutines.suspendCancellableCoroutine<Boolean> { continuation ->
             plugin.scheduler.runAtLocation(location, Runnable {
+                var ok = false
                 try {
                     val block = location.block
                     val vaultState = block.state as? Vault
-
                     if (vaultState == null) {
                         plugin.logger.warning("Cannot mark reward - block at $location is not a Vault!")
-                        continuation.resume(false) {}
-                        return@Runnable
+                        ok = false
+                    } else {
+                        vaultState.addRewardedPlayer(player.uniqueId)
+                        vaultState.update()
+                        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                            plugin.logger.info("[Vault API] addRewardedPlayer(${player.name}) - marked and persisted")
+                        }
+                        ok = true
                     }
-
-                    // Add player to rewarded list
-                    vaultState.addRewardedPlayer(player.uniqueId)
-
-                    // CRITICAL: Must call update() to persist the block state changes
-                    vaultState.update()
-
-                    if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-                        plugin.logger.info("[Vault API] addRewardedPlayer(${player.name}) - marked and persisted")
-                    }
-
-                    continuation.resume(true) {}
-                } catch (e: Exception) {
+                } catch (_: NoSuchMethodError) {
+                    // Paper 1.21.1: Vault has no addRewardedPlayer; DB record below tracks the open.
+                    ok = true
+                } catch (e: Throwable) {
                     plugin.logger.severe("Error marking vault reward: ${e.message}")
                     e.printStackTrace()
-                    continuation.resume(false) {}
+                    ok = false
+                } finally {
+                    if (continuation.isActive) continuation.resume(ok)
                 }
             })
         }
 
         if (!rewardMarked) {
-            plugin.logger.warning("Failed to mark player as rewarded! Key will NOT be consumed.")
+            plugin.logger.warning("Failed to mark player as rewarded! Refunding charged key(s).")
+            refundKeys(player, chargedKeys, location)
             player.sendMessage(plugin.getMessageComponent("vault-error"))
             return
         }
 
-        // Also record in database for statistics tracking (but not for cooldown - Vault API
-        // handles that). In SHARED mode this record is ALSO what claims the vault for the
-        // server, so a bypassing admin (markUsed = false) must not write one.
         if (markUsed) {
             plugin.vaultManager.recordOpen(player.uniqueId, vaultData.id)
         }
-
-        // Update statistics (for leaderboards and /trial stats)
         plugin.statisticsManager.incrementVaultsOpened(player.uniqueId, vaultData.type)
 
-        // MUST switch to entity's region thread for player access (Folia compatible)
-        // Use scheduler adapter instead of Dispatchers.Main (which doesn't exist in server environment)
+        val loot = rolled.items
         kotlinx.coroutines.suspendCancellableCoroutine<Unit> { continuation ->
             plugin.scheduler.runAtEntity(player, Runnable {
                 try {
-                    // Persist any capped (once / per-chamber) items the player just earned,
-                    // so they're excluded from future rolls (v2.1.0). Recorded before the
-                    // handing over below because both ways of handing over do reach the
-                    // player: leaving mid-open drops the loot at the vault for them rather
-                    // than cancelling it, so a once-ever item must count as claimed either
-                    // way or it could be won twice.
                     if (redeemCtx.newlyRedeemed.isNotEmpty()) {
                         val earned = redeemCtx.newlyRedeemed.toList()
                         plugin.launchAsync {
@@ -574,28 +606,30 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                         }
                     }
 
-                    // The vault is already marked as opened for this player by now, so
-                    // quietly dropping the loot when they leave mid-open costs them the
-                    // reward until the chamber resets. Put it at the vault instead, held
-                    // for them for the same grace period a normal drop gets.
+                    // Key is already charged and vault is already marked; deliver side effects
+                    // and items (ejecting at the vault if the player disconnected in the last tick).
+                    plugin.lootManager.deliverSideEffects(rolled, player)
+
                     if (!player.isOnline) {
-                        plugin.logger.info("Player ${player.name} disconnected during vault open; loot left at the vault")
-                        ejectLootAtVault(loot, player, location)
-                        continuation.resume(Unit) {}
+                        plugin.logger.info("Player ${player.name} disconnected during vault delivery; loot left at the vault")
+                        if (loot.isNotEmpty()) ejectLootAtVault(loot, player, location)
                         return@Runnable
                     }
 
-                    val dropAtVault = plugin.config.getBoolean("vaults.drop-loot-at-vault", false)
-                    if (dropAtVault) {
-                        ejectLootAtVault(loot, player, location)
-                    } else {
-                        // Give items to player
-                        val leftover = player.inventory.addItem(*loot.toTypedArray())
+                    if (reopenNoticeCost > 0) {
+                        player.sendMessage(plugin.getMessageComponent(
+                            "vault-reopened",
+                            "cost" to reopenNoticeCost, "type" to plugin.vaultTypeDisplay(vaultType)
+                        ))
+                    }
 
-                        // Drop leftover items if inventory is full
-                        if (leftover.isNotEmpty()) {
-                            // Double-check still online
-                            if (player.isOnline) {
+                    if (loot.isNotEmpty()) {
+                        val dropAtVault = plugin.config.getBoolean("vaults.drop-loot-at-vault", false)
+                        if (dropAtVault) {
+                            ejectLootAtVault(loot, player, location)
+                        } else {
+                            val leftover = player.inventory.addItem(*loot.toTypedArray())
+                            if (leftover.isNotEmpty() && player.isOnline) {
                                 leftover.values.forEach { item ->
                                     player.world.dropItemNaturally(player.location, item)
                                 }
@@ -608,27 +642,16 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                         player, location, true,
                         plugin.getMessageComponent("vault-opened", "type" to plugin.vaultTypeDisplay(vaultType))
                     ) {
-                        playSuccessSound(player, player.location, vaultType)
+                        playSuccessSound(player, location, vaultType)
                     }
 
-                    // Grant the appropriate advancement
                     when (vaultType) {
                         VaultType.NORMAL -> AdvancementUtil.grantVaultUnlock(player)
                         VaultType.OMINOUS -> AdvancementUtil.grantOminousVaultUnlock(player)
                     }
 
-                    // Show success particles (sound handled by routeVaultFeedback above)
-                    showSuccessParticles(player, player.location, vaultType)
+                    showSuccessParticles(player, location, vaultType)
 
-                    // Consume the trial key - ONLY if we got this far (loot was generated
-                    // and given). v1.7.2: consume from where the key actually IS, the
-                    // click->delivery gap is async, and blindly decrementing itemInMainHand
-                    // ate whatever the player had scrolled to (sword, blocks, anything).
-                    consumeOneKey(player, keySlot, vaultType)
-
-                    // Fire post-event for downstream consumers. Items are cloned so
-                    // listeners can inspect the loot snapshot independently of the
-                    // player's inventory state.
                     chamber?.let { plugin.resetManager.markLooted(it.id) }
                     plugin.server.pluginManager.callEvent(
                         com.esmpfun.bettertrialchambers.api.events.VaultOpenedEvent(
@@ -639,14 +662,17 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                             items = loot.map { it.clone() }
                         )
                     )
-
-                    continuation.resume(Unit) {}
                 } catch (e: Exception) {
                     plugin.logger.severe("Error in vault open: ${e.message}")
                     e.printStackTrace()
                     com.esmpfun.bettertrialchambers.integrations.MetricsService.reportHandled(e, "vault-open")
-                    continuation.resumeWith(Result.failure(e))
+                } finally {
+                    if (continuation.isActive) continuation.resume(Unit)
                 }
+            }, Runnable {
+                // Entity retired on Folia after keys were charged and vault was marked: eject items at vault.
+                if (loot.isNotEmpty()) ejectLootAtVault(loot, player, location)
+                if (continuation.isActive) continuation.resume(Unit)
             })
         }
     }
@@ -732,10 +758,13 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                         vs.removeRewardedPlayer(player.uniqueId)
                         vs.update()
                     }
-                } catch (e: Exception) {
+                } catch (_: NoSuchMethodError) {
+                    // Paper 1.21.1: Vault has no removeRewardedPlayer API.
+                } catch (e: Throwable) {
                     plugin.logger.warning("[Vault] Failed to clear rewarded flag: ${e.message}")
+                } finally {
+                    if (continuation.isActive) continuation.resume(Unit)
                 }
-                continuation.resume(Unit) {}
             })
         }
     }
@@ -846,7 +875,10 @@ class VaultInteractListener(private val plugin: BetterTrialChambers) : Listener 
                     )
                     entity.pickupDelay = 10 // ~0.5s so players see the pop
                     if (ownerOnly) {
-                        entity.owner = ownerUuid
+                        // Do NOT set vanilla entity.owner: vanilla permanently blocks other
+                        // players (including btc.bypass.droplock) before EntityPickupItemEvent
+                        // ever fires, defeating both the grace window and the bypass permission.
+                        // VaultDropOwnerListener enforces ownership + grace + bypass via PDC.
                         val pdc = entity.persistentDataContainer
                         pdc.set(
                             VaultDropOwnerListener.OWNER_KEY,

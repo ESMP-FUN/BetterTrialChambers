@@ -14,7 +14,7 @@ import java.util.UUID
  */
 class ParticleVisualizer(private val plugin: BetterTrialChambers) {
 
-    private val activeVisualizations = mutableMapOf<UUID, ScheduledTask>()
+    private val activeVisualizations = java.util.concurrent.ConcurrentHashMap<UUID, ScheduledTask>()
 
     /**
      * Shows a bounding box preview to a player using particles.
@@ -34,7 +34,9 @@ class ParticleVisualizer(private val plugin: BetterTrialChambers) {
                 return@Runnable
             }
 
-            drawBox(player, min, max, particleSpacing)
+            plugin.scheduler.runAtEntity(player, Runnable {
+                if (player.isOnline) drawBox(player, min, max, particleSpacing)
+            })
         }, 0L, 10L) // Update every 10 ticks (0.5s)
 
         activeVisualizations[player.uniqueId] = task

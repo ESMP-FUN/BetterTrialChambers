@@ -70,7 +70,7 @@ class DungeonGenerator(
                 val wz = p.offsetZ + rz
                 val rotated = BlockDataRotator.rotate(snap.blockData, p.rotation)
                 combined[Location(world, wx.toDouble(), wy.toDouble(), wz.toDouble())] =
-                    BlockSnapshot(rotated, snap.tileEntity)
+                    BlockSnapshot(rotated, snap.tileEntity, snap.structure)
             }
             minX = minOf(minX, p.offsetX); minY = minOf(minY, p.offsetY); minZ = minOf(minZ, p.offsetZ)
             maxX = maxOf(maxX, p.offsetX + p.rotation.sizeX(tpl.sizeX, tpl.sizeZ) - 1)
@@ -111,6 +111,9 @@ class DungeonGenerator(
         }
         val file = plugin.snapshotManager.createSnapshot(chamber)
         plugin.chamberManager.setSnapshotFile(name, file.absolutePath)
+        // Register the placed vaults and spawners in the DB so vault loot, cooldowns, and
+        // management GUIs work immediately without requiring a manual `/trial scan`.
+        plugin.chamberManager.scanChamber(chamber)
         plugin.logger.info(
             "Dungeon '$name' generated: ${result.placements.size} rooms, " +
                 "bounds [$minX,$minY,$minZ]..[$maxX,$maxY,$maxZ]"

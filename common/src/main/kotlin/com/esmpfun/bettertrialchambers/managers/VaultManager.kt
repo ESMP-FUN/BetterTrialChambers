@@ -137,15 +137,21 @@ class VaultManager(private val plugin: BetterTrialChambers) {
      * @return The vault data, or null if not found
      */
     suspend fun getVault(location: Location, type: VaultType): VaultData? = withContext(Dispatchers.IO) {
+        val worldName = location.world?.name ?: return@withContext null
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
-                    "SELECT * FROM ${tables.vaults} WHERE x = ? AND y = ? AND z = ? AND type = ?"
+                    """
+                    SELECT v.* FROM ${tables.vaults} v
+                    JOIN ${tables.chambers} c ON v.chamber_id = c.id
+                    WHERE c.world = ? AND v.x = ? AND v.y = ? AND v.z = ? AND v.type = ?
+                    """.trimIndent()
                 ).use { stmt ->
-                    stmt.setInt(1, location.blockX)
-                    stmt.setInt(2, location.blockY)
-                    stmt.setInt(3, location.blockZ)
-                    stmt.setString(4, type.name)
+                    stmt.setString(1, worldName)
+                    stmt.setInt(2, location.blockX)
+                    stmt.setInt(3, location.blockY)
+                    stmt.setInt(4, location.blockZ)
+                    stmt.setString(5, type.name)
 
                     val rs = stmt.executeQuery()
                     if (rs.next()) {
@@ -416,15 +422,19 @@ class VaultManager(private val plugin: BetterTrialChambers) {
      * @return Pair of (locked normal count, locked ominous count)
      */
     suspend fun getLockedVaultCounts(playerUuid: UUID, chamberId: Int): Pair<Int, Int> = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        val normalHours = plugin.config.getLong("vaults.normal-cooldown-hours", 0)
+        val ominousHours = plugin.config.getLong("vaults.ominous-cooldown-hours", 0)
+        val normalCutoff = if (normalHours > 0) now - normalHours * 3_600_000L else Long.MIN_VALUE
+        val ominousCutoff = if (ominousHours > 0) now - ominousHours * 3_600_000L else Long.MIN_VALUE
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
                     """
-                    SELECT v.type, COUNT(*) as count
+                    SELECT v.type, pv.last_opened
                     FROM ${tables.playerVaults} pv
                     JOIN ${tables.vaults} v ON pv.vault_id = v.id
                     WHERE pv.player_uuid = ? AND v.chamber_id = ?
-                    GROUP BY v.type
                     """.trimIndent()
                 ).use { stmt ->
                     stmt.setString(1, playerUuid.toString())
@@ -436,10 +446,10 @@ class VaultManager(private val plugin: BetterTrialChambers) {
                     stmt.executeQuery().use { rs ->
                         while (rs.next()) {
                             val type = rs.getString("type")
-                            val count = rs.getInt("count")
+                            val lastOpened = rs.getLong("last_opened")
                             when (type) {
-                                "NORMAL" -> normalLocked = count
-                                "OMINOUS" -> ominousLocked = count
+                                "NORMAL" -> if (lastOpened > normalCutoff) normalLocked++
+                                "OMINOUS" -> if (lastOpened > ominousCutoff) ominousLocked++
                             }
                         }
                     }
@@ -709,33 +719,30 @@ class VaultManager(private val plugin: BetterTrialChambers) {
         val world = Bukkit.getWorld(chamber.world) ?: return
         val location = Location(world, vaultData.x.toDouble(), vaultData.y.toDouble(), vaultData.z.toDouble())
 
-        // Clear from native Vault state on the region thread (Folia compatible)
+        // Clear from native Vault state on the region thread (Folia compatible).
+        // Catch Throwable: Paper 1.21.1's Vault interface lacks removeRewardedPlayer
+        // (added later in 1.21.x), and an uncaught NoSuchMethodError would hang the coroutine forever.
         suspendCancellableCoroutine<Unit> { continuation ->
             plugin.scheduler.runAtLocation(location, Runnable {
                 try {
                     val block = location.block
-                    if (block.type != Material.VAULT) {
-                        continuation.resume(Unit)
-                        return@Runnable
+                    if (block.type == Material.VAULT) {
+                        val vaultState = block.state as? Vault
+                        if (vaultState != null) {
+                            vaultState.removeRewardedPlayer(playerUuid)
+                            vaultState.update()
+
+                            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                                plugin.logger.info("[Vault API] Removed rewarded player $playerUuid from vault at ${location.blockX},${location.blockY},${location.blockZ}")
+                            }
+                        }
                     }
-
-                    val vaultState = block.state as? Vault
-                    if (vaultState == null) {
-                        continuation.resume(Unit)
-                        return@Runnable
-                    }
-
-                    vaultState.removeRewardedPlayer(playerUuid)
-                    vaultState.update()
-
-                    if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-                        plugin.logger.info("[Vault API] Removed rewarded player $playerUuid from vault at ${location.blockX},${location.blockY},${location.blockZ}")
-                    }
-
-                    continuation.resume(Unit)
-                } catch (e: Exception) {
+                } catch (_: NoSuchMethodError) {
+                    // Paper 1.21.1: Vault has no rewarded-players API; DB tracking handles cooldowns.
+                } catch (e: Throwable) {
                     plugin.logger.warning("Failed to clear vault rewarded player: ${e.message}")
-                    continuation.resume(Unit)
+                } finally {
+                    if (continuation.isActive) continuation.resume(Unit)
                 }
             })
         }
@@ -755,37 +762,32 @@ class VaultManager(private val plugin: BetterTrialChambers) {
         val world = Bukkit.getWorld(chamber.world) ?: return
         val location = Location(world, vaultData.x.toDouble(), vaultData.y.toDouble(), vaultData.z.toDouble())
 
-        // Clear all from native Vault state on the region thread (Folia compatible)
+        // Clear all from native Vault state on the region thread (Folia compatible).
+        // Catch Throwable so Paper 1.21.1 (empty Vault interface) never deadlocks chamber resets.
         suspendCancellableCoroutine<Unit> { continuation ->
             plugin.scheduler.runAtLocation(location, Runnable {
                 try {
                     val block = location.block
-                    if (block.type != Material.VAULT) {
-                        continuation.resume(Unit)
-                        return@Runnable
-                    }
+                    if (block.type == Material.VAULT) {
+                        val vaultState = block.state as? Vault
+                        if (vaultState != null) {
+                            val rewardedPlayers = vaultState.rewardedPlayers.toList()
+                            rewardedPlayers.forEach { uuid ->
+                                vaultState.removeRewardedPlayer(uuid)
+                            }
+                            vaultState.update()
 
-                    val vaultState = block.state as? Vault
-                    if (vaultState == null) {
-                        continuation.resume(Unit)
-                        return@Runnable
+                            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                                plugin.logger.info("[Vault API] Cleared ${rewardedPlayers.size} rewarded players from vault at ${location.blockX},${location.blockY},${location.blockZ}")
+                            }
+                        }
                     }
-
-                    // Get all rewarded players and remove them
-                    val rewardedPlayers = vaultState.rewardedPlayers.toList()
-                    rewardedPlayers.forEach { uuid ->
-                        vaultState.removeRewardedPlayer(uuid)
-                    }
-                    vaultState.update()
-
-                    if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-                        plugin.logger.info("[Vault API] Cleared ${rewardedPlayers.size} rewarded players from vault at ${location.blockX},${location.blockY},${location.blockZ}")
-                    }
-
-                    continuation.resume(Unit)
-                } catch (e: Exception) {
+                } catch (_: NoSuchMethodError) {
+                    // Paper 1.21.1: Vault has no rewarded-players API; DB tracking handles cooldowns.
+                } catch (e: Throwable) {
                     plugin.logger.warning("Failed to clear all vault rewarded players: ${e.message}")
-                    continuation.resume(Unit)
+                } finally {
+                    if (continuation.isActive) continuation.resume(Unit)
                 }
             })
         }

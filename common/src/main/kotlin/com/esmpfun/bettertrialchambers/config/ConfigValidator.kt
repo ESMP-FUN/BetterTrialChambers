@@ -75,6 +75,7 @@ object ConfigValidator {
         // 2.1.1, so anyone who turned these on there had nothing happen. Carry
         // the answer over to the setting that is actually read, and clear the
         // one that never did anything.
+        var migrated = false
         for ((wrong, right) in MISPLACED_BY_SETUP) {
             if (!config.contains(wrong)) continue
             val value = config.get(wrong)
@@ -83,7 +84,10 @@ object ConfigValidator {
                 plugin.logger.info("[Config] Moved '$wrong' to '$right' (it was written in the wrong place by an older setup tour).")
             }
             config.set(wrong, null)
-            clamped++
+            migrated = true
+        }
+        if (migrated) {
+            runCatching { plugin.saveConfig() }
         }
 
         // v1.7.0: database.table-prefix must be letters/digits/underscore, max 16 chars.

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 420" width="1280" height="420" role="img" aria-labelledby="t d">
+  <title id="t">Better Trial Chambers</title>
+  <desc id="d">A vault keyhole inside a reset arrow, above the Better Trial Chambers wordmark and its tagline.</desc>
+
+  <defs>
+    <radialGradient id="bglow" cx="50%" cy="50%" r="58%">
+      <stop offset="0%"   stop-color="#43D9C4" stop-opacity="0.10"/>
+      <stop offset="55%"  stop-color="#43D9C4" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#43D9C4" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="bsoft" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="16"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="420" fill="#12171C"/>
+  <rect width="1280" height="420" fill="url(#bglow)"/>
+  <g transform="translate(542.7 40) scale(0.38)">
+  <circle cx="256.0" cy="256.0" r="196.0" fill="none" stroke="#5C6E7E"
+          stroke-width="16.0" stroke-dasharray="107.76 46.18"
+          transform="rotate(0.00 256.0 256.0)"><animateTransform attributeName="transform" type="rotate" values="0 256.0 256.0;-45.0 256.0 256.0" dur="9s" repeatCount="indefinite"/></circle>
+
+  <g transform="rotate(0.00 256.0 256.0)"><animateTransform attributeName="transform" type="rotate" values="0 256.0 256.0;360 256.0 256.0" dur="6s" repeatCount="indefinite"/>
+    <circle cx="256.0" cy="256.0" r="140.0" fill="none" stroke="#43D9C4"
+            stroke-width="22.0" stroke-linecap="butt"
+            stroke-dasharray="696.39 183.26" transform="rotate(-90 256.0 256.0)"/>
+    <path d="M129.6,186.9 L140.3,228.1 L99.7,217.2 Z" fill="#43D9C4"/>
+  </g>
+
+  <g fill="#F5A23C" filter="url(#bsoft)" opacity="0.700">
+    <circle cx="256.0" cy="236.0" r="44.0"/>
+    <path d="M241,250 L229,314 H283 L271,250 Z" transform="translate(0 3) scale(1)"/>
+    <animate attributeName="opacity" values="0.45;0.95;0.45" dur="3s" repeatCount="indefinite"/>
+  </g>
+  <g fill="#F5A23C">
+    <circle cx="256.0" cy="236.0" r="38.0"/>
+    <path d="M241,250 L229,314 H283 L271,250 Z"/>
+  </g></g>
+  <text x="640.0" y="308.0" font-family="'Space Grotesk','Outfit','Segoe UI',system-ui,sans-serif"
+        font-size="74.0" font-weight="700"
+        letter-spacing="-2.20" fill="#FFFFFF"
+        text-anchor="middle">Better Trial Chambers</text>
+
+  <text x="256.9" y="356.0" font-family="'Inter','Segoe UI',system-ui,sans-serif" font-size="25.0" font-weight="500" fill="#93A5B3" text-anchor="start">Turn one-time Trial Chambers into</text>
+  <g opacity="1"><text x="644.3" y="356.0" font-family="'Inter','Segoe UI',system-ui,sans-serif" font-size="25.0" font-weight="500" fill="#43D9C4" text-anchor="start">replayable multiplayer dungeons.</text><rect x="644.3" y="369.00" width="378.8" height="1.38" rx="0.69" fill="#43D9C4" opacity="0.08"/><rect x="644.3" y="369.00" width="0.0" height="1.38" rx="0.69" fill="#43D9C4" opacity="0.38"><animate attributeName="width" dur="32.4s" repeatCount="indefinite" values="0;0;378.8;378.8;0;0" keyTimes="0.00000;0.00000;0.10802;0.12500;0.12500;1.00000"/></rect><animate attributeName="opacity" dur="32.4s" repeatCount="indefinite" values="1;1;0;0;1" keyTimes="0.00000;0.12037;0.12500;0.99537;1.00000"/></g><g opacity="0"><text x="644.3" y="356.0" font-family="'Inter','Segoe UI',system-ui,sans-serif" font-size="25.0" font-weight="500" fill="#43D9C4" text-anchor="start">loot every player gets a shot at.</text><rect x="644.3" y="369.00" width="357.0" height="1.38" rx="0.69" fill="#43D9C4" opacity="0.08"/><rect x="644.3" y="369.00" width="0.0" height="1.38" rx="0.69" fill="#43D9C4" opacity="0.38"><animate attributeName="width" dur="32.4s" repeatCount="indefinite" values="0;0;357;357;0;0" keyTimes="0.00000;0.12500;0.23302;0.25000;0.25000;1.00000"/></rect><animate attributeName="opacity" dur="32.4s" repeatCount="indefinite" values="0;0;1;1;0;0" keyTimes="0.00000;0.12037;0.12500;0.24537;0.25000;1.00000"/></g><g opacity="0"><text x="644.3" y="356.0" font-family="'Inter','Segoe UI',system-ui,sans-serif" font-size="25.0" font-weight="500" fill="#43D9C4" text-anchor="start">griefing-protected areas.</text><rect x="644.3" y="369.00" width="281.3" height="1.38" rx="0.69" fill="#43D9C4" opacity="0.08"/><rect x="644.3" y="369.00" width="0.0" height="1.38" rx="0.69" fill="#43D9C4" opacity="0.38"><animate attributeName="width" dur="32.4s" repeatCount="indefinite" values="0;0;281.3;281.3;0;0" keyTimes="0.00000;0.25000;0.35802;0.37500;0.37500;1.00000"/></rect><animate attributeName="opacity" dur="32.4s" repeatCount="indefinite" values="0;0;1;1;0;0" keyTimes="0.00000;0.24537;0.25000;0.37037;0.37500;1.00000"/></g><g opacity="0"><text x="644.3" y="356.0" font-family="'Inter','Segoe UI',system-ui,sans-serif" font-size="25.0" font-weight="500" fill="#43D9C4" text-anchor="start">player-based content.</text><rect x="644.3" y="369.00" width="245.2" height="1.38" rx="0.69" fill="#43D9C4" opacity="0.08"/><rect x="644.3" y="369.00" width="0.0" height="1.38" rx="0.69" fill="#43D9C4" opacity="0.38"><animate attributeName="width" dur="32.4s" repeatCount="indefinite" values="0;0;245.2;245.2;0;0" keyTimes="0.00000;0.37500;0.48302;0.50000;0.50000;1.00000"/></rect><animate attributeName="opacity" dur="32.4s" repeatCount="indefinite" values="0;0;1;1;0;0" keyTimes="0.00000;0.37037;0.37500;0.49537;0.50000;1.00000"/></g><g opacity="0"><text x="644.3" y="356.0" font-family="'Inter','Segoe UI',system-ui,sans-serif" font-size="25.0" font-weight="500" fill="#43D9C4" text-anchor="start">content that comes back.</text><rect x="644.3" y="369.00" width="286.0" height="1.38" rx="0.69" fill="#43D9C4" opacity="0.08"/><rect x="644.3" y="369.00" width="0.0" height="1.38" rx="0.69" fill="#43D9C4" opacity="0.38"><animate attributeName="width" dur="32.4s" repeatCount="indefinite" values="0;0;286;286;0;0" keyTimes="0.00000;0.50000;0.60802;0.62500;0.62500;1.00000"/></rect><animate attributeName="opacity" dur="32.4s" repeatCount="indefinite" values="0;0;1;1;0;0" keyTimes="0.00000;0.49537;0.50000;0.62037;0.62500;1.00000"/></g><g opacity="0"><text x="644.3" y="356.0" font-family="'Inter','Segoe UI',system-ui,sans-serif" font-size="25.0" font-weight="500" fill="#43D9C4" text-anchor="start">custom events.</text><rect x="644.3" y="369.00" width="169.4" height="1.38" rx="0.69" fill="#43D9C4" opacity="0.08"/><rect x="644.3" y="369.00" width="0.0" height="1.38" rx="0.69" fill="#43D9C4" opacity="0.38"><animate attributeName="width" dur="32.4s" repeatCount="indefinite" values="0;0;169.4;169.4;0;0" keyTimes="0.00000;0.62500;0.73302;0.75000;0.75000;1.00000"/></rect><animate attributeName="opacity" dur="32.4s" repeatCount="indefinite" values="0;0;1;1;0;0" keyTimes="0.00000;0.62037;0.62500;0.74537;0.75000;1.00000"/></g><g opacity="0"><text x="644.3" y="356.0" font-family="'Inter','Segoe UI',system-ui,sans-serif" font-size="25.0" font-weight="500" fill="#43D9C4" text-anchor="start">a dungeon worth running twice.</text><rect x="644.3" y="369.00" width="364.7" height="1.38" rx="0.69" fill="#43D9C4" opacity="0.08"/><rect x="644.3" y="369.00" width="0.0" height="1.38" rx="0.69" fill="#43D9C4" opacity="0.38"><animate attributeName="width" dur="32.4s" repeatCount="indefinite" values="0;0;364.7;364.7;0;0" keyTimes="0.00000;0.75000;0.85802;0.87500;0.87500;1.00000"/></rect><animate attributeName="opacity" dur="32.4s" repeatCount="indefinite" values="0;0;1;1;0;0" keyTimes="0.00000;0.74537;0.75000;0.87037;0.87500;1.00000"/></g><g opacity="0"><text x="644.3" y="356.0" font-family="'Inter','Segoe UI',system-ui,sans-serif" font-size="25.0" font-weight="500" fill="#43D9C4" text-anchor="start">your next adventure.</text><rect x="644.3" y="369.00" width="234.9" height="1.38" rx="0.69" fill="#43D9C4" opacity="0.08"/><rect x="644.3" y="369.00" width="0.0" height="1.38" rx="0.69" fill="#43D9C4" opacity="0.38"><animate attributeName="width" dur="32.4s" repeatCount="indefinite" values="0;0;234.9;234.9;0;0" keyTimes="0.00000;0.87500;0.98302;1.00000;1.00000;1.00000"/></rect><animate attributeName="opacity" dur="32.4s" repeatCount="indefinite" values="0;0;1;1;0;0" keyTimes="0.00000;0.87037;0.87500;0.99537;1.00000;1.00000"/></g>
+</svg>

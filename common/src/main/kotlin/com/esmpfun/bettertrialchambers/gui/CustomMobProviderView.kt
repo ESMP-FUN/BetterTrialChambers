@@ -91,7 +91,7 @@ class CustomMobProviderView(
             set(rowStart + 8, VcGuiItem.wrap(
                 GuiComponents.infoItem(plugin, Material.PAPER,
                     "gui.custom-mob.overflow-name", "gui.custom-mob.overflow-lore",
-                    "extra" to (ids.size - 9))
+                    "extra" to (ids.size - 8))
             ))
         }
     }

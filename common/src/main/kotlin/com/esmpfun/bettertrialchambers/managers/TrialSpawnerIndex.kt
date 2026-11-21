@@ -70,9 +70,13 @@ class TrialSpawnerIndex {
     fun remove(world: World, x: Int, y: Int, z: Int) {
         val wi = worlds[world.uid] ?: return
         val chunkKey = packChunk(x shr 4, z shr 4)
-        val set = wi.chunks[chunkKey] ?: return
-        set.remove(packBlock(x, y, z))
-        if (set.isEmpty()) wi.chunks.remove(chunkKey)
+        val packed = packBlock(x, y, z)
+        wi.chunks.computeIfPresent(chunkKey) { _, set ->
+            synchronized(set) {
+                set.remove(packed)
+                if (set.isEmpty()) null else set
+            }
+        }
     }
 
     /**
@@ -164,6 +168,22 @@ class TrialSpawnerIndex {
      * Must be called on the main thread (or the world's region thread on Folia).
      */
     fun seedFromLoadedChunks(plugin: com.esmpfun.bettertrialchambers.BetterTrialChambers, world: World): Int {
+        if (plugin.scheduler.isFolia) {
+            // Folia forbids reading chunk tile entities from the Global Region thread;
+            // schedule each loaded chunk onto its own owning region thread.
+            for (chunk in world.loadedChunks) {
+                val loc = Location(world, (chunk.x shl 4) + 8.0, 64.0, (chunk.z shl 4) + 8.0)
+                plugin.scheduler.runAtLocation(loc, Runnable {
+                    if (!world.isChunkLoaded(chunk.x, chunk.z)) return@Runnable
+                    val loaded = world.getChunkAt(chunk.x, chunk.z)
+                    val spawners = com.esmpfun.bettertrialchambers.utils.ChunkBlockEntities.find(
+                        plugin, loaded, com.esmpfun.bettertrialchambers.utils.ChunkBlockEntities.TRIAL_SPAWNER, "spawner-index-startup-sweep"
+                    )?.map { it.block } ?: return@Runnable
+                    if (spawners.isNotEmpty()) rescanChunk(world, loaded.x, loaded.z, spawners)
+                })
+            }
+            return 0
+        }
         var count = 0
         for (chunk in world.loadedChunks) {
             val spawners = com.esmpfun.bettertrialchambers.utils.ChunkBlockEntities.find(

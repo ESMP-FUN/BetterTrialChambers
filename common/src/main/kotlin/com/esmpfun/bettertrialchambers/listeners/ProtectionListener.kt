@@ -205,6 +205,8 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         val attacker = when (val damager = event.damager) {
             is Player -> damager
             is Projectile -> damager.shooter as? Player
+            is org.bukkit.entity.AreaEffectCloud -> damager.source as? Player
+            is org.bukkit.entity.TNTPrimed -> damager.source as? Player
             else -> null
         } ?: return
         if (attacker.uniqueId == victim.uniqueId) return
@@ -307,20 +309,52 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         notifyBlocked(player, "cannot-enter-chamber")
     }
 
+    /** Stops players riding boats, minecarts, horses, or other vehicles across a gated chamber boundary. */
+    @EventHandler(priority = EventPriority.HIGH)
+    fun onVehicleMoveIntoChamber(event: org.bukkit.event.vehicle.VehicleMoveEvent) {
+        if (offEverywhere(ProtectionSetting.ENTRY)) return
+        val from = event.from
+        val to = event.to
+        if (from.blockX == to.blockX && from.blockY == to.blockY && from.blockZ == to.blockZ) return
+
+        val toChamber = guardedChamberAt(to, ProtectionSetting.ENTRY) ?: return
+        if (plugin.chamberManager.getCachedChamberAt(from)?.id == toChamber.id) return
+
+        val blockedPassengers = event.vehicle.passengers.filterIsInstance<Player>().filter { p ->
+            p.gameMode != GameMode.SPECTATOR &&
+                p.gameMode != GameMode.CREATIVE &&
+                !p.hasPermission("btc.bypass.entry")
+        }
+        if (blockedPassengers.isEmpty()) return
+
+        event.vehicle.teleportAsync(from)
+        blockedPassengers.forEach { p ->
+            dbg("BLOCKED vehicle entry into '${toChamber.name}' for ${p.name}")
+            notifyBlocked(p, "cannot-enter-chamber")
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onBlockPlace(event: BlockPlaceEvent) {
         if (offEverywhere(ProtectionSetting.BLOCK_PLACE)) return
 
         val player = event.player
-        val location = event.block.location
 
         // Check bypass permission
         if (player.hasPermission("btc.bypass.protection")) return
 
-        guardedChamberAt(location, ProtectionSetting.BLOCK_PLACE) ?: return
-        if (deferToWorldGuard(location, player)) return
-        event.isCancelled = true
-        notifyBlocked(player, "cannot-place-blocks")
+        val locations = if (event is org.bukkit.event.block.BlockMultiPlaceEvent) {
+            event.replacedBlockStates.map { it.location }
+        } else {
+            listOf(event.block.location)
+        }
+        for (location in locations) {
+            guardedChamberAt(location, ProtectionSetting.BLOCK_PLACE) ?: continue
+            if (deferToWorldGuard(location, player)) continue
+            event.isCancelled = true
+            notifyBlocked(player, "cannot-place-blocks")
+            return
+        }
     }
 
     /**
@@ -346,16 +380,16 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onContainerAccess(event: PlayerInteractEvent) {
         if (offEverywhere(ProtectionSetting.CONTAINERS)) return
-        // Right-click fires PlayerInteractEvent twice (main + off hand); only act on the
-        // main-hand pass so the denial message isn't sent twice.
-        if (event.hand != org.bukkit.inventory.EquipmentSlot.HAND) return
+        if (event.action != org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK) return
 
         val block = event.clickedBlock ?: return
         // Every block that holds items, not only the ones with a chest-style
-        // screen. A shelf, a lectern, a jukebox, a chiseled bookshelf and a
-        // decorated pot all hand items over on a click and none of them is a
-        // Container, so checking for that alone left them open.
-        if (block.state !is io.papermc.paper.block.TileStateInventoryHolder) return
+        // screen. A shelf, a lectern, a jukebox, a chiseled bookshelf, a
+        // decorated pot, and a campfire all hold items on right-click.
+        val state = block.state
+        if (state !is io.papermc.paper.block.TileStateInventoryHolder &&
+            state !is org.bukkit.block.Campfire
+        ) return
 
         val player = event.player
         val location = block.location
@@ -368,13 +402,34 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
 
         guardedChamberAt(location, ProtectionSetting.CONTAINERS) ?: return
         if (deferToWorldGuard(location, player)) return
+        // Cancel both main-hand and off-hand passes so off-hand clicks can't bypass
+        // container protection, but only send the denial message on the main-hand pass.
         event.isCancelled = true
-        notifyBlocked(player, "cannot-access-container")
+        if (event.hand == org.bukkit.inventory.EquipmentSlot.HAND) {
+            notifyBlocked(player, "cannot-access-container")
+        }
+    }
+
+    /** Stops hoppers and hopper minecarts draining or feeding protected chamber containers. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onHopperMoveContainer(event: org.bukkit.event.inventory.InventoryMoveItemEvent) {
+        if (offEverywhere(ProtectionSetting.CONTAINERS)) return
+        val srcLoc = event.source.location
+        val dstLoc = event.destination.location
+        val srcChamber = srcLoc?.let { guardedChamberAt(it, ProtectionSetting.CONTAINERS) }
+        val dstChamber = dstLoc?.let { guardedChamberAt(it, ProtectionSetting.CONTAINERS) }
+        if (srcChamber == null && dstChamber == null) return
+        // Allow redstone hoppers that belong to the same chamber (both ends inside it).
+        if (srcChamber != null && dstChamber != null && srcChamber.id == dstChamber.id) return
+        event.isCancelled = true
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onEntityExplode(event: EntityExplodeEvent) {
         if (offEverywhere(ProtectionSetting.MOB_GRIEFING)) return
+        // Wind charges (Breeze and player) only toggle buttons, trapdoors, copper bulbs,
+        // and dispensers; they never destroy blocks, so let chamber mechanics work.
+        if (event.explosionResult == org.bukkit.ExplosionResult.TRIGGER_BLOCK) return
 
         // v1.7.2: filter per BLOCK, not by the explosion center's chamber. The old
         // check resolved the chamber at the CENTER, a creeper/TNT detonating just
@@ -402,23 +457,38 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     }
 
     /**
-     * Mobs changing blocks. Also how a projectile breaking a decorated pot arrives: the
-     * projectile is the entity, so a pot shot by anyone is kept.
-     *
-     * TODO(26.4): from snapshot 5 on, mobs can break decorated pots with projectiles in
-     * adventure mode unless mob_griefing is off. On Paper 26.4, re-test that a skeleton's or
-     * a breeze's shot at a pot inside a chamber is still stopped here.
+     * Entities changing blocks:
+     * - Players scraping/waxing copper, trampling farmland/eggs, or (26.4+) cracking Brittle Ice -> BLOCK_BREAK.
+     * - Player-shot projectiles breaking decorated pots or chorus flowers -> BLOCK_BREAK.
+     * - Mobs (endermen, silverfish, ravagers, mob-shot projectiles in 26.4+) -> MOB_GRIEFING.
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onEntityChangeBlock(event: EntityChangeBlockEvent) {
-        if (offEverywhere(ProtectionSetting.MOB_GRIEFING)) return
-
         val location = event.block.location
+        val entity = event.entity
 
-        // Allow players
-        if (event.entity is Player) return
+        if (entity is Player) {
+            if (offEverywhere(ProtectionSetting.BLOCK_BREAK)) return
+            if (entity.hasPermission("btc.bypass.protection")) return
+            guardedChamberAt(location, ProtectionSetting.BLOCK_BREAK) ?: return
+            if (deferToWorldGuard(location, entity)) return
+            event.isCancelled = true
+            notifyBlocked(entity, "cannot-break-blocks")
+            return
+        }
 
-        // Prevent endermen, silverfish, etc. from modifying blocks in non-paused chambers
+        val shooter = (entity as? Projectile)?.shooter as? Player
+        if (shooter != null) {
+            if (offEverywhere(ProtectionSetting.BLOCK_BREAK)) return
+            if (shooter.hasPermission("btc.bypass.protection")) return
+            guardedChamberAt(location, ProtectionSetting.BLOCK_BREAK) ?: return
+            if (deferToWorldGuard(location, shooter)) return
+            event.isCancelled = true
+            notifyBlocked(shooter, "cannot-break-blocks")
+            return
+        }
+
+        if (offEverywhere(ProtectionSetting.MOB_GRIEFING)) return
         guardedChamberAt(location, ProtectionSetting.MOB_GRIEFING) ?: return
         event.isCancelled = true
     }
@@ -492,6 +562,19 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
         notifyBlocked(player, "cannot-place-blocks")
     }
 
+    /** Scooping water, lava, or powder snow out of a chamber removes a block, so it answers to `prevent-block-break`. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onBucketFill(event: org.bukkit.event.player.PlayerBucketFillEvent) {
+        if (offEverywhere(ProtectionSetting.BLOCK_BREAK)) return
+        val player = event.player
+        if (player.hasPermission("btc.bypass.protection")) return
+        val location = event.block.location
+        guardedChamberAt(location, ProtectionSetting.BLOCK_BREAK) ?: return
+        if (deferToWorldGuard(location, player)) return
+        event.isCancelled = true
+        notifyBlocked(player, "cannot-break-blocks")
+    }
+
     /** Water or lava poured just outside the walls, running in. */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onLiquidFlow(event: BlockFromToEvent) {
@@ -504,17 +587,38 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     }
 
     /**
-     * A dispenser outside the walls, firing a bucket through them.
+     * A dispenser outside the walls firing liquids, powder snow, shulker boxes, fire, or
+     * empty buckets into a chamber. Dispensers inside the same chamber (e.g. vanilla Trial
+     * Chamber traps) are left alone.
      *
      * TODO(26.4): dispensers are data driven from snapshot 9 on and Paper has to rebuild
-     * BlockDispenseEvent on them. On Paper 26.4, re-test that a water and a lava bucket fired
-     * from outside a chamber are still stopped here.
+     * BlockDispenseEvent on them. On Paper 26.4, re-test that buckets fired from outside a
+     * chamber are still stopped here.
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onDispense(event: BlockDispenseEvent) {
-        if (offEverywhere(ProtectionSetting.LIQUIDS)) return
-        if (event.item.type != Material.WATER_BUCKET && event.item.type != Material.LAVA_BUCKET) return
-        guardedChamberAt(event.block.location, ProtectionSetting.LIQUIDS) ?: return
+        val directional = event.block.blockData as? org.bukkit.block.data.Directional ?: return
+        val targetLoc = event.block.getRelative(directional.facing).location
+        val itemType = event.item.type
+
+        val setting = when {
+            itemType == Material.WATER_BUCKET ||
+                itemType == Material.LAVA_BUCKET ||
+                itemType == Material.POWDER_SNOW_BUCKET ||
+                itemType == Material.BUCKET ||
+                itemType.name.endsWith("_BUCKET") -> ProtectionSetting.LIQUIDS
+            itemType == Material.FLINT_AND_STEEL || itemType == Material.FIRE_CHARGE -> ProtectionSetting.FIRE
+            itemType.name.endsWith("SHULKER_BOX") ||
+                itemType == Material.TNT ||
+                itemType == Material.ARMOR_STAND ||
+                itemType == Material.CARVED_PUMPKIN ||
+                itemType == Material.WITHER_SKELETON_SKULL -> ProtectionSetting.BLOCK_PLACE
+            else -> return
+        }
+        if (offEverywhere(setting)) return
+        val targetChamber = guardedChamberAt(targetLoc, setting) ?: return
+        // Allow dispensers that live inside the same chamber (vanilla chamber traps).
+        if (protectedChamberAt(event.block.location)?.id == targetChamber.id) return
         event.isCancelled = true
     }
 
@@ -556,7 +660,15 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onPistonExtend(event: BlockPistonExtendEvent) {
         if (offEverywhere(ProtectionSetting.PISTONS)) return
-        if (pistonReachesIntoChamber(event.block.location, event.blocks.map { it.location })) {
+        val affected = buildList {
+            // Piston head itself extending into a chamber even with 0 pushed blocks
+            add(event.block.getRelative(event.direction).location)
+            for (b in event.blocks) {
+                add(b.location)
+                add(b.getRelative(event.direction).location)
+            }
+        }
+        if (pistonReachesIntoChamber(event.block.location, affected)) {
             event.isCancelled = true
         }
     }
@@ -564,7 +676,13 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onPistonRetract(event: BlockPistonRetractEvent) {
         if (offEverywhere(ProtectionSetting.PISTONS)) return
-        if (pistonReachesIntoChamber(event.block.location, event.blocks.map { it.location })) {
+        val affected = buildList {
+            for (b in event.blocks) {
+                add(b.location)
+                add(b.getRelative(event.direction).location)
+            }
+        }
+        if (pistonReachesIntoChamber(event.block.location, affected)) {
             event.isCancelled = true
         }
     }
@@ -718,8 +836,31 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onBlockForm(event: BlockFormEvent) {
+        val location = event.block.location
+        if (event is org.bukkit.event.block.EntityBlockFormEvent) {
+            val entity = event.entity
+            if (entity is Player) {
+                // Frost Walker boots freezing chamber water
+                if (!offEverywhere(ProtectionSetting.BLOCK_PLACE) &&
+                    !entity.hasPermission("btc.bypass.protection") &&
+                    guardedChamberAt(location, ProtectionSetting.BLOCK_PLACE) != null &&
+                    !deferToWorldGuard(location, entity)
+                ) {
+                    event.isCancelled = true
+                    return
+                }
+            } else {
+                // Snow golems, 26.4 Cold Sulfur Cubes freezing water, etc.
+                if (!offEverywhere(ProtectionSetting.MOB_GRIEFING) &&
+                    guardedChamberAt(location, ProtectionSetting.MOB_GRIEFING) != null
+                ) {
+                    event.isCancelled = true
+                    return
+                }
+            }
+        }
         if (offEverywhere(ProtectionSetting.NATURAL_DECAY)) return
-        guardedChamberAt(event.block.location, ProtectionSetting.NATURAL_DECAY) ?: return
+        guardedChamberAt(location, ProtectionSetting.NATURAL_DECAY) ?: return
         event.isCancelled = true
     }
 
@@ -742,6 +883,19 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onStructureGrow(event: StructureGrowEvent) {
+        // Always stop a tree/mushroom grown outside a chamber from pushing blocks into it.
+        val originChamber = protectedChamberAt(event.location)
+        val player = event.player
+        if (originChamber == null && !offEverywhere(ProtectionSetting.BLOCK_PLACE)) {
+            val crossesIn = event.blocks.any { state ->
+                guardedChamberAt(state.location, ProtectionSetting.BLOCK_PLACE) != null &&
+                    (player == null || (!player.hasPermission("btc.bypass.protection") && !deferToWorldGuard(state.location, player)))
+            }
+            if (crossesIn) {
+                event.isCancelled = true
+                return
+            }
+        }
         if (offEverywhere(ProtectionSetting.NATURAL_DECAY)) return
         if (event.blocks.none { guardedChamberAt(it.location, ProtectionSetting.NATURAL_DECAY) != null }) return
         event.isCancelled = true
@@ -756,9 +910,22 @@ class ProtectionListener(private val plugin: BetterTrialChambers) : Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onSpongeAbsorb(event: SpongeAbsorbEvent) {
+        // Always stop a sponge placed outside a chamber from draining water inside it.
+        val spongeChamber = protectedChamberAt(event.block.location)
+        if (spongeChamber == null && !offEverywhere(ProtectionSetting.BLOCK_BREAK)) {
+            if (event.blocks.any { guardedChamberAt(it.block.location, ProtectionSetting.BLOCK_BREAK) != null }) {
+                event.isCancelled = true
+                return
+            }
+        }
         if (offEverywhere(ProtectionSetting.NATURAL_DECAY)) return
         if (event.blocks.none { guardedChamberAt(it.block.location, ProtectionSetting.NATURAL_DECAY) != null }) return
         event.isCancelled = true
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    fun onPlayerQuit(event: org.bukkit.event.player.PlayerQuitEvent) {
+        lastDenyMessage.remove(event.player.uniqueId)
     }
 
     private fun deferToWorldGuard(location: org.bukkit.Location, player: Player): Boolean {

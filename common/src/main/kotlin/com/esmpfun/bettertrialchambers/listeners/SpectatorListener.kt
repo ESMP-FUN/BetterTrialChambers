@@ -139,7 +139,23 @@ class SpectatorListener(private val plugin: BetterTrialChambers) : Listener {
         if (!plugin.spectatorManager.isSpectating(player)) return
         if (event.cause == PlayerTeleportEvent.TeleportCause.PLUGIN) return
 
-        if (!plugin.spectatorManager.isWithinSpectatorBounds(player, event.to)) {
+        val to: org.bukkit.Location? = event.to
+        if (to == null) return
+        if (!plugin.spectatorManager.isWithinSpectatorBounds(player, to)) {
+            event.isCancelled = true
+            player.sendMessage(plugin.getMessageComponent("spectate-boundary-warning"))
+        }
+    }
+
+    /** Prevents spectators from attaching to a player/mob and being carried outside chamber bounds. */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    fun onStartSpectatingEntity(event: com.destroystokyo.paper.event.player.PlayerStartSpectatingEntityEvent) {
+        if (!plugin.isReady) return
+        if (!plugin.config.getBoolean("spectator-mode.enabled", true)) return
+        if (!plugin.config.getBoolean("spectator-mode.restrict-to-chamber", true)) return
+        val player = event.player
+        if (!plugin.spectatorManager.isSpectating(player)) return
+        if (!plugin.spectatorManager.isWithinSpectatorBounds(player, event.newSpectatorTarget.location)) {
             event.isCancelled = true
             player.sendMessage(plugin.getMessageComponent("spectate-boundary-warning"))
         }

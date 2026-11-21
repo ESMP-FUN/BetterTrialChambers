@@ -101,7 +101,18 @@ class FaweResetPlacer(private val plugin: BetterTrialChambers) {
                     try {
                         val contents = snap.structure
                         if (contents != null) {
-                            BlockEntityCapture.restore(plugin.server, contents, loc)
+                            if (BlockEntityCapture.restore(plugin.server, contents, loc)) {
+                                // Structure restore brings back the captured block state, which can
+                                // overwrite the reset trial_spawner_state we wrote via FAWE. Re-apply
+                                // the clean block data (matching BlockRestorer.restoreBlock).
+                                val cleanData = org.bukkit.Bukkit.createBlockData(
+                                    resetTrialSpawnerState(snap.blockData)
+                                )
+                                val block = loc.block
+                                if (block.blockData.asString != cleanData.asString) {
+                                    block.setBlockData(cleanData, false)
+                                }
+                            }
                         } else {
                             snap.tileEntity?.let { NBTUtil.restoreTileEntity(loc.block.state, it) }
                         }

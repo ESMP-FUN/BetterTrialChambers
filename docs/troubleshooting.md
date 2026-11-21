@@ -349,7 +349,7 @@ Cause: the item is fetched from the other plugin when the vault is opened, so a 
 1. Run `/trial reload` (or restart).
 2. Confirm the key you edited is the one actually displayed. Search `messages.yml` for the exact text you see in-game.
 3. Check for tab characters (see the "Loot table not found" section).
-4. If it is a boss bar message, note those keys contain `boss-bar` and use MiniMessage tags, not `&` color codes.
+4. Boss bar keys (containing `boss-bar`) support both MiniMessage tags and legacy `&` color codes via `MessageParser`.
 
 Full reference: [messages.yml](configuration/messages.yml.md).
 

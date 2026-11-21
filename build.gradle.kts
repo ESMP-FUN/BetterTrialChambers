@@ -201,7 +201,7 @@ project(":common") {
 // shared code can never name a type only newer servers have; newer jars fill in the rest.
 val proguardApiOldest: Configuration = configurations.create("proguardApiOldest")
 val proguardApiNewer: Configuration = configurations.create("proguardApiNewer") { isTransitive = false }
-val proguardLibraries: Configuration = configurations.create("proguardLibraries") { isTransitive = false }
+val proguardLibraries: Configuration = configurations.create("proguardLibraries")
 
 dependencies {
     implementation(project(":common"))
@@ -211,15 +211,18 @@ dependencies {
     proguardApiOldest("io.papermc.paper:paper-api:$paper121")
     proguardApiNewer("io.papermc.paper:paper-api:$paper1217")
     proguardApiNewer("io.papermc.paper:paper-api:$paper263")
-    proguardLibraries("org.apache.logging.log4j:log4j-core:2.19.0")
-    proguardLibraries("org.apache.logging.log4j:log4j-api:2.19.0")
-    proguardLibraries("com.github.MilkBowl:VaultAPI:1.7")
-    proguardLibraries("com.sk89q.worldguard:worldguard-bukkit:7.0.9")
-    proguardLibraries("com.sk89q.worldguard:worldguard-core:7.0.9")
-    proguardLibraries("me.clip:placeholderapi:2.12.3")
-    // The version the FAWE BOM in common resolves to.
-    proguardLibraries("com.fastasyncworldedit:FastAsyncWorldEdit-Core:2.15.0")
-    proguardLibraries("com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit:2.15.0")
+    if (paper264 != paper263) {
+        proguardApiNewer("io.papermc.paper:paper-api:$paper264")
+    }
+    proguardLibraries("org.apache.logging.log4j:log4j-core:2.19.0") { isTransitive = false }
+    proguardLibraries("org.apache.logging.log4j:log4j-api:2.19.0") { isTransitive = false }
+    proguardLibraries("com.github.MilkBowl:VaultAPI:1.7") { isTransitive = false }
+    proguardLibraries("com.sk89q.worldguard:worldguard-bukkit:7.0.9") { isTransitive = false }
+    proguardLibraries("com.sk89q.worldguard:worldguard-core:7.0.9") { isTransitive = false }
+    proguardLibraries("me.clip:placeholderapi:2.12.3") { isTransitive = false }
+    proguardLibraries(platform("com.intellectualsites.bom:bom-newest:1.56"))
+    proguardLibraries("com.fastasyncworldedit:FastAsyncWorldEdit-Core") { isTransitive = false }
+    proguardLibraries("com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit") { isTransitive = false }
 }
 
 tasks {
@@ -378,7 +381,7 @@ publishing {
 // step that used to be done by hand on every release. Idempotent: a no-op once the current
 // version's link is already present. Wired into `build` below so it runs on a version bump.
 val changelogRepoUrl = "https://github.com/ESMP-FUN/BetterTrialChambers"
-val updateChangelogLink by tasks.registering {
+val updateChangelogLink = tasks.register("updateChangelogLink") {
     group = "documentation"
     description = "Ensure CHANGELOG.md has a compare-link footer for the current version."
     doLast {

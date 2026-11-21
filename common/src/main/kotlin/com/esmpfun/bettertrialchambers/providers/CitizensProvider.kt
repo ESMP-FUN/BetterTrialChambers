@@ -1,27 +1,28 @@
 package com.esmpfun.bettertrialchambers.providers
 
 import com.esmpfun.bettertrialchambers.BetterTrialChambers
+import com.esmpfun.bettertrialchambers.utils.Reflect
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Entity
+import org.bukkit.event.EventHandler
+import org.bukkit.event.EventPriority
+import org.bukkit.event.Listener
+import org.bukkit.event.entity.EntityDeathEvent
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Citizens integration via reflection (v1.3.0).
  *
  * Mob id is either a numeric Citizens NPC id (preferred, stable across
  * renames) or an exact NPC name. The provider looks the NPC up in the
- * default registry, `clone()`s it so the template NPC isn't moved, and
- * spawns the clone at [location].
- *
- *   CitizensAPI.getNPCRegistry().getById(int) / iterator -> NPC
- *   npc.clone() -> NPC
- *   clone.spawn(Location) -> boolean
- *   clone.getEntity() -> org.bukkit.entity.Entity
- *
- * If the template lookup fails the provider returns null and the wave falls
- * back to vanilla for this spawn.
+ * default registry, `clone()`s it so the template NPC isn't moved, marks
+ * the clone non-persistent (`should-save = false`) so it never bloats
+ * `Citizens/saves.yml`, spawns it at [location], and destroys the clone
+ * once its entity dies.
  */
-class CitizensProvider(private val plugin: BetterTrialChambers) : TrialMobProvider {
+class CitizensProvider(private val plugin: BetterTrialChambers) : TrialMobProvider, Listener {
 
     override val id: String = "citizens"
     override val displayName: String = "Citizens"
@@ -29,11 +30,26 @@ class CitizensProvider(private val plugin: BetterTrialChambers) : TrialMobProvid
     /** Whether this plugin's classes are on the server; fixed for the run. */
     @Volatile private var classPresent: Boolean? = null
 
+    /** Cloned NPCs spawned for waves (entity UUID -> Citizens NPC), destroyed on death. */
+    private val spawnedClones = ConcurrentHashMap<UUID, Any>()
+
+    init {
+        plugin.scheduler.runTask(Runnable {
+            if (plugin.isEnabled) {
+                plugin.server.pluginManager.registerEvents(this, plugin)
+            }
+        })
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    fun onCloneDeath(event: EntityDeathEvent) {
+        val npc = spawnedClones.remove(event.entity.uniqueId) ?: return
+        plugin.scheduler.runTaskLater(Runnable {
+            runCatching { Reflect.callNoArg(npc, "destroy") }
+        }, 1L)
+    }
+
     override fun isAvailable(): Boolean {
-        // Asked of the plugin manager every time on purpose: it is a map lookup,
-        // and caching the answer meant a plugin that starts after this one was
-        // written off for the rest of the server's run. Only whether its classes
-        // are there is remembered, which cannot change while the server is up.
         if (Bukkit.getPluginManager().getPlugin("Citizens")?.isEnabled != true) return false
         classPresent?.let { return it }
         return try {
@@ -55,33 +71,46 @@ class CitizensProvider(private val plugin: BetterTrialChambers) : TrialMobProvid
             val template: Any = run<Any?> {
                 val asInt = mobId.toIntOrNull()
                 if (asInt != null) {
-                    val getById = registry.javaClass.methods.firstOrNull {
-                        it.name == "getById" && it.parameterCount == 1 && it.parameterTypes[0] == java.lang.Integer.TYPE
-                    }
-                    getById?.invoke(registry, asInt)
+                    Reflect.method(registry.javaClass, "getById", java.lang.Integer.TYPE)
+                        ?.invoke(registry, asInt)
                 } else {
-                    // Iterate the registry looking for a name match.
-                    val iteratorMethod = registry.javaClass.methods.firstOrNull { it.name == "iterator" && it.parameterCount == 0 }
-                    val it = iteratorMethod?.invoke(registry) as? Iterator<*> ?: return@run null
+                    val it = Reflect.callNoArg(registry, "iterator") as? Iterator<*> ?: return@run null
                     var found: Any? = null
                     while (it.hasNext()) {
                         val npc = it.next() ?: continue
-                        val name = com.esmpfun.bettertrialchambers.utils.Reflect.callNoArg(npc, "getName") as? String
+                        val name = Reflect.callNoArg(npc, "getName") as? String
                         if (name?.equals(mobId, ignoreCase = true) == true) { found = npc; break }
                     }
                     found
                 }
             } ?: return null
 
-            val cloneMethod = template.javaClass.methods.firstOrNull { it.name == "clone" && it.parameterCount == 0 }
-                ?: return null
-            val clone = cloneMethod.invoke(template) ?: return null
-            val spawn = clone.javaClass.methods.firstOrNull {
-                it.name == "spawn" && it.parameterCount == 1 && it.parameterTypes[0] == Location::class.java
-            } ?: return null
+            val clone = Reflect.callNoArg(template, "clone") ?: return null
+            // Keep transient wave clones out of Citizens/saves.yml so waves never leak disk state.
+            runCatching {
+                val data = Reflect.callNoArg(clone, "data")
+                if (data != null) {
+                    Reflect.method(data.javaClass, "set", String::class.java, Any::class.java)
+                        ?.invoke(data, "should-save", false)
+                }
+            }
+            val spawn = Reflect.method(clone.javaClass, "spawn", Location::class.java) ?: return null
             spawn.invoke(clone, location)
-            val getEntity = clone.javaClass.methods.firstOrNull { it.name == "getEntity" && it.parameterCount == 0 }
-            getEntity?.invoke(clone) as? Entity
+            val entity = Reflect.callNoArg(clone, "getEntity") as? Entity
+            if (entity != null) {
+                spawnedClones[entity.uniqueId] = clone
+                // Prune any dead/removed entries whose death event didn't fire (e.g. chamber reset removal).
+                if (spawnedClones.size > 64) {
+                    spawnedClones.entries.removeIf { (uid, npc) ->
+                        val alive = Bukkit.getEntity(uid)?.isValid == true
+                        if (!alive) runCatching { Reflect.callNoArg(npc, "destroy") }
+                        !alive
+                    }
+                }
+            } else {
+                runCatching { Reflect.callNoArg(clone, "destroy") }
+            }
+            entity
         } catch (e: Throwable) {
             if (plugin.config.getBoolean("debug.verbose-logging", false)) {
                 plugin.logger.warning("[CitizensProvider] Failed to spawn NPC '$mobId': ${e.javaClass.simpleName}: ${e.message}")

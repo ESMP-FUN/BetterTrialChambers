@@ -38,14 +38,13 @@ class LeaderboardView(
 
         val leaderboard = runBlocking { plugin.statisticsManager.getLeaderboard(leaderboardType, 10) }
 
-        leaderboard.forEachIndexed { index, entry ->
-            val row = 1 + (index / 2)
-            val col = if (index % 2 == 0) 2 else 6
-            if (row <= 4) {
-                set(row * 9 + col, VcGuiItem.wrap(createLeaderboardEntry(index + 1, entry)) { ctx ->
-                    menu.openPlayerStats(ctx.player, entry.first)
-                })
-            }
+        leaderboard.take(10).forEachIndexed { index, entry ->
+            // Display all 10 entries in two centered rows of 5 (rows 1 and 3, cols 2..6).
+            val row = if (index < 5) 1 else 3
+            val col = 2 + (index % 5)
+            set(row * 9 + col, VcGuiItem.wrap(createLeaderboardEntry(index + 1, entry)) { ctx ->
+                menu.openPlayerStats(ctx.player, entry.first)
+            })
         }
 
         if (leaderboard.isEmpty()) {

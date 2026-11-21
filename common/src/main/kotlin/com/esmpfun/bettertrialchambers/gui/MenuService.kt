@@ -234,6 +234,7 @@ class MenuService(private val plugin: BetterTrialChambers) {
     }
 
     fun openCustomMobProvider(player: Player, chamber: Chamber) {
+        if (denied(player, "btc.admin.mobs")) return
         val view = CustomMobProviderView(plugin, this, chamber)
         getOrCreateSession(player.uniqueId).apply {
             screen = Screen.CUSTOM_MOB_PROVIDER
@@ -305,13 +306,36 @@ class MenuService(private val plugin: BetterTrialChambers) {
     }
 
     fun openVaultManagement(player: Player, chamber: Chamber) {
+        openVaultManagement(player, chamber, 0)
+    }
+
+    internal fun openVaultManagement(player: Player, chamber: Chamber, page: Int) {
         if (denied(player, "btc.admin.vault")) return
-        val view = VaultManagementView(plugin, this, chamber)
-        getOrCreateSession(player.uniqueId).apply {
-            screen = Screen.VAULT_MANAGEMENT
-            chamberId = chamber.id
+        val onlinePlayers = plugin.server.onlinePlayers.map { it.uniqueId to it.name }
+        plugin.launchAsync {
+            val vaults = plugin.vaultManager.getVaultsForChamber(chamber.id).filter { it.matchesBlock }
+            val perPage = 36
+            val totalPages = maxOf(1, kotlin.math.ceil(vaults.size.toDouble() / perPage).toInt())
+            val safePage = page.coerceIn(0, totalPages - 1)
+            val slice = vaults.drop(safePage * perPage).take(perPage)
+            val lockCounts = slice.associate { v -> v.id to plugin.vaultManager.getVaultLockCount(v.id) }
+            val playersWithLocks = onlinePlayers.mapNotNull { (uuid, name) ->
+                val (normalLocked, ominousLocked) = plugin.vaultManager.getLockedVaultCounts(uuid, chamber.id)
+                val total = normalLocked + ominousLocked
+                if (total > 0) name to total else null
+            }.sortedByDescending { it.second }
+
+            plugin.scheduler.runAtEntity(player, Runnable {
+                if (!player.isOnline) return@Runnable
+                val view = VaultManagementView(plugin, this@MenuService, chamber, vaults, lockCounts, playersWithLocks, safePage)
+                getOrCreateSession(player.uniqueId).apply {
+                    screen = Screen.VAULT_MANAGEMENT
+                    chamberId = chamber.id
+                    currentPage = safePage
+                }
+                view.open(player)
+            })
         }
-        view.open(player)
     }
 
     fun openContainerLoot(player: Player, chamber: Chamber, page: Int = 0) {
@@ -391,11 +415,13 @@ class MenuService(private val plugin: BetterTrialChambers) {
     }
 
     fun openAmountEditor(player: Player, chamber: Chamber, kind: LootKind, itemIndex: Int, isWeighted: Boolean) {
+        if (denied(player, "btc.admin.loot")) return
         val session = getOrCreateSession(player.uniqueId)
         val poolName = session.poolName
         val key = draftKey(chamber.id, kind, poolName)
         val draft = session.drafts[key]
-        if (draft == null) {
+        val list = if (isWeighted) draft?.weighted else draft?.guaranteed
+        if (draft == null || list == null || itemIndex !in list.indices) {
             openLootEditor(player, chamber, kind, poolName)
             return
         }
@@ -468,10 +494,12 @@ class MenuService(private val plugin: BetterTrialChambers) {
         itemIndex: Int,
         isWeighted: Boolean
     ) {
+        if (denied(player, "btc.admin.loot")) return
         val session = getOrCreateSession(player.uniqueId)
         val key = globalDraftKey(tableName, poolName)
         val draft = session.drafts[key]
-        if (draft == null) {
+        val list = if (isWeighted) draft?.weighted else draft?.guaranteed
+        if (draft == null || list == null || itemIndex !in list.indices) {
             openGlobalLootEditor(player, tableName, poolName)
             return
         }
@@ -598,6 +626,7 @@ class MenuService(private val plugin: BetterTrialChambers) {
 
     /** Opens the bulk loot-deposit chest (drag items in to add them faithfully). */
     fun openLootDeposit(player: Player, chamber: Chamber?, kind: LootKind, poolName: String?, globalTableName: String?) {
+        if (denied(player, "btc.admin.loot")) return
         // v1.5.0, VcGui-backed; close handling lives in LootDepositView.handleClose.
         LootDepositView(plugin, this, chamber, kind, poolName, globalTableName).open(player)
     }

@@ -62,7 +62,8 @@ class PoolSelectorView(
         val pools = table.pools
         val maxPools = plugin.config.getInt("loot.max-pools-per-table", 5)
 
-        pools.forEachIndexed { index, pool ->
+        val visiblePools = pools.take(28) // Rows 1..4, cols 1..7 (28 slots before row 5 nav bar)
+        visiblePools.forEachIndexed { index, pool ->
             val row = 1 + (index / 7)
             val col = 1 + (index % 7)
             val slot = row * 9 + col
@@ -72,8 +73,8 @@ class PoolSelectorView(
             })
         }
 
-        if (pools.size < maxPools) {
-            val index = pools.size
+        if (pools.size < maxPools && visiblePools.size < 28) {
+            val index = visiblePools.size
             val row = 1 + (index / 7)
             val col = 1 + (index % 7)
             val slot = row * 9 + col

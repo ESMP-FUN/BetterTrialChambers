@@ -21,7 +21,20 @@ import kotlin.random.Random
  */
 class LootManager(private val plugin: BetterTrialChambers) {
 
-    private val lootTables = mutableMapOf<String, LootTable>()
+    private val lootTables = java.util.concurrent.ConcurrentHashMap<String, LootTable>()
+
+    /**
+     * Pure result of rolling a loot table before executing command/economy side effects.
+     * Callers that may still abort (e.g. vault marking or key checks) roll first and call
+     * [deliverSideEffects] only after the open is committed.
+     */
+    data class RolledLoot(
+        val items: List<ItemStack>,
+        val commands: List<CommandReward>,
+        val economyRewards: List<EconomyReward>,
+    ) {
+        val isEmpty: Boolean get() = items.isEmpty() && commands.isEmpty() && economyRewards.isEmpty()
+    }
 
     /**
      * Per-opening redeem tracking (v2.1.0). Passed into [generateLoot] when a real
@@ -549,10 +562,12 @@ class LootManager(private val plugin: BetterTrialChambers) {
             potionLevelMax = potionLevelMax?.let { clampAmp(it, "potion-level-max") }
         }
 
-        // Parse variable durability
+        // Parse variable durability (swap if min > max so Random.nextInt never throws)
         val enchantLevels = parseEnchantWithLevels(data, typeStr)
-        val durabilityMin = (data["durability-min"] as? Number)?.toInt()
-        val durabilityMax = (data["durability-max"] as? Number)?.toInt()
+        val rawDurMin = (data["durability-min"] as? Number)?.toInt()
+        val rawDurMax = (data["durability-max"] as? Number)?.toInt()
+        val durabilityMin = if (rawDurMin != null && rawDurMax != null) minOf(rawDurMin, rawDurMax) else rawDurMin
+        val durabilityMax = if (rawDurMin != null && rawDurMax != null) maxOf(rawDurMin, rawDurMax) else rawDurMax
 
         // Parse goat horn instrument (8 variants: PONDER, SING, SEEK, FEEL, ADMIRE, CALL, YEARN, DREAM)
         val instrument = data["instrument"] as? String
@@ -686,7 +701,58 @@ class LootManager(private val plugin: BetterTrialChambers) {
         generateLoot(tableName, player, null)
 
     fun generateLoot(tableName: String, player: Player, redeem: RedeemContext?): List<ItemStack> {
-        // Debug logging
+        val rolled = rollLoot(tableName, player, redeem)
+        deliverSideEffects(rolled, player)
+        return rolled.items
+    }
+
+    /**
+     * Computes a player's bonus rolls from the LUCK potion effect and LUCK item attribute.
+     * Must be called on the player's entity/region thread (Folia-safe).
+     * Uses registry lookup so both Paper 1.21.1 (`generic.luck`) and 1.21.2+ (`luck`) work
+     * without `NoSuchFieldError`.
+     */
+    fun computeLuckBonus(player: Player): Int {
+        if (!plugin.config.getBoolean("loot.apply-luck-effect", false)) return 0
+        var totalLuckBonus = 0
+
+        val luckEffect = player.getPotionEffect(org.bukkit.potion.PotionEffectType.LUCK)
+        if (luckEffect != null) {
+            val effectBonus = luckEffect.amplifier + 1
+            totalLuckBonus += effectBonus
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.info("Player ${player.name} has LUCK effect level ${luckEffect.amplifier + 1} (+$effectBonus rolls)")
+            }
+        }
+
+        val luckAttrType = runCatching {
+            org.bukkit.Registry.ATTRIBUTE.get(org.bukkit.NamespacedKey.minecraft("luck"))
+                ?: org.bukkit.Registry.ATTRIBUTE.get(org.bukkit.NamespacedKey.minecraft("generic.luck"))
+        }.getOrNull()
+        val luckAttribute = luckAttrType?.let { runCatching { player.getAttribute(it) }.getOrNull() }
+        if (luckAttribute != null) {
+            val attributeLuck = luckAttribute.value - luckAttribute.baseValue
+            if (attributeLuck > 0) {
+                val attributeBonus = attributeLuck.toInt()
+                totalLuckBonus += attributeBonus
+                if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                    plugin.logger.info("Player ${player.name} has +${attributeLuck} LUCK attribute from items (+$attributeBonus rolls)")
+                }
+            }
+        }
+        return totalLuckBonus
+    }
+
+    /**
+     * Rolls items, command rewards, and economy rewards WITHOUT executing side effects.
+     * Pass [precomputedLuckBonus] when calling off the entity thread (Folia-safe).
+     */
+    fun rollLoot(
+        tableName: String,
+        player: Player,
+        redeem: RedeemContext? = null,
+        precomputedLuckBonus: Int? = null,
+    ): RolledLoot {
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
             plugin.logger.info("==== LOOT GENERATION DEBUG ====")
             plugin.logger.info("Requested table: '$tableName'")
@@ -697,7 +763,7 @@ class LootManager(private val plugin: BetterTrialChambers) {
         val lootTable = lootTables[tableName]
         if (lootTable == null) {
             plugin.logger.warning("Loot table not found: $tableName (available: ${lootTables.keys.joinToString(", ")})")
-            return emptyList()
+            return RolledLoot(emptyList(), emptyList(), emptyList())
         }
 
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
@@ -706,35 +772,48 @@ class LootManager(private val plugin: BetterTrialChambers) {
         }
 
         val items = mutableListOf<ItemStack>()
+        val commands = mutableListOf<CommandReward>()
+        val economy = mutableListOf<EconomyReward>()
 
-        // Get all effective pools (handles both legacy and new format)
         val pools = lootTable.getEffectivePools()
+        val luckBonus = precomputedLuckBonus ?: computeLuckBonus(player)
 
-        // Generate loot from each pool independently (like vanilla)
         pools.forEach { pool ->
-            items.addAll(generateLootFromPool(pool, player, redeem))
+            rollLootFromPool(pool, player, redeem, luckBonus, items, commands, economy)
         }
 
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-            plugin.logger.info("Generated ${items.size} items from table '$tableName'")
+            plugin.logger.info("Generated ${items.size} items, ${commands.size} commands, ${economy.size} economy rewards from table '$tableName'")
             plugin.logger.info("================================")
         }
 
-        return items
+        return RolledLoot(items, commands, economy)
+    }
+
+    /** Executes command and economy rewards produced by [rollLoot]. */
+    fun deliverSideEffects(rolled: RolledLoot, player: Player) {
+        rolled.commands.forEach { executeCommandReward(it, player) }
+        rolled.economyRewards.forEach { applyEconomyReward(it, player) }
     }
 
     /**
-     * Generates loot from a single pool.
+     * Rolls loot from a single pool into the supplied output lists without executing side effects.
      */
-    private fun generateLootFromPool(pool: LootPool, player: Player, redeem: RedeemContext?): List<ItemStack> {
-        val items = mutableListOf<ItemStack>()
-
+    private fun rollLootFromPool(
+        pool: LootPool,
+        player: Player,
+        redeem: RedeemContext?,
+        luckBonus: Int,
+        items: MutableList<ItemStack>,
+        commands: MutableList<CommandReward>,
+        economy: MutableList<EconomyReward>,
+    ) {
         // A pool can be set to run only some of the time. Vanilla's vaults use
         // this for their best item: a quarter of the time for a normal vault,
         // three quarters for an ominous one. A pool that does not run this
         // opening contributes nothing at all, including its guaranteed items
         // and its command and economy rewards.
-        if (pool.chance < 1.0 && Random.nextDouble() >= pool.chance) return items
+        if (pool.chance < 1.0 && Random.nextDouble() >= pool.chance) return
 
         // Add all guaranteed items (respect enabled flag + already-claimed redeem cap)
         pool.guaranteedItems.filter { it.enabled && redeem?.isBlocked(it) != true }.forEach { lootItem ->
@@ -754,66 +833,21 @@ class LootManager(private val plugin: BetterTrialChambers) {
             }
             winners.forEach { items.addAll(expandLootItem(it, player)); redeem?.claim(it) }
 
-            // Command + economy rewards still fire (they're independent Bernoulli rolls
-            // by design in both modes).
             pool.commandRewards.forEach { reward ->
-                if (Random.nextDouble() * 100.0 < reward.weight) executeCommandReward(reward, player)
+                if (Random.nextDouble() * 100.0 < reward.weight) commands.add(reward)
             }
             pool.economyRewards.forEach { reward ->
-                if (Random.nextDouble() * 100.0 < reward.weight) applyEconomyReward(reward, player)
+                if (Random.nextDouble() * 100.0 < reward.weight) economy.add(reward)
             }
-            return items
+            return
         }
 
         // WEIGHTED mode (default) ---------------------------------------------------
-        // Calculate number of rolls (with optional LUCK bonus)
         var rolls = Random.nextInt(pool.minRolls, pool.maxRolls + 1)
-
-        // Apply LUCK effect/attribute if enabled
-        if (plugin.config.getBoolean("loot.apply-luck-effect", false)) {
-            var totalLuckBonus = 0
-
-            // Check for LUCK potion effect (temporary from potions, beacons, etc.)
-            val luckEffect = player.getPotionEffect(org.bukkit.potion.PotionEffectType.LUCK)
-            if (luckEffect != null) {
-                // Each level of LUCK adds +1 bonus roll
-                val effectBonus = luckEffect.amplifier + 1
-                totalLuckBonus += effectBonus
-
-                if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-                    plugin.logger.info("Player ${player.name} has LUCK effect level ${luckEffect.amplifier + 1} (+$effectBonus rolls)")
-                }
-            }
-
-            // Check for LUCK attribute (permanent from items/equipment)
-            // Try to get the LUCK attribute - may not exist in all versions
-            val luckAttribute = try {
-                player.getAttribute(org.bukkit.attribute.Attribute.LUCK)
-            } catch (e: Exception) {
-                null
-            }
-            if (luckAttribute != null) {
-                val baseLuck = luckAttribute.baseValue
-                val totalLuck = luckAttribute.value
-                val attributeLuck = totalLuck - baseLuck // Bonus from items
-
-                if (attributeLuck > 0) {
-                    // Each full point of luck attribute adds +1 bonus roll
-                    val attributeBonus = attributeLuck.toInt()
-                    totalLuckBonus += attributeBonus
-
-                    if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-                        plugin.logger.info("Player ${player.name} has +${attributeLuck} LUCK attribute from items (+$attributeBonus rolls)")
-                    }
-                }
-            }
-
-            if (totalLuckBonus > 0) {
-                rolls += totalLuckBonus
-
-                if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-                    plugin.logger.info("Total LUCK bonus for ${player.name} in pool '${pool.name}': +$totalLuckBonus rolls (total: $rolls)")
-                }
+        if (luckBonus > 0) {
+            rolls += luckBonus
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.info("Total LUCK bonus for ${player.name} in pool '${pool.name}': +$luckBonus rolls (total: $rolls)")
             }
         }
 
@@ -830,21 +864,13 @@ class LootManager(private val plugin: BetterTrialChambers) {
             }
         }
 
-        // Process command rewards
+        // Roll command & economy rewards (executed after the caller commits the open)
         pool.commandRewards.forEach { reward ->
-            if (Random.nextDouble() * 100.0 < reward.weight) {
-                executeCommandReward(reward, player)
-            }
+            if (Random.nextDouble() * 100.0 < reward.weight) commands.add(reward)
         }
-
-        // Process economy (money) rewards, paid via Vault
         pool.economyRewards.forEach { reward ->
-            if (Random.nextDouble() * 100.0 < reward.weight) {
-                applyEconomyReward(reward, player)
-            }
+            if (Random.nextDouble() * 100.0 < reward.weight) economy.add(reward)
         }
-
-        return items
     }
 
     /**
@@ -1031,13 +1057,13 @@ class LootManager(private val plugin: BetterTrialChambers) {
                 lootItem.name?.let { displayName(lootText(it, player)) }
                 lootItem.lore?.let { loreLines -> lore(loreLines.map { line -> lootText(line, player) }) }
             }
-            lootItem.enchantments?.forEach { (ench, level) -> itemStack.addUnsafeEnchantment(ench, level) }
+            lootItem.enchantments?.forEach { (ench, level) -> applyEnchantment(itemStack, ench, level) }
             lootItem.enchantmentRanges?.values?.forEach { range ->
-                itemStack.addUnsafeEnchantment(range.enchantment, Random.nextInt(range.minLevel, range.maxLevel + 1))
+                applyEnchantment(itemStack, range.enchantment, Random.nextInt(range.minLevel, range.maxLevel + 1))
             }
             if (!lootItem.randomEnchantmentPool.isNullOrEmpty()) {
                 val r = lootItem.randomEnchantmentPool.random()
-                itemStack.addUnsafeEnchantment(r.enchantment, Random.nextInt(r.minLevel, r.maxLevel + 1))
+                applyEnchantment(itemStack, r.enchantment, Random.nextInt(r.minLevel, r.maxLevel + 1))
             }
             return itemStack
         }
@@ -1208,7 +1234,9 @@ class LootManager(private val plugin: BetterTrialChambers) {
                 if (this is org.bukkit.inventory.meta.Damageable) {
                     val maxDurability = lootItem.type.maxDurability
                     if (maxDurability > 0) {
-                        val damageValue = Random.nextInt(lootItem.durabilityMin, lootItem.durabilityMax + 1)
+                        val lo = minOf(lootItem.durabilityMin, lootItem.durabilityMax)
+                        val hi = maxOf(lootItem.durabilityMin, lootItem.durabilityMax)
+                        val damageValue = Random.nextInt(lo, hi + 1)
                         damage = damageValue.coerceIn(0, maxDurability.toInt())
                     }
                 }
@@ -1657,14 +1685,16 @@ class LootManager(private val plugin: BetterTrialChambers) {
         li.name?.let { map["name"] = it }
         li.lore?.let { map["lore"] = it }
         li.customModelData?.let { map["custom-model-data"] = it }
+        fun enchId(e: Enchantment): String =
+            if (e.key.namespace == org.bukkit.NamespacedKey.MINECRAFT) e.key.key.uppercase() else e.key.toString()
         li.enchantments?.let { ench ->
-            map["enchantments"] = ench.map { (k, v) -> "${k.key.key.uppercase()}:$v" }
+            map["enchantments"] = ench.map { (k, v) -> "${enchId(k)}:$v" }
         }
         li.enchantmentRanges?.let { ranges ->
-            map["enchantment-ranges"] = ranges.values.map { "${it.enchantment.key.key.uppercase()}:${it.minLevel}:${it.maxLevel}" }
+            map["enchantment-ranges"] = ranges.values.map { "${enchId(it.enchantment)}:${it.minLevel}:${it.maxLevel}" }
         }
         li.randomEnchantmentPool?.let { pool ->
-            map["random-enchantment-pool"] = pool.map { "${it.enchantment.key.key.uppercase()}:${it.minLevel}:${it.maxLevel}" }
+            map["random-enchantment-pool"] = pool.map { "${enchId(it.enchantment)}:${it.minLevel}:${it.maxLevel}" }
         }
         li.potionType?.let { map["potion-type"] = it.name }
         li.potionLevel?.let { map["potion-level"] = it }

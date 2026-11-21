@@ -72,14 +72,16 @@ class SetupController(
     fun stop(uuid: UUID) {
         progress.remove(uuid)
         state.clearPaused(uuid)
-        // Bailed without finishing, and the initial weekly-reminder window is already spent ->
-        // arm one gentle "you started but didn't finish" nudge a week from now.
-        if (!state.completed &&
-            state.reminderCount >= SetupReminderService.MAX_REMINDERS &&
-            state.followUpEpoch == 0L
-        ) {
+        // Bailed without finishing -> arm one gentle "you started but didn't finish" nudge
+        // a week from now (only once; followUpShown stops it firing again).
+        if (!state.completed && !state.followUpShown && state.followUpEpoch == 0L) {
             state.followUpEpoch = System.currentTimeMillis() + SetupReminderService.WEEK_MS
         }
+    }
+
+    /** Drops ephemeral in-memory progress when a player disconnects. */
+    fun clearProgress(uuid: UUID) {
+        progress.remove(uuid)
     }
 
     /** Marks the tour as finished (called when the last step is passed). */
@@ -90,10 +92,20 @@ class SetupController(
     fun applyToggle(path: String, enabled: Boolean) {
         plugin.config.set(path, enabled)
         plugin.saveConfig()
+        if (path == "discovery.enabled" && enabled && plugin.isReady) {
+            plugin.chamberDiscoveryManager.runStartupSweep()
+        }
     }
 
-    fun applyChoice(path: String, value: Any) {
+    fun applyChoice(path: String, value: Any, player: org.bukkit.entity.Player? = null) {
         plugin.config.set(path, value)
+        if (path == "vaults.loot-mode") {
+            val isVanilla = value.toString().equals("VANILLA", ignoreCase = true)
+            plugin.config.set("vaults.per-player-loot", !isVanilla)
+            if (isVanilla) {
+                player?.sendMessage(plugin.getMessageComponent("vault-mode-vanilla-hint"))
+            }
+        }
         plugin.saveConfig()
     }
 

@@ -8,11 +8,10 @@ When a chamber has a non-vanilla provider configured:
 
 1. The vanilla trial spawner spawns its mob.
 2. On `CreatureSpawnEvent`, the plugin checks the chamber's provider.
-3. If the provider is non-vanilla and `isAvailable()`, the vanilla mob is removed the same tick.
-4. `provider.spawnMob(mobId, location, ominous)` is called at the same location.
-5. The returned entity is tracked by the wave system: boss bars, kill counts, cooldowns, key drops all continue.
+3. If the provider is non-vanilla and `isAvailable()`, `provider.spawnMob(mobId, location, ominous)` is called at the same location.
+4. Only if `spawnMob` returns a non-null entity is the vanilla mob removed and the custom entity tracked by the wave system (boss bars, kill counts, cooldowns, key drops all continue). If `spawnMob` returns `null`, the vanilla mob is kept so the wave never ends up short.
 
-Your provider is step 4. Everything else is handled.
+Your provider is step 3. Everything else is handled.
 
 ## The interface
 
@@ -38,8 +37,8 @@ interface TrialMobProvider {
      * @param mobId Provider-specific identifier
      * @param location Where to spawn; chunk/region ownership already validated by the caller
      * @param ominous True when the originating spawner was in ominous mode
-     * @return the spawned entity, or null on failure. Null makes the wave system
-     *         skip tracking this spawn (the vanilla mob is already gone).
+     * @return the spawned entity, or null on failure. Returning null keeps the
+     *         vanilla mob alive and logs a warning so the wave never runs short.
      */
     fun spawnMob(mobId: String, location: Location, ominous: Boolean): Entity?
 
@@ -53,8 +52,8 @@ interface TrialMobProvider {
 - `spawnMob` and `validateMobId` run on the spawner's region thread during a live `CreatureSpawnEvent`. Non-blocking only: no I/O, no waiting on async results, no `runBlocking`.
 - Need async work to decide the spawn? Schedule it and return `null` to skip the slot.
 - Never throw from `spawnMob`. It runs inside an event handler; an uncaught exception affects every later listener.
-- Return `null` to fail soft. The wave continues, the slot is skipped, and a warning is logged under `debug.verbose-logging`.
-- Cache `isAvailable()`. It is called on the hot path.
+- Return `null` to fail soft. A warning is logged and the vanilla mob stays in the wave.
+- Check `PluginManager.getPlugin(...)?.isEnabled == true` live in `isAvailable()` (only cache class-presence checks), so late-loading mob plugins are still detected.
 - Register during `onEnable` (after BTC has loaded). A provider registered after a wave has started is not seen by that wave.
 - One provider per `id`. Re-registering the same `id` overwrites the previous instance.
 

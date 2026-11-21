@@ -46,18 +46,20 @@ class SetupReminderService(
         if (now - state.lastReminderEpoch < WEEK_MS) return
         send(player) {
             player.sendMessage(plugin.getMessageComponent("setup.reminder"))
-            state.reminderCount = state.reminderCount + 1
-            state.lastReminderEpoch = now
+            state.recordReminder(now)
         }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    fun onPlayerQuit(event: org.bukkit.event.player.PlayerQuitEvent) {
+        plugin.setupController.clearProgress(event.player.uniqueId)
     }
 
     /** Defer a tick (join stream settles), then run [action] on the player's region thread. */
     private fun send(player: org.bukkit.entity.Player, action: () -> Unit) {
-        plugin.scheduler.runTask(Runnable {
-            plugin.scheduler.runAtEntity(player, Runnable {
-                if (player.isOnline) action()
-            })
-        })
+        plugin.scheduler.runAtEntityLater(player, Runnable {
+            if (player.isOnline) action()
+        }, 1L)
     }
 
     companion object {

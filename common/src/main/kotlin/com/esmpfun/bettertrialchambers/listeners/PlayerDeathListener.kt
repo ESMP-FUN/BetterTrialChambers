@@ -32,37 +32,44 @@ class PlayerDeathListener(private val plugin: BetterTrialChambers) : Listener {
         pendingOffers.remove(event.player.uniqueId)
     }
 
+    /**
+     * Applies optional custom chamber death message at NORMAL priority (mutating the event
+     * is forbidden at MONITOR priority). Independent of `statistics.enabled`.
+     */
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    fun onPlayerDeathMessage(event: PlayerDeathEvent) {
+        if (!plugin.config.getBoolean("messages.custom-death-message", false)) return
+        val player = event.entity
+        val chamber = plugin.chamberManager.getCachedChamberAt(player.location) ?: return
+        if (chamber.isPaused) return
+        event.deathMessage(
+            plugin.getMessageComponent(
+                "player-died-in-chamber",
+                "player" to player.name,
+                "chamber" to chamber.label()
+            )
+        )
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     fun onPlayerDeath(event: PlayerDeathEvent) {
-        if (!plugin.config.getBoolean("statistics.enabled", true)) return
-
         val player = event.entity
         val location = player.location
 
-        // Use synchronous cache lookup so we can modify the event before it's processed
+        // Use synchronous cache lookup so we can check chamber membership immediately
         val chamber = plugin.chamberManager.getCachedChamberAt(location) ?: return
         if (chamber.isPaused) return
 
-        // Track death statistics asynchronously
-        plugin.launchAsync {
-            plugin.statisticsManager.incrementDeaths(player.uniqueId)
+        // Track death statistics asynchronously (only when statistics are enabled)
+        if (plugin.config.getBoolean("statistics.enabled", true)) {
+            plugin.launchAsync {
+                plugin.statisticsManager.incrementDeaths(player.uniqueId)
+            }
         }
 
         plugin.logger.info("Player ${player.name} died in chamber ${chamber.name}")
 
-        // Set custom death message synchronously (while event is still being processed)
-        if (plugin.config.getBoolean("messages.custom-death-message", false)) {
-            // v1.4.0: deathMessage takes a Component, use the MM-aware
-            // getMessageComponent directly instead of wrapping legacy String.
-            event.deathMessage(
-                plugin.getMessageComponent("player-died-in-chamber",
-                    "player" to player.name,
-                    "chamber" to chamber.label()
-                )
-            )
-        }
-
-        // Queue spectator offer for when player respawns
+        // Queue spectator offer for when player respawns (independent of statistics.enabled)
         if (plugin.config.getBoolean("spectator-mode.enabled", true)) {
             pendingOffers[player.uniqueId] = PendingOffer(chamber.id, chamber.name, location.clone())
         }
@@ -82,10 +89,14 @@ class PlayerDeathListener(private val plugin: BetterTrialChambers) : Listener {
         val chamber = plugin.chamberManager.getCachedChamberById(pending.chamberId)
         if (chamber == null) return
 
+        // Use the player's safe respawn location (not their death spot inside the chamber) as the
+        // return destination when they leave spectator mode or reconnect.
+        val returnLocation = event.respawnLocation.clone()
+
         // Small delay after respawn to ensure player is fully ready
         plugin.scheduler.runAtEntity(player, Runnable {
             if (player.isOnline && !player.isDead) {
-                plugin.spectatorManager.offerSpectatorMode(player, chamber, pending.deathLocation)
+                plugin.spectatorManager.offerSpectatorMode(player, chamber, returnLocation)
             }
         })
     }
@@ -96,8 +107,9 @@ class PlayerDeathListener(private val plugin: BetterTrialChambers) : Listener {
 
         val entity = event.entity
 
-        // Only track mob kills (not players, animals, etc.)
-        if (entity !is Monster) return
+        // Track hostile mob kills — Enemy covers Monster PLUS Slimes (a core Trial Chamber mob),
+        // Magma Cubes, Phantoms, Ghasts, and Shulkers.
+        if (entity !is Monster && entity !is org.bukkit.entity.Enemy) return
 
         val killer = entity.killer ?: return
         val location = entity.location

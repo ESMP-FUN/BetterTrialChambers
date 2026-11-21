@@ -21,26 +21,27 @@ class SetupTourChat(
     fun render(player: Player, index: Int) {
         val step = controller.stepAt(index) ?: run { complete(player); return }
         val sb = StringBuilder()
-        sb.append("<dark_aqua><st>                    </st> <gold>Setup <gray>(${index + 1}/${controller.stepCount})</gold> <dark_aqua><st>                    </st>\n")
-        sb.append("<yellow><bold>").append(title(step)).append("</bold>\n")
-        desc(step).forEach { sb.append("<gray>").append(it).append("\n") }
+        sb.append("<dark_aqua><st>                    </st> <gold>Setup</gold> <gray>(${index + 1}/${controller.stepCount})</gray> <dark_aqua><st>                    </st>\n")
+        sb.append("<yellow><bold>").append(title(step)).append("</bold></yellow>\n")
+        desc(step).forEach { sb.append("<gray>").append(it).append("</gray>\n") }
         step.cpuImpact?.let { sb.append("<gray>CPU impact: <").append(it.mini).append(">").append(it.text).append("\n") }
         sb.append("\n").append(currentLine(step)).append("\n")
         sb.append(buttons(step, index))
-        player.sendRichMessage(sb.toString())
+        player.sendMessage(com.esmpfun.bettertrialchambers.utils.MessageParser.parse(sb.toString()))
     }
 
     fun complete(player: Player) {
         controller.markComplete()
-        player.sendRichMessage(plugin.getMessageList("setup.complete")
+        val raw = plugin.getMessageList("setup.complete")
             .ifEmpty { listOf("<green>Setup complete! You can re-run <yellow>/trial setup</yellow> anytime.") }
-            .joinToString("\n"))
+            .joinToString("\n")
+        player.sendMessage(com.esmpfun.bettertrialchambers.utils.MessageParser.parse(raw))
     }
 
     fun intro(player: Player) {
         plugin.getMessageList("setup.intro")
             .ifEmpty { listOf("<gold>Welcome, let's tour the main settings. Nothing is forced; pick what suits your server.") }
-            .forEach { player.sendRichMessage(it) }
+            .forEach { player.sendMessage(com.esmpfun.bettertrialchambers.utils.MessageParser.parse(it)) }
     }
 
     // ── pieces ─────────────────────────────────────────────────────────────────
@@ -57,8 +58,13 @@ class SetupTourChat(
             "<gray>Currently: " + if (on) "<green>Enabled" else "<red>Disabled"
         }
         is SetupStep.Choice -> {
-            val label = step.formatCurrent?.invoke(plugin.config.get(step.configPath))
-                ?: (plugin.config.get(step.configPath)?.toString() ?: "default")
+            val rawVal = if (step.configPath == "vaults.loot-mode") {
+                com.esmpfun.bettertrialchambers.models.VaultLootMode.resolve(plugin).name
+            } else {
+                plugin.config.get(step.configPath)
+            }
+            val label = step.formatCurrent?.invoke(rawVal)
+                ?: (rawVal?.toString() ?: "default")
             "<gray>Currently: <white>$label"
         }
     }

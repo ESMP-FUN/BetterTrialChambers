@@ -3,7 +3,7 @@
 Make a chamber's trial spawner waves spawn mobs from another plugin (MythicMobs, EliteMobs, and others) instead of vanilla mobs, while keeping wave counters, boss bars, glow outlines, spawner cooldowns, Trial Key drops, and statistics working.
 
 {% hint style="info" %}
-When a spawner fires, vanilla spawns its mob, BetterTrialChambers removes it the same tick and asks the configured provider to spawn a replacement in the same spot. The vanilla spawner's own tracking of participants and completion is left alone, so waves and vanilla rewards still work.
+When a spawner fires, vanilla spawns its mob, BetterTrialChambers asks the configured provider to spawn a replacement in the same spot, and only removes the vanilla mob if the replacement succeeds (falling back to the vanilla mob if the provider returns null). The vanilla spawner's own tracking of participants and completion is left alone, so waves and vanilla rewards still work.
 {% endhint %}
 
 ***

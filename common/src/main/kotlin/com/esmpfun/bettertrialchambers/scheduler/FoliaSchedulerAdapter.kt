@@ -82,14 +82,16 @@ class FoliaSchedulerAdapter(private val plugin: Plugin) : SchedulerAdapter {
     }
 
     override fun runAtEntity(entity: Entity, task: Runnable, retired: Runnable?) {
-        entity.scheduler.run(plugin, { task.run() }, retired)
+        val scheduled = entity.scheduler.run(plugin, { task.run() }, retired)
+        if (scheduled == null) retired?.run()
     }
 
     override fun runAtEntityLater(entity: Entity, task: Runnable, delayTicks: Long, retired: Runnable?) {
         if (delayTicks <= 0) {
             runAtEntity(entity, task, retired)
         } else {
-            entity.scheduler.runDelayed(plugin, { task.run() }, retired, delayTicks)
+            val scheduled = entity.scheduler.runDelayed(plugin, { task.run() }, retired, delayTicks)
+            if (scheduled == null) retired?.run()
         }
     }
 

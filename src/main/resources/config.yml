@@ -324,7 +324,7 @@ protection:
   # AdvancedEnchantments integration: AE custom enchants (Blast Mining, etc.) break blocks
   # through their own effect path that ignores BTC's block-break cancel, so they can bypass
   # chamber protection. When this is on (and AE is installed), BTC cancels AE enchant activations
-  # for players standing in a registered chamber. Players with tcp.bypass.protection are exempt.
+  # for players standing in a registered chamber. Players with btc.bypass.protection are exempt.
   # Off by default so AE behaves normally until you opt in.
   block-advanced-enchantments: false
   # Enchant names that stay allowed inside chambers even when the option above is on (lowercase,
@@ -337,17 +337,17 @@ protection:
   advanced-enchantments-block-radius: 2
   # Stop players teleporting INTO a registered chamber from outside (/tpa, /tpahere, /home,
   # /warp, /tp, ender pearls, etc.), so they can't skip the intended entrance. Walking in is
-  # unaffected. Players with tcp.bypass.entry (default: op), spectators, and creative-mode
+  # unaffected. Players with btc.bypass.entry (default: op), spectators, and creative-mode
   # players are exempt. Off by default.
   prevent-teleport-into-chamber: false
-  # Gate WALKING into a chamber by permission: when true, only players with tcp.bypass.entry
+  # Gate WALKING into a chamber by permission: when true, only players with btc.bypass.entry
   # (default: op) can enter a chamber on foot, others are stopped at the boundary. Use this to
   # make chambers rank-restricted. Spectators/creative are exempt. Off by default. (Note: this
   # runs on player movement; it's lightweight, but only enable it if you actually need it.)
   prevent-entry-without-permission: false
   # Allow player-vs-player combat inside registered chambers. When false, BTC cancels
   # player-on-player damage (melee + player-shot projectiles) inside a chamber. true keeps
-  # vanilla behaviour (PvP follows world/server rules). Players with tcp.bypass.protection
+  # vanilla behaviour (PvP follows world/server rules). Players with btc.bypass.protection
   # are exempt; mob damage and self-damage are never affected.
   allow-pvp: true
   prevent-mob-griefing: true
@@ -357,7 +357,7 @@ protection:
   # ---------------------------------------------------------------------------
   # Stopping people breaking and placing blocks does not cover everything. These
   # cover the rest. They only ever apply inside a registered chamber, and anyone
-  # with the tcp.bypass.protection permission (which includes operators) ignores
+  # with the btc.bypass.protection permission (which includes operators) ignores
   # them entirely.
 
   # Stop water and lava getting into a chamber from outside: poured just past
@@ -393,7 +393,7 @@ protection:
   # Land-claim plugin integrations: stop players creating or expanding a claim that
   # overlaps a registered Trial Chamber (so they can't claim a chamber and change its
   # flags). Each requires its plugin to be installed; ignored otherwise. Players with
-  # the matching bypass permission (tcp.bypass.residence / .lands / .griefprevention,
+  # the matching bypass permission (btc.bypass.residence / .lands / .griefprevention,
   # default: op) are exempt.
   residence-integration: true
   lands-integration: true
@@ -406,7 +406,7 @@ protection:
   # Block placing functioning VAULT blocks outside registered chambers. A wild
   # vault is a permanent vanilla loot dispenser the plugin can't manage (no
   # per-player tracking, resets, or loot tables). Players with the
-  # tcp.bypass.vaultplace permission (default: op) can always place them.
+  # btc.bypass.vaultplace permission (default: op) can always place them.
   block-wild-vault-placement: true
   # Auto-pause: if enough vaults or trial spawners inside a registered chamber are
   # destroyed, automatically pause the chamber so its record stays in the database
@@ -425,7 +425,7 @@ trial-keys:
   # Ensure normal keys only open normal vaults (and ominous keys only open ominous vaults).
   validate-key-type: true
   # Note: BTC does not provide trial-key dupe protection, for that, use a dedicated plugin
-  # such as AntiDupePro (https://modrinth.com/plugin/AntiDupePro).
+  # such as Better Anti-Dupe (https://modrinth.com/plugin/betterantidupe).
 
 # Reset settings
 reset:
@@ -486,7 +486,7 @@ reset:
   # itself: one key per unique participating player, above the spawner block.
   # Drops are owner-locked for this many seconds before anyone can pick them up.
   # Set to 0 to keep drops owner-locked until they despawn naturally.
-  # Players with permission `tcp.bypass.droplock` can always pick up.
+  # Players with permission `btc.bypass.droplock` can always pick up.
   spawner-key-drop-owner-grace-seconds: 30
 
 # Performance
@@ -633,7 +633,7 @@ discovery:
 
   # v1.5.1: Nag operators when discovered chambers are missing a snapshot.
   # Without a snapshot the chamber cannot be reset, so this is actionable.
-  # Notifications go to anyone with `tcp.admin.snapshot`.
+  # Notifications go to anyone with `btc.admin.snapshot`.
   snapshot-reminder:
     enabled: true
     on-join: true                  # Ping an admin individually when they log in
@@ -644,7 +644,7 @@ discovery:
 # older/non-Paper servers). Nothing is ever forced, run it on demand with `/trial setup`.
 setup:
   reminder:
-    # Gently remind admins (with tcp.admin.setup) on join that the tour exists, IF they have
+    # Gently remind admins (with btc.admin.setup) on join that the tour exists, IF they have
     # never run it. At most once a week and at most 3 times ever; running /trial setup once
     # silences it forever. Set false to never show the reminder.
     enabled: true
@@ -700,11 +700,11 @@ debug:
   # Logs detailed decisions to the console, including WHY a protection action was or wasn't
   # taken (block-break, PvP, teleport-into-chamber, walk-in entry gate, AdvancedEnchantments).
   # If a toggle "isn't working", turn this on and watch the log: the most common cause is the
-  # player being exempt via a bypass permission, and OPs have every tcp.bypass.* by default,
+  # player being exempt via a bypass permission, and OPs have every btc.bypass.* by default,
   # so test with a non-OP account (or negate the permission). Noisy; leave off in production.
   verbose-logging: false
   # When true, skip the startup check that compares your messages.yml against
   # the JAR-bundled defaults. Leave this false unless the warning is noisy and
-  # you have a reason to ignore it, when keys are missing, GUI tooltips and
-  # chat messages render as literal "<missing: key.name>" text.
+  # you have a reason to ignore it; missing keys fall back to built-in English
+  # wording at runtime (and only render as "<missing: key.name>" if absent from both).
   skip-messages-schema-check: false

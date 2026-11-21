@@ -48,7 +48,7 @@ These need BetterTrialChambers and are sold on [ESMP.fun](https://esmp.fun/).
 
 * [**Discord**](https://dc.esmp.fun). Questions, help and announcements.
 * [**GitHub Issues**](https://github.com/ESMP-FUN/BetterTrialChambers/issues). Bug reports and ideas.
-* [**Modrinth**](https://modrinth.com/plugin/trialchamberpro). Downloads and what changed in each version.
+* [**Modrinth**](https://modrinth.com/plugin/better-trial-chambers). Downloads and what changed in each version.
 
 Free to use, no redistribution (see the
 [LICENSE](https://github.com/ESMP-FUN/BetterTrialChambers/blob/master/LICENSE)).

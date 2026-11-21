@@ -84,6 +84,7 @@ Reset timing, reset messages, teleport-on-reset, and the reset throttle.
 global:
   excluded-worlds: []
   default-reset-interval: 172800
+  reset-after-first-loot: false
   reset-warning-times: [300, 60, 30]
   reset-complete-alert: true
   reset-complete-audience: chamber
@@ -124,6 +125,14 @@ Seconds before a chamber automatically resets. **Default:** `172800` (48 hours).
 
 - `0` or negative: automatic resets off, reset only via `/trial reset` or the GUI.
 - Daily: `86400`. Twice daily: `43200`. Weekly: `604800`.
+
+</details>
+
+<details>
+
+<summary><code>reset-after-first-loot</code></summary>
+
+Start a chamber's reset countdown only after a player actually loots it (opens a vault or a container inside), instead of resetting untouched chambers on a fixed schedule. **Default:** `false`. Useful on servers with many auto-discovered chambers so only visited chambers consume reset work.
 
 </details>
 
@@ -263,6 +272,7 @@ Gives each chamber a friendly name shown in reset and clear broadcasts and `/tri
 ```yaml
 naming:
   auto-assign: true
+  make-up-names: true
   name-pool:
     - Bastion
     - Ashfall Hollow
@@ -274,7 +284,15 @@ naming:
 
 <summary><code>auto-assign</code></summary>
 
-Give each newly registered chamber (manual or auto-discovered) a random unused name from `name-pool`. **Default:** `true`. Set `false` to leave new chambers nameless until you rename them.
+Give each newly registered chamber (manual or auto-discovered) — and any existing chamber still without one at startup — a random unused name from `name-pool`. **Default:** `true`. Set `false` to leave new chambers nameless until you rename them.
+
+</details>
+
+<details>
+
+<summary><code>make-up-names</code></summary>
+
+Once every name in `name-pool` is taken, generate new compound names (such as `Copperhold` or `Galewatch`). **Default:** `true`. Set `false` to leave further chambers nameless instead.
 
 </details>
 
@@ -282,7 +300,7 @@ Give each newly registered chamber (manual or auto-discovered) a random unused n
 
 <summary><code>name-pool</code></summary>
 
-The list of display names to draw from. A name already used by another chamber is skipped; when all are taken, new chambers use their internal name until you add more. The bundled list is a starting set; add your own.
+The list of display names to draw from first. A name already used by another chamber is skipped; when all are taken, `make-up-names` takes over (or chambers fall back to their internal name if `make-up-names` is `false`). The bundled list is a starting set; add your own.
 
 </details>
 
@@ -882,7 +900,7 @@ When this is not `-1`, wave tracking and boss bars also work in wild Trial Chamb
 
 <summary><code>spawner-key-drop-owner-grace-seconds</code> (1.3.0+)</summary>
 
-When a wave is driven by a non-vanilla mob provider (e.g. MythicMobs), vanilla cannot issue trial keys, so BTC drops them itself: one per participating player, above the spawner. **Default:** `30`. This is how long the drops stay owner-locked before anyone can pick them up. `0` = owner-locked until they despawn. `tcp.bypass.droplock` can always pick up.
+When a wave is driven by a non-vanilla mob provider (e.g. MythicMobs), vanilla cannot issue trial keys, so BTC drops them itself: one per participating player, above the spawner. **Default:** `30`. This is how long the drops stay owner-locked before anyone can pick them up. `0` = owner-locked until they despawn. `btc.bypass.droplock` can always pick up.
 
 </details>
 
@@ -1305,7 +1323,7 @@ setup:
     enabled: true
 ```
 
-_(Added in 1.6.0.)_ Controls the reminder for the opt-in `/trial setup` tour. **Default:** `enabled: true`. When on, an operator with `tcp.admin.setup` who has not run the tour gets a one-line nudge on join, at most once a week and three times total, which stops for good once they run `/trial setup`. Set `false` to never show it. The tour is always available on demand; BTC runs fine on defaults without it.
+_(Added in 1.6.0.)_ Controls the reminder for the opt-in `/trial setup` tour. **Default:** `enabled: true`. When on, an operator with `btc.admin.setup` who has not run the tour gets a one-line nudge on join, at most once a week and three times total, which stops for good once they run `/trial setup`. Set `false` to never show it. The tour is always available on demand; BTC runs fine on defaults without it.
 
 ***
 
@@ -1397,7 +1415,7 @@ debug:
 
 <summary><code>verbose-logging</code></summary>
 
-Log detailed decisions to the console, including why a protection action was or was not taken. **Default:** `false`. If a toggle seems not to work, turn this on and watch the log; the usual cause is the player being exempt through a `tcp.bypass.*` permission (operators have all of them, so test with a non-op account). Very noisy; leave off in production. When on, a startup banner confirms it loaded.
+Log detailed decisions to the console, including why a protection action was or was not taken. **Default:** `false`. If a toggle seems not to work, turn this on and watch the log; the usual cause is the player being exempt through a `btc.bypass.*` permission (operators have all of them, so test with a non-op account). Very noisy; leave off in production. When on, a startup banner confirms it loaded.
 
 </details>
 
@@ -1405,7 +1423,7 @@ Log detailed decisions to the console, including why a protection action was or 
 
 <summary><code>skip-messages-schema-check</code></summary>
 
-Skip the startup check that compares your `messages.yml` against the bundled defaults. **Default:** `false`. Leave `false` unless the warning is noisy and you have a reason to ignore it; missing keys make GUI tooltips and chat render as literal `<missing: key.name>` text.
+Skip the startup check that compares your `messages.yml` against the bundled defaults. **Default:** `false`. Leave `false` unless the warning is noisy and you have a reason to ignore it; missing keys fall back to the built-in English wording at runtime (and only render as `<missing: key.name>` if a key is also absent from the bundled defaults).
 
 </details>
 
@@ -1482,7 +1500,7 @@ vaults:
 
 ## Applying Changes
 
-After editing `config.yml`, run `/trial reload`. Most settings apply immediately. Chamber reset intervals only affect the next reset, not a chamber mid-cycle. Database changes need a full server restart.
+After editing `config.yml`, run `/trial reload`. Most settings apply immediately, and changing `default-reset-interval` or per-chamber reset intervals recalculates upcoming resets on the next check. Database changes need a full server restart.
 
 ***
 

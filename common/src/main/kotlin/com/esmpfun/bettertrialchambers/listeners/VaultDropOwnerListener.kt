@@ -50,6 +50,15 @@ class VaultDropOwnerListener(private val plugin: BetterTrialChambers) : Listener
         if (stillOwned(item)) event.isCancelled = true
     }
 
+    /** Stops an owner-locked drop from merging into another player's or an unowned item stack. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onItemMerge(event: org.bukkit.event.entity.ItemMergeEvent) {
+        val srcOwner = readOwner(event.entity)?.takeIf { stillOwned(event.entity) }
+        val dstOwner = readOwner(event.target)?.takeIf { stillOwned(event.target) }
+        if (srcOwner == null && dstOwner == null) return
+        if (srcOwner != dstOwner) event.isCancelled = true
+    }
+
     /** True while this drop is still held for whoever it belongs to. */
     private fun stillOwned(item: Item): Boolean {
         val graceSeconds = plugin.config.getLong("vaults.drop-loot-owner-grace-seconds", 30L)

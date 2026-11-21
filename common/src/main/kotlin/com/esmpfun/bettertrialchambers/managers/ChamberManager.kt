@@ -232,8 +232,10 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
             }
         } catch (e: Exception) {
             val msg = e.message ?: ""
-            if (msg.contains("UNIQUE constraint failed: ${tables.chambers}.name")) {
-                plugin.logger.warning("[TCP] Duplicate chamber name '$name' - creation cancelled.")
+            if (msg.contains("UNIQUE constraint failed: ${tables.chambers}.name") ||
+                msg.contains("Duplicate entry", ignoreCase = true)
+            ) {
+                plugin.logger.warning("[BTC] Duplicate chamber name '$name' - creation cancelled.")
                 return@withContext null
             }
             plugin.logger.severe("Failed to create chamber: ${e.message}")
@@ -354,12 +356,29 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
         return allChambers.firstOrNull { it.contains(location) }
     }
 
+    /** Reloads one chamber into the cache AFTER any write connection has been released (avoids nested HikariCP borrows). */
+    private suspend fun refreshCacheByName(chamberName: String) {
+        val refreshed = loadChamberFromDb(chamberName)
+        if (refreshed != null) {
+            cachePut(refreshed)
+            updateCacheExpiry(chamberName)
+        } else {
+            cacheRemove(chamberName)
+            cacheExpiry.remove(chamberName)
+        }
+    }
+
+    private suspend fun refreshCacheById(chamberId: Int) {
+        val name = chamberCache.values.find { it.id == chamberId }?.name ?: return
+        refreshCacheByName(name)
+    }
+
     /**
      * Sets the exit location for a chamber.
      */
     suspend fun setExitLocation(chamberName: String, location: Location): Boolean = withContext(Dispatchers.IO) {
         try {
-            plugin.databaseManager.connection.use { conn ->
+            val updated = plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
                     """
                     UPDATE ${tables.chambers}
@@ -373,23 +392,14 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                     stmt.setFloat(4, location.yaw)
                     stmt.setFloat(5, location.pitch)
                     stmt.setString(6, chamberName)
-
-                    val updated = stmt.executeUpdate() > 0
-                    if (updated) {
-                        // Refresh cache with updated data
-                        val refreshed = loadChamberFromDb(chamberName)
-                        if (refreshed != null) {
-                            cachePut(refreshed)
-                            updateCacheExpiry(chamberName)
-                        } else {
-                            cacheRemove(chamberName)
-                            cacheExpiry.remove(chamberName)
-                        }
-                        plugin.logger.info("Set exit location for chamber: $chamberName")
-                    }
-                    updated
+                    stmt.executeUpdate() > 0
                 }
             }
+            if (updated) {
+                refreshCacheByName(chamberName)
+                plugin.logger.info("Set exit location for chamber: $chamberName")
+            }
+            updated
         } catch (e: Exception) {
             plugin.logger.severe("Failed to set exit location: ${e.message}")
             false
@@ -401,26 +411,15 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      */
     suspend fun setSnapshotFile(chamberName: String, filePath: String): Boolean = withContext(Dispatchers.IO) {
         try {
-            plugin.databaseManager.connection.use { conn ->
+            val updated = plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement("UPDATE ${tables.chambers} SET snapshot_file = ? WHERE name = ?").use { stmt ->
                     stmt.setString(1, filePath)
                     stmt.setString(2, chamberName)
-
-                    val updated = stmt.executeUpdate() > 0
-                    if (updated) {
-                        // Refresh cache with updated data instead of invalidating only
-                        val refreshed = loadChamberFromDb(chamberName)
-                        if (refreshed != null) {
-                            cachePut(refreshed)
-                            updateCacheExpiry(chamberName)
-                        } else {
-                            cacheRemove(chamberName)
-                            cacheExpiry.remove(chamberName)
-                        }
-                    }
-                    updated
+                    stmt.executeUpdate() > 0
                 }
             }
+            if (updated) refreshCacheByName(chamberName)
+            updated
         } catch (e: Exception) {
             plugin.logger.severe("Failed to set snapshot file: ${e.message}")
             false
@@ -432,13 +431,15 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      */
     suspend fun updateLastReset(chamberId: Int, timestamp: Long): Boolean = withContext(Dispatchers.IO) {
         try {
-            plugin.databaseManager.connection.use { conn ->
+            val updated = plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement("UPDATE ${tables.chambers} SET last_reset = ? WHERE id = ?").use { stmt ->
                     stmt.setLong(1, timestamp)
                     stmt.setInt(2, chamberId)
                     stmt.executeUpdate() > 0
                 }
             }
+            if (updated) refreshCacheById(chamberId)
+            updated
         } catch (e: Exception) {
             plugin.logger.severe("Failed to update last reset: ${e.message}")
             false
@@ -451,7 +452,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      */
     suspend fun setFirstLooted(chamberId: Int, timestamp: Long?): Boolean = withContext(Dispatchers.IO) {
         try {
-            plugin.databaseManager.connection.use { conn ->
+            val updated = plugin.databaseManager.connection.use { conn ->
                 val sql = if (timestamp == null) "UPDATE ${tables.chambers} SET first_looted_at = NULL WHERE id = ?"
                 else "UPDATE ${tables.chambers} SET first_looted_at = ? WHERE id = ? AND first_looted_at IS NULL"
                 conn.prepareStatement(sql).use { stmt ->
@@ -459,6 +460,8 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                     stmt.executeUpdate() > 0
                 }
             }
+            if (updated) refreshCacheById(chamberId)
+            updated
         } catch (e: Exception) {
             plugin.logger.severe("Failed to update first loot time: ${e.message}")
             false
@@ -472,33 +475,25 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
         try {
             // Resolve BEFORE the row is gone, the wave manager cleanup below needs it.
             val chamberForCleanup = chamberCache[name]
-            plugin.databaseManager.connection.use { conn ->
+            val deleted = plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement("DELETE FROM ${tables.chambers} WHERE name = ?").use { stmt ->
                     stmt.setString(1, name)
-                    val deleted = stmt.executeUpdate() > 0
-
-                    if (deleted) {
-                        // Remove from cache
-                        cacheRemove(name)
-                        cacheExpiry.remove(name)
-
-                        // Delete snapshot file
-                        plugin.snapshotManager.deleteSnapshot(name)
-
-                        // v1.7.2: clear the wave manager's per-chamber state (active waves,
-                        // boss bars, cycle tracking, spawner caches). Previously these
-                        // leaked on deletion and went stale if a chamber id was reused.
-                        chamberForCleanup?.let { chamber ->
-                            runCatching { plugin.spawnerWaveManager.clearWavesInChamber(chamber) }
-                            runCatching { plugin.spawnerWaveManager.invalidateChamberSpawnerCaches(chamber.id) }
-                            runCatching { plugin.resetManager.cancelScheduledFor(chamber.id) }
-                        }
-
-                        plugin.logger.info("Deleted chamber: $name")
-                    }
-                    deleted
+                    stmt.executeUpdate() > 0
                 }
             }
+            if (deleted) {
+                cacheRemove(name)
+                cacheExpiry.remove(name)
+                plugin.snapshotManager.deleteSnapshot(name)
+                chamberForCleanup?.let { chamber ->
+                    destructionCounters.remove(chamber.id)
+                    runCatching { plugin.spawnerWaveManager.clearWavesInChamber(chamber) }
+                    runCatching { plugin.spawnerWaveManager.invalidateChamberSpawnerCaches(chamber.id) }
+                    runCatching { plugin.resetManager.cancelScheduledFor(chamber.id) }
+                }
+                plugin.logger.info("Deleted chamber: $name")
+            }
+            deleted
         } catch (e: Exception) {
             plugin.logger.severe("Failed to delete chamber: ${e.message}")
             false
@@ -958,33 +953,20 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      */
     suspend fun setPaused(chamberId: Int, paused: Boolean): Boolean = withContext(Dispatchers.IO) {
         try {
-            plugin.databaseManager.connection.use { conn ->
+            val updated = plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement("UPDATE ${tables.chambers} SET is_paused = ? WHERE id = ?").use { stmt ->
                     stmt.setBoolean(1, paused)
                     stmt.setInt(2, chamberId)
-
-                    val updated = stmt.executeUpdate() > 0
-                    if (updated) {
-                        val chamber = chamberCache.values.find { it.id == chamberId }
-                        if (chamber != null) {
-                            val refreshed = loadChamberFromDb(chamber.name)
-                            if (refreshed != null) {
-                                cachePut(refreshed)
-                                updateCacheExpiry(chamber.name)
-                            }
-                        }
-                        // Clear destruction counter on every pause-state transition so the
-                        // count always starts from zero after a pause or a resume.
-                        resetDestructionCounter(chamberId)
-                        // v1.7.2: pausing also cancels any scheduled reset countdown,
-                        // its warning messages, and a parked pending confirmation,
-                        // previously "resets in 30 seconds!" kept firing for paused chambers.
-                        if (paused) runCatching { plugin.resetManager.cancelScheduledFor(chamberId) }
-                        plugin.logger.info("Chamber $chamberId ${if (paused) "paused" else "resumed"}")
-                    }
-                    updated
+                    stmt.executeUpdate() > 0
                 }
             }
+            if (updated) {
+                refreshCacheById(chamberId)
+                resetDestructionCounter(chamberId)
+                if (paused) runCatching { plugin.resetManager.cancelScheduledFor(chamberId) }
+                plugin.logger.info("Chamber $chamberId ${if (paused) "paused" else "resumed"}")
+            }
+            updated
         } catch (e: Exception) {
             plugin.logger.severe("Failed to set chamber paused state: ${e.message}")
             false
@@ -997,25 +979,16 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      */
     suspend fun setProtectionOverrides(chamberId: Int, overrides: Map<String, Boolean>): Boolean = withContext(Dispatchers.IO) {
         try {
-            plugin.databaseManager.connection.use { conn ->
+            val updated = plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement("UPDATE ${tables.chambers} SET protection_overrides = ? WHERE id = ?").use { stmt ->
                     if (overrides.isEmpty()) stmt.setNull(1, java.sql.Types.VARCHAR)
                     else stmt.setString(1, com.google.gson.Gson().toJson(overrides))
                     stmt.setInt(2, chamberId)
-                    val updated = stmt.executeUpdate() > 0
-                    if (updated) {
-                        val chamber = chamberCache.values.find { it.id == chamberId }
-                        if (chamber != null) {
-                            val refreshed = loadChamberFromDb(chamber.name)
-                            if (refreshed != null) {
-                                cachePut(refreshed)
-                                updateCacheExpiry(chamber.name)
-                            }
-                        }
-                    }
-                    updated
+                    stmt.executeUpdate() > 0
                 }
             }
+            if (updated) refreshCacheById(chamberId)
+            updated
         } catch (e: Exception) {
             plugin.logger.severe("Failed to set protection_overrides: ${e.message}")
             false
@@ -1035,24 +1008,15 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      */
     suspend fun setBroadcastResetComplete(chamberId: Int, broadcast: Boolean): Boolean = withContext(Dispatchers.IO) {
         try {
-            plugin.databaseManager.connection.use { conn ->
+            val updated = plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement("UPDATE ${tables.chambers} SET broadcast_reset_complete = ? WHERE id = ?").use { stmt ->
                     stmt.setBoolean(1, broadcast)
                     stmt.setInt(2, chamberId)
-                    val updated = stmt.executeUpdate() > 0
-                    if (updated) {
-                        val chamber = chamberCache.values.find { it.id == chamberId }
-                        if (chamber != null) {
-                            val refreshed = loadChamberFromDb(chamber.name)
-                            if (refreshed != null) {
-                                cachePut(refreshed)
-                                updateCacheExpiry(chamber.name)
-                            }
-                        }
-                    }
-                    updated
+                    stmt.executeUpdate() > 0
                 }
             }
+            if (updated) refreshCacheById(chamberId)
+            updated
         } catch (e: Exception) {
             plugin.logger.severe("Failed to set broadcast_reset_complete: ${e.message}")
             false
@@ -1065,24 +1029,15 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      */
     suspend fun setBoundsConfirmed(chamberId: Int, confirmed: Boolean): Boolean = withContext(Dispatchers.IO) {
         try {
-            plugin.databaseManager.connection.use { conn ->
+            val updated = plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement("UPDATE ${tables.chambers} SET bounds_confirmed = ? WHERE id = ?").use { stmt ->
                     stmt.setBoolean(1, confirmed)
                     stmt.setInt(2, chamberId)
-                    val updated = stmt.executeUpdate() > 0
-                    if (updated) {
-                        val chamber = chamberCache.values.find { it.id == chamberId }
-                        if (chamber != null) {
-                            val refreshed = loadChamberFromDb(chamber.name)
-                            if (refreshed != null) {
-                                cachePut(refreshed)
-                                updateCacheExpiry(chamber.name)
-                            }
-                        }
-                    }
-                    updated
+                    stmt.executeUpdate() > 0
                 }
             }
+            if (updated) refreshCacheById(chamberId)
+            updated
         } catch (e: Exception) {
             plugin.logger.severe("Failed to set bounds_confirmed: ${e.message}")
             false
@@ -1098,31 +1053,19 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      * @return True if the update was applied
      */
     suspend fun setDisplayName(chamberId: Int, displayName: String?): Boolean = withContext(Dispatchers.IO) {
-        // A display name is announced to everyone and styled on the way out, so
-        // anything in it that would be clickable, hoverable or a line of its own
-        // is taken out here. Colours and bold survive.
         val clean = displayName
             ?.let { com.esmpfun.bettertrialchambers.utils.DisplayText.sanitize(it) }
             ?.takeIf { it.isNotEmpty() }
         try {
-            plugin.databaseManager.connection.use { conn ->
+            val updated = plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement("UPDATE ${tables.chambers} SET display_name = ? WHERE id = ?").use { stmt ->
                     stmt.setString(1, clean)
                     stmt.setInt(2, chamberId)
-                    val updated = stmt.executeUpdate() > 0
-                    if (updated) {
-                        val chamber = chamberCache.values.find { it.id == chamberId }
-                        if (chamber != null) {
-                            val refreshed = loadChamberFromDb(chamber.name)
-                            if (refreshed != null) {
-                                cachePut(refreshed)
-                                updateCacheExpiry(chamber.name)
-                            }
-                        }
-                    }
-                    updated
+                    stmt.executeUpdate() > 0
                 }
             }
+            if (updated) refreshCacheById(chamberId)
+            updated
         } catch (e: Exception) {
             plugin.logger.severe("Failed to set display_name: ${e.message}")
             false
@@ -1170,7 +1113,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                 VaultType.OMINOUS -> "ominous_loot_table"
             }
 
-            plugin.databaseManager.connection.use { conn ->
+            val updated = plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement("UPDATE ${tables.chambers} SET $column = ? WHERE name = ?").use { stmt ->
                     if (tableName == null) {
                         stmt.setNull(1, java.sql.Types.VARCHAR)
@@ -1178,23 +1121,14 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         stmt.setString(1, tableName)
                     }
                     stmt.setString(2, chamberName)
-
-                    val updated = stmt.executeUpdate() > 0
-                    if (updated) {
-                        // Refresh cache with updated data
-                        val refreshed = loadChamberFromDb(chamberName)
-                        if (refreshed != null) {
-                            cachePut(refreshed)
-                            updateCacheExpiry(chamberName)
-                        } else {
-                            cacheRemove(chamberName)
-                            cacheExpiry.remove(chamberName)
-                        }
-                        plugin.logger.info("Set ${vaultType.displayName} loot table for chamber $chamberName to: ${tableName ?: "(default)"}")
-                    }
-                    updated
+                    stmt.executeUpdate() > 0
                 }
             }
+            if (updated) {
+                refreshCacheByName(chamberName)
+                plugin.logger.info("Set ${vaultType.displayName} loot table for chamber $chamberName to: ${tableName ?: "(default)"}")
+            }
+            updated
         } catch (e: Exception) {
             plugin.logger.severe("Failed to set loot table: ${e.message}")
             false
@@ -1224,34 +1158,19 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      */
     suspend fun updateResetInterval(chamberId: Int, intervalSeconds: Long): Boolean = withContext(Dispatchers.IO) {
         try {
-            plugin.databaseManager.connection.use { conn ->
+            val updated = plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement("UPDATE ${tables.chambers} SET reset_interval = ? WHERE id = ?").use { stmt ->
                     stmt.setLong(1, intervalSeconds)
                     stmt.setInt(2, chamberId)
-
-                    val updated = stmt.executeUpdate() > 0
-                    if (updated) {
-                        // Refresh cache
-                        val chamber = chamberCache.values.find { it.id == chamberId }
-                        if (chamber != null) {
-                            val refreshed = loadChamberFromDb(chamber.name)
-                            if (refreshed != null) {
-                                cachePut(refreshed)
-                                updateCacheExpiry(chamber.name)
-                            }
-                        }
-                        // Drop whatever was already planned for this chamber. Without
-                        // this the reset queued under the old interval still stands,
-                        // including its warnings, so a change from two days to one hour
-                        // only takes effect after the chamber has reset once more, and
-                        // turning resets off (0) lets one more through. The scheduler
-                        // re-plans from the new interval within the minute.
-                        runCatching { plugin.resetManager.cancelScheduledFor(chamberId) }
-                        plugin.logger.info("Updated reset interval for chamber $chamberId to $intervalSeconds seconds")
-                    }
-                    updated
+                    stmt.executeUpdate() > 0
                 }
             }
+            if (updated) {
+                refreshCacheById(chamberId)
+                runCatching { plugin.resetManager.cancelScheduledFor(chamberId) }
+                plugin.logger.info("Updated reset interval for chamber $chamberId to $intervalSeconds seconds")
+            }
+            updated
         } catch (e: Exception) {
             plugin.logger.severe("Failed to update reset interval: ${e.message}")
             false
@@ -1271,7 +1190,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      */
     suspend fun updateExitLocation(chamberId: Int, x: Double, y: Double, z: Double, yaw: Float, pitch: Float): Boolean = withContext(Dispatchers.IO) {
         try {
-            plugin.databaseManager.connection.use { conn ->
+            val updated = plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
                     "UPDATE ${tables.chambers} SET exit_x = ?, exit_y = ?, exit_z = ?, exit_yaw = ?, exit_pitch = ? WHERE id = ?"
                 ).use { stmt ->
@@ -1281,23 +1200,14 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                     stmt.setFloat(4, yaw)
                     stmt.setFloat(5, pitch)
                     stmt.setInt(6, chamberId)
-
-                    val updated = stmt.executeUpdate() > 0
-                    if (updated) {
-                        // Refresh cache
-                        val chamber = chamberCache.values.find { it.id == chamberId }
-                        if (chamber != null) {
-                            val refreshed = loadChamberFromDb(chamber.name)
-                            if (refreshed != null) {
-                                cachePut(refreshed)
-                                updateCacheExpiry(chamber.name)
-                            }
-                        }
-                        plugin.logger.info("Updated exit location for chamber $chamberId")
-                    }
-                    updated
+                    stmt.executeUpdate() > 0
                 }
             }
+            if (updated) {
+                refreshCacheById(chamberId)
+                plugin.logger.info("Updated exit location for chamber $chamberId")
+            }
+            updated
         } catch (e: Exception) {
             plugin.logger.severe("Failed to update exit location: ${e.message}")
             false
@@ -1317,7 +1227,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
         maxX: Int, maxY: Int, maxZ: Int
     ): Boolean = withContext(Dispatchers.IO) {
         try {
-            plugin.databaseManager.connection.use { conn ->
+            val updated = plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
                     "UPDATE ${tables.chambers} SET min_x = ?, min_y = ?, min_z = ?, max_x = ?, max_y = ?, max_z = ? WHERE id = ?"
                 ).use { stmt ->
@@ -1328,25 +1238,15 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                     stmt.setInt(5, maxY)
                     stmt.setInt(6, maxZ)
                     stmt.setInt(7, chamberId)
-
-                    val updated = stmt.executeUpdate() > 0
-                    if (updated) {
-                        val chamber = chamberCache.values.find { it.id == chamberId }
-                        if (chamber != null) {
-                            val refreshed = loadChamberFromDb(chamber.name)
-                            if (refreshed != null) {
-                                cachePut(refreshed)
-                                updateCacheExpiry(chamber.name)
-                            }
-                        }
-                        // New bounds can contain a different spawner set, stale
-                        // counts make ChamberClearedEvent fire early or never.
-                        runCatching { plugin.spawnerWaveManager.invalidateChamberSpawnerCaches(chamberId) }
-                        plugin.logger.info("Updated bounds for chamber $chamberId: ($minX,$minY,$minZ)-($maxX,$maxY,$maxZ)")
-                    }
-                    updated
+                    stmt.executeUpdate() > 0
                 }
             }
+            if (updated) {
+                refreshCacheById(chamberId)
+                runCatching { plugin.spawnerWaveManager.invalidateChamberSpawnerCaches(chamberId) }
+                plugin.logger.info("Updated bounds for chamber $chamberId: ($minX,$minY,$minZ)-($maxX,$maxY,$maxZ)")
+            }
+            updated
         } catch (e: Exception) {
             plugin.logger.severe("Failed to update chamber bounds: ${e.message}")
             false
@@ -1362,7 +1262,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
      */
     suspend fun updateSpawnerCooldown(chamberId: Int, cooldownMinutes: Int?): Boolean = withContext(Dispatchers.IO) {
         try {
-            plugin.databaseManager.connection.use { conn ->
+            val updated = plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement("UPDATE ${tables.chambers} SET spawner_cooldown_minutes = ? WHERE id = ?").use { stmt ->
                     if (cooldownMinutes == null) {
                         stmt.setNull(1, java.sql.Types.INTEGER)
@@ -1370,29 +1270,20 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         stmt.setInt(1, cooldownMinutes)
                     }
                     stmt.setInt(2, chamberId)
-
-                    val updated = stmt.executeUpdate() > 0
-                    if (updated) {
-                        // Refresh cache
-                        val chamber = chamberCache.values.find { it.id == chamberId }
-                        if (chamber != null) {
-                            val refreshed = loadChamberFromDb(chamber.name)
-                            if (refreshed != null) {
-                                cachePut(refreshed)
-                                updateCacheExpiry(chamber.name)
-                            }
-                        }
-                        val cooldownDesc = when (cooldownMinutes) {
-                            null -> "global config"
-                            -1 -> "vanilla default"
-                            0 -> "no cooldown"
-                            else -> "${cooldownMinutes}m"
-                        }
-                        plugin.logger.info("Updated spawner cooldown for chamber $chamberId to $cooldownDesc")
-                    }
-                    updated
+                    stmt.executeUpdate() > 0
                 }
             }
+            if (updated) {
+                refreshCacheById(chamberId)
+                val cooldownDesc = when (cooldownMinutes) {
+                    null -> "global config"
+                    -1 -> "vanilla default"
+                    0 -> "no cooldown"
+                    else -> "${cooldownMinutes}m"
+                }
+                plugin.logger.info("Updated spawner cooldown for chamber $chamberId to $cooldownDesc")
+            }
+            updated
         } catch (e: Exception) {
             plugin.logger.severe("Failed to update spawner cooldown: ${e.message}")
             false
@@ -1417,8 +1308,7 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
         try {
             val normalizedProvider = providerId?.lowercase()?.takeUnless { it == "vanilla" || it.isBlank() }
 
-            plugin.databaseManager.connection.use { conn ->
-                // Build dynamic SQL, only touch columns the caller passed.
+            val updated = plugin.databaseManager.connection.use { conn ->
                 val setClauses = mutableListOf("custom_mob_provider = ?")
                 if (normalIds != null) setClauses += "custom_mob_ids_normal = ?"
                 if (ominousIds != null) setClauses += "custom_mob_ids_ominous = ?"
@@ -1440,22 +1330,14 @@ class ChamberManager(private val plugin: BetterTrialChambers) {
                         else stmt.setString(idx++, encoded)
                     }
                     stmt.setInt(idx, chamberId)
-
-                    val updated = stmt.executeUpdate() > 0
-                    if (updated) {
-                        val chamber = chamberCache.values.find { it.id == chamberId }
-                        if (chamber != null) {
-                            val refreshed = loadChamberFromDb(chamber.name)
-                            if (refreshed != null) {
-                                cachePut(refreshed)
-                                updateCacheExpiry(chamber.name)
-                            }
-                        }
-                        plugin.logger.info("Updated custom mob provider for chamber $chamberId: provider=${normalizedProvider ?: "vanilla"}")
-                    }
-                    updated
+                    stmt.executeUpdate() > 0
                 }
             }
+            if (updated) {
+                refreshCacheById(chamberId)
+                plugin.logger.info("Updated custom mob provider for chamber $chamberId: provider=${normalizedProvider ?: "vanilla"}")
+            }
+            updated
         } catch (e: Exception) {
             plugin.logger.severe("Failed to update custom mob provider: ${e.message}")
             false

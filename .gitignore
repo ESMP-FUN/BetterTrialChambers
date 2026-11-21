@@ -1,6 +1,10 @@
 .idea/
 out/
 .idea_modules/
+.classpath
+.project
+.settings/
+bin/
 *.class
 *.log
 *.jar

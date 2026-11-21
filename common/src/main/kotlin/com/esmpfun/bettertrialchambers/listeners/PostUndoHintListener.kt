@@ -16,18 +16,13 @@ class PostUndoHintListener(private val plugin: BetterTrialChambers) : Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     fun onCommandPreprocess(event: PlayerCommandPreprocessEvent) {
-        val msg = event.message.trim().lowercase()
-        if (msg != "/undo" && !msg.startsWith("//undo")) return
+        val firstToken = event.message.trim().substringBefore(' ').lowercase()
+        if (firstToken != "/undo" && firstToken != "//undo") return
 
         val player = event.player
-        plugin.launchAsync {
-            val chamber = plugin.chamberManager.getChamberAt(player.location) ?: return@launchAsync
-            plugin.scheduler.runAtEntity(player, Runnable {
-                if (player.isOnline) {
-                    player.sendMessage(plugin.getMessageComponent("undo-cleanup-hint",
-                        "chamber" to chamber.name))
-                }
-            })
-        }
+        val chamber = plugin.chamberManager.getCachedChamberAt(player.location) ?: return
+        player.sendMessage(
+            plugin.getMessageComponent("undo-cleanup-hint", "chamber" to chamber.name)
+        )
     }
 }

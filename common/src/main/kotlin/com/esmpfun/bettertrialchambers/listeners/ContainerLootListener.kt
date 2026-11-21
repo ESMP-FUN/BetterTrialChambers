@@ -100,10 +100,20 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
     }
 
     private companion object {
-        val ELIGIBLE = setOf(
-            Material.CHEST, Material.TRAPPED_CHEST, Material.BARREL,
-            Material.DISPENSER, Material.DROPPER
-        )
+        val ELIGIBLE: Set<Material> = buildSet {
+            add(Material.CHEST)
+            add(Material.TRAPPED_CHEST)
+            add(Material.BARREL)
+            add(Material.DISPENSER)
+            add(Material.DROPPER)
+            // 26.3+ Copper Chest variants (resolved by name so 1.21 servers still load cleanly).
+            for (name in listOf(
+                "COPPER_CHEST", "EXPOSED_COPPER_CHEST", "WEATHERED_COPPER_CHEST", "OXIDIZED_COPPER_CHEST",
+                "WAXED_COPPER_CHEST", "WAXED_EXPOSED_COPPER_CHEST", "WAXED_WEATHERED_COPPER_CHEST", "WAXED_OXIDIZED_COPPER_CHEST"
+            )) {
+                Material.matchMaterial(name)?.let { add(it) }
+            }
+        }
     }
 
     private fun enabled() = plugin.config.getBoolean("chests.per-player-loot", false)
@@ -112,25 +122,40 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
     fun onContainerOpen(event: PlayerInteractEvent) {
         if (!enabled() || !plugin.isReady) return
         if (event.action != Action.RIGHT_CLICK_BLOCK) return
-        if (event.hand != org.bukkit.inventory.EquipmentSlot.HAND) return
         val block = event.clickedBlock ?: return
         if (block.type !in ELIGIBLE) return
 
         val chamber = plugin.chamberManager.getCachedChamberAt(block.location) ?: return
         if (chamber.isPaused) return
 
-        // Player-placed containers keep vanilla behaviour.
         val state = block.state
-        if (state is TileState &&
-            state.persistentDataContainer.has(playerPlacedKey, PersistentDataType.BYTE)
-        ) return
-
         val container = state as? Container ?: return
-        val player = event.player
 
-        // Editing is GUI-only now (no in-world sneak-edit). Every open gets the
-        // player their own per-player copy.
+        // Player-placed containers keep vanilla behaviour. For double chests, both halves must
+        // be player-placed so placing a chest beside a chamber chest cannot bypass per-player loot.
+        val inv = container.inventory
+        val holder = inv.holder
+        if (holder is DoubleChest) {
+            val left = holder.leftSide as? TileState
+            val right = holder.rightSide as? TileState
+            val bothPlayerPlaced =
+                left != null && right != null &&
+                left.persistentDataContainer.has(playerPlacedKey, PersistentDataType.BYTE) &&
+                right.persistentDataContainer.has(playerPlacedKey, PersistentDataType.BYTE)
+            if (bothPlayerPlaced) return
+            if ((holder.leftSide as? Chest)?.isBlocked == true || (holder.rightSide as? Chest)?.isBlocked == true) return
+        } else {
+            if (state.persistentDataContainer.has(playerPlacedKey, PersistentDataType.BYTE)) return
+            if (state is Chest && state.isBlocked) return
+        }
+
+        // Editing is GUI-only now (no in-world sneak-edit). Cancel both hands so the
+        // off-hand pass cannot fall through and open the real underlying container,
+        // then only open our virtual copy on the main-hand pass.
         event.isCancelled = true
+        if (event.hand != org.bukkit.inventory.EquipmentSlot.HAND) return
+
+        val player = event.player
 
         val now = System.currentTimeMillis()
         val last = openDebounce[player.uniqueId]
@@ -140,8 +165,6 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
 
         // Resolve the normalized key block (left half of a double chest) and the
         // inventory size SYNCHRONOUSLY, we're on the block's region thread now.
-        val inv = container.inventory
-        val holder = inv.holder
         val keyBlock = if (holder is DoubleChest) (holder.leftSide as? Chest)?.block ?: block else block
         val size = if (holder is DoubleChest) 54 else inv.size
         val pos = ContainerLootManager.ContainerPos(keyBlock.x, keyBlock.y, keyBlock.z)
@@ -392,7 +415,9 @@ class ContainerLootListener(private val plugin: BetterTrialChambers) : Listener 
             } catch (e: Exception) {
                 plugin.logger.warning("[ContainerLoot] Failed to open container for ${player.name}: ${e.message}")
             }
-            cont.resume(Unit)
+            if (cont.isActive) cont.resume(Unit)
+        }, Runnable {
+            if (cont.isActive) cont.resume(Unit)
         })
     }
 

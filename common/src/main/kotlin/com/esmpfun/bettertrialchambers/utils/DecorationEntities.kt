@@ -141,7 +141,10 @@ object DecorationEntities {
     /** True when [entity] is part of the build and should come back after a reset. */
     fun isDecoration(entity: Entity): Boolean {
         if (!entity.isPersistent) return false
-        if (entity.persistentDataContainer.has(glowMarkerKey, PersistentDataType.STRING)) return false
+        val pdc = entity.persistentDataContainer
+        if (pdc.has(glowMarkerKey, PersistentDataType.BYTE) ||
+            pdc.has(glowMarkerKey, PersistentDataType.STRING)
+        ) return false
         return when {
             entity is Hanging -> true      // item frames, glow item frames, paintings
             entity is ArmorStand -> true
@@ -249,19 +252,17 @@ object DecorationEntities {
         )
         val before: Set<UUID> = world.getNearbyEntities(box).map { it.uniqueId }.toSet()
 
-        // The saved pocket holds blocks as well as the decoration, and those are
-        // the chamber's own blocks, already put back correctly a moment ago. They
-        // should come out identical, and any that do not are put straight back,
-        // so nothing a reset just restored can be disturbed here.
-        val blocksBefore = HashMap<Block, BlockData>()
-        forEachCell(world, item) { block -> blocksBefore[block] = block.blockData.clone() }
-
+        // The saved pocket holds blocks as well as the decoration, and those blocks
+        // (including TileEntities like Vaults, Trial Spawners, Chests, and Pots) were
+        // already restored cleanly a moment ago. Returning `state.world` from a
+        // BlockTransformer keeps every existing block AND TileEntity NBT untouched
+        // while still spawning the saved entities.
+        val keepWorldBlocks = org.bukkit.util.BlockTransformer { _, _, _, _, _, state -> state.world }
         val structure = server.structureManager.loadStructure(ByteArrayInputStream(item.bytes))
-        structure.place(corner, true, StructureRotation.NONE, Mirror.NONE, 0, 1.0f, Random())
-
-        for ((block, data) in blocksBefore) {
-            if (block.blockData != data) block.setBlockData(data, false)
-        }
+        structure.place(
+            corner, true, StructureRotation.NONE, Mirror.NONE, 0, 1.0f, Random(),
+            listOf(keepWorldBlocks), emptyList(),
+        )
 
         // Everything that turned up is new, because the pocket was emptied of
         // decorations first. The one that was asked for is the nearest of its

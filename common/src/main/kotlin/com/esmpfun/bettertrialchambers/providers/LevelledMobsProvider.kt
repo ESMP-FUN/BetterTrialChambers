@@ -70,6 +70,10 @@ class LevelledMobsProvider(private val plugin: BetterTrialChambers) : TrialMobPr
                 it.name == "applyLevelToMob" && it.parameterCount >= 2 &&
                     it.parameterTypes[0] == wrapperCls &&
                     it.parameterTypes[1] == java.lang.Integer.TYPE
+            }?.let { m ->
+                com.esmpfun.bettertrialchambers.utils.Reflect.method(
+                    levelInterface.javaClass, m.name, *m.parameterTypes
+                ) ?: m
             } ?: return entity
 
             val args = arrayOfNulls<Any>(apply.parameterCount)

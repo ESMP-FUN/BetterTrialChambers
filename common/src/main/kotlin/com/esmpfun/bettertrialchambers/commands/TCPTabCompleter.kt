@@ -70,10 +70,10 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
         return sender.hasPermission(permission)
     }
 
-    private val setupActions = listOf("start", "continue")
+    private val setupActions = listOf("start", "continue", "chat")
 
     private val claimsActions = listOf("scan")
-    private val debugActions = listOf("schema")
+    private val debugActions = listOf("schema", "structure")
 
     private val dungeonActions = listOf("pos1", "pos2", "capture", "generate", "list", "delete", "import")
     private val containerActions = listOf("list", "materialize", "reset", "resetone", "clearcopies", "tp", "edit")
@@ -286,13 +286,26 @@ class TCPTabCompleter(private val plugin: BetterTrialChambers) : TabCompleter {
         }
     }
 
+    private fun hasAnyChamberAdminPermission(sender: org.bukkit.command.CommandSender): Boolean =
+        sender.hasPermission("btc.admin") ||
+            sender.hasPermission("btc.admin.scan") ||
+            sender.hasPermission("btc.admin.snapshot") ||
+            sender.hasPermission("btc.admin.reset") ||
+            sender.hasPermission("btc.admin.vault") ||
+            sender.hasPermission("btc.admin.create") ||
+            sender.hasPermission("btc.admin.pause") ||
+            sender.hasPermission("btc.admin.loot") ||
+            sender.hasPermission("btc.admin.containers") ||
+            sender.hasPermission("btc.admin.mobs") ||
+            sender.hasPermission("btc.admin.menu")
+
     /**
      * v1.7.2: chamber names are only suggested to staff. Since 1.7.1 the base
      * /trial command is open to everyone (stats/leaderboard), which made
      * tab-completion leak every chamber name to regular players.
      */
     private fun getChamberNames(sender: org.bukkit.command.CommandSender): List<String> {
-        if (!sender.hasPermission("btc.admin")) return emptyList()
+        if (!hasAnyChamberAdminPermission(sender)) return emptyList()
         return try {
             val names = plugin.chamberManager.getCachedChamberNames()
             names.ifEmpty { emptyList() }

@@ -127,10 +127,11 @@ class SpectatorManager(private val plugin: BetterTrialChambers) {
         player.sendMessage(plugin.getMessageComponent("spectate-offer", "chamber" to chamber.label()))
         player.sendMessage(plugin.getMessageComponent("spectate-hint"))
 
-        // Expire the offer after configured time
+        // Expire only this specific offer (remove(key, value) avoids expiring a newer offer
+        // if the player declined and died again within offer-timeout).
         val timeoutSeconds = plugin.config.getInt("spectator-mode.offer-timeout", 30)
         plugin.scheduler.runTaskLater(Runnable {
-            if (pendingSpectate.remove(player.uniqueId) != null) {
+            if (pendingSpectate.remove(player.uniqueId, data)) {
                 if (player.isOnline) {
                     player.sendMessage(plugin.getMessageComponent("spectate-offer-expired"))
                 }
@@ -169,7 +170,10 @@ class SpectatorManager(private val plugin: BetterTrialChambers) {
         val exitHintMessage = plugin.getMessageComponent("spectate-exit-hint")
 
         plugin.scheduler.runAtEntity(player, Runnable {
-            if (!player.isOnline) return@Runnable
+            if (!player.isOnline) {
+                spectators.remove(player.uniqueId, data)
+                return@Runnable
+            }
 
             // v1.7.2: persist recovery data BEFORE switching gamemode, so a crash
             // at any later point can still restore the player.
@@ -183,6 +187,8 @@ class SpectatorManager(private val plugin: BetterTrialChambers) {
                 player.sendMessage(startMessage)
                 player.sendMessage(exitHintMessage)
             }
+        }, Runnable {
+            spectators.remove(player.uniqueId, data)
         })
 
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
@@ -329,9 +335,16 @@ class SpectatorManager(private val plugin: BetterTrialChambers) {
     fun handlePlayerQuit(player: Player) {
         pendingSpectate.remove(player.uniqueId)
         val data = spectators.remove(player.uniqueId) ?: return
+        // On Folia, sync player.teleport() throws UnsupportedOperationException and changing
+        // gamemode first would disable join-time restoreCrashedSpectator(). Leave recovery
+        // PDC intact on Folia so restoreCrashedSpectator() cleanly restores both gamemode
+        // and location via teleportAsync() on next join.
+        if (plugin.scheduler.isFolia) return
+        val exitLocation = plugin.chamberManager.getCachedChamberById(data.chamberId)?.getExitLocation()
+            ?: data.previousLocation
         runCatching {
+            player.teleport(exitLocation)
             player.gameMode = data.previousGameMode
-            player.teleport(data.previousLocation)
             clearRecoveryData(player)
         }.onFailure {
             plugin.logger.warning("[Spectator] Could not restore ${player.name} on quit: ${it.message}, join-time recovery will handle it.")
@@ -360,7 +373,14 @@ class SpectatorManager(private val plugin: BetterTrialChambers) {
         // so if this cannot be done here, rejoining still fixes it.
         spectators.entries.toList().forEach { (uuid, data) ->
             val player = plugin.server.getPlayer(uuid) ?: return@forEach
+            if (plugin.scheduler.isFolia) {
+                // Keep recovery PDC intact so next join cleanly teleports them out via teleportAsync.
+                return@forEach
+            }
+            val exitLocation = plugin.chamberManager.getCachedChamberById(data.chamberId)?.getExitLocation()
+                ?: data.previousLocation
             runCatching {
+                player.teleport(exitLocation)
                 if (player.gameMode == GameMode.SPECTATOR) player.gameMode = data.previousGameMode
                 clearRecoveryData(player)
                 player.sendMessage(plugin.getMessageComponent("spectate-exited"))

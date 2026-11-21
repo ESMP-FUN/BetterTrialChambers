@@ -291,14 +291,14 @@ class StatisticsManager(private val plugin: BetterTrialChambers) {
      */
     private fun loadStatsFromDatabase(playerUuid: UUID): PlayerStats {
         try {
-            plugin.databaseManager.connection.use { conn ->
+            val loaded: PlayerStats? = plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
                     "SELECT * FROM $statsTable WHERE player_uuid = ?"
                 ).use { stmt ->
                     stmt.setString(1, playerUuid.toString())
 
                     stmt.executeQuery().use { rs ->
-                        return if (rs.next()) {
+                        if (rs.next()) {
                             PlayerStats(
                                 playerUuid = playerUuid,
                                 chambersCompleted = rs.getInt("chambers_completed"),
@@ -310,14 +310,16 @@ class StatisticsManager(private val plugin: BetterTrialChambers) {
                                 lastUpdated = rs.getLong("last_updated")
                             )
                         } else {
-                            // Create new stats entry
-                            val newStats = PlayerStats(playerUuid = playerUuid)
-                            insertEmptyStatsIfAbsent(playerUuid)
-                            newStats
+                            null
                         }
                     }
                 }
             }
+            if (loaded != null) return loaded
+            // Acquire the second connection only after releasing the SELECT connection
+            // so concurrent loads cannot deadlock the HikariCP pool.
+            insertEmptyStatsIfAbsent(playerUuid)
+            return PlayerStats(playerUuid = playerUuid)
         } catch (e: Exception) {
             // Degrade gracefully on a schema/DB error: return empty stats rather than throwing.
             // The schema self-check logs the underlying cause (e.g. a drifted player_stats table).

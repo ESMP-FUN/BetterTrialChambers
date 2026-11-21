@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 420" width="1280" height="420" role="img" aria-labelledby="t d">
+  <title id="t">Better Trial Chambers</title>
+  <desc id="d">The Better Trial Chambers wordmark above its tagline.</desc>
+
+  <defs>
+    <radialGradient id="bglow" cx="50%" cy="50%" r="58%">
+      <stop offset="0%"   stop-color="#43D9C4" stop-opacity="0.10"/>
+      <stop offset="55%"  stop-color="#43D9C4" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#43D9C4" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="bsoft" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="16"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="420" fill="#12171C"/>
+  <rect width="1280" height="420" fill="url(#bglow)"/>
+  
+  <text x="640.0" y="212.1" font-family="'Space Grotesk','Outfit','Segoe UI',system-ui,sans-serif"
+        font-size="96.6" font-weight="700"
+        letter-spacing="-2.87" fill="#FFFFFF"
+        text-anchor="middle">Better Trial Chambers</text>
+
+  <text x="210.4" y="289.8" font-family="'Inter','Segoe UI',system-ui,sans-serif" font-size="28.0" font-weight="500" fill="#93A5B3" text-anchor="start">Turn one-time Trial Chambers into</text>
+  <text x="644.8" y="289.8" font-family="'Inter','Segoe UI',system-ui,sans-serif" font-size="28.0" font-weight="500" fill="#43D9C4" text-anchor="start" opacity="1.000">replayable multiplayer dungeons.</text><rect x="644.8" y="304.38" width="424.7" height="1.54" rx="0.77" fill="#43D9C4" opacity="0.08"/><rect x="644.8" y="304.38" width="42.5" height="1.54" rx="0.77" fill="#43D9C4" opacity="0.38"></rect>
+</svg>

@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap
  * PlaceholderAPI expansion for BetterTrialChambers.
  *
  * Provides the following placeholders (canonical list, also documented in
- * `docs/reference/placeholders.md`; keep the two in sync):
+ * `docs/getting-started/placeholders.md`; keep the two in sync):
  *
  * **Player Statistics:**
  * - %btc_vaults_opened% - Total vaults opened (normal + ominous)
@@ -95,6 +95,21 @@ class PlaceholderAPIExpansion(
     override fun getRequiredPlugin(): String = plugin.name
 
     override fun onRequest(player: OfflinePlayer?, params: String): String? {
+        // Player-independent server-wide placeholders work even when player == null
+        // (holograms, console, MOTDs, Discord bridges).
+        when {
+            params.equals("chamber_count", ignoreCase = true) ->
+                return plugin.chamberManager.getCachedChambers().size.toString()
+            params.startsWith("top_vaults_", ignoreCase = true) ->
+                return handleTopPlaceholder(params, "vaults")
+            params.startsWith("top_chambers_", ignoreCase = true) ->
+                return handleTopPlaceholder(params, "chambers")
+            params.startsWith("top_time_", ignoreCase = true) ->
+                return handleTopPlaceholder(params, "time")
+            params.startsWith("top_mobs_", ignoreCase = true) ->
+                return handleTopPlaceholder(params, "mobs")
+        }
+
         if (player == null) return null
 
         val uuid = player.uniqueId
@@ -290,18 +305,18 @@ class PlaceholderAPIExpansion(
         refreshLeaderboardCache()
 
         val prefix = "top_${stat}_"
-        val remaining = params.removePrefix(prefix)
+        val remaining = params.lowercase().removePrefix(prefix)
 
         // Parse position and type (e.g., "1_name" or "1_value")
         val parts = remaining.split("_")
         if (parts.size != 2) return null
 
         val position = parts[0].toIntOrNull() ?: return null
-        val type = parts[1].lowercase()
+        val type = parts[1]
 
         if (position < 1 || position > 10) return null
 
-        val leaderboard = leaderboardCache[stat] ?: return null
+        val leaderboard = leaderboardCache[stat] ?: return "---"
         if (position > leaderboard.size) return "---"
 
         val entry = leaderboard[position - 1]

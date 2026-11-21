@@ -146,4 +146,23 @@ class ConfigValidatorTest {
         val plugin = mockPluginWith(config)
         assertEquals(2, ConfigValidator.validate(plugin))
     }
+
+    @Test
+    fun `validate migrates misplaced setup keys and saves once without counting as clamp`() {
+        val config = org.bukkit.configuration.file.YamlConfiguration()
+        config.set("reset.use-fawe", true)
+        config.set("reset.reset-require-confirmation", true)
+
+        val plugin = mockPluginWith(config)
+        every { plugin.saveConfig() } returns Unit
+
+        val clamped = ConfigValidator.validate(plugin)
+
+        assertEquals(0, clamped)
+        assertFalse(config.contains("reset.use-fawe"))
+        assertFalse(config.contains("reset.reset-require-confirmation"))
+        assertTrue(config.getBoolean("global.use-fawe"))
+        assertTrue(config.getBoolean("global.reset-require-confirmation"))
+        verify(exactly = 1) { plugin.saveConfig() }
+    }
 }

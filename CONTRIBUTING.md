@@ -30,6 +30,6 @@ Before writing code, please check the [Issues](../../issues) tab to see if your 
 3. **Make Your Changes**: Write your Kotlin code, keeping server resource usage in mind.
 4. **Test Locally**: Build the `.jar` and test it on a local development Minecraft server. Ensure it runs smoothly without throwing stack traces in the console.
 5. **Commit & Push**: Commit your changes with descriptive messages and push them to your fork.
-6. **Open a PR**: Submit a Pull Request from your fork back to our `main` branch.
+6. **Open a PR**: Submit a Pull Request from your fork back to our `master` branch.
 
 Thank you for helping us optimize and expand our Minecraft plugins!
